@@ -9,12 +9,12 @@ const authRoutes: FastifyPluginAsync = async (app) => {
   const registerSchema = z.object({
     email: z.string().email(),
     password: z.string().min(8),
-    name: z.string().optional()
+    name: z.string().optional(),
   });
 
   const loginSchema = z.object({
     email: z.string().email(),
-    password: z.string()
+    password: z.string(),
   });
 
   app.post("/register", async (req, reply) => {
@@ -24,13 +24,17 @@ const authRoutes: FastifyPluginAsync = async (app) => {
 
     const hash = await argon2.hash(body.password);
     const user = await prisma.user.create({
-      data: { email: body.email, password: hash, name: body.name }
+      data: { email: body.email, password: hash, name: body.name },
     });
 
     const accessToken = app.jwt.sign({ sub: user.id, email: user.email }, { expiresIn: "15m" });
     const refreshToken = app.jwt.sign({ sub: user.id }, { expiresIn: "7d" });
 
-    return reply.send({ user: { id: user.id, email: user.email, name: user.name }, accessToken, refreshToken });
+    return reply.send({
+      user: { id: user.id, email: user.email, name: user.name },
+      accessToken,
+      refreshToken,
+    });
   });
 
   app.post("/login", async (req, reply) => {
@@ -38,13 +42,17 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) return reply.code(401).send({ error: "invalid_credentials" });
 
-    const ok = await argon2.verify(user.password, password);
-    if (!ok) return reply.code(401).send({ error: "invalid_credentials" });
+    const valid = await argon2.verify(user.password, password);
+    if (!valid) return reply.code(401).send({ error: "invalid_credentials" });
 
     const accessToken = app.jwt.sign({ sub: user.id, email: user.email }, { expiresIn: "15m" });
     const refreshToken = app.jwt.sign({ sub: user.id }, { expiresIn: "7d" });
 
-    return reply.send({ user: { id: user.id, email: user.email, name: user.name }, accessToken, refreshToken });
+    return reply.send({
+      user: { id: user.id, email: user.email, name: user.name },
+      accessToken,
+      refreshToken,
+    });
   });
 
   app.post("/refresh", async (req, reply) => {
@@ -67,7 +75,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
     const decoded = req.user as any;
     const user = await prisma.user.findUnique({
       where: { id: decoded.sub },
-      select: { id: true, email: true, name: true }
+      select: { id: true, email: true, name: true },
     });
     return { user };
   });
