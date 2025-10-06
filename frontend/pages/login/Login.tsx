@@ -1,116 +1,143 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
-import { useForm, Controller } from 'react-hook-form';
+import React, { useState } from 'react';
+import { View, Text, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { LoginStyles } from './LoginStyles';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { ParamListBase } from '@react-navigation/native';
+import * as SecureStore from 'expo-secure-store';
+import { TextInput, Button } from 'react-native-paper';
+import LoginStyles from './LoginStyles';
 
-// Validación del formulario
+type LoginFormData = { email: string; password: string };
+
+// ⚠️ Ajusta la URL según el entorno.
+// - Android emulador: http://10.0.2.2:3000
+// - iOS simulador:    http://localhost:3000
+// - Dispositivo real: http://IP_DE_TU_PC:3000 (misma WiFi)
+const BASE_URL =
+  Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+
 const schema = yup.object({
-  email: yup.string().email('Introduce un email válido').required('El email es requerido'),
-  password: yup.string().min(6, 'La contraseña debe tener al menos 6 caracteres').required('La contraseña es requerida'),
+  email: yup.string().email('Email inválido').required('Obligatorio'),
+  password: yup.string().min(8, 'Mínimo 8 caracteres').required('Obligatorio'),
 });
 
-type LoginFormData = {
-  email: string;
-  password: string;
+type Props = {
+  navigation: any; // si tienes types de React Navigation, ponlos aquí
 };
 
-type LoginProps = {
-  navigation: NativeStackNavigationProp<ParamListBase>;
-};
-
-export const Login = ({ navigation }: LoginProps) => {
-  const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
+const Login: React.FC<Props> = ({ navigation }) => {
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
     resolver: yupResolver(schema),
     defaultValues: { email: '', password: '' },
   });
 
-  const onSubmit = (data: LoginFormData) => {
-    console.log('Login data:', data);
-    navigation.replace('Home'); // Navega a Home tras login
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  const onSubmit = async (data: LoginFormData) => {
+    setApiError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        if (res.status === 401) throw new Error('Credenciales inválidas');
+        throw new Error(json?.error || 'Error de servidor');
+      }
+
+      const { accessToken, refreshToken } = json;
+
+      await SecureStore.setItemAsync('accessToken', accessToken);
+      await SecureStore.setItemAsync('refreshToken', refreshToken);
+
+      // Navegación a la pantalla principal
+      navigation.replace('Home');
+    } catch (e: any) {
+      setApiError(e?.message ?? 'No se pudo iniciar sesión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const goToForgotPassword = () => {
+    // Aquí navegas a tu flujo de "Olvidé mi contraseña" si ya tienes pantalla
+    // navigation.navigate('ForgotPassword');
   };
 
   return (
-    <KeyboardAvoidingView
-      style={LoginStyles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={LoginStyles.card}>
-        <Image
-          source={require('../../assets/logo.png')} // Pon tu logo aquí
-          style={LoginStyles.logo}
-        />
-        <Text style={LoginStyles.title}>Bienvenido</Text>
-        <Text style={LoginStyles.subtitle}>Inicia sesión para continuar</Text>
+    <View style={LoginStyles.container}>
+      <Text style={LoginStyles.title}>Iniciar sesión</Text>
 
-        <Controller
-          control={control}
-          name="email"
-          render={({
-            field: { onChange, value },
-          }: {
-            field: {
-              onChange: (value: string) => void;
-              value: string;
-            };
-          }) => (
+      <Controller
+        control={control}
+        name="email"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <>
             <TextInput
-              label="Email"
-              value={value}
-              onChangeText={onChange}
               mode="outlined"
+              label="Correo electrónico"
               keyboardType="email-address"
               autoCapitalize="none"
-              style={LoginStyles.input}
-              error={!!errors.email}
-            />
-          )}
-        />
-        {errors.email && <Text style={LoginStyles.error}>{errors.email.message}</Text>}
-
-        <Controller
-          control={control}
-          name="password"
-          render={({
-            field: { onChange, value },
-          }: {
-            field: {
-              onChange: (value: string) => void;
-              value: string;
-            };
-          }) => (
-            <TextInput
-              label="Contraseña"
-              value={value}
+              autoCorrect={false}
+              onBlur={onBlur}
               onChangeText={onChange}
-              mode="outlined"
-              secureTextEntry
+              value={value}
               style={LoginStyles.input}
-              error={!!errors.password}
             />
-          )}
-        />
-        {errors.password && <Text style={LoginStyles.error}>{errors.password.message}</Text>}
+            {errors.email?.message ? (
+              <Text style={LoginStyles.error}>{errors.email.message}</Text>
+            ) : null}
+          </>
+        )}
+      />
 
-        <Button mode="contained" onPress={handleSubmit(onSubmit)} style={LoginStyles.button}>
-          Iniciar Sesión
-        </Button>
+      <Controller
+        control={control}
+        name="password"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <>
+            <TextInput
+              mode="outlined"
+              label="Contraseña"
+              secureTextEntry
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+              style={LoginStyles.input}
+            />
+            {errors.password?.message ? (
+              <Text style={LoginStyles.error}>{errors.password.message}</Text>
+            ) : null}
+          </>
+        )}
+      />
 
-        <TouchableOpacity>
-          <Text style={LoginStyles.forgot}>¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
+      {apiError ? <Text style={LoginStyles.error}>{apiError}</Text> : null}
 
-        <View style={LoginStyles.registerContainer}>
-          <Text style={LoginStyles.registerText}>¿No tienes cuenta?</Text>
-          <TouchableOpacity>
-            <Text style={LoginStyles.registerLink}>Regístrate</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </KeyboardAvoidingView>
+      <Button
+        mode="contained"
+        onPress={handleSubmit(onSubmit)}
+        disabled={loading}
+        style={LoginStyles.button}
+      >
+        {loading ? <ActivityIndicator /> : 'Entrar'}
+      </Button>
+
+      <TouchableOpacity onPress={goToForgotPassword}>
+        <Text style={LoginStyles.link}>¿Olvidaste tu contraseña?</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
+
+export default Login;
