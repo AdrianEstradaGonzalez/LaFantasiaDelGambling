@@ -69,4 +69,10 @@ export const LoginStyles = StyleSheet.create({
     color: '#4da6ff',
     fontWeight: '600',
   },
+  link: {
+    color: '#007bff',
+    marginTop: 15,
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+  },
 });

@@ -3,7 +3,7 @@ import { StatusBar, useColorScheme } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { Login } from './pages/login/Login';
+import Login from './pages/login/Login';
 import { Home } from './pages/home/Home';
 
 const Stack = createNativeStackNavigator();

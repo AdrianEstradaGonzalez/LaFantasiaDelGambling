@@ -5,7 +5,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import * as SecureStore from 'expo-secure-store';
 import { TextInput, Button } from 'react-native-paper';
-import LoginStyles from './LoginStyles';
+import { LoginStyles } from './LoginStyles';
 
 type LoginFormData = { email: string; password: string };
 
