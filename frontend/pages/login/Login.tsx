@@ -14,7 +14,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { TextInput, Button } from 'react-native-paper';
 import LinearGradient from 'react-native-linear-gradient';
-import { LoginStyles } from './LoginStyles';
+import { LoginStyles } from '../../styles/AuthStyles';
 import { LoginData, LoginService } from '../../services/LoginService';
 
 
