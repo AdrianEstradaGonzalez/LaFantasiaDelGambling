@@ -7,33 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Tabla principal de usuarios
 model User {
-<<<<<<< HEAD
-  id         String   @id @default(cuid())
-  email      String   @unique
-  password   String
-  name       String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relación con los códigos de recuperación de contraseña
-  resetCodes PasswordResetCode[]
-
-  // 👇 Importante: Prisma mappea este modelo a la tabla "user" en la base de datos
-=======
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
-  username  String? 
->>>>>>> e0d7bf3 (cambios backend)
+  name      String? 
+  resetCodes PasswordResetCode[]
   @@map("user")
 }
 
-/// Códigos temporales para recuperación de contraseña
 model PasswordResetCode {
   id        String   @id @default(cuid())
-  userId    String?  // opcional por si el email no está registrado
+  userId    String?
   email     String
   codeHash  String
   expiresAt DateTime
@@ -45,5 +30,4 @@ model PasswordResetCode {
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([email, expiresAt, used])
-  @@map("password_reset_code") // 👈 nombre real en BD, por si prefieres minúsculas
 }
