@@ -24,8 +24,8 @@ export const LoginStyles = StyleSheet.create({
     elevation: 8,
   },
   logo: {
-    width: 220,
-    height: 220,
+    width: width * 0.3,
+    height: width * 0.3,
     resizeMode: 'contain',
     marginBottom: 10,
   },

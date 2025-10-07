@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Switch,
 } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -40,6 +41,7 @@ const Login: React.FC<Props> = ({ navigation }) => {
 
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const onSubmit = async (data: LoginFormData) => {
   setApiError(null);
@@ -159,7 +161,24 @@ const Login: React.FC<Props> = ({ navigation }) => {
 
 
             {apiError && <Text style={LoginStyles.error}>{apiError}</Text>}
-
+            <View
+  style={{
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    alignSelf: 'flex-start',
+  }}
+            >
+              <Switch
+                value={rememberMe}
+                onValueChange={setRememberMe}
+                thumbColor={Platform.OS === 'android' ? '#fff' : undefined}
+                trackColor={{ true: '#346335', false: '#ccc' }}
+              />
+              <Text style={{ marginLeft: 8, fontSize: 14, color: '#555' }}>
+                Recuérdame
+              </Text>
+            </View>
             <Button
               mode="contained"
               onPress={handleSubmit(onSubmit)}
