@@ -1,40 +1,22 @@
-import Fastify from "fastify";
-import cors from "@fastify/cors";
-import jwt from "@fastify/jwt";
-import { env } from "./env.js";
-import authRoutes from "./routes/auth.js";
+import { buildApp } from "./app.js";
+import { env } from "./config/env.js";
 
-const app = Fastify({ logger: true });
-
-await app.register(cors, {
-  origin: true,
-  credentials: true,
-});
-await app.register(jwt, { secret: env.JWT_SECRET });
-
-app.decorate("auth", async (request: any, reply: any) => {
+async function main() {
   try {
-    await request.jwtVerify();
-  } catch {
-    return reply.code(401).send({ error: "unauthorized" });
-  }
-});
+    const app = await buildApp();
+    
+    await app.listen({ 
+      port: env.PORT, 
+      host: "0.0.0.0" 
+    });
 
-app.get("/health", async () => ({ ok: true }));
-
-await app.register(authRoutes, { prefix: "/auth" });
-
-app.listen({ port: env.PORT, host: "0.0.0.0" }).catch((err) => {
-  app.log.error(err);
-  process.exit(1);
-});
-
-declare module "fastify" {
-  interface FastifyInstance {
-    auth: any;
-  }
-  interface FastifyRequest {
-    jwtVerify: () => Promise<void>;
-    user?: { id: string; email: string };
+    app.log.info(`Servidor corriendo en http://localhost:${env.PORT}`);
+    app.log.info(`Documentación disponible en http://localhost:${env.PORT}/docs`);
+    
+  } catch (err) {
+    console.error('Error al iniciar el servidor:', err);
+    process.exit(1);
   }
 }
+
+main();

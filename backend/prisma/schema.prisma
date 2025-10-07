@@ -9,6 +9,7 @@ datasource db {
 
 /// Tabla principal de usuarios
 model User {
+<<<<<<< HEAD
   id         String   @id @default(cuid())
   email      String   @unique
   password   String
@@ -20,6 +21,12 @@ model User {
   resetCodes PasswordResetCode[]
 
   // 👇 Importante: Prisma mappea este modelo a la tabla "user" en la base de datos
+=======
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  username  String? 
+>>>>>>> e0d7bf3 (cambios backend)
   @@map("user")
 }
 
