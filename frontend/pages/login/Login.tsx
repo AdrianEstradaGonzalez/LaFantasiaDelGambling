@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import * as SecureStore from 'expo-secure-store';
 import { TextInput, Button } from 'react-native-paper';
-import { LoginStyles } from './LoginStyles';
+import LinearGradient from 'react-native-linear-gradient';
+import { LoginStyles } from '../../styles/AuthStyles';
+import { LoginData, LoginService } from '../../services/LoginService';
+
 
 type LoginFormData = { email: string; password: string };
-
-// ⚠️ Ajusta la URL según el entorno.
-// - Android emulador: http://10.0.2.2:3000
-// - iOS simulador:    http://localhost:3000
-// - Dispositivo real: http://IP_DE_TU_PC:3000 (misma WiFi)
-const BASE_URL =
-  Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
 
 const schema = yup.object({
   email: yup.string().email('Email inválido').required('Obligatorio'),
@@ -22,7 +26,7 @@ const schema = yup.object({
 });
 
 type Props = {
-  navigation: any; // si tienes types de React Navigation, ponlos aquí
+  navigation: any;
 };
 
 const Login: React.FC<Props> = ({ navigation }) => {
@@ -39,104 +43,150 @@ const Login: React.FC<Props> = ({ navigation }) => {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const onSubmit = async (data: LoginFormData) => {
-    setApiError(null);
-    setLoading(true);
-    try {
-      const res = await fetch(`${BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+  setApiError(null);
+  setLoading(true);
 
-      const json = await res.json().catch(() => ({}));
+  try {
+    // Llamada al servicio
+    await LoginService.login(data as LoginData);
 
-      if (!res.ok) {
-        if (res.status === 401) throw new Error('Credenciales inválidas');
-        throw new Error(json?.error || 'Error de servidor');
-      }
-
-      const { accessToken, refreshToken } = json;
-
-      await SecureStore.setItemAsync('accessToken', accessToken);
-      await SecureStore.setItemAsync('refreshToken', refreshToken);
-
-      // Navegación a la pantalla principal
-      navigation.replace('Home');
-    } catch (e: any) {
-      setApiError(e?.message ?? 'No se pudo iniciar sesión');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const goToForgotPassword = () => {
-    // Aquí navegas a tu flujo de "Olvidé mi contraseña" si ya tienes pantalla
-    // navigation.navigate('ForgotPassword');
-  };
+    // Redirigir al Home si todo OK
+    navigation.replace('Home');
+  } catch (e: any) {
+    setApiError(e?.message ?? 'No se pudo iniciar sesión');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
-    <View style={LoginStyles.container}>
-      <Text style={LoginStyles.title}>Iniciar sesión</Text>
-
-      <Controller
-        control={control}
-        name="email"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <>
-            <TextInput
-              mode="outlined"
-              label="Correo electrónico"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              style={LoginStyles.input}
-            />
-            {errors.email?.message ? (
-              <Text style={LoginStyles.error}>{errors.email.message}</Text>
-            ) : null}
-          </>
-        )}
-      />
-
-      <Controller
-        control={control}
-        name="password"
-        render={({ field: { onChange, onBlur, value } }) => (
-          <>
-            <TextInput
-              mode="outlined"
-              label="Contraseña"
-              secureTextEntry
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              style={LoginStyles.input}
-            />
-            {errors.password?.message ? (
-              <Text style={LoginStyles.error}>{errors.password.message}</Text>
-            ) : null}
-          </>
-        )}
-      />
-
-      {apiError ? <Text style={LoginStyles.error}>{apiError}</Text> : null}
-
-      <Button
-        mode="contained"
-        onPress={handleSubmit(onSubmit)}
-        disabled={loading}
-        style={LoginStyles.button}
+    <LinearGradient
+        colors={['#18395a', '#346335']}
+        style={LoginStyles.gradient}
       >
-        {loading ? <ActivityIndicator /> : 'Entrar'}
-      </Button>
 
-      <TouchableOpacity onPress={goToForgotPassword}>
-        <Text style={LoginStyles.link}>¿Olvidaste tu contraseña?</Text>
-      </TouchableOpacity>
-    </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={LoginStyles.scroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={LoginStyles.card}>
+            <Image
+              source={require('../../assets/logo.png')}
+              style={LoginStyles.logo}
+            />
+
+            <Text style={LoginStyles.title}>Bettasy</Text>
+            <Text style={LoginStyles.subtitle}>
+              Inicia sesión 
+            </Text>
+
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <>
+                  <TextInput
+                    mode="outlined"
+                    label="Correo electrónico"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    style={LoginStyles.input}
+                    outlineColor="#ccc"
+                    activeOutlineColor="#1a2a6c"
+                    textColor="#000"
+                  />
+                  {errors.email?.message && (
+                    <Text style={LoginStyles.error}>
+                      {errors.email.message}
+                    </Text>
+                  )}
+                </>
+              )}
+            />
+
+        <Controller
+          control={control}
+          name="password"
+          render={({ field: { onChange, onBlur, value } }) => {
+            const [showPassword, setShowPassword] = useState(false);
+
+            return (
+              <>
+                <TextInput
+                  mode="outlined"
+                  label="Contraseña"
+                  secureTextEntry={!showPassword}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  style={LoginStyles.input}
+                  outlineColor="#ccc"
+                  activeOutlineColor="#1a2a6c"
+                  textColor="#000"
+                  right={
+                    <TextInput.Icon
+                      icon={() => (
+                        <Image
+                          source={
+                            showPassword
+                              ? require('../../assets/iconos/eye_off.png')
+                              : require('../../assets/iconos/eye_on.png')
+                          }
+                          style={{ width: 24, height: 24 }}
+                          resizeMode="contain"
+                        />
+                      )}
+                      onPress={() => setShowPassword(!showPassword)}
+                      forceTextInputFocus={false}
+                    />
+                  }
+                />
+
+                {errors.password?.message && (
+                  <Text style={LoginStyles.error}>{errors.password.message}</Text>
+                )}
+              </>
+            );
+          }}
+        />
+
+
+            {apiError && <Text style={LoginStyles.error}>{apiError}</Text>}
+
+            <Button
+              mode="contained"
+              onPress={handleSubmit(onSubmit)}
+              disabled={loading}
+              style={LoginStyles.button}
+              labelStyle={LoginStyles.buttonLabel}
+            >
+              {loading ? <ActivityIndicator color="#fff" /> : 'Entrar'}
+            </Button>
+
+            <TouchableOpacity>
+              <Text style={LoginStyles.link}>¿Olvidaste tu contraseña?</Text>
+            </TouchableOpacity>
+
+            <View style={LoginStyles.registerContainer}>
+              <Text style={LoginStyles.registerText}>¿No tienes cuenta?</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Register')}
+              >
+                <Text style={LoginStyles.registerLink}>Regístrate</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 };
 
