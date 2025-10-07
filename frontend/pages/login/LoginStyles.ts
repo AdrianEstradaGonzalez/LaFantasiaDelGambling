@@ -1,60 +1,77 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+const { width } = Dimensions.get('window');
 
 export const LoginStyles = StyleSheet.create({
-  container: {
+  gradient: {
     flex: 1,
-    backgroundColor: '#1e1e1e',
+  },
+  scroll: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   card: {
-    width: '100%',
-    backgroundColor: '#252525',
-    borderRadius: 16,
-    padding: 30,
+    width: width * 0.9,
+    backgroundColor: '#ffffffee',
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
     shadowRadius: 10,
-    elevation: 10,
+    elevation: 8,
   },
   logo: {
-    width: 80,
-    height: 80,
-    alignSelf: 'center',
-    marginBottom: 20,
+    width: 220,
+    height: 220,
+    resizeMode: 'contain',
+    marginBottom: 10,
   },
   title: {
-    fontSize: 26,
+    fontSize: 36,
     fontWeight: '700',
-    color: '#fff',
-    textAlign: 'center',
+    color: '#18395a', // Azul normativo
+    marginTop: 10,
+    marginBottom: 5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#ccc',
+    color: '#18395a', // Azul normativo
     textAlign: 'center',
     marginBottom: 20,
   },
   input: {
+    width: '100%',
     marginBottom: 10,
-    backgroundColor: '#252525',
+    backgroundColor: '#fff',
   },
   error: {
-    color: '#ff6b6b',
+    color: '#c0392b',
+    alignSelf: 'flex-start',
     marginBottom: 10,
     marginLeft: 5,
+    fontSize: 13,
   },
   button: {
+    width: '100%',
     marginTop: 10,
-    borderRadius: 8,
+    backgroundColor: '#18395a', // Azul normativo
+    borderRadius: 10,
     paddingVertical: 6,
   },
-  forgot: {
-    color: '#4da6ff',
+  buttonLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff', // Texto blanco para contraste
+  },
+  link: {
+    color: '#1a73e8', // Azul claro tipo link
+    marginTop: 15,
     textAlign: 'center',
-    marginTop: 12,
+    textDecorationLine: 'underline',
+    fontWeight: '500',
   },
   registerContainer: {
     flexDirection: 'row',
@@ -62,17 +79,11 @@ export const LoginStyles = StyleSheet.create({
     marginTop: 20,
   },
   registerText: {
-    color: '#ccc',
-    marginRight: 5,
+    color: '#555',
   },
   registerLink: {
-    color: '#4da6ff',
-    fontWeight: '600',
-  },
-  link: {
-    color: '#007bff',
-    marginTop: 15,
-    textAlign: 'center',
-    textDecorationLine: 'underline',
+    color: '#1a73e8', // Azul claro tipo link
+    fontWeight: '700',
+    marginLeft: 5,
   },
 });
