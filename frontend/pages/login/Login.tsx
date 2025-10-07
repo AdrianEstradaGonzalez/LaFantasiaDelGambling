@@ -13,14 +13,9 @@ import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { TextInput, Button } from 'react-native-paper';
-<<<<<<< HEAD
 import LinearGradient from 'react-native-linear-gradient';
 import { LoginStyles } from '../../styles/AuthStyles';
 import { LoginData, LoginService } from '../../services/LoginService';
-
-=======
-import {LoginStyles} from './LoginStyles';
->>>>>>> e0d7bf3 (cambios backend)
 
 type LoginFormData = { email: string; password: string };
 

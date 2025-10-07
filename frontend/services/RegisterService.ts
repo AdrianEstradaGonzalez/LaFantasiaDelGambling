@@ -1,39 +1,43 @@
-// services/RegisterService.ts
 import EncryptedStorage from 'react-native-encrypted-storage';
-
-const BASE_URL = 'http://localhost:3000';
+import { ApiConfig } from '../utils/apiConfig';
 
 export type RegisterData = {
   username: string;
   email: string;
   password: string;
-  repeatPassword: string;
+  repeatPassword?: string;
 };
 
-export class RegisterService {
-  static async register(data: RegisterData) {
+export const RegisterService = {
+  register: async (data: RegisterData) => {
     try {
-      const res = await fetch(`${BASE_URL}/auth/register`, {
+      const response = await fetch(`${ApiConfig.BASE_URL}/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nombre: data.username,
+          email: data.email,
+          password: data.password,
+        }),
       });
 
-      const json = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(json?.error || 'Error de servidor');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || `Error ${response.status}`);
       }
 
-      const { accessToken, refreshToken } = json;
+      const result = await response.json();
 
-      // Guardamos tokens en almacenamiento seguro
-      await EncryptedStorage.setItem('accessToken', accessToken);
-      await EncryptedStorage.setItem('refreshToken', refreshToken);
+      if (result.token) {
+        await EncryptedStorage.setItem('token', result.token);
+      }
 
-      return { accessToken, refreshToken };
+      return result;
     } catch (error: any) {
-      throw new Error(error?.message || 'No se pudo registrar');
+      console.error('Error en RegisterService:', error);
+      throw new Error(error.message || 'Error al registrarse');
     }
-  }
-}
+  },
+};
