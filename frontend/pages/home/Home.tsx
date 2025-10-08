@@ -8,13 +8,13 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { HomeStyles as styles } from '../../styles/HomeStyles';
+import LinearGradient from 'react-native-linear-gradient';
 import FootballService, { type Partido } from '../../services/FutbolService';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase } from '@react-navigation/native';
 
-// 📦 Icono de logout
+// 📦 Importa el icono de logout (require para Metro/React Native)
 const logoutIcon = require('../../assets/iconos/logout.png');
 
 type Liga = { id: string; nombre: string };
@@ -84,12 +84,8 @@ export const Home = ({ navigation }: HomeProps) => {
   };
 
   return (
-    <LinearGradient
-      colors={['#0a0a0a', '#1c1c1c', '#2a2d32']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
-    >
+    <LinearGradient colors={["#101011ff", "#0f2f45"]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+  <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 140 }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mis Ligas</Text>
@@ -98,23 +94,44 @@ export const Home = ({ navigation }: HomeProps) => {
         </TouchableOpacity>
       </View>
 
-      {/* Ligas */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.ligasScroll}
-        contentContainerStyle={{ paddingHorizontal: 10 }}
-      >
+      {/* Ligas: lista vertical que ocupa todo el ancho */}
+      <View style={styles.ligasList}>
         {ligas.map((liga) => (
-          <View key={liga.id} style={styles.ligaCard}>
+          <TouchableOpacity key={liga.id} style={styles.ligaCard} activeOpacity={0.85}>
             <Text style={styles.ligaName}>{liga.nombre}</Text>
-          </View>
+          </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
+
+      {/* Calendario (jornadas) debajo de las ligas - sin título */}
+      <View style={styles.calendarContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.jornadasScroll}
+          contentContainerStyle={{ paddingHorizontal: 12 }}
+        >
+          {jornadas.map((j) => (
+            <TouchableOpacity
+              key={j}
+              style={[styles.jornadaPill, jornadaActual === j && styles.jornadaActive]}
+              onPress={() => setJornadaActual(j)}
+              disabled={loading}
+            >
+              <Text style={[styles.jornadaText, jornadaActual === j && styles.jornadaTextActive]}>J {j}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Tabla de partidos */}
       <View style={styles.tableContainer}>
-        <View style={styles.tableHeader}>
+        <View
+          style={[
+            styles.tableHeader,
+            { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10 },
+          ]}
+        >
           <TouchableOpacity onPress={jornadaAnterior} disabled={loading}>
             <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>{'<'}</Text>
           </TouchableOpacity>
@@ -129,65 +146,54 @@ export const Home = ({ navigation }: HomeProps) => {
         </View>
 
         {loading ? (
-          <View style={styles.loadingWrap}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <ActivityIndicator size="large" color="#18395a" />
           </View>
         ) : (
-          <ScrollView>
+          <View>
             {partidosJornada.length > 0 ? (
-              partidosJornada.map((partido, index) => (
-                <View
-                  key={partido.id}
-                  style={[
-                    styles.tableRow,
-                    index % 2 ? styles.tableRowAlt : null,
-                  ]}
-                >
+              partidosJornada.slice(0, 10).map((partido) => (
+                <View key={partido.id} style={styles.tableRow}>
                   <Image
                     source={{ uri: partido.localCrest }}
-                    style={styles.crest}
+                    style={{ width: 40, height: 40, marginRight: 8 }}
                   />
-                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}> 
                     {partido.local}
                   </Text>
 
-                  <Text
-                    style={[
-                      styles.tableCell,
-                      styles.scoreCell,
-                      { flex: 3, textAlign: 'center' },
-                    ]}
-                  >
-                    {partido.finished
-                      ? partido.resultado
-                      : `${partido.fecha || ''} ${partido.hora || ''}`}
+                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}> 
+                    {partido.finished ? partido.resultado : `${partido.fecha} ${partido.hora}`}
                   </Text>
 
-                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}> 
                     {partido.visitante}
                   </Text>
                   <Image
                     source={{ uri: partido.visitanteCrest }}
-                    style={styles.crest}
+                    style={{ width: 40, height: 40, marginLeft: 8 }}
                   />
                 </View>
               ))
             ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No hay partidos para esta jornada.</Text>
+              <View style={{ padding: 20 }}>
+                <Text style={{ textAlign: 'center', color: '#333' }}>
+                  No hay partidos para esta jornada.
+                </Text>
               </View>
             )}
-          </ScrollView>
+          </View>
         )}
       </View>
 
-      {/* Logout */}
+      {/* Botón de cerrar sesión */}
       <TouchableOpacity
         style={styles.logoutButton}
         onPress={() => navigation.replace('Login')}
       >
         <Image source={logoutIcon} style={styles.logoutIcon} />
       </TouchableOpacity>
+      </ScrollView>
     </LinearGradient>
   );
-}; 
+};
