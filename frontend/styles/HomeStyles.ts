@@ -48,31 +48,74 @@ export const HomeStyles = StyleSheet.create({
   },
   ligaCard: {
     backgroundColor: '#ffffff',
-    // pill/arc shape
-    borderRadius: 30,
-    paddingVertical: 12,
-    paddingHorizontal: 22,
-    marginRight: 12,
-    minWidth: width * 0.48,
-    minHeight: 72,
+    // straight rectangular card (professional)
+    borderRadius: 0,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    width: '100%',
+    minHeight: 64,
     justifyContent: 'center',
     alignItems: 'center',
-    // thick gold border
-    borderWidth: 10,
-    borderColor: '#cdb371',
+    // fine black border for a clean professional look
+    borderWidth: 1,
+    borderColor: '#000000',
     borderStyle: 'solid',
-    // stronger elevation / golden glow
-    elevation: 8,
-    shadowColor: '#cdb371',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
+    // subtle elevation/shadow
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
   },
   ligaName: {
     fontWeight: '700',
     color: '#18395a',
     textAlign: 'center',
     fontSize: 20,
+  },
+
+  // New styles for vertical leagues list
+  ligasList: {
+    paddingHorizontal: 20,
+    marginBottom: 18,
+  },
+
+  // Calendar / jornadas
+  calendarContainer: {
+    marginHorizontal: 20,
+    marginBottom: 18,
+  },
+  jornadasScroll: {
+    marginTop: 8,
+    paddingVertical: 6,
+  },
+  jornadaPill: {
+    backgroundColor: '#f2f2f2',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    marginRight: 10,
+    minWidth: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
+  },
+  jornadaActive: {
+    backgroundColor: '#1f6a44',
+    borderColor: '#0f4f34',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+  },
+  jornadaText: {
+    color: '#18395a',
+    fontWeight: '700',
+  },
+  jornadaTextActive: {
+    color: '#fff',
   },
 
   // Sección de partidos
@@ -86,15 +129,17 @@ export const HomeStyles = StyleSheet.create({
 
   tableContainer: {
     marginHorizontal: 20,
-    height: height * 0.5,
-    borderRadius: 12,
+    borderRadius: 0,
     overflow: 'hidden',
     backgroundColor: '#ffffff',
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    paddingVertical: 8,
   },
 
   tableHeader: {
@@ -115,7 +160,7 @@ export const HomeStyles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eef2f5',
+    borderBottomColor: '#e6e6e6',
     alignItems: 'center',
     backgroundColor: '#ffffff',
   },

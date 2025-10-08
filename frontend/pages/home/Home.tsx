@@ -9,6 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { HomeStyles as styles } from '../../styles/HomeStyles';
+import LinearGradient from 'react-native-linear-gradient';
 import FootballService, { type Partido } from '../../services/FutbolService';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase } from '@react-navigation/native';
@@ -83,7 +84,8 @@ export const Home = ({ navigation }: HomeProps) => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={["#101011ff", "#0f2f45"]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+  <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 140 }}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mis Ligas</Text>
@@ -92,19 +94,35 @@ export const Home = ({ navigation }: HomeProps) => {
         </TouchableOpacity>
       </View>
 
-      {/* Ligas */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.ligasScroll}
-        contentContainerStyle={{ paddingHorizontal: 10 }}
-      >
+      {/* Ligas: lista vertical que ocupa todo el ancho */}
+      <View style={styles.ligasList}>
         {ligas.map((liga) => (
-          <View key={liga.id} style={styles.ligaCard}>
+          <TouchableOpacity key={liga.id} style={styles.ligaCard} activeOpacity={0.85}>
             <Text style={styles.ligaName}>{liga.nombre}</Text>
-          </View>
+          </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
+
+      {/* Calendario (jornadas) debajo de las ligas - sin título */}
+      <View style={styles.calendarContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.jornadasScroll}
+          contentContainerStyle={{ paddingHorizontal: 12 }}
+        >
+          {jornadas.map((j) => (
+            <TouchableOpacity
+              key={j}
+              style={[styles.jornadaPill, jornadaActual === j && styles.jornadaActive]}
+              onPress={() => setJornadaActual(j)}
+              disabled={loading}
+            >
+              <Text style={[styles.jornadaText, jornadaActual === j && styles.jornadaTextActive]}>J {j}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Tabla de partidos */}
       <View style={styles.tableContainer}>
@@ -132,23 +150,23 @@ export const Home = ({ navigation }: HomeProps) => {
             <ActivityIndicator size="large" color="#18395a" />
           </View>
         ) : (
-          <ScrollView>
+          <View>
             {partidosJornada.length > 0 ? (
-              partidosJornada.map((partido) => (
+              partidosJornada.slice(0, 10).map((partido) => (
                 <View key={partido.id} style={styles.tableRow}>
                   <Image
                     source={{ uri: partido.localCrest }}
                     style={{ width: 40, height: 40, marginRight: 8 }}
                   />
-                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}> 
                     {partido.local}
                   </Text>
 
-                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}> 
                     {partido.finished ? partido.resultado : `${partido.fecha} ${partido.hora}`}
                   </Text>
 
-                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}> 
                     {partido.visitante}
                   </Text>
                   <Image
@@ -164,7 +182,7 @@ export const Home = ({ navigation }: HomeProps) => {
                 </Text>
               </View>
             )}
-          </ScrollView>
+          </View>
         )}
       </View>
 
@@ -175,6 +193,7 @@ export const Home = ({ navigation }: HomeProps) => {
       >
         <Image source={logoutIcon} style={styles.logoutIcon} />
       </TouchableOpacity>
-    </View>
+      </ScrollView>
+    </LinearGradient>
   );
 };
