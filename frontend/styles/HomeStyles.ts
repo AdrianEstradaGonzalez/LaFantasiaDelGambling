@@ -1,11 +1,11 @@
 import { StyleSheet, Dimensions, Platform } from 'react-native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export const HomeStyles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? 50 : 70,
+    paddingTop: Platform.OS === 'android' ? 48 : 64,
     backgroundColor: '#18395a',
   },
 
@@ -15,63 +15,94 @@ export const HomeStyles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginBottom: 15,
+    marginBottom: 18,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
   createButton: {
-    backgroundColor: '#346335',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    backgroundColor: '#1f6a44',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
   },
   createButtonText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
+    fontSize: 20,
   },
 
   // Ligas
   ligasScroll: {
-    maxHeight: 100,
-    marginBottom: 20,
+    maxHeight: 110,
+    marginBottom: 22,
+    paddingLeft: 10,
   },
   ligaCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
-    marginRight: 10,
-    minWidth: width * 0.4,
+    backgroundColor: '#ffffff',
+    // pill/arc shape
+    borderRadius: 30,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    marginRight: 12,
+    minWidth: width * 0.48,
+    minHeight: 72,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
+    // thick gold border
+    borderWidth: 10,
+    borderColor: '#cdb371',
+    borderStyle: 'solid',
+    // stronger elevation / golden glow
+    elevation: 8,
+    shadowColor: '#cdb371',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
   },
   ligaName: {
     fontWeight: '700',
     color: '#18395a',
     textAlign: 'center',
+    fontSize: 20,
   },
 
   // Sección de partidos
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#fff',
+    color: '#FFFFFF',
     marginLeft: 20,
-    marginBottom: 10,
+    marginBottom: 12,
+  },
+
+  tableContainer: {
+    marginHorizontal: 20,
+    height: height * 0.5,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#ffffff',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
   },
 
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#346335',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    backgroundColor: '#1f6a44',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    alignItems: 'center',
   },
   tableHeaderText: {
     color: '#fff',
@@ -81,32 +112,43 @@ export const HomeStyles = StyleSheet.create({
 
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: '#eef2f5',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
   },
   tableCell: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#18395a',
     fontWeight: '600',
   },
 
-  // Botón de cerrar sesión
+  // Logout button (floating)
   logoutButton: {
     position: 'absolute',
-    bottom: 30,
-    alignSelf: 'center',
-    backgroundColor: '#18395a',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 10,
+    bottom: 28,
+    right: 20,
+    width: 56,
+    height: 56,
+    backgroundColor: '#e53935',
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 8,
   },
   logoutText: {
     color: '#fff',
-    fontWeight: '600',
+    fontWeight: '700',
     fontSize: 16,
+  },
+  logoutIcon: {
+    width: width * 0.1,
+    height: width * 0.1,
   },
 });

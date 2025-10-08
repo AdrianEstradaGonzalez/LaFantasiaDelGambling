@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import { LinearGradient } from 'react-native-linear-gradient';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import { HomeStyles as styles } from '../../styles/HomeStyles';
-import { FootballService, Partido } from '../../services/FutbolService';
+import FootballService, { type Partido } from '../../services/FutbolService';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase } from '@react-navigation/native';
+
+// 📦 Importa el icono de logout (require para Metro/React Native)
+const logoutIcon = require('../../assets/iconos/logout.png');
 
 type Liga = { id: string; nombre: string };
 const { height } = Dimensions.get('window');
@@ -18,9 +28,9 @@ export const Home = ({ navigation }: HomeProps) => {
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [jornadas, setJornadas] = useState<number[]>([]);
   const [jornadaActual, setJornadaActual] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Simular ligas del usuario
     setLigas([
       { id: '1', nombre: 'Fantasy League 1' },
       { id: '2', nombre: 'Mi Liga VIP' },
@@ -28,41 +38,58 @@ export const Home = ({ navigation }: HomeProps) => {
     ]);
 
     const fetchMatches = async () => {
-      const allMatches = await FootballService.getAllMatchesWithJornadas('87');
-      setPartidos(allMatches);
+      try {
+        setLoading(true);
+        const allMatches = await FootballService.getAllMatchesWithJornadas();
+        setPartidos(allMatches);
 
-      // Calcular jornadas disponibles
-      const jornadasDisponibles = Array.from(
-        new Set(allMatches.map((p) => p.jornada))
-      );
-      setJornadas(jornadasDisponibles);
+        const jornadasDisponibles = Array.from(
+          new Set(allMatches.map((p) => p.jornada))
+        ).sort((a, b) => a - b);
+        setJornadas(jornadasDisponibles);
 
-      // Seleccionar la próxima jornada no iniciada por defecto
-      const nextJornada = allMatches.find((p) => p.notStarted)?.jornada || 1;
-      setJornadaActual(nextJornada);
+        const nextJornada =
+          allMatches.find((p) => p.notStarted)?.jornada ||
+          jornadasDisponibles[0];
+        setJornadaActual(nextJornada);
+      } catch (error) {
+        console.error('Error al obtener partidos:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchMatches();
-    const interval = setInterval(fetchMatches, 30000); // refrescar cada 30s
+    const interval = setInterval(fetchMatches, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // Filtrar partidos de la jornada actual
   const partidosJornada = partidos.filter((p) => p.jornada === jornadaActual);
 
+  const jornadaAnterior = () => {
+    setJornadaActual((prev) => {
+      const actualIndex = jornadas.indexOf(prev);
+      if (actualIndex > 0) return jornadas[actualIndex - 1];
+      return prev;
+    });
+  };
+
+  const jornadaSiguiente = () => {
+    setJornadaActual((prev) => {
+      const actualIndex = jornadas.indexOf(prev);
+      if (actualIndex < jornadas.length - 1) return jornadas[actualIndex + 1];
+      return prev;
+    });
+  };
+
   return (
-    <LinearGradient colors={['#18395a', '#346335']} style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mis Ligas</Text>
-        {ligas.length > 0 && (
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => console.log('Crear liga')}
-          >
-            <Text style={styles.createButtonText}>Crear Liga</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.createButton} onPress={() => console.log('Crear liga')}>
+          <Text style={styles.createButtonText}>Crear Liga</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Ligas */}
@@ -79,13 +106,15 @@ export const Home = ({ navigation }: HomeProps) => {
         ))}
       </ScrollView>
 
-      {/* Tabla de partidos con navegación de jornadas */}
-      <View style={{ height: height * 0.5, marginHorizontal: 20, borderRadius: 10, overflow: 'hidden', backgroundColor: '#fff' }}>
-        {/* Header de la tabla con flechas */}
-        <View style={[styles.tableHeader, { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10 }]}>
-          <TouchableOpacity
-            onPress={() => setJornadaActual((prev) => Math.max(prev - 1, Math.min(...jornadas)))}
-          >
+      {/* Tabla de partidos */}
+      <View style={styles.tableContainer}>
+        <View
+          style={[
+            styles.tableHeader,
+            { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10 },
+          ]}
+        >
+          <TouchableOpacity onPress={jornadaAnterior} disabled={loading}>
             <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>{'<'}</Text>
           </TouchableOpacity>
 
@@ -93,33 +122,59 @@ export const Home = ({ navigation }: HomeProps) => {
             Jornada {jornadaActual}
           </Text>
 
-          <TouchableOpacity
-            onPress={() => setJornadaActual((prev) => Math.min(prev + 1, Math.max(...jornadas)))}
-          >
+          <TouchableOpacity onPress={jornadaSiguiente} disabled={loading}>
             <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>{'>'}</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView>
-          {partidosJornada.map((partido) => (
-            <View key={partido.id} style={styles.tableRow}>
-              <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>{partido.local}</Text>
-              <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
-                {partido.finished ? partido.resultado : `${partido.fecha} ${partido.hora}`}
-              </Text>
-              <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>{partido.visitante}</Text>
-            </View>
-          ))}
-        </ScrollView>
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#18395a" />
+          </View>
+        ) : (
+          <ScrollView>
+            {partidosJornada.length > 0 ? (
+              partidosJornada.map((partido) => (
+                <View key={partido.id} style={styles.tableRow}>
+                  <Image
+                    source={{ uri: partido.localCrest }}
+                    style={{ width: 40, height: 40, marginRight: 8 }}
+                  />
+                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                    {partido.local}
+                  </Text>
+
+                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                    {partido.finished ? partido.resultado : `${partido.fecha} ${partido.hora}`}
+                  </Text>
+
+                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                    {partido.visitante}
+                  </Text>
+                  <Image
+                    source={{ uri: partido.visitanteCrest }}
+                    style={{ width: 40, height: 40, marginLeft: 8 }}
+                  />
+                </View>
+              ))
+            ) : (
+              <View style={{ padding: 20 }}>
+                <Text style={{ textAlign: 'center', color: '#333' }}>
+                  No hay partidos para esta jornada.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        )}
       </View>
 
-      {/* Cerrar sesión */}
+      {/* Botón de cerrar sesión */}
       <TouchableOpacity
         style={styles.logoutButton}
         onPress={() => navigation.replace('Login')}
       >
-        <Text style={styles.logoutText}>Cerrar sesión</Text>
+        <Image source={logoutIcon} style={styles.logoutIcon} />
       </TouchableOpacity>
-    </LinearGradient>
+    </View>
   );
 };
