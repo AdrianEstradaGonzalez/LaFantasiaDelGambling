@@ -8,12 +8,13 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { HomeStyles as styles } from '../../styles/HomeStyles';
 import FootballService, { type Partido } from '../../services/FutbolService';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase } from '@react-navigation/native';
 
-// 📦 Importa el icono de logout (require para Metro/React Native)
+// 📦 Icono de logout
 const logoutIcon = require('../../assets/iconos/logout.png');
 
 type Liga = { id: string; nombre: string };
@@ -83,7 +84,12 @@ export const Home = ({ navigation }: HomeProps) => {
   };
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={['#0a0a0a', '#1c1c1c', '#2a2d32']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container}
+    >
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mis Ligas</Text>
@@ -108,12 +114,7 @@ export const Home = ({ navigation }: HomeProps) => {
 
       {/* Tabla de partidos */}
       <View style={styles.tableContainer}>
-        <View
-          style={[
-            styles.tableHeader,
-            { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10 },
-          ]}
-        >
+        <View style={styles.tableHeader}>
           <TouchableOpacity onPress={jornadaAnterior} disabled={loading}>
             <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>{'<'}</Text>
           </TouchableOpacity>
@@ -128,24 +129,38 @@ export const Home = ({ navigation }: HomeProps) => {
         </View>
 
         {loading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <View style={styles.loadingWrap}>
             <ActivityIndicator size="large" color="#18395a" />
           </View>
         ) : (
           <ScrollView>
             {partidosJornada.length > 0 ? (
-              partidosJornada.map((partido) => (
-                <View key={partido.id} style={styles.tableRow}>
+              partidosJornada.map((partido, index) => (
+                <View
+                  key={partido.id}
+                  style={[
+                    styles.tableRow,
+                    index % 2 ? styles.tableRowAlt : null,
+                  ]}
+                >
                   <Image
                     source={{ uri: partido.localCrest }}
-                    style={{ width: 40, height: 40, marginRight: 8 }}
+                    style={styles.crest}
                   />
                   <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
                     {partido.local}
                   </Text>
 
-                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
-                    {partido.finished ? partido.resultado : `${partido.fecha} ${partido.hora}`}
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.scoreCell,
+                      { flex: 3, textAlign: 'center' },
+                    ]}
+                  >
+                    {partido.finished
+                      ? partido.resultado
+                      : `${partido.fecha || ''} ${partido.hora || ''}`}
                   </Text>
 
                   <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
@@ -153,28 +168,26 @@ export const Home = ({ navigation }: HomeProps) => {
                   </Text>
                   <Image
                     source={{ uri: partido.visitanteCrest }}
-                    style={{ width: 40, height: 40, marginLeft: 8 }}
+                    style={styles.crest}
                   />
                 </View>
               ))
             ) : (
-              <View style={{ padding: 20 }}>
-                <Text style={{ textAlign: 'center', color: '#333' }}>
-                  No hay partidos para esta jornada.
-                </Text>
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No hay partidos para esta jornada.</Text>
               </View>
             )}
           </ScrollView>
         )}
       </View>
 
-      {/* Botón de cerrar sesión */}
+      {/* Logout */}
       <TouchableOpacity
         style={styles.logoutButton}
         onPress={() => navigation.replace('Login')}
       >
         <Image source={logoutIcon} style={styles.logoutIcon} />
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 };
