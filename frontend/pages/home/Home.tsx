@@ -190,4 +190,4 @@ export const Home = ({ navigation }: HomeProps) => {
       </TouchableOpacity>
     </LinearGradient>
   );
-};
+}; 

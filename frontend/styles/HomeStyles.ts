@@ -179,3 +179,4 @@ export const HomeStyles = StyleSheet.create({
     tintColor: palette.white,
   },
 });
+ 
