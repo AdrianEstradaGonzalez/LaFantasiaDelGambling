@@ -45,11 +45,10 @@ export const LeagueController = {
     reply.send(members);
   },
 
-  getByUser: async (req: any, reply: any) => {
-  const userId = req.user?.id;
-  if (!userId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
+getByUser: async (req: any, reply: any) => {
+  const { userId } = req.params;
+  if (!userId) throw new AppError(400, "BAD_REQUEST", "Falta userId");
   const leagues = await LeagueService.getLeaguesByUser(userId);
   reply.send(leagues);
 },
-
 };

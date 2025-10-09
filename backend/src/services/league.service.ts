@@ -19,7 +19,8 @@ export const LeagueService = {
 
   listMembers: (leagueId: string) =>
     LeagueMemberRepo.listByLeague(leagueId),
-  getLeaguesByUser: (userId: string) =>
-    LeagueRepo.getByUserId(userId),
+getLeaguesByUser: (userId: string) =>
+  LeagueRepo.getByUserId(userId),
+
 
 };
