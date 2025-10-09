@@ -1,28 +1,53 @@
 import React from 'react';
-import { View, TouchableOpacity, Image } from 'react-native';
+import { View, TouchableOpacity, Image, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
 
-interface BottomNavBarProps {
-  onHomePress: () => void;
-  onLogoutPress: () => void;
-}
-
+// Importa tus iconos
 const homeIcon = require('../../assets/iconos/home.png');
 const logoutIcon = require('../../assets/iconos/logout.png');
 
-const BottomNavBar: React.FC<BottomNavBarProps> = ({ onHomePress, onLogoutPress }) => {
+const BottomNavBar: React.FC = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+
+  // 👉 Acción del botón Home
+  const handleHomePress = () => {
+    navigation.navigate('Home');
+  };
+
+  // 👉 Acción del botón Logout
+  const handleLogoutPress = () => {
+    Alert.alert(
+      'Cerrar sesión',
+      '¿Seguro que deseas salir?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Salir', onPress: () => navigation.replace('Login') },
+      ]
+    );
+  };
+
   return (
     <View style={styles.navBar}>
-      {/* Espacio a la izquierda (por si agregas algo más en el futuro) */}
+      {/* Espacio a la izquierda (por si agregas otro botón) */}
       <View style={{ width: 40 }} />
 
-      {/* Botón central (Home) */}
-      <TouchableOpacity onPress={onHomePress} style={styles.homeButton} activeOpacity={0.8}>
+      {/* Botón Home */}
+      <TouchableOpacity
+        onPress={handleHomePress}
+        style={styles.homeButton}
+        activeOpacity={0.8}
+      >
         <Image source={homeIcon} style={styles.homeIcon} resizeMode="contain" />
       </TouchableOpacity>
 
-      {/* Botón Logout a la derecha */}
-      <TouchableOpacity onPress={onLogoutPress} style={styles.logoutButton} activeOpacity={0.8}>
+      {/* Botón Logout */}
+      <TouchableOpacity
+        onPress={handleLogoutPress}
+        style={styles.logoutButton}
+        activeOpacity={0.8}
+      >
         <Image source={logoutIcon} style={styles.logoutIcon} resizeMode="contain" />
       </TouchableOpacity>
     </View>

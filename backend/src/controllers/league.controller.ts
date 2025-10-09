@@ -51,4 +51,5 @@ getByUser: async (req: any, reply: any) => {
   const leagues = await LeagueService.getLeaguesByUser(userId);
   reply.send(leagues);
 },
+
 };

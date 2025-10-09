@@ -7,15 +7,15 @@ navBar: {
   left: 0,
   right: 0,
   height: 70,
-  backgroundColor: '#ffffffff',
+  backgroundColor: '#2c2a2aff',
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'space-between',
   paddingHorizontal: 20,
 
   // 🔹 Borde superior sutil
-  borderTopWidth: 1,
-  borderTopColor: 'rgba(0, 0, 0, 0.1)',
+  borderTopWidth: 3,
+  borderTopColor: 'rgba(255, 255, 255, 0.5)',
 
   // 🔹 Sombra hacia arriba (suave)
   shadowColor: '#000',
@@ -43,7 +43,6 @@ navBar: {
   logoutIcon: {
     width: 32,
     height: 32,
-    tintColor: '#000', // tono verde profesional para el icono
   },
 });
 

@@ -16,6 +16,8 @@ import type { ParamListBase } from '@react-navigation/native';
 
 // 🧩 Importa la barra de navegación
 import BottomNavBar from '../navBar/BottomNavBar';
+import { LigaService } from '../../services/LigaService';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 type Liga = { id: string; nombre: string };
 const { height } = Dimensions.get('window');
@@ -31,15 +33,34 @@ export const Home = ({ navigation }: HomeProps) => {
   const [jornadaActual, setJornadaActual] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // 👇 para poder hacer scroll al inicio desde el botón Home
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    setLigas([
-      { id: '1', nombre: 'Fantasy League 1' },
-      { id: '2', nombre: 'Mi Liga VIP' },
-      { id: '3', nombre: 'Liga de Amigos' },
-    ]);
+    const fetchLigasUsuario = async () => {
+      try {
+        setLoading(true);
+
+        const userId = await EncryptedStorage.getItem('userId');
+      if (!userId) throw new Error('Usuario no autenticado');
+
+      // 🔹 Obtener ligas del usuario pasando el userId
+      const ligasUsuario = await LigaService.obtenerLigasPorUsuario(userId);
+
+        // 🔹 Mapear 'name' -> 'nombre' para que coincida con nuestro tipo
+        const ligasFormateadas: Liga[] = ligasUsuario.map(liga => ({
+          id: liga.id,
+          nombre: liga.name,
+        }));
+
+        setLigas(ligasFormateadas);
+      } catch (error: any) {
+        console.error('Error al obtener ligas del usuario:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLigasUsuario();
 
     const fetchMatches = async () => {
       try {
@@ -86,16 +107,6 @@ export const Home = ({ navigation }: HomeProps) => {
     });
   };
 
-  // 👉 Maneja el botón "Home" (sube al inicio del scroll)
-  const handleHomePress = () => {
-    scrollRef.current?.scrollTo({ y: 0, animated: true });
-  };
-
-  // 👉 Maneja el botón "Logout"
-  const handleLogoutPress = () => {
-    navigation.replace('Login');
-  };
-
   return (
     <LinearGradient
       colors={['#101011ff', '#0f2f45']}
@@ -113,7 +124,7 @@ export const Home = ({ navigation }: HomeProps) => {
           <Text style={styles.headerTitle}>Mis Ligas</Text>
           <TouchableOpacity
             style={styles.createButton}
-            onPress={() => console.log('Crear liga')}
+            onPress={() => navigation.navigate('CrearLiga')}
           >
             <Text style={styles.createButtonText}>Crear Liga</Text>
           </TouchableOpacity>
@@ -171,14 +182,11 @@ export const Home = ({ navigation }: HomeProps) => {
               {
                 flexDirection: 'row',
                 justifyContent: 'space-between',
-                paddingHorizontal: 10,
               },
             ]}
           >
             <TouchableOpacity onPress={jornadaAnterior} disabled={loading}>
-              <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>
-                {'<'}
-              </Text>
+              <Text style={[styles.tableHeaderText]}>{'<'}</Text>
             </TouchableOpacity>
 
             <Text
@@ -188,16 +196,12 @@ export const Home = ({ navigation }: HomeProps) => {
             </Text>
 
             <TouchableOpacity onPress={jornadaSiguiente} disabled={loading}>
-              <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>
-                {'>'}
-              </Text>
+              <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>{'>'}</Text>
             </TouchableOpacity>
           </View>
 
           {loading ? (
-            <View
-              style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-            >
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               <ActivityIndicator size="large" color="#18395a" />
             </View>
           ) : (
@@ -209,23 +213,17 @@ export const Home = ({ navigation }: HomeProps) => {
                       source={{ uri: partido.localCrest }}
                       style={{ width: 40, height: 40, marginRight: 8 }}
                     />
-                    <Text
-                      style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}
-                    >
+                    <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
                       {partido.local}
                     </Text>
 
-                    <Text
-                      style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}
-                    >
+                    <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
                       {partido.finished
                         ? partido.resultado
                         : `${partido.fecha} ${partido.hora}`}
                     </Text>
 
-                    <Text
-                      style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}
-                    >
+                    <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
                       {partido.visitante}
                     </Text>
                     <Image
@@ -247,10 +245,7 @@ export const Home = ({ navigation }: HomeProps) => {
       </ScrollView>
 
       {/* Barra de navegación fija */}
-      <BottomNavBar
-        onHomePress={handleHomePress}
-        onLogoutPress={handleLogoutPress}
-      />
+      <BottomNavBar />
     </LinearGradient>
   );
 };

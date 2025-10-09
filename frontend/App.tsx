@@ -1,11 +1,8 @@
 import React from 'react';
-import { StatusBar, useColorScheme } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { useColorScheme } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import Login from './pages/login/Login';
-import Register from './pages/register/Register';
-import { Home } from './pages/home/Home';
+import { AppNavigator } from './router/AppNavigator';
 
 const Stack = createNativeStackNavigator();
 
@@ -13,14 +10,7 @@ const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <NavigationContainer>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={Login} />
-        <Stack.Screen name="Register" component={Register} />
-        <Stack.Screen name="Home" component={Home} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <AppNavigator />
   );
 };
 

@@ -27,6 +27,7 @@ export class LoginService {
       // Guardamos tokens en almacenamiento seguro
       if (accessToken) {
         await EncryptedStorage.setItem('accessToken', accessToken);
+        await EncryptedStorage.setItem('userId', json.userId); // Guardar userId también
       }
       if (refreshToken) {
         await EncryptedStorage.setItem('refreshToken', refreshToken);
