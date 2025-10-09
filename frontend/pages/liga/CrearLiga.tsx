@@ -34,11 +34,19 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       setLoading(true);
       const nuevaLiga = await LigaService.crearLiga({ name: nombreLiga });
       Alert.alert(
-        'Liga creada',
-        `Tu liga "${nuevaLiga.name}" ha sido creada correctamente.`
+        '🎉 Liga creada',
+        `Tu liga "${nuevaLiga.name}" ha sido creada correctamente. ¡Ya puedes empezar a invitar jugadores!`,
+        [
+          {
+            text: 'Ver mis ligas',
+            onPress: () => {
+              setNombreLiga('');
+              // Navegar de vuelta con parámetro para refrescar
+              navigation.navigate('Home', { refreshLigas: true });
+            }
+          }
+        ]
       );
-      setNombreLiga('');
-      navigation.goBack(); // volver al Home
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo crear la liga');
     } finally {
@@ -57,9 +65,20 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       setLoading(true);
       // Llamamos al endpoint para agregar miembro
       await LigaService.agregarMiembro(codigoLiga, { userId: 'me' }); // "me" indica usuario actual
-      Alert.alert('Unido', `Te has unido a la liga con código: ${codigoLiga}`);
-      setCodigoLiga('');
-      navigation.goBack();
+      Alert.alert(
+        '✅ Te has unido', 
+        `¡Bienvenido a la liga! Ya formas parte de la competición.`,
+        [
+          {
+            text: 'Ver mis ligas',
+            onPress: () => {
+              setCodigoLiga('');
+              // Navegar de vuelta con parámetro para refrescar
+              navigation.navigate('Home', { refreshLigas: true });
+            }
+          }
+        ]
+      );
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo unir a la liga');
     } finally {

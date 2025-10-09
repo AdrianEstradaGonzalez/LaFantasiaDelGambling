@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,8 @@ import { HomeStyles as styles } from '../../styles/HomeStyles';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService, { type Partido } from '../../services/FutbolService';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { ParamListBase } from '@react-navigation/native';
+import type { ParamListBase, RouteProp } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
 // 🧩 Importa la barra de navegación
 import BottomNavBar from '../navBar/BottomNavBar';
@@ -24,9 +25,10 @@ const { height } = Dimensions.get('window');
 
 type HomeProps = {
   navigation: NativeStackNavigationProp<ParamListBase>;
+  route: RouteProp<any, any>;
 };
 
-export const Home = ({ navigation }: HomeProps) => {
+export const Home = ({ navigation, route }: HomeProps) => {
   const [ligas, setLigas] = useState<Liga[]>([]);
   const [partidos, setPartidos] = useState<Partido[]>([]);
   const [jornadas, setJornadas] = useState<number[]>([]);
@@ -35,36 +37,67 @@ export const Home = ({ navigation }: HomeProps) => {
 
   const scrollRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    const fetchLigasUsuario = async () => {
-      try {
-        setLoading(true);
+  // Función para cargar ligas (separada para reutilizar)
+  const fetchLigasUsuario = useCallback(async () => {
+    try {
+      setLoading(true);
 
-        const userId = await EncryptedStorage.getItem('userId');
-      if (!userId) throw new Error('Usuario no autenticado');
+      // 🔍 DEBUG: Ver todos los datos almacenados
+      const allStoredData = {
+        userId: await EncryptedStorage.getItem('userId'),
+        accessToken: await EncryptedStorage.getItem('accessToken'),
+        refreshToken: await EncryptedStorage.getItem('refreshToken'),
+        session: await EncryptedStorage.getItem('session'),
+        token: await EncryptedStorage.getItem('token'), // por si quedó del registro anterior
+      };
+      console.log('🔍 Home.tsx - Datos almacenados:', allStoredData);
 
-      // 🔹 Obtener ligas del usuario pasando el userId
+      // 1) intenta leer userId directo
+      let userId = await EncryptedStorage.getItem('userId');
+      console.log('🔍 userId directo:', userId);
+
+      // 2) fallback: session
+      if (!userId) {
+        const session = await EncryptedStorage.getItem('session');
+        console.log('🔍 session encontrada:', session);
+        if (session) {
+          const { user } = JSON.parse(session);
+          userId = user?.id ?? null;
+          console.log('🔍 userId desde session:', userId);
+        }
+      }
+
+      if (!userId) {
+        console.warn('❌ No hay userId; redirige a Login si aplica');
+        setLigas([]);
+        return;
+      }
+
+      console.log('✅ UserId encontrado:', userId);
+
+      // 🔹 endpoint público por userId
       const ligasUsuario = await LigaService.obtenerLigasPorUsuario(userId);
 
-        // 🔹 Mapear 'name' -> 'nombre' para que coincida con nuestro tipo
-        const ligasFormateadas: Liga[] = ligasUsuario.map(liga => ({
-          id: liga.id,
-          nombre: liga.name,
-        }));
+      const ligasFormateadas: Liga[] = ligasUsuario.map((liga: any) => ({
+        id: liga.id,
+        nombre: liga.name,
+      }));
 
-        setLigas(ligasFormateadas);
-      } catch (error: any) {
-        console.error('Error al obtener ligas del usuario:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setLigas(ligasFormateadas);
+    } catch (error) {
+      console.error('Error al obtener ligas del usuario:', error);
+      setLigas([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
+  // useEffect inicial para cargar datos
+  useEffect(() => {
     fetchLigasUsuario();
 
     const fetchMatches = async () => {
       try {
-        setLoading(true);
         const allMatches = await FootballService.getAllMatchesWithJornadas();
         setPartidos(allMatches);
 
@@ -79,15 +112,26 @@ export const Home = ({ navigation }: HomeProps) => {
         setJornadaActual(nextJornada);
       } catch (error) {
         console.error('Error al obtener partidos:', error);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchMatches();
     const interval = setInterval(fetchMatches, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchLigasUsuario]);
+
+  // useFocusEffect para refrescar cuando se regresa de CrearLiga
+  useFocusEffect(
+    useCallback(() => {
+      // Si viene con parámetro de refresh, recargar ligas
+      if (route.params?.refreshLigas) {
+        console.log('🔄 Refrescando ligas por parámetro de navegación');
+        fetchLigasUsuario();
+        // Limpiar el parámetro para evitar refresh innecesarios
+        navigation.setParams({ refreshLigas: undefined });
+      }
+    }, [route.params, fetchLigasUsuario, navigation])
+  );
 
   const partidosJornada = partidos.filter((p) => p.jornada === jornadaActual);
 

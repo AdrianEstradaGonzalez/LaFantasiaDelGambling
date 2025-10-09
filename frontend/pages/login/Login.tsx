@@ -50,7 +50,6 @@ const Login: React.FC<Props> = ({ navigation }) => {
   try {
     // Llamada al servicio
     await LoginService.login(data as LoginData);
-
     // Redirigir al Home si todo OK
     navigation.replace('Home');
   } catch (e: any) {
@@ -68,7 +67,7 @@ const Login: React.FC<Props> = ({ navigation }) => {
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+        style={{ flex: 1 }} 
       >
         <ScrollView
           contentContainerStyle={LoginStyles.scroll}
@@ -80,7 +79,7 @@ const Login: React.FC<Props> = ({ navigation }) => {
               style={LoginStyles.logo}
             />
 
-            <Text style={LoginStyles.title}>Bettasy</Text>
+            <Text style={LoginStyles.title}>Bettasy</Text> 
             <Text style={LoginStyles.subtitle}>
               Inicia sesión 
             </Text>

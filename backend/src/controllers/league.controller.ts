@@ -9,7 +9,7 @@ import { AppError } from "../utils/errors";
 export const LeagueController = {
   create: async (req: FastifyRequest, reply: FastifyReply) => {
     // líder = usuario autenticado
-    const leaderId = (req.user as any)?.id;
+    const leaderId = (req.user as any)?.sub || (req.user as any)?.id;
     if (!leaderId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
     const { name } = createLeagueBody.parse((req as any).body);
     const league = await LeagueService.createLeague(name, leaderId);
@@ -17,7 +17,7 @@ export const LeagueController = {
   },
 
   remove: async (req: FastifyRequest, reply: FastifyReply) => {
-    const leaderId = (req.user as any)?.id;
+    const leaderId = (req.user as any)?.sub || (req.user as any)?.id;
     if (!leaderId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
     const { leagueId } = deleteLeagueParams.parse((req as any).params);
     const result = await LeagueService.deleteLeague(leagueId, leaderId);
@@ -46,10 +46,9 @@ export const LeagueController = {
   },
 
 getByUser: async (req: any, reply: any) => {
-  const { userId } = req.params;
-  if (!userId) throw new AppError(400, "BAD_REQUEST", "Falta userId");
-  const leagues = await LeagueService.getLeaguesByUser(userId);
-  reply.send(leagues);
+const { userId } = req.params as { userId: string };
+const leagues = await LeagueService.getLeaguesByUser(userId);
+reply.send(leagues);
 },
 
 };

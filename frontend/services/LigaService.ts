@@ -22,31 +22,94 @@ export class LigaService {
     return await EncryptedStorage.getItem('accessToken');
   }
 
-  // ➕ Crear liga
-  static async crearLiga(data: CreateLeagueData): Promise<Liga> {
-    try {
-      const token = await this.getAccessToken();
-      if (!token) throw new Error('Usuario no autenticado');
+  // 🎯 Mapear errores de API a mensajes amigables
+  private static mapErrorToFriendlyMessage(error: any, statusCode?: number): string {
+    // Si es un error de validación de Zod
+    if (error?.details && Array.isArray(error.details)) {
+      const firstError = error.details[0];
+      return firstError?.message || 'Datos inválidos';
+    }
 
-      const res = await fetch(`${ApiConfig.BASE_URL}/leagues`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      const json = await res.json().catch(() => ({}));
-
-      if (!res.ok) throw new Error(json?.error || 'Error al crear liga');
-
-      return json as Liga;
-    } catch (error: any) {
-      console.error('LigaService.crearLiga:', error);
-      throw new Error(error?.message || 'No se pudo crear la liga');
+    // Errores específicos por código de estado
+    switch (statusCode) {
+      case 400:
+        if (error?.message?.includes('caracteres')) return error.message;
+        return 'Los datos proporcionados no son válidos';
+      case 401:
+        return 'Tu sesión ha expirado. Inicia sesión de nuevo';
+      case 403:
+        return 'No tienes permisos para realizar esta acción';
+      case 404:
+        return 'La liga que buscas no existe';
+      case 409:
+        return 'Ya existe una liga con ese nombre';
+      case 500:
+        return 'Error del servidor. Inténtalo de nuevo más tarde';
+      default:
+        // Mensajes específicos por contenido
+        if (error?.message) {
+          const msg = error.message.toLowerCase();
+          if (msg.includes('name') || msg.includes('nombre')) {
+            if (msg.includes('short') || msg.includes('corto') || msg.includes('caracteres')) {
+              return 'El nombre de la liga debe tener al menos 3 caracteres';
+            }
+            if (msg.includes('long') || msg.includes('largo')) {
+              return 'El nombre de la liga es demasiado largo';
+            }
+            if (msg.includes('invalid') || msg.includes('inválido')) {
+              return 'El nombre de la liga contiene caracteres no permitidos';
+            }
+          }
+          if (msg.includes('duplicate') || msg.includes('exists')) {
+            return 'Ya existe una liga con ese nombre';
+          }
+          return error.message;
+        }
+        return 'Ocurrió un error inesperado';
     }
   }
+
+    // ➕ Crear liga
+static async crearLiga(data: CreateLeagueData): Promise<Liga> {
+  const token = await this.getAccessToken();
+  console.log('🔍 LigaService.crearLiga - Token encontrado:', !!token);
+  if (!token) throw new Error('Usuario no autenticado');
+
+  console.log('🔍 LigaService.crearLiga - URL:', `${ApiConfig.BASE_URL}/leagues`);
+  console.log('🔍 LigaService.crearLiga - Headers:', { 'Authorization': `Bearer ${token.substring(0, 20)}...` });
+
+  const res = await fetch(`${ApiConfig.BASE_URL}/leagues`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`, 
+    },
+    body: JSON.stringify(data),
+  });
+
+  console.log('🔍 LigaService.crearLiga - Status:', res.status);
+
+  const json = await res.json().catch(() => ({}));
+  console.log('🔍 LigaService.crearLiga - Respuesta:', json);
+
+  if (!res.ok) {
+    // Usar mensajes amigables
+    const friendlyMessage = this.mapErrorToFriendlyMessage(json, res.status);
+    
+    // Si es 401, limpiar tokens
+    if (res.status === 401) {
+      console.log('🔍 LigaService.crearLiga - Token expirado, limpiando storage');
+      await EncryptedStorage.removeItem('accessToken');
+      await EncryptedStorage.removeItem('refreshToken');
+      await EncryptedStorage.removeItem('userId');
+    }
+    
+    throw new Error(friendlyMessage);
+  }
+
+  return json as Liga;
+}
+
 
   // ❌ Eliminar liga
   static async eliminarLiga(leagueId: string): Promise<void> {
@@ -144,7 +207,7 @@ export class LigaService {
       const token = await this.getAccessToken();
       if (!token) throw new Error('Usuario no autenticado');
 
-      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/me/${userId}`, {
+      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/user/${userId}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });

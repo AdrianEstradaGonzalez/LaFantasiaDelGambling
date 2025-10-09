@@ -9,7 +9,7 @@ import  Login  from '../pages/login/Login';
 import  Register  from '../pages/register/Register';
 
 export type RootStackParamList = {
-  Home: undefined;
+  Home: { refreshLigas?: boolean } | undefined;
   CrearLiga: undefined;
   Login: undefined;
   Register: undefined;
