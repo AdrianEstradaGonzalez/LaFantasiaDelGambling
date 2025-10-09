@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,14 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { HomeStyles as styles } from '../../styles/HomeStyles';
+import LinearGradient from 'react-native-linear-gradient';
 import FootballService, { type Partido } from '../../services/FutbolService';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase } from '@react-navigation/native';
 
-// 📦 Icono de logout
-const logoutIcon = require('../../assets/iconos/logout.png');
+// 🧩 Importa la barra de navegación
+import BottomNavBar from '../navBar/BottomNavBar';
 
 type Liga = { id: string; nombre: string };
 const { height } = Dimensions.get('window');
@@ -30,6 +30,9 @@ export const Home = ({ navigation }: HomeProps) => {
   const [jornadas, setJornadas] = useState<number[]>([]);
   const [jornadaActual, setJornadaActual] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // 👇 para poder hacer scroll al inicio desde el botón Home
+  const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     setLigas([
@@ -83,111 +86,171 @@ export const Home = ({ navigation }: HomeProps) => {
     });
   };
 
+  // 👉 Maneja el botón "Home" (sube al inicio del scroll)
+  const handleHomePress = () => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
+
+  // 👉 Maneja el botón "Logout"
+  const handleLogoutPress = () => {
+    navigation.replace('Login');
+  };
+
   return (
     <LinearGradient
-      colors={['#0a0a0a', '#1c1c1c', '#2a2d32']}
+      colors={['#101011ff', '#0f2f45']}
       start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
+      end={{ x: 0, y: 1 }}
+      style={{ flex: 1 }}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mis Ligas</Text>
-        <TouchableOpacity style={styles.createButton} onPress={() => console.log('Crear liga')}>
-          <Text style={styles.createButtonText}>Crear Liga</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Ligas */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.ligasScroll}
-        contentContainerStyle={{ paddingHorizontal: 10 }}
+        ref={scrollRef}
+        style={styles.container}
+        contentContainerStyle={{ paddingBottom: 140 }}
       >
-        {ligas.map((liga) => (
-          <View key={liga.id} style={styles.ligaCard}>
-            <Text style={styles.ligaName}>{liga.nombre}</Text>
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Tabla de partidos */}
-      <View style={styles.tableContainer}>
-        <View style={styles.tableHeader}>
-          <TouchableOpacity onPress={jornadaAnterior} disabled={loading}>
-            <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>{'<'}</Text>
-          </TouchableOpacity>
-
-          <Text style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}>
-            Jornada {jornadaActual}
-          </Text>
-
-          <TouchableOpacity onPress={jornadaSiguiente} disabled={loading}>
-            <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>{'>'}</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Mis Ligas</Text>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => console.log('Crear liga')}
+          >
+            <Text style={styles.createButtonText}>Crear Liga</Text>
           </TouchableOpacity>
         </View>
 
-        {loading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color="#18395a" />
-          </View>
-        ) : (
-          <ScrollView>
-            {partidosJornada.length > 0 ? (
-              partidosJornada.map((partido, index) => (
-                <View
-                  key={partido.id}
+        {/* Ligas */}
+        <View style={styles.ligasList}>
+          {ligas.map((liga) => (
+            <TouchableOpacity
+              key={liga.id}
+              style={styles.ligaCard}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.ligaName}>{liga.nombre}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Jornadas */}
+        <View style={styles.calendarContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.jornadasScroll}
+            contentContainerStyle={{ paddingHorizontal: 12 }}
+          >
+            {jornadas.map((j) => (
+              <TouchableOpacity
+                key={j}
+                style={[
+                  styles.jornadaPill,
+                  jornadaActual === j && styles.jornadaActive,
+                ]}
+                onPress={() => setJornadaActual(j)}
+                disabled={loading}
+              >
+                <Text
                   style={[
-                    styles.tableRow,
-                    index % 2 ? styles.tableRowAlt : null,
+                    styles.jornadaText,
+                    jornadaActual === j && styles.jornadaTextActive,
                   ]}
                 >
-                  <Image
-                    source={{ uri: partido.localCrest }}
-                    style={styles.crest}
-                  />
-                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
-                    {partido.local}
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.tableCell,
-                      styles.scoreCell,
-                      { flex: 3, textAlign: 'center' },
-                    ]}
-                  >
-                    {partido.finished
-                      ? partido.resultado
-                      : `${partido.fecha || ''} ${partido.hora || ''}`}
-                  </Text>
-
-                  <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
-                    {partido.visitante}
-                  </Text>
-                  <Image
-                    source={{ uri: partido.visitanteCrest }}
-                    style={styles.crest}
-                  />
-                </View>
-              ))
-            ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No hay partidos para esta jornada.</Text>
-              </View>
-            )}
+                  J {j}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
-        )}
-      </View>
+        </View>
 
-      {/* Logout */}
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={() => navigation.replace('Login')}
-      >
-        <Image source={logoutIcon} style={styles.logoutIcon} />
-      </TouchableOpacity>
+        {/* Tabla de partidos */}
+        <View style={styles.tableContainer}>
+          <View
+            style={[
+              styles.tableHeader,
+              {
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                paddingHorizontal: 10,
+              },
+            ]}
+          >
+            <TouchableOpacity onPress={jornadaAnterior} disabled={loading}>
+              <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>
+                {'<'}
+              </Text>
+            </TouchableOpacity>
+
+            <Text
+              style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}
+            >
+              Jornada {jornadaActual}
+            </Text>
+
+            <TouchableOpacity onPress={jornadaSiguiente} disabled={loading}>
+              <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>
+                {'>'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {loading ? (
+            <View
+              style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+            >
+              <ActivityIndicator size="large" color="#18395a" />
+            </View>
+          ) : (
+            <View>
+              {partidosJornada.length > 0 ? (
+                partidosJornada.slice(0, 10).map((partido) => (
+                  <View key={partido.id} style={styles.tableRow}>
+                    <Image
+                      source={{ uri: partido.localCrest }}
+                      style={{ width: 40, height: 40, marginRight: 8 }}
+                    />
+                    <Text
+                      style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}
+                    >
+                      {partido.local}
+                    </Text>
+
+                    <Text
+                      style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}
+                    >
+                      {partido.finished
+                        ? partido.resultado
+                        : `${partido.fecha} ${partido.hora}`}
+                    </Text>
+
+                    <Text
+                      style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}
+                    >
+                      {partido.visitante}
+                    </Text>
+                    <Image
+                      source={{ uri: partido.visitanteCrest }}
+                      style={{ width: 40, height: 40, marginLeft: 8 }}
+                    />
+                  </View>
+                ))
+              ) : (
+                <View style={{ padding: 20 }}>
+                  <Text style={{ textAlign: 'center', color: '#ccc' }}>
+                    No hay partidos para esta jornada.
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+
+      {/* Barra de navegación fija */}
+      <BottomNavBar
+        onHomePress={handleHomePress}
+        onLogoutPress={handleLogoutPress}
+      />
     </LinearGradient>
   );
-}; 
+};
