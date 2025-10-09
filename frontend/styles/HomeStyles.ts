@@ -6,7 +6,7 @@ export const HomeStyles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? 48 : 64,
-    backgroundColor: '#18395a',
+    backgroundColor: '#2c2a2aff',
   },
 
   // Header
@@ -86,7 +86,6 @@ export const HomeStyles = StyleSheet.create({
     marginBottom: 18,
   },
   jornadasScroll: {
-    marginTop: 8,
     paddingVertical: 6,
   },
   jornadaPill: {
@@ -123,7 +122,6 @@ export const HomeStyles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
     marginLeft: 20,
-    marginBottom: 12,
   },
 
   tableContainer: {
@@ -131,18 +129,16 @@ export const HomeStyles = StyleSheet.create({
     borderRadius: 0,
     overflow: 'hidden',
     backgroundColor: '#ffffff',
-    borderWidth: 1,
+    borderWidth: 0,
     borderColor: 'rgba(0,0,0,0.06)',
     elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
     paddingVertical: 8,
   },
 
   tableHeader: {
-    flexDirection: 'row',
     backgroundColor: '#1f6a44',
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -169,7 +165,6 @@ export const HomeStyles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Logout button (floating)
   logoutButton: {
     position: 'absolute',
     bottom: 28,

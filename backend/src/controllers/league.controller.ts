@@ -46,10 +46,11 @@ export const LeagueController = {
   },
 
   getByUser: async (req: any, reply: any) => {
-  const userId = req.user?.id;
-  if (!userId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
+  const userId = req.query.userId as string; // obtenemos el userId del frontend
+  if (!userId) throw new AppError(400, "BAD_REQUEST", "Falta userId");
   const leagues = await LeagueService.getLeaguesByUser(userId);
   reply.send(leagues);
 },
+
 
 };
