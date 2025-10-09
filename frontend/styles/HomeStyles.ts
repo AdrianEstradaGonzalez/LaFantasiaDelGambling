@@ -27,7 +27,6 @@ export const HomeStyles = StyleSheet.create({
     backgroundColor: '#1f6a44',
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
@@ -36,7 +35,7 @@ export const HomeStyles = StyleSheet.create({
   },
   createButtonText: {
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '400',
     fontSize: 20,
   },
 
