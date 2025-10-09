@@ -10,6 +10,8 @@ const leagueRoutes: FastifyPluginAsync = async (app) => {
   app.post("/:leagueId/members", LeagueController.addMember);     // añadir usuario
   app.delete("/:leagueId/members/:userId", LeagueController.removeMember); // quitar usuario
   app.get("/:leagueId/members", LeagueController.listMembers);    // listar miembros
+  app.get("/me", LeagueController.getByUser);
+
 };
 
 export default leagueRoutes;

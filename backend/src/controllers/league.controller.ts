@@ -44,4 +44,12 @@ export const LeagueController = {
     const members = await LeagueService.listMembers(leagueId);
     reply.send(members);
   },
+
+  getByUser: async (req: any, reply: any) => {
+  const userId = req.user?.id;
+  if (!userId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
+  const leagues = await LeagueService.getLeaguesByUser(userId);
+  reply.send(leagues);
+},
+
 };
