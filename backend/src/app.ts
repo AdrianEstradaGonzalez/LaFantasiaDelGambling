@@ -9,7 +9,7 @@ import { authRoutes } from "./routes/auth.routes.js";
 import { env } from "./config/env.js";
 import { AppError } from "./utils/errors.js";
 import { ZodError } from "zod";
-
+import leagueRoutes from "./routes/league.routes";
 export async function buildApp() {
   const app = Fastify({
     logger: {
@@ -24,9 +24,9 @@ export async function buildApp() {
   });
 
   // Plugins de seguridad
-  await app.register(cors, { 
+  await app.register(cors, {
     origin: env.APP_ORIGIN,
-    credentials: true 
+    credentials: true
   });
   await app.register(helmet);
   await app.register(rateLimit, {
@@ -34,7 +34,7 @@ export async function buildApp() {
     timeWindow: "1 minute",
     allowList: ["127.0.0.1"],
   });
-  await app.register(jwt, { 
+  await app.register(jwt, {
     secret: env.JWT_SECRET,
     sign: {
       expiresIn: "15m"
@@ -68,9 +68,9 @@ export async function buildApp() {
 
   // Auth guard
   app.decorate("auth", async (req: any, reply: any) => {
-    try { 
-      await req.jwtVerify(); 
-    } catch (err) { 
+    try {
+      await req.jwtVerify();
+    } catch (err) {
       throw new AppError(401, "UNAUTHORIZED", "Token inválido o expirado");
     }
   });
@@ -102,22 +102,28 @@ export async function buildApp() {
   });
 
   // Rutas
-  app.get("/health", async () => ({ 
-    status: "ok", 
-    timestamp: new Date().toISOString() 
+  app.get("/health", async () => ({
+    status: "ok",
+    timestamp: new Date().toISOString()
   }));
-  
+
   await app.register(authRoutes, { prefix: "/auth" });
+  await app.register(leagueRoutes, { prefix: "/leagues" });
 
   return app;
 }
 
 declare module "fastify" {
-  interface FastifyInstance { 
-    auth: any 
+  interface FastifyInstance {
+    auth: any
   }
-  interface FastifyRequest {
-    jwtVerify: () => Promise<void>;
-    user?: { id: string; email: string };
+  // Do not redeclare 'user' here to avoid conflicts with @fastify/jwt
+}
+
+// If you want to type the JWT payload, augment @fastify/jwt instead:
+declare module "@fastify/jwt" {
+  interface FastifyJWT {
+    payload: { id: string; email: string };
+    user: { id: string; email: string };
   }
 }

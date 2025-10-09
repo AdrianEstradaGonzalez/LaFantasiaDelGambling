@@ -11,11 +11,13 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
-  name      String? 
+  name      String?
   resetCodes PasswordResetCode[]
+
+  leaguesLed   League[]       @relation("LeagueLeader")
+  memberships  LeagueMember[]
   @@map("user")
 }
-
 model PasswordResetCode {
   id        String   @id @default(cuid())
   userId    String?
@@ -30,4 +32,26 @@ model PasswordResetCode {
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([email, expiresAt, used])
+}
+
+model League {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  leaderId  String
+  leader    User     @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members   LeagueMember[]
+  createdAt DateTime @default(now())
+}
+
+model LeagueMember {
+  leagueId String
+  userId   String
+  points   Int      @default(0)
+  joinedAt DateTime @default(now())
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([leagueId, userId])
+  @@index([userId])
 }
