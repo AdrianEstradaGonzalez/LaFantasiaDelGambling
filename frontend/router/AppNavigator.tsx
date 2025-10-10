@@ -8,6 +8,7 @@ import { CrearLiga } from '../pages/liga/CrearLiga';
 import Login from '../pages/login/Login';
 import Register from '../pages/register/Register';
 import Clasificacion from '../pages/liga/Clasificacion';
+import { InvitarAmigos } from '../pages/liga/InvitarAmigos';
 
 export type RootStackParamList = {
   Home: { refreshLigas?: boolean } | undefined;
@@ -15,6 +16,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Clasificacion: { ligaId: string, ligaName: string};
+  InvitarAmigos: { ligaNombre: string, codigo: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -41,6 +43,9 @@ export const AppNavigator = () => {
           animation: 'slide_from_right', // 👈 animación lateral
         }} />
         <Stack.Screen name="Clasificacion" component={Clasificacion} options={{
+          animation: 'slide_from_right', // 👈 animación lateral
+        }} />
+        <Stack.Screen name="InvitarAmigos" component={InvitarAmigos} options={{
           animation: 'slide_from_right', // 👈 animación lateral
         }} />
       </Stack.Navigator>

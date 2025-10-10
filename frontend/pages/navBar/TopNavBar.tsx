@@ -7,7 +7,7 @@ import styles from '../../styles/NavBarStyles';
 // 🔙 Icono de flecha (puedes cambiar la ruta si usas otro)
 const backIcon = require('../../assets/iconos/backIcon.png');
 
-const TopNavBar: React.FC<{ title?: string }> = ({ title }) => {
+const TopNavBar: React.FC<{ title?: string }> = ({ }) => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
 
   // 👉 Acción para volver a Home

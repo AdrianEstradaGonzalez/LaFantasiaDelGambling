@@ -6,8 +6,8 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { LigaService } from '../../services/LigaService';
-import BottomNavBar from '../navBar/BottomNavBar';
 import LigaNavBar from '../navBar/LigaNavBar';
+import LigaTopNavBar from '../navBar/LigaTopNavBar';
 
 type UsuarioClasificacion = {
   id: string;
@@ -63,6 +63,10 @@ export const Clasificacion = () => {
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
+      <LigaTopNavBar
+      nombreLiga={ligaNombre}
+      onInvitePress={() => navigation.navigate('InvitarAmigos', { ligaId })}
+    />
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{'LIGA BETTASY ' + ligaNombre}</Text>
