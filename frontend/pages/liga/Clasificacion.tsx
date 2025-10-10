@@ -26,6 +26,7 @@ export const Clasificacion = () => {
 
   const [jugadores, setJugadores] = useState<UsuarioClasificacion[]>([]);
   const [ligaNombre, setLigaNombre] = useState<string>(ligaName);
+  const [codigoLiga, setCodigoLiga] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ export const Clasificacion = () => {
         setLoading(true);
 
         const response = await LigaService.listarMiembros(ligaId);
+        console.log('🔍 Clasificacion - Response completa:', JSON.stringify(response, null, 2));
 
         const dataOrdenada = response
           .sort((a: any, b: any) => b.points - a.points)
@@ -46,6 +48,15 @@ export const Clasificacion = () => {
 
         setJugadores(dataOrdenada);
         setLigaNombre(ligaNombre);
+        
+        // Obtener código de liga del primer miembro (todos tienen la misma liga)
+        if (response.length > 0 && response[0].league?.code) {
+          console.log('✅ Código de liga encontrado:', response[0].league.code);
+          setCodigoLiga(response[0].league.code);
+        } else {
+          console.warn('❌ No se encontró código de liga en la respuesta');
+          console.log('Estructura del primer elemento:', response[0]);
+        }
       } catch (err) {
         console.error('Error al obtener clasificación:', err);
       } finally {
@@ -65,7 +76,10 @@ export const Clasificacion = () => {
     >
       <LigaTopNavBar
       nombreLiga={ligaNombre}
-      onInvitePress={() => navigation.navigate('InvitarAmigos', { ligaId })}
+      onInvitePress={() => navigation.navigate('InvitarAmigos', { 
+        ligaNombre: ligaNombre, 
+        codigo: codigoLiga 
+      })}
     />
       {/* Header */}
       <View style={styles.header}>

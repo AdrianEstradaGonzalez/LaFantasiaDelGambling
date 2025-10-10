@@ -33,20 +33,14 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
     try {
       setLoading(true);
       const nuevaLiga = await LigaService.crearLiga({ name: nombreLiga });
-      Alert.alert(
-        '🎉 Liga creada',
-        `Tu liga "${nuevaLiga.name}" ha sido creada correctamente. ¡Ya puedes empezar a invitar jugadores!`,
-        [
-          {
-            text: 'Ver mis ligas',
-            onPress: () => {
-              setNombreLiga('');
-              // Navegar de vuelta con parámetro para refrescar
-              navigation.navigate('Home', { refreshLigas: true });
-            }
-          }
-        ]
-      );
+      
+      // Limpiar el campo y navegar directamente a InvitarAmigos
+      setNombreLiga('');
+      navigation.navigate('InvitarAmigos', { 
+        ligaNombre: nuevaLiga.name, 
+        codigo: nuevaLiga.code,
+        ligaId: nuevaLiga.id
+      });
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo crear la liga');
     } finally {
@@ -63,20 +57,14 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
 
     try {
       setLoading(true);
-      await LigaService.agregarMiembro(codigoLiga, { userId: 'me' });
-      Alert.alert(
-        '✅ Te has unido',
-        `¡Bienvenido a la liga! Ya formas parte de la competición.`,
-        [
-          {
-            text: 'Ver mis ligas',
-            onPress: () => {
-              setCodigoLiga('');
-              navigation.navigate('Home', { refreshLigas: true });
-            }
-          }
-        ]
-      );
+      const ligaResponse = await LigaService.unirsePorCodigo(codigoLiga.toUpperCase());
+      
+      // Limpiar el campo y navegar directamente a Clasificacion de la liga
+      setCodigoLiga('');
+      navigation.navigate('Clasificacion', { 
+        ligaId: ligaResponse.league.id, 
+        ligaName: ligaResponse.league.name
+      });
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo unir a la liga');
     } finally {
@@ -91,7 +79,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
-       <TopNavBar />
+       <TopNavBar backTo="Home" />
       <ScrollView contentContainerStyle={styles.container}>
        
         {/* Crear liga privada */}

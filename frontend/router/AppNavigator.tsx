@@ -16,7 +16,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Clasificacion: { ligaId: string, ligaName: string};
-  InvitarAmigos: { ligaNombre: string, codigo: string };
+  InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

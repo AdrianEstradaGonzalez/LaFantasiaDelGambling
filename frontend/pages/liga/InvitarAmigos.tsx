@@ -22,14 +22,14 @@ type InvitarRouteProp = RouteProp<RootStackParamList, 'InvitarAmigos'>;
 
 export const InvitarAmigos: React.FC = () => {
   const route = useRoute<InvitarRouteProp>();
-  const { ligaNombre, codigo } = route.params;
+  const { ligaNombre, codigo, ligaId } = route.params;
+  console.log('🔍 InvitarAmigos - Parámetros recibidos:', { ligaNombre, codigo, ligaId });
 
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
     Clipboard.setString(codigo);
     setCopied(true);
-    Alert.alert('Código copiado', 'El código se ha copiado al portapapeles.');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -51,7 +51,7 @@ export const InvitarAmigos: React.FC = () => {
       style={{ flex: 1 }}
     >
       {/* 🔝 Barra superior */}
-      <TopNavBar />
+      <TopNavBar backTo="Clasificacion" ligaId={ligaId} ligaName={ligaNombre} />
 
       <ScrollView
         contentContainerStyle={styles.container}
@@ -77,7 +77,7 @@ export const InvitarAmigos: React.FC = () => {
             style={{
               fontSize: Typography.sizes['2xl'],
               fontWeight: Typography.weights.bold,
-              color: Colors.primary[600],
+              color: Colors.primary[200],
               textAlign: 'center',
               marginVertical: Spacing.lg,
               letterSpacing: 2,
@@ -93,17 +93,9 @@ export const InvitarAmigos: React.FC = () => {
               activeOpacity={0.8}
             >
               <Image
-                source={copied ? undefined : require('../../assets/iconos/portapapeles.png')}
+                source={require('../../assets/iconos/portapapeles.png')}
                 style={{ width: 24, height: 24, marginRight: 8, tintColor: Colors.text.inverse }}
               />
-              {copied && (
-                <Ionicons
-                  name="checkmark"
-                  size={24}
-                  color={Colors.text.inverse}
-                  style={{ marginRight: 8 }}
-                />
-              )}
               <Text style={styles.primaryButtonText}>
                 {copied ? 'Copiado' : 'Copiar código'}
               </Text>

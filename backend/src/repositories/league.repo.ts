@@ -2,10 +2,11 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export const LeagueRepo = {
-    create: (name: string, leaderId: string) =>
+    create: (name: string, leaderId: string, code: string) =>
         prisma.league.create({
             data: {
                 name,
+                code,
                 leaderId,
                 members: { create: { userId: leaderId, points: 0 } },
             },
@@ -28,6 +29,12 @@ export const LeagueRepo = {
                 members: { select: { userId: true, points: true } },
             },
             orderBy: { createdAt: "desc" },
+        }),
+
+    getByCode: (code: string) =>
+        prisma.league.findFirst({
+            where: { code },
+            include: { leader: true, members: { include: { user: true } } },
         }),
 
 };

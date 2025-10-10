@@ -37,6 +37,7 @@ model PasswordResetCode {
 model League {
   id        String   @id @default(cuid())
   name      String   @unique
+  code      String   @unique
   leaderId  String
   leader    User     @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
   members   LeagueMember[]

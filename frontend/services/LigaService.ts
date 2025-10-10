@@ -69,8 +69,8 @@ export class LigaService {
     }
   }
 
-    // ➕ Crear liga
-static async crearLiga(data: CreateLeagueData): Promise<Liga> {
+    // ➕ Crear liga (devuelve liga con código generado)
+static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }> {
   const token = await this.getAccessToken();
   console.log('🔍 LigaService.crearLiga - Token encontrado:', !!token);
   if (!token) throw new Error('Usuario no autenticado');
@@ -113,7 +113,7 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga> {
     throw new Error(friendlyMessage);
   }
 
-  return json as Liga;
+  return json as Liga & { code: string };
 }
 
 
@@ -161,6 +161,38 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga> {
     } catch (error: any) {
       console.warn('LigaService.agregarMiembro:', error);
       throw new Error(error?.message || 'No se pudo agregar el miembro');
+    }
+  }
+
+  // 👥 Unirse a liga por código
+  static async unirsePorCodigo(codigo: string) {
+    try {
+      const token = await this.getAccessToken();
+      if (!token) throw new Error('Usuario no autenticado');
+
+      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/join/${codigo}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const friendlyMessage = this.mapErrorToFriendlyMessage(json, res.status);
+        throw new Error(friendlyMessage);
+      }
+
+      return json;
+    } catch (error: any) {
+      console.warn('LigaService.unirsePorCodigo:', error);
+      
+      if (error.message.includes('Código de liga inválido')) {
+        throw new Error('El código de liga no existe o es incorrecto');
+      }
+      
+      throw new Error(error?.message || 'No se pudo unir a la liga');
     }
   }
 
