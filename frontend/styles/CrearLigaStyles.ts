@@ -6,9 +6,8 @@ const { width } = Dimensions.get('window');
 export const CrearLigaStyles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingTop: Platform.OS === 'android' ? 60 : 80,
+    paddingTop: Platform.OS === 'android' ? 80 : 100,
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 120, // Espacio para navbar
   },
 
   // 🎯 Header Elegante
@@ -24,6 +23,7 @@ export const CrearLigaStyles = StyleSheet.create({
     letterSpacing: 1,
     textAlign: 'center',
     marginBottom: Spacing.lg,
+    marginTop: Spacing.md,
   },
 
   subtitle: {

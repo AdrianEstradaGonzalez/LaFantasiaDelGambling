@@ -13,6 +13,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase } from '@react-navigation/native';
 import BottomNavBar from '../navBar/BottomNavBar';
 import { LigaService } from '../../services/LigaService';
+import TopNavBar from '../navBar/TopNavBar';
 
 type CrearLigaProps = {
   navigation: NativeStackNavigationProp<ParamListBase>;
@@ -90,15 +91,9 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
+       <TopNavBar />
       <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Gestión de Ligas</Text>
-          <Text style={styles.subtitle}>
-            Crea tu propia liga o únete a una existente
-          </Text>
-        </View>
-
+       
         {/* Crear liga privada */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -177,8 +172,6 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
             </Text>
           </View>
         </View>
-
-        <BottomNavBar />
       </ScrollView>
     </LinearGradient>
   );

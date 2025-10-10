@@ -23,10 +23,10 @@ export const HomeStyles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   createButton: {
-    backgroundColor: '#475569',
+    backgroundColor: '#0892D0',
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#334155',
     shadowColor: '#000',
@@ -139,7 +139,7 @@ export const HomeStyles = StyleSheet.create({
   },
 
   tableHeader: {
-    backgroundColor: '#334155',
+    backgroundColor: '#0892D0',
     paddingVertical: 12,
     paddingHorizontal: 12,
     alignItems: 'center',

@@ -25,10 +25,17 @@ navBar: {
   elevation: 6,
 },
 
+
+
    // 🏠 Home centrado en la barra
   homeButton: {
     position: 'absolute',
     left: '50%',
+  },
+
+  arrow: {
+    position: 'absolute',
+    left: '1%',
   },
 
   homeIcon: {

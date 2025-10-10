@@ -34,6 +34,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
   const [jornadas, setJornadas] = useState<number[]>([]);
   const [jornadaActual, setJornadaActual] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadingPartidos, setLoadingPartidos] = useState<boolean>(true);
 
   const scrollRef = useRef<ScrollView>(null);
   const jornadasScrollRef = useRef<ScrollView>(null);
@@ -101,37 +102,37 @@ export const Home = ({ navigation, route }: HomeProps) => {
     fetchLigasUsuario();
 
     const fetchMatches = async () => {
-      try {
-        setLoading(true);
-        const allMatches = await FootballService.getAllMatchesWithJornadas();
-        setPartidos(allMatches);
+  try {
+    setLoadingPartidos(true); // 👈 solo marcamos loading de partidos
+    const allMatches = await FootballService.getAllMatchesWithJornadas();
+    setPartidos(allMatches);
 
-        const jornadasDisponibles = Array.from(
-          new Set(allMatches.map((p) => p.jornada))
-        )
-          .filter((j) => j != null)
-          .sort((a, b) => a - b);
-        setJornadas(jornadasDisponibles);
+    const jornadasDisponibles = Array.from(
+      new Set(allMatches.map((p) => p.jornada))
+    )
+      .filter((j) => j != null)
+      .sort((a, b) => a - b);
+    setJornadas(jornadasDisponibles);
 
-        // Mantener la jornada actual si sigue existiendo; si no, elegir próxima no iniciada; si tampoco, la primera disponible
-        const keepCurrent =
-          jornadaActual && jornadasDisponibles.includes(jornadaActual)
-            ? jornadaActual
-            : undefined;
-        const upcoming = allMatches.find((p) => p.notStarted)?.jornada;
-        const fallback = jornadasDisponibles[0];
-        const nextJornada = keepCurrent ?? upcoming ?? fallback;
-        if (nextJornada != null) setJornadaActual(nextJornada);
-      } catch (error) {
-        console.warn('Error al obtener partidos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // 🔹 Determinar jornada por defecto
+    const upcoming = allMatches.find((p) => p.notStarted)?.jornada;
+    const fallback = jornadasDisponibles[0];
+
+    if (jornadaActual === 1) {
+      const nextJornada = upcoming ?? fallback;
+      if (nextJornada != null) setJornadaActual(nextJornada);
+    } else if (!jornadasDisponibles.includes(jornadaActual)) {
+      const nextJornada = upcoming ?? fallback;
+      if (nextJornada != null) setJornadaActual(nextJornada);
+    }
+  } catch (error) {
+    console.warn('Error al obtener partidos:', error);
+  } finally {
+    setLoadingPartidos(false); // 👈 desactivamos solo el spinner de partidos
+  }
+};
 
     fetchMatches();
-    const interval = setInterval(fetchMatches, 60000);
-    return () => clearInterval(interval);
   }, [fetchLigasUsuario]);
 
 
@@ -295,7 +296,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
             <Text
               style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}
             >
-              Partidos de la jornada {jornadaActual}
+              Jornada {jornadaActual}
             </Text>
 
             <TouchableOpacity onPress={jornadaSiguiente} disabled={loading}>
@@ -303,7 +304,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
             </TouchableOpacity>
           </View>
 
-          {loading ? (
+          {loadingPartidos ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               <ActivityIndicator size="large" color="#94a3b8" />
             </View>
