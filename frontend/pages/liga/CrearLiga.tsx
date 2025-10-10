@@ -23,7 +23,6 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   const [codigoLiga, setCodigoLiga] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ➕ Crear liga privada
   const handleCrearLiga = async () => {
     if (!nombreLiga.trim()) {
       Alert.alert('Error', 'Por favor, introduce un nombre para la liga.');
@@ -63,8 +62,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
 
     try {
       setLoading(true);
-      // Llamamos al endpoint para agregar miembro
-      await LigaService.agregarMiembro(codigoLiga, { userId: 'me' }); // "me" indica usuario actual
+      await LigaService.agregarMiembro(codigoLiga, { userId: 'me' });
       Alert.alert(
         '✅ Te has unido',
         `¡Bienvenido a la liga! Ya formas parte de la competición.`,
@@ -73,7 +71,6 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
             text: 'Ver mis ligas',
             onPress: () => {
               setCodigoLiga('');
-              // Navegar de vuelta con parámetro para refrescar
               navigation.navigate('Home', { refreshLigas: true });
             }
           }
@@ -88,52 +85,97 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
 
   return (
     <LinearGradient
-      colors={['#101011ff', '#101011ff']}
+      colors={['#181818ff', '#181818ff']}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
       <ScrollView contentContainerStyle={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Gestión de Ligas</Text>
+          <Text style={styles.subtitle}>
+            Crea tu propia liga o únete a una existente
+          </Text>
+        </View>
+
         {/* Crear liga privada */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Crea una liga privada</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre de la liga"
-            placeholderTextColor="#aaa"
-            value={nombreLiga}
-            onChangeText={setNombreLiga}
-          />
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Crear Liga Privada</Text>
+          </View>
+          <Text style={styles.sectionDescription}>
+            Crea tu propia liga y compite con amigos
+          </Text>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Nombre de la liga</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ej: TormentaImperfecta"
+              placeholderTextColor="#94a3b8"
+              value={nombreLiga}
+              onChangeText={setNombreLiga}
+            />
+          </View>
+
           <TouchableOpacity
-            style={styles.ligaButton}
+            style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
             onPress={handleCrearLiga}
             disabled={loading}
+            activeOpacity={0.8}
           >
-            <Text style={styles.ligaButtonText}>
-              {loading ? 'Creando...' : 'Crear liga privada'}
+            <Text style={[styles.primaryButtonText, loading && styles.primaryButtonTextDisabled]}>
+              {loading ? 'Creando...' : 'Crear Liga'}
             </Text>
           </TouchableOpacity>
+
+          <View style={styles.tipsContainer}>
+            <Text style={styles.tipsTitle}>💡 Consejo</Text>
+            <Text style={styles.tipsText}>
+              Una vez creada, podrás compartir el código de la liga con tus amigos para que se unan.
+            </Text>
+          </View>
         </View>
 
         {/* Unirse a liga */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Únete a una liga existente</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Código de liga"
-            placeholderTextColor="#aaa"
-            value={codigoLiga}
-            onChangeText={setCodigoLiga}
-          />
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Unirse a Liga</Text>
+          </View>
+          <Text style={styles.sectionDescription}>
+            ¿Tienes un código de liga? Únete aquí
+          </Text>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>Código de liga</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ingresa el código"
+              placeholderTextColor="#94a3b8"
+              value={codigoLiga}
+              onChangeText={setCodigoLiga}
+              autoCapitalize="characters"
+            />
+          </View>
+
           <TouchableOpacity
-            style={styles.ligaButton}
+            style={[styles.secondaryButton, loading && styles.primaryButtonDisabled]}
             onPress={handleUnirseLiga}
             disabled={loading}
+            activeOpacity={0.8}
           >
-            <Text style={styles.ligaButtonText}>
-              {loading ? 'Uniendo...' : 'Unirse a liga'}
+            <Text style={[styles.secondaryButtonText, loading && styles.primaryButtonTextDisabled]}>
+              {loading ? 'Uniéndose...' : 'Unirse a Liga'}
             </Text>
           </TouchableOpacity>
+
+          <View style={styles.tipsContainer}>
+            <Text style={styles.tipsTitle}>ℹ️ Información</Text>
+            <Text style={styles.tipsText}>
+              Pide a tu amigo el código de la liga para poder participar en la competición.
+            </Text>
+          </View>
         </View>
 
         <BottomNavBar />

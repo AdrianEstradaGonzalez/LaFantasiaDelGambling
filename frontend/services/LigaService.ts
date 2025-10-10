@@ -78,6 +78,9 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga> {
   console.log('🔍 LigaService.crearLiga - URL:', `${ApiConfig.BASE_URL}/leagues`);
   console.log('🔍 LigaService.crearLiga - Headers:', { 'Authorization': `Bearer ${token.substring(0, 20)}...` });
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
   const res = await fetch(`${ApiConfig.BASE_URL}/leagues`, {
     method: 'POST',
     headers: {
@@ -85,7 +88,10 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga> {
       'Authorization': `Bearer ${token}`, 
     },
     body: JSON.stringify(data),
+    signal: controller.signal,
   });
+
+  clearTimeout(timeoutId);
 
   console.log('🔍 LigaService.crearLiga - Status:', res.status);
 
@@ -127,7 +133,7 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga> {
         throw new Error(json?.error || 'Error al eliminar la liga');
       }
     } catch (error: any) {
-      console.error('LigaService.eliminarLiga:', error);
+      console.warn('LigaService.eliminarLiga:', error);
       throw new Error(error?.message || 'No se pudo eliminar la liga');
     }
   }
@@ -153,7 +159,7 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga> {
 
       return json;
     } catch (error: any) {
-      console.error('LigaService.agregarMiembro:', error);
+      console.warn('LigaService.agregarMiembro:', error);
       throw new Error(error?.message || 'No se pudo agregar el miembro');
     }
   }
@@ -174,7 +180,7 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga> {
         throw new Error(json?.error || 'Error al eliminar miembro');
       }
     } catch (error: any) {
-      console.error('LigaService.quitarMiembro:', error);
+      console.warn('LigaService.quitarMiembro:', error);
       throw new Error(error?.message || 'No se pudo eliminar el miembro');
     }
   }
@@ -196,7 +202,7 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga> {
 
       return json;
     } catch (error: any) {
-      console.error('LigaService.listarMiembros:', error);
+      console.warn('LigaService.listarMiembros:', error);
       throw new Error(error?.message || 'No se pudieron cargar los miembros');
     }
   }
@@ -207,18 +213,41 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga> {
       const token = await this.getAccessToken();
       if (!token) throw new Error('Usuario no autenticado');
 
+      console.log('🔍 LigaService.obtenerLigasPorUsuario - URL:', `${ApiConfig.BASE_URL}/leagues/user/${userId}`);
+      console.log('🔍 LigaService.obtenerLigasPorUsuario - Token:', !!token);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+
       const res = await fetch(`${ApiConfig.BASE_URL}/leagues/user/${userId}`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
       });
 
-      const json = await res.json().catch(() => ({}));
+      clearTimeout(timeoutId);
+      console.log('🔍 LigaService.obtenerLigasPorUsuario - Status:', res.status);
 
-      if (!res.ok) throw new Error(json?.error || 'Error al obtener ligas');
+      const json = await res.json().catch(() => ({}));
+      console.log('🔍 LigaService.obtenerLigasPorUsuario - Response:', json);
+
+      if (!res.ok) {
+        const friendlyMessage = this.mapErrorToFriendlyMessage(json, res.status);
+        throw new Error(friendlyMessage);
+      }
 
       return json as Liga[];
     } catch (error: any) {
-      console.error('LigaService.obtenerLigasPorUsuario:', error);
+      console.warn('LigaService.obtenerLigasPorUsuario:', error);
+      
+      // Handle network-specific errors
+      if (error.name === 'AbortError') {
+        throw new Error('La conexión tardó demasiado. Verifica tu conexión a internet.');
+      }
+      if (error.message.includes('Network request failed') || error.message.includes('fetch')) {
+        throw new Error('No se pudo conectar al servidor. Verifica que el backend esté ejecutándose.');
+      }
+      
       throw new Error(error?.message || 'No se pudieron obtener las ligas');
     }
   }

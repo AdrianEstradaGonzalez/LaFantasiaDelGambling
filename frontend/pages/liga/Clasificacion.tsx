@@ -33,21 +33,18 @@ export const Clasificacion = () => {
       try {
         setLoading(true);
 
-        // 🔹 Llama a la API
         const response = await LigaService.listarMiembros(ligaId);
 
-        // 🔹 Adaptamos el JSON real a nuestro modelo
         const dataOrdenada = response
           .sort((a: any, b: any) => b.points - a.points)
           .map((u: any, index: number) => ({
-            id: u.user?.id || u.userId || `jugador-${index}`, // fallback por seguridad
+            id: u.user?.id || u.userId || `jugador-${index}`,
             nombre: u.user?.name || 'Jugador desconocido',
             puntos: u.points ?? 0,
             posicion: index + 1,
           }));
 
         setJugadores(dataOrdenada);
-        // Si tu backend devuelve el nombre de liga en otro endpoint, podrías agregarlo aquí
         setLigaNombre(ligaNombre);
       } catch (err) {
         console.error('Error al obtener clasificación:', err);
@@ -61,7 +58,7 @@ export const Clasificacion = () => {
 
   return (
     <LinearGradient
-      colors={['#101011ff', '#101011ff']}
+      colors={['#181818ff', '#181818ff']}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
@@ -81,15 +78,30 @@ export const Clasificacion = () => {
           style={styles.container}
           contentContainerStyle={{ paddingBottom: 140 }}
         >
-          {jugadores.map((jugador) => (
-            <View key={jugador.id} style={styles.userBox}>
-              <View style={styles.userRow}>
-                <Text style={styles.positionText}>{jugador.posicion}</Text>
-                <Text style={styles.nameText}>{jugador.nombre}</Text>
-                <Text style={styles.pointsText}>{jugador.puntos} pts</Text>
+          {jugadores.map((jugador) => {
+            const posBadgeExtra = jugador.posicion === 1
+              ? styles.posBadgeFirst
+              : jugador.posicion === 2
+              ? styles.posBadgeSecond
+              : jugador.posicion === 3
+              ? styles.posBadgeThird
+              : undefined;
+            return (
+              <View key={jugador.id} style={styles.userBox}>
+                <View style={styles.userRow}>
+                  <View style={[styles.posBadge, posBadgeExtra]}>
+                    <Text style={styles.positionText}>{jugador.posicion}</Text>
+                  </View>
+                  <Text style={styles.nameText} numberOfLines={1}>
+                    {jugador.nombre}
+                  </Text>
+                  <View style={styles.pointsChip}>
+                    <Text style={styles.pointsText}>{jugador.puntos} pts</Text>
+                  </View>
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </ScrollView>
       ) : (
         <View style={styles.loadingContainer}>

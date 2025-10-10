@@ -1,5 +1,6 @@
 // FootballService.ts
 import axios from "axios";
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 const API_BASE = "https://api.football-data.org/v4/competitions/PD/matches";
 const HEADERS = {
@@ -40,55 +41,75 @@ function flags(status: string) {
   return { notStarted, started, finished };
 }
 
-// Persistencia con localStorage
-function loadState() {
-  const raw = localStorage.getItem("matchday_state");
-  if (!raw) return { season: 2025, currentMatchday: 9 };
-  return JSON.parse(raw);
+// Persistencia con EncryptedStorage
+async function loadState() {
+  try {
+    const raw = await EncryptedStorage.getItem("matchday_state");
+    if (!raw) return { season: 2025, currentMatchday: 9 };
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn('Error loading matchday state:', error);
+    return { season: 2025, currentMatchday: 9 };
+  }
 }
 
-function saveState(state: { season: number; currentMatchday: number }) {
-  localStorage.setItem("matchday_state", JSON.stringify(state));
+async function saveState(state: { season: number; currentMatchday: number }) {
+  try {
+    await EncryptedStorage.setItem("matchday_state", JSON.stringify(state));
+  } catch (error) {
+    console.warn('Error saving matchday state:', error);
+  }
 }
 
 export default class FootballService {
   private static season = 2025;
   private static startMatchday = 9;
 
-  static setMatchday(jornada: number, season = FootballService.season) {
-    saveState({ season, currentMatchday: jornada });
+  static async setMatchday(jornada: number, season = FootballService.season) {
+    await saveState({ season, currentMatchday: jornada });
   }
 
   static async getAllMatchesWithJornadas(matchdayNum?: number): Promise<Partido[]> {
-    const url = matchdayNum != null
-      ? `${API_BASE}?season=${FootballService.season}&matchday=${matchdayNum}`
-      : `${API_BASE}?season=${FootballService.season}`;
-    const { data } = await axios.get(url, { headers: HEADERS });
-    const matches = data?.matches ?? [];
-    return matches.map((m: any) => {
-      const { notStarted, started, finished } = flags(m.status);
-      const { fecha, hora } = fmtFechaHoraES(m.utcDate);
-      const h = m?.score?.fullTime?.home;
-      const a = m?.score?.fullTime?.away;
-      return {
-        id: m.id,
-        local: m.homeTeam.name,
-        visitante: m.awayTeam.name,
-        fecha,
-        hora,
-        notStarted,
-        started,
-        finished,
-        resultado: finished && h != null && a != null ? `${h} - ${a}` : undefined,
-        localCrest: m.homeTeam.crest ?? m.homeTeam.crestUrl ?? undefined,
-        visitanteCrest: m.awayTeam.crest ?? m.awayTeam.crestUrl ?? undefined,
-        jornada: m.matchday
-      } as Partido;
-    });
+    try {
+      const url = matchdayNum != null
+        ? `${API_BASE}?season=${FootballService.season}&matchday=${matchdayNum}`
+        : `${API_BASE}?season=${FootballService.season}`;
+      
+      // Add timeout to prevent hanging
+      const { data } = await axios.get(url, { 
+        headers: HEADERS,
+        timeout: 10000 // 10 seconds timeout
+      });
+      
+      const matches = data?.matches ?? [];
+      return matches.map((m: any) => {
+        const { notStarted, started, finished } = flags(m.status);
+        const { fecha, hora } = fmtFechaHoraES(m.utcDate);
+        const h = m?.score?.fullTime?.home;
+        const a = m?.score?.fullTime?.away;
+        return {
+          id: m.id,
+          local: m.homeTeam.name,
+          visitante: m.awayTeam.name,
+          fecha,
+          hora,
+          notStarted,
+          started,
+          finished,
+          resultado: finished && h != null && a != null ? `${h} - ${a}` : undefined,
+          localCrest: m.homeTeam.crest ?? m.homeTeam.crestUrl ?? undefined,
+          visitanteCrest: m.awayTeam.crest ?? m.awayTeam.crestUrl ?? undefined,
+          jornada: m.matchday
+        } as Partido;
+      });
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+      return []; // Return empty array on error
+    }
   }
 
   static async getMatchesForCurrentAndAdvance(): Promise<{ jornada: number; partidos: Partido[] }> {
-    const state = loadState();
+    const state = await loadState();
     const url = `${API_BASE}?season=${state.season}&matchday=${state.currentMatchday}`;
     const { data } = await axios.get(url, { headers: HEADERS });
     const matches = data?.matches ?? [];
@@ -112,7 +133,7 @@ export default class FootballService {
     });
 
     if (partidos.length > 0) {
-      saveState({ season: state.season, currentMatchday: state.currentMatchday + 1 });
+      await saveState({ season: state.season, currentMatchday: state.currentMatchday + 1 });
     }
 
     const jornadaDevuelta = matches?.[0]?.matchday ?? state.currentMatchday;
