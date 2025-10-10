@@ -23,9 +23,12 @@ export const HomeStyles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   createButton: {
-    backgroundColor: '#1f6a44',
+    backgroundColor: '#475569',
     paddingVertical: 8,
     paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
@@ -34,8 +37,8 @@ export const HomeStyles = StyleSheet.create({
   },
   createButtonText: {
     color: '#fff',
-    fontWeight: '400',
-    fontSize: 20,
+    fontWeight: '600',
+    fontSize: 16,
   },
 
   // Ligas
@@ -45,9 +48,8 @@ export const HomeStyles = StyleSheet.create({
     paddingLeft: 10,
   },
   ligaCard: {
-    backgroundColor: '#ffffff',
-    // straight rectangular card (professional)
-    borderRadius: 0,
+    backgroundColor: '#1a2332',
+    borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 12,
@@ -55,22 +57,20 @@ export const HomeStyles = StyleSheet.create({
     minHeight: 64,
     justifyContent: 'center',
     alignItems: 'center',
-    // fine black border for a clean professional look
     borderWidth: 1,
-    borderColor: '#000000',
+    borderColor: '#334155',
     borderStyle: 'solid',
-    // subtle elevation/shadow
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.12,
     shadowRadius: 8,
   },
   ligaName: {
     fontWeight: '700',
-    color: '#18395a',
+    color: '#cbd5e1',
     textAlign: 'center',
-    fontSize: 20,
+    fontSize: 18,
   },
 
   // New styles for vertical leagues list
@@ -88,7 +88,7 @@ export const HomeStyles = StyleSheet.create({
     paddingVertical: 6,
   },
   jornadaPill: {
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#2a3441',
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 20,
@@ -97,18 +97,18 @@ export const HomeStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
+    borderColor: '#334155',
   },
   jornadaActive: {
-    backgroundColor: '#1f6a44',
-    borderColor: '#0f4f34',
+    backgroundColor: '#475569',
+    borderColor: '#334155',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
   },
   jornadaText: {
-    color: '#18395a',
+    color: '#cbd5e1',
     fontWeight: '700',
   },
   jornadaTextActive: {
@@ -125,20 +125,21 @@ export const HomeStyles = StyleSheet.create({
 
   tableContainer: {
     marginHorizontal: 20,
-    borderRadius: 0,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#ffffff',
-    borderWidth: 0,
-    borderColor: 'rgba(0,0,0,0.06)',
-    elevation: 1,
+    backgroundColor: '#1a2332',
+    borderWidth: 1,
+    borderColor: '#334155',
+    elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    paddingVertical: 8,
+    paddingTop: 0,
+    paddingBottom: 8,
   },
 
   tableHeader: {
-    backgroundColor: '#1f6a44',
+    backgroundColor: '#334155',
     paddingVertical: 12,
     paddingHorizontal: 12,
     alignItems: 'center',
@@ -154,13 +155,13 @@ export const HomeStyles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e6e6e6',
+    borderBottomColor: '#334155',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a2332',
   },
   tableCell: {
     fontSize: 15,
-    color: '#18395a',
+    color: '#cbd5e1',
     fontWeight: '600',
   },
 

@@ -87,8 +87,10 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
       setLigas(ligasFormateadas);
     } catch (error) {
-      console.error('Error al obtener ligas del usuario:', error);
+      console.warn('Error al obtener ligas del usuario:', error);
+      // Show user-friendly error message but don't break the app
       setLigas([]);
+      // You could show a toast or error message here if you have a toast system
     } finally {
       setLoading(false);
     }
@@ -100,20 +102,30 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
     const fetchMatches = async () => {
       try {
+        setLoading(true);
         const allMatches = await FootballService.getAllMatchesWithJornadas();
         setPartidos(allMatches);
 
         const jornadasDisponibles = Array.from(
           new Set(allMatches.map((p) => p.jornada))
-        ).sort((a, b) => a - b);
+        )
+          .filter((j) => j != null)
+          .sort((a, b) => a - b);
         setJornadas(jornadasDisponibles);
 
-        const nextJornada =
-          allMatches.find((p) => p.notStarted)?.jornada ||
-          jornadasDisponibles[0];
-        setJornadaActual(nextJornada);
+        // Mantener la jornada actual si sigue existiendo; si no, elegir próxima no iniciada; si tampoco, la primera disponible
+        const keepCurrent =
+          jornadaActual && jornadasDisponibles.includes(jornadaActual)
+            ? jornadaActual
+            : undefined;
+        const upcoming = allMatches.find((p) => p.notStarted)?.jornada;
+        const fallback = jornadasDisponibles[0];
+        const nextJornada = keepCurrent ?? upcoming ?? fallback;
+        if (nextJornada != null) setJornadaActual(nextJornada);
       } catch (error) {
-        console.error('Error al obtener partidos:', error);
+        console.warn('Error al obtener partidos:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -182,7 +194,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
   return (
     <LinearGradient
-      colors={['#101011ff', '#101011ff']}
+      colors={['#181818ff', '#181818ff']}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
@@ -205,16 +217,32 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
         {/* Ligas */}
         <View style={styles.ligasList}>
-          {ligas.map((liga) => (
-            <TouchableOpacity
-              key={liga.id}
-              style={styles.ligaCard}
-              activeOpacity={0.85}
-              onPress={() => navigation.navigate('Clasificacion', { ligaId: liga.id, ligaName: liga.nombre })}
-            >
-              <Text style={styles.ligaName}>{liga.nombre}</Text>
-            </TouchableOpacity>
-          ))}
+          {loading ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color="#94a3b8" />
+              <Text style={{ color: '#cbd5e1', marginTop: 8 }}>Cargando ligas...</Text>
+            </View>
+          ) : ligas.length > 0 ? (
+            ligas.map((liga) => (
+              <TouchableOpacity
+                key={liga.id}
+                style={styles.ligaCard}
+                activeOpacity={0.85}
+                onPress={() => navigation.navigate('Clasificacion', { ligaId: liga.id, ligaName: liga.nombre })}
+              >
+                <Text style={styles.ligaName}>{liga.nombre}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <Text style={{ color: '#cbd5e1', textAlign: 'center', marginBottom: 8 }}>
+                No se pudieron cargar las ligas
+              </Text>
+              <Text style={{ color: '#94a3b8', textAlign: 'center', fontSize: 12 }}>
+                Verifica tu conexión y que el servidor esté ejecutándose
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Jornadas */}
@@ -267,7 +295,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
             <Text
               style={[styles.tableHeaderText, { flex: 1, textAlign: 'center' }]}
             >
-              Jornada {jornadaActual}
+              Partidos de la jornada {jornadaActual}
             </Text>
 
             <TouchableOpacity onPress={jornadaSiguiente} disabled={loading}>
@@ -277,7 +305,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
           {loading ? (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <ActivityIndicator size="large" color="#18395a" />
+              <ActivityIndicator size="large" color="#94a3b8" />
             </View>
           ) : (
             <View>
@@ -309,7 +337,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                 ))
               ) : (
                 <View style={{ padding: 20 }}>
-                  <Text style={{ textAlign: 'center', color: '#ccc' }}>
+                  <Text style={{ textAlign: 'center', color: '#cbd5e1' }}>
                     No hay partidos para esta jornada.
                   </Text>
                 </View>
