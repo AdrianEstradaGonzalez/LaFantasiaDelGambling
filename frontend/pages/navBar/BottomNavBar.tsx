@@ -18,14 +18,7 @@ const BottomNavBar: React.FC = () => {
 
   // 👉 Acción del botón Logout
   const handleLogoutPress = () => {
-    Alert.alert(
-      'Cerrar sesión',
-      '¿Seguro que deseas salir?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Salir', onPress: () => navigation.replace('Login') },
-      ]
-    );
+    navigation.navigate('Login');
   };
 
   return (

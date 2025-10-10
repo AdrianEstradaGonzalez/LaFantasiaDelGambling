@@ -7,7 +7,6 @@ export const CrearLigaStyles = StyleSheet.create({
     paddingTop: Platform.OS === 'android' ? 60 : 80,
     paddingHorizontal: 20,
     alignItems: 'center',
-    backgroundColor: '#2c2a2aff',
     justifyContent: 'center',
   },
 

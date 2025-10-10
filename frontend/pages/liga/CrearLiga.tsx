@@ -66,7 +66,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       // Llamamos al endpoint para agregar miembro
       await LigaService.agregarMiembro(codigoLiga, { userId: 'me' }); // "me" indica usuario actual
       Alert.alert(
-        '✅ Te has unido', 
+        '✅ Te has unido',
         `¡Bienvenido a la liga! Ya formas parte de la competición.`,
         [
           {
@@ -88,7 +88,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
 
   return (
     <LinearGradient
-      colors={['#101011ff', '#0f2f45']}
+      colors={['#101011ff', '#101011ff']}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}

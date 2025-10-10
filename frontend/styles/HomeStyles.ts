@@ -6,7 +6,6 @@ export const HomeStyles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: Platform.OS === 'android' ? 48 : 64,
-    backgroundColor: '#2c2a2aff',
   },
 
   // Header

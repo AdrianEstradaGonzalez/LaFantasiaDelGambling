@@ -36,6 +36,8 @@ export const Home = ({ navigation, route }: HomeProps) => {
   const [loading, setLoading] = useState<boolean>(true);
 
   const scrollRef = useRef<ScrollView>(null);
+  const jornadasScrollRef = useRef<ScrollView>(null);
+
 
   // Función para cargar ligas (separada para reutilizar)
   const fetchLigasUsuario = useCallback(async () => {
@@ -120,6 +122,8 @@ export const Home = ({ navigation, route }: HomeProps) => {
     return () => clearInterval(interval);
   }, [fetchLigasUsuario]);
 
+
+
   // useFocusEffect para refrescar cuando se regresa de CrearLiga
   useFocusEffect(
     useCallback(() => {
@@ -134,6 +138,31 @@ export const Home = ({ navigation, route }: HomeProps) => {
   );
 
   const partidosJornada = partidos.filter((p) => p.jornada === jornadaActual);
+
+  const scrollToJornada = useCallback(
+    (jornada: number) => {
+      if (!jornadasScrollRef.current || jornadas.length === 0) return;
+
+      const index = jornadas.indexOf(jornada);
+      if (index === -1) return;
+
+      const itemWidth = 70; // ancho estimado del botón + margen
+      const screenWidth = Dimensions.get('window').width;
+      const offset = index * itemWidth - screenWidth / 2 + itemWidth / 2;
+
+      jornadasScrollRef.current.scrollTo({
+        x: Math.max(0, offset),
+        animated: true,
+      });
+    },
+    [jornadas]
+  );
+
+  useEffect(() => {
+    if (jornadaActual && jornadas.length > 0) {
+      scrollToJornada(jornadaActual);
+    }
+  }, [jornadaActual, jornadas, scrollToJornada]);
 
   const jornadaAnterior = () => {
     setJornadaActual((prev) => {
@@ -153,7 +182,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
   return (
     <LinearGradient
-      colors={['#101011ff', '#0f2f45']}
+      colors={['#101011ff', '#101011ff']}
       start={{ x: 0, y: 0 }}
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
@@ -181,6 +210,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
               key={liga.id}
               style={styles.ligaCard}
               activeOpacity={0.85}
+              onPress={() => navigation.navigate('Clasificacion', { ligaId: liga.id, ligaName: liga.nombre })}
             >
               <Text style={styles.ligaName}>{liga.nombre}</Text>
             </TouchableOpacity>
@@ -190,6 +220,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
         {/* Jornadas */}
         <View style={styles.calendarContainer}>
           <ScrollView
+            ref={jornadasScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.jornadasScroll}

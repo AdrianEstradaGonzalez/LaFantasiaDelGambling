@@ -7,7 +7,7 @@ navBar: {
   left: 0,
   right: 0,
   height: 70,
-  backgroundColor: '#2c2a2aff',
+  backgroundColor: '#101011ff',
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'space-between',
