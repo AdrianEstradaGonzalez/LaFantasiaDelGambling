@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Dimensions, StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
 navBar: {
@@ -32,8 +32,8 @@ navBar: {
   },
 
   homeIcon: {
-    width: 32,
-    height: 32,
+    width: 50,
+    height: 50,
   },
 
   logoutButton: {
@@ -41,9 +41,21 @@ navBar: {
   },
 
   logoutIcon: {
-    width: 32,
-    height: 32,
+    width: 50,
+    height: 50,
   },
+  // Añade debajo de tus otros estilos
+navButton: {
+  flex: 1,
+  alignItems: 'center',
+},
+
+navIcon: {
+  width: 50,
+  height: 50,
+  tintColor: '#ffffff',
+},
+
 });
 
 export default styles;

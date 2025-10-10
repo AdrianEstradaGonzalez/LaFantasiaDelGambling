@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { LigaService } from '../../services/LigaService';
 import BottomNavBar from '../navBar/BottomNavBar';
+import LigaNavBar from '../navBar/LigaNavBar';
 
 type UsuarioClasificacion = {
   id: string;
@@ -99,7 +100,7 @@ export const Clasificacion = () => {
       )}
 
       {/* Barra inferior */}
-      <BottomNavBar />
+      <LigaNavBar />
     </LinearGradient>
   );
 };

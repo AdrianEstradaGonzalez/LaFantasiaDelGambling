@@ -261,7 +261,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
             ]}
           >
             <TouchableOpacity onPress={jornadaAnterior} disabled={loading}>
-              <Text style={[styles.tableHeaderText]}>{'<'}</Text>
+              <Text style={[styles.tableHeaderText, { fontSize: 26 }]}>{'<'}</Text>
             </TouchableOpacity>
 
             <Text
@@ -271,7 +271,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
             </Text>
 
             <TouchableOpacity onPress={jornadaSiguiente} disabled={loading}>
-              <Text style={[styles.tableHeaderText, { fontSize: 18 }]}>{'>'}</Text>
+              <Text style={[styles.tableHeaderText, { fontSize: 26 }]}>{'>'}</Text>
             </TouchableOpacity>
           </View>
 

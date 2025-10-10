@@ -146,7 +146,7 @@ export const HomeStyles = StyleSheet.create({
   tableHeaderText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 18,
   },
 
   tableRow: {
