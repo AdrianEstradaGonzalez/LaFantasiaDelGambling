@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService, { Player, TeamMinimal } from '../../services/FutbolService';
+import LoadingScreen from '../../components/LoadingScreen';
 
 // Posiciones en español para los filtros
 const positionsEs = ['Todos','Portero','Defensa','Centrocampista','Delantero'] as const;
@@ -55,49 +56,142 @@ const getAvatarUri = (p: Player) => {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=${bg}&color=${color}&size=128`;
 };
 
+// Componente Dropdown personalizado
+const Dropdown = ({ 
+  label, 
+  value, 
+  onValueChange, 
+  items 
+}: { 
+  label: string; 
+  value: any; 
+  onValueChange: (value: any) => void; 
+  items: { label: string; value: any }[] 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel = items.find(item => item.value === value)?.label || label;
+
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <Text style={{ color: '#94a3b8', marginBottom: 6 }}>{label}</Text>
+      <View>
+        <TouchableOpacity
+          onPress={() => setIsOpen(!isOpen)}
+          style={{
+            backgroundColor: '#1a2332',
+            borderWidth: 1,
+            borderColor: '#334155',
+            borderRadius: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <Text style={{ color: '#fff', flex: 1 }}>{selectedLabel}</Text>
+          <Text style={{ color: '#94a3b8', fontSize: 16 }}>{isOpen ? '▲' : '▼'}</Text>
+        </TouchableOpacity>
+        {isOpen && (
+          <View
+            style={{
+              backgroundColor: '#1a2332',
+              borderWidth: 1,
+              borderColor: '#334155',
+              borderTopWidth: 0,
+              borderBottomLeftRadius: 10,
+              borderBottomRightRadius: 10,
+              maxHeight: 200,
+            }}
+          >
+            <ScrollView style={{ maxHeight: 200 }}>
+              {items.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => {
+                    onValueChange(item.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 12,
+                    borderBottomWidth: index < items.length - 1 ? 1 : 0,
+                    borderBottomColor: '#334155',
+                    backgroundColor: item.value === value ? '#374151' : 'transparent'
+                  }}
+                >
+                  <Text style={{ color: '#fff' }}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+};
+
 export const PlayersList = () => {
-  // loading: solo para la carga inicial de equipos (para que salgan los filtros cuanto antes)
+  // loading: para mostrar LoadingScreen inicialmente
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState<Player[]>([]);
   const [teams, setTeams] = useState<TeamMinimal[]>([]);
   const [teamFilter, setTeamFilter] = useState<number | 'all'>('all');
   const [posFilter, setPosFilter] = useState<PositionFilterEs>('Todos');
   const [query, setQuery] = useState('');
-  // usando cache precargada; no mostramos progreso por equipo
+  const [loadingProgress, setLoadingProgress] = useState<{ done: number; total: number; currentTeam?: string } | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    let localTeams: TeamMinimal[] = [];
     (async () => {
       try {
-        setLoading(true);
-        console.log('PlayersList: Cargando datos desde caché...');
-        localTeams = await FootballService.getLaLigaTeamsCached();
+        console.log('PlayersList: Intentando carga desde caché...');
+        
+        // First, try to load from cache
+        const [teamsCached, playersCached] = await Promise.all([
+          FootballService.getLaLigaTeamsCached(),
+          FootballService.getAllPlayersCached(),
+        ]);
+        
         if (!mounted) return;
-        console.log('PlayersList: Equipos (cache) cargados:', localTeams.length);
-        setTeams(localTeams);
+        
+        if (teamsCached.length > 0) {
+          setTeams(teamsCached);
+        }
+        
+        if (playersCached.length > 0) {
+          // We have cached players - load instantly
+          console.log('PlayersList: Jugadores cargados desde caché:', playersCached.length);
+          setPlayers(playersCached);
+          setLoading(false);
+          return;
+        }
+        
+        // No cached players - do progressive loading
+        console.log('PlayersList: No hay caché, cargando progresivamente...');
+        setLoading(false); // Stop showing LoadingScreen, start showing progressive UI
+        
+        const allPlayers = await (FootballService as any).getAllPlayersProgressive(
+          (currentPlayers: Player[], teamName: string, progress: { done: number; total: number }) => {
+            if (!mounted) return;
+            setPlayers([...currentPlayers]);
+            setLoadingProgress({ ...progress, currentTeam: teamName });
+          }
+        );
+        
+        if (mounted) {
+          setPlayers(allPlayers);
+          setLoadingProgress(null);
+        }
+        
       } catch (e) {
-        console.warn('PlayersList init (equipos cache) error', e);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-
-      // Si no hay equipos, no intentamos cargar jugadores
-      if (!mounted) return;
-  const toLoad = (typeof localTeams !== 'undefined' ? localTeams : teams) ?? [];
-      if (toLoad.length === 0) {
-        console.warn('PlayersList: No hay equipos; omitiendo carga de jugadores.');
-        return;
-      }
-
-      // Obtener todos los jugadores desde caché
-      try {
-        const allPlayers = await FootballService.getAllPlayersCached();
-        if (!mounted) return;
-        setPlayers(allPlayers);
-      } catch (e) {
-        console.warn('PlayersList: Error obteniendo jugadores (cache)', e);
-      } finally {
+        console.warn('PlayersList: Error cargando datos', e);
+        if (mounted) {
+          setTeams([]);
+          setPlayers([]);
+          setLoading(false);
+          setLoadingProgress(null);
+        }
       }
     })();
     return () => { mounted = false; };
@@ -160,32 +254,58 @@ export const PlayersList = () => {
 
   return (
     <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
+      {loading && (
+        <LoadingScreen />
+      )}
+      {!loading && (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 140 }}>
         <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 12 }}>Jugadores LaLiga</Text>
-        {/* Filters */}
-        <View style={{ marginBottom: 12 }}>
-          <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Equipo</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{}}>
-            <TouchableOpacity onPress={() => setTeamFilter('all')} style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: teamFilter==='all' ? '#475569' : '#2a3441', borderRadius: 16, borderWidth: 1, borderColor: '#334155', marginRight: 8 }}>
-              <Text style={{ color: '#fff' }}>Todos</Text>
-            </TouchableOpacity>
-            {teams.map(t => (
-              <TouchableOpacity key={t.id} onPress={() => setTeamFilter(t.id)} style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: teamFilter===t.id ? '#475569' : '#2a3441', borderRadius: 16, borderWidth: 1, borderColor: '#334155', marginRight: 8 }}>
-                <Text style={{ color: '#fff' }}>{t.name}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+        
+        {/* Progress indicator when loading progressively */}
+        {loadingProgress && (
+          <View style={{ backgroundColor: '#1a2332', borderWidth: 1, borderColor: '#334155', borderRadius: 10, padding: 12, marginBottom: 12 }}>
+            <Text style={{ color: '#cbd5e1', textAlign: 'center', marginBottom: 4 }}>
+              Cargando jugadores: {loadingProgress.done} / {loadingProgress.total}
+            </Text>
+            <Text style={{ color: '#94a3b8', textAlign: 'center', fontSize: 12 }}>
+              {loadingProgress.currentTeam}
+            </Text>
+            <View style={{ backgroundColor: '#334155', height: 4, borderRadius: 2, marginTop: 8 }}>
+              <View 
+                style={{ 
+                  backgroundColor: '#10b981', 
+                  height: 4, 
+                  borderRadius: 2, 
+                  width: `${(loadingProgress.done / loadingProgress.total) * 100}%` 
+                }} 
+              />
+            </View>
+          </View>
+        )}
+        
+        {/* Filtros con Dropdowns en la misma línea */}
+        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Dropdown
+              label="Equipo"
+              value={teamFilter}
+              onValueChange={setTeamFilter}
+              items={[
+                { label: 'Todos los equipos', value: 'all' },
+                ...teams.map(t => ({ label: t.name, value: t.id }))
+              ]}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Dropdown
+              label="Posición"
+              value={posFilter}
+              onValueChange={setPosFilter}
+              items={positionsEs.map(p => ({ label: p, value: p }))}
+            />
+          </View>
         </View>
-        <View style={{ marginBottom: 12 }}>
-          <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Posición</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {positionsEs.map(p => (
-              <TouchableOpacity key={p} onPress={() => setPosFilter(p)} style={{ paddingVertical: 8, paddingHorizontal: 12, backgroundColor: posFilter===p ? '#475569' : '#2a3441', borderRadius: 16, borderWidth: 1, borderColor: '#334155', marginRight: 8 }}>
-                <Text style={{ color: '#fff' }}>{p}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        
         <View style={{ marginBottom: 12 }}>
           <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Buscar jugador</Text>
           <TextInput
@@ -193,15 +313,19 @@ export const PlayersList = () => {
             placeholderTextColor="#94a3b8"
             value={query}
             onChangeText={setQuery}
-            style={{ backgroundColor: '#1a2332', borderWidth: 1, borderColor: '#334155', color: '#fff', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10 }}
+            style={{ 
+              backgroundColor: '#1a2332', 
+              borderWidth: 1, 
+              borderColor: '#334155', 
+              color: '#fff', 
+              paddingHorizontal: 12, 
+              paddingVertical: 12, 
+              borderRadius: 10 
+            }}
           />
         </View>
 
-        {loading ? (
-          <View style={{ paddingVertical: 40, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#94a3b8" />
-          </View>
-        ) : (
+        {
           <View>
             {/* Lista de jugadores */}
             {filtered.map(p => {
@@ -234,7 +358,7 @@ export const PlayersList = () => {
                         {p.teamCrest ? (
                           <Image
                             source={{ uri: p.teamCrest }}
-                            style={{ width: 22, height: 22, borderRadius: 3, marginLeft: 8, borderWidth: 1, borderColor: '#334155' }}
+                            style={{ width: 22, height: 22, marginLeft: 8, backgroundColor: 'transparent' }}
                             resizeMode="contain"
                           />
                         ) : null}
@@ -248,8 +372,9 @@ export const PlayersList = () => {
               <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 20 }}>No hay resultados con los filtros actuales.</Text>
             )}
           </View>
-        )}
+        }
       </ScrollView>
+      )}
     </LinearGradient>
   );
 };

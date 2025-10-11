@@ -14,6 +14,7 @@ import FootballService, { type Partido } from '../../services/FutbolService';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase, RouteProp } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
+import LoadingScreen from '../../components/LoadingScreen';
 
 // 🧩 Importa la barra de navegación
 import BottomNavBar from '../navBar/BottomNavBar';
@@ -104,7 +105,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
     const fetchMatches = async () => {
   try {
     setLoadingPartidos(true); // 👈 solo marcamos loading de partidos
-    const allMatches = await FootballService.getAllMatchesWithJornadas();
+    const allMatches = await FootballService.getAllMatchesCached();
     setPartidos(allMatches);
 
     const jornadasDisponibles = Array.from(
@@ -194,12 +195,11 @@ export const Home = ({ navigation, route }: HomeProps) => {
   };
 
   return (
-    <LinearGradient
-      colors={['#181818ff', '#181818ff']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
-    >
+    <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+      {(loading || loadingPartidos) && (
+        <LoadingScreen />
+      )}
+      {!loading && !loadingPartidos && (
       <ScrollView
         ref={scrollRef}
         style={styles.container}
@@ -226,12 +226,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
               <Text style={styles.createButtonText}>Jugadores LaLiga</Text>
             </TouchableOpacity>
           </View>
-          {loading ? (
-            <View style={{ padding: 20, alignItems: 'center' }}>
-              <ActivityIndicator size="small" color="#94a3b8" />
-              <Text style={{ color: '#cbd5e1', marginTop: 8 }}>Cargando ligas...</Text>
-            </View>
-          ) : ligas.length > 0 ? (
+          {ligas.length > 0 ? (
             ligas.map((liga) => (
               <TouchableOpacity
                 key={liga.id}
@@ -309,11 +304,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
             </TouchableOpacity>
           </View>
 
-          {loadingPartidos ? (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <ActivityIndicator size="large" color="#94a3b8" />
-            </View>
-          ) : (
+          {
             <View>
               {partidosJornada.length > 0 ? (
                 partidosJornada.slice(0, 10).map((partido) => (
@@ -349,9 +340,10 @@ export const Home = ({ navigation, route }: HomeProps) => {
                 </View>
               )}
             </View>
-          )}
+          }
         </View>
       </ScrollView>
+      )}
 
       {/* Barra de navegación fija */}
       <BottomNavBar />

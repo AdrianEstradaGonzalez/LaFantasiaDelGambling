@@ -89,8 +89,12 @@ export default class FootballService {
   private static playersCache: Player[] | null = null;
   private static teamsPromise: Promise<TeamMinimal[]> | null = null;
   private static playersPromise: Promise<Player[]> | null = null;
+  private static prefetchInProgress: Promise<void> | null = null;
   private static readonly TEAMS_CACHE_KEY = 'laLiga_teams_v1';
   private static readonly PLAYERS_CACHE_KEY = 'laLiga_players_v1';
+  private static matchesCache: Partido[] | null = null;
+  private static matchesPromise: Promise<Partido[]> | null = null;
+  private static readonly MATCHES_CACHE_KEY = 'laLiga_matches_v1';
   private static readonly TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
 
   static async setMatchday(jornada: number, season = FootballService.season) {
@@ -123,64 +127,153 @@ export default class FootballService {
 
   static async getLaLigaTeamsCached(): Promise<TeamMinimal[]> {
     if (this.teamsCache) return this.teamsCache;
-    if (this.teamsPromise) return this.teamsPromise;
     // try storage first
     const fromStore = await this.loadFromStorage<TeamMinimal[]>(this.TEAMS_CACHE_KEY);
     if (fromStore && fromStore.length) {
       this.teamsCache = fromStore;
       return fromStore;
     }
-    this.teamsPromise = (async () => {
-      const teams = await this.getLaLigaTeams();
-      this.teamsCache = teams;
-      this.teamsPromise = null;
-      if (teams.length) this.saveToStorage(this.TEAMS_CACHE_KEY, teams);
-      return teams;
-    })();
-    return this.teamsPromise;
+    // Do not hit network here; if prefetch in progress, await it and retry cache.
+    if (this.prefetchInProgress) {
+      try { await this.prefetchInProgress; } catch {}
+      const fromStoreAfter = await this.loadFromStorage<TeamMinimal[]>(this.TEAMS_CACHE_KEY);
+      if (fromStoreAfter && fromStoreAfter.length) {
+        this.teamsCache = fromStoreAfter;
+        return fromStoreAfter;
+      }
+    }
+    // No cache available
+    return [];
   }
 
   static async getAllPlayersCached(): Promise<Player[]> {
     if (this.playersCache) return this.playersCache;
-    if (this.playersPromise) return this.playersPromise;
     // try storage first
     const fromStore = await this.loadFromStorage<Player[]>(this.PLAYERS_CACHE_KEY);
     if (fromStore && fromStore.length) {
       this.playersCache = fromStore;
       return fromStore;
     }
-    // As a fallback, fetch fresh (may be heavy; prefer prefetchAllData on app start)
-    this.playersPromise = (async () => {
-      const players = await this.getAllLaLigaPlayers();
-      this.playersCache = players;
-      this.playersPromise = null;
-      if (players.length) this.saveToStorage(this.PLAYERS_CACHE_KEY, players);
-      return players;
+    // No cache available - return empty array (PlayersList will handle progressive loading)
+    return [];
+  }
+
+  // New method for progressive loading in PlayersList
+  static async getAllPlayersProgressive(
+    onTeamLoaded?: (players: Player[], teamName: string, progress: { done: number; total: number }) => void
+  ): Promise<Player[]> {
+    const teams = await this.getLaLigaTeamsCached();
+    if (teams.length === 0) {
+      // Fallback: fetch teams directly if cache is empty
+      const freshTeams = await this.getLaLigaTeams();
+      if (freshTeams.length === 0) return [];
+      
+      const allPlayers: Player[] = [];
+      for (let i = 0; i < freshTeams.length; i++) {
+        const team = freshTeams[i];
+        try {
+          const squad = await this.getTeamSquad(team.id, team.name, team.crest);
+          allPlayers.push(...squad);
+          onTeamLoaded?.(allPlayers.slice(), team.name, { done: i + 1, total: freshTeams.length });
+        } catch (e) {
+          console.warn(`Error loading squad for ${team.name}:`, e);
+        }
+        // Small delay to respect rate limits
+        await new Promise(r => setTimeout(r, 100));
+      }
+      return allPlayers;
+    }
+
+    const allPlayers: Player[] = [];
+    for (let i = 0; i < teams.length; i++) {
+      const team = teams[i];
+      try {
+        const squad = await this.getTeamSquad(team.id, team.name, team.crest);
+        allPlayers.push(...squad);
+        onTeamLoaded?.(allPlayers.slice(), team.name, { done: i + 1, total: teams.length });
+      } catch (e) {
+        console.warn(`Error loading squad for ${team.name}:`, e);
+      }
+      // Small delay to respect rate limits
+      await new Promise(r => setTimeout(r, 100));
+    }
+    
+    // Cache the result for future use
+    if (allPlayers.length > 0) {
+      this.playersCache = allPlayers;
+      await this.saveToStorage(this.PLAYERS_CACHE_KEY, allPlayers);
+    }
+    
+    return allPlayers;
+  }
+
+  // ---------- Matches cached ----------
+  static async getAllMatchesCached(): Promise<Partido[]> {
+    if (this.matchesCache) return this.matchesCache;
+    if (this.matchesPromise) return this.matchesPromise;
+    const fromStore = await this.loadFromStorage<Partido[]>(this.MATCHES_CACHE_KEY);
+    if (fromStore && fromStore.length) {
+      this.matchesCache = fromStore;
+      return fromStore;
+    }
+    this.matchesPromise = (async () => {
+      const matches = await this.getAllMatchesWithJornadas();
+      this.matchesCache = matches;
+      this.matchesPromise = null;
+      if (matches.length) this.saveToStorage(this.MATCHES_CACHE_KEY, matches);
+      return matches;
     })();
-    return this.playersPromise;
+    return this.matchesPromise;
   }
 
   static async prefetchAllData(force = false) {
-    try {
-      // If already in memory and not forced, skip
-      if (!force && this.teamsCache && this.playersCache) return;
-      const teams = force ? await this.getLaLigaTeams() : await this.getLaLigaTeamsCached();
-      this.teamsCache = teams;
-      if (teams.length) await this.saveToStorage(this.TEAMS_CACHE_KEY, teams);
-      // fetch all players sequentially
-      const players = await (async () => {
-        const all: Player[] = [];
-        for (const t of teams) {
-          const squad = await this.getTeamSquad(t.id, t.name, t.crest);
-          all.push(...squad);
-          await new Promise(r => setTimeout(r, 120));
+    if (this.prefetchInProgress && !force) {
+      // another prefetch is in progress; reuse it
+      try { await this.prefetchInProgress; } catch {}
+      return;
+    }
+    this.prefetchInProgress = (async () => {
+      try {
+        // If already in memory and not forced, skip
+        if (!force && this.teamsCache && this.playersCache) return;
+        // Always fetch fresh teams for prefetch to ensure completeness
+        const teams = await this.getLaLigaTeams();
+        this.teamsCache = teams;
+        if (teams.length) await this.saveToStorage(this.TEAMS_CACHE_KEY, teams);
+        // fetch all players sequentially
+        const players = await (async () => {
+          const all: Player[] = [];
+          for (const t of teams) {
+            const squad = await this.getTeamSquad(t.id, t.name, t.crest);
+            all.push(...squad);
+            await new Promise(r => setTimeout(r, 200)); // un poco más de margen
+          }
+          return all;
+        })();
+        // Solo sobreescribir cache si obtuvimos un dataset razonable (evita clavar cache parcial)
+        if (players.length >= Math.floor((teams.length || 1) * 10)) { // ~10 jugadores por equipo
+          this.playersCache = players;
+          await this.saveToStorage(this.PLAYERS_CACHE_KEY, players);
+        } else {
+          console.warn(`prefetchAllData: jugadores parciales (${players.length}) — mantengo cache previa`);
         }
-        return all;
-      })();
-      this.playersCache = players;
-      if (players.length) await this.saveToStorage(this.PLAYERS_CACHE_KEY, players);
-    } catch (e) {
-      console.warn('prefetchAllData failed', e);
+
+        // Prefetch matches (toda la temporada)
+        const matches = await this.getAllMatchesWithJornadas();
+        if (matches.length) {
+          this.matchesCache = matches;
+          await this.saveToStorage(this.MATCHES_CACHE_KEY, matches);
+        }
+      } catch (e) {
+        console.warn('prefetchAllData failed', e);
+      }
+    })();
+    try { await this.prefetchInProgress; } finally { this.prefetchInProgress = null; }
+  }
+
+  static async waitForPrefetch(): Promise<void> {
+    if (this.prefetchInProgress) {
+      try { await this.prefetchInProgress; } catch {}
     }
   }
 
@@ -278,8 +371,8 @@ export default class FootballService {
   }
 
   static async getTeamSquad(teamId: number, teamName?: string, teamCrest?: string): Promise<Player[]> {
-    try {
-      const { data } = await axios.get(TEAM_BY_ID(teamId), { headers: HEADERS, timeout: 10000 });
+    const attempt = async () => {
+      const { data } = await axios.get(TEAM_BY_ID(teamId), { headers: HEADERS, timeout: 15000 });
       const squad = (data?.squad ?? []).map((p: any) => ({
         id: p.id,
         name: p.name,
@@ -292,13 +385,27 @@ export default class FootballService {
         teamCrest: data?.crest ?? teamCrest,
       })) as Player[];
       return squad;
-    } catch (err) {
-      console.warn(`Error fetching squad for team ${teamId}:`, err);
-      return [];
+    };
+    let retries = 2;
+    let delay = 5000; // 5s backoff para rate limits
+    while (true) {
+      try {
+        return await attempt();
+      } catch (err: any) {
+        const status = err?.response?.status;
+        if ((status === 429 || status === 403) && retries > 0) {
+          await new Promise(r => setTimeout(r, delay));
+          retries -= 1;
+          delay *= 1.5;
+          continue;
+        }
+        console.warn(`Error fetching squad for team ${teamId}:`, status ?? err?.message ?? err);
+        return [];
+      }
     }
   }
 
-  static async getAllLaLigaPlayers(progressCb?: (done: number, total: number) => void): Promise<Player[]> {
+  static async getAllLaLigaPlayers(progressCb?: (done: number, total: number) => void, delayMs: number = 150): Promise<Player[]> {
     const teams = await this.getLaLigaTeams();
     const total = teams.length;
     let done = 0;
@@ -308,8 +415,8 @@ export default class FootballService {
       all.push(...squad);
       done += 1;
       progressCb?.(done, total);
-      // Small delay to be nice with the API
-      await new Promise((r) => setTimeout(r, 150));
+      // Delay configurable para respetar rate limits
+      await new Promise((r) => setTimeout(r, delayMs));
     }
     return all;
   }
