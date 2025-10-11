@@ -80,7 +80,7 @@ export const CrearLigaStyles = StyleSheet.create({
     fontSize: Typography.sizes.sm,
     fontWeight: Typography.weights.semibold,
     color: Colors.text.primary,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.md,
   },
 
   input: {

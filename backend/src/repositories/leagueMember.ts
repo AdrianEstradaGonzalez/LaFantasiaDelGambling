@@ -15,7 +15,10 @@ export const LeagueMemberRepo = {
   listByLeague: (leagueId: string) =>
     prisma.leagueMember.findMany({
       where: { leagueId },
-      include: { user: true },
+      include: { 
+        user: true,
+        league: { select: { id: true, name: true, code: true } }
+      },
       orderBy: { points: "desc" },
     }),
 };

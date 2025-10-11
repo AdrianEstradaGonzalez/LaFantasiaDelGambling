@@ -38,6 +38,12 @@ navBar: {
     left: '1%',
   },
 
+  inviteIcon: {
+    width: 40,
+    height: 40,
+    right: '1%',
+  },
+
   homeIcon: {
     width: 50,
     height: 50,

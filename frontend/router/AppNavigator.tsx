@@ -10,6 +10,7 @@ import Register from '../pages/register/Register';
 import Clasificacion from '../pages/liga/Clasificacion';
 import PlayersList from '../pages/players/PlayersList';
 import FootballService from '../services/FutbolService';
+import { InvitarAmigos } from '../pages/liga/InvitarAmigos';
 
 export type RootStackParamList = {
   Home: { refreshLigas?: boolean } | undefined;
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   Register: undefined;
   Clasificacion: { ligaId: string, ligaName: string};
   PlayersList: undefined;
+  InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

@@ -32,6 +32,14 @@ export const LeagueController = {
     reply.code(201).send(m);
   },
 
+  addMemberByCode: async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req.user as any)?.sub || (req.user as any)?.id;
+    if (!userId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
+    const { code } = (req as any).params;
+    const m = await LeagueService.addMemberByCode(code, userId);
+    reply.code(201).send(m);
+  },
+
   removeMember: async (req: FastifyRequest, reply: FastifyReply) => {
     (req.user as any) && await req.jwtVerify();
     const { leagueId, userId } = removeMemberParams.parse((req as any).params);

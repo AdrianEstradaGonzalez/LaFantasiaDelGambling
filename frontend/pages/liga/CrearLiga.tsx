@@ -22,7 +22,8 @@ type CrearLigaProps = {
 export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   const [nombreLiga, setNombreLiga] = useState('');
   const [codigoLiga, setCodigoLiga] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loadingCrear, setLoadingCrear] = useState(false);
+  const [loadingUnirse, setLoadingUnirse] = useState(false);
 
   const handleCrearLiga = async () => {
     if (!nombreLiga.trim()) {
@@ -31,26 +32,20 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
     }
 
     try {
-      setLoading(true);
+      setLoadingCrear(true);
       const nuevaLiga = await LigaService.crearLiga({ name: nombreLiga });
-      Alert.alert(
-        '🎉 Liga creada',
-        `Tu liga "${nuevaLiga.name}" ha sido creada correctamente. ¡Ya puedes empezar a invitar jugadores!`,
-        [
-          {
-            text: 'Ver mis ligas',
-            onPress: () => {
-              setNombreLiga('');
-              // Navegar de vuelta con parámetro para refrescar
-              navigation.navigate('Home', { refreshLigas: true });
-            }
-          }
-        ]
-      );
+      
+      // Limpiar el campo y navegar directamente a InvitarAmigos
+      setNombreLiga('');
+      navigation.navigate('InvitarAmigos', { 
+        ligaNombre: nuevaLiga.name, 
+        codigo: nuevaLiga.code,
+        ligaId: nuevaLiga.id
+      });
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo crear la liga');
     } finally {
-      setLoading(false);
+      setLoadingCrear(false);
     }
   };
 
@@ -62,25 +57,19 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
     }
 
     try {
-      setLoading(true);
-      await LigaService.agregarMiembro(codigoLiga, { userId: 'me' });
-      Alert.alert(
-        '✅ Te has unido',
-        `¡Bienvenido a la liga! Ya formas parte de la competición.`,
-        [
-          {
-            text: 'Ver mis ligas',
-            onPress: () => {
-              setCodigoLiga('');
-              navigation.navigate('Home', { refreshLigas: true });
-            }
-          }
-        ]
-      );
+      setLoadingUnirse(true);
+      const ligaResponse = await LigaService.unirsePorCodigo(codigoLiga.toUpperCase());
+      
+      // Limpiar el campo y navegar directamente a Clasificacion de la liga
+      setCodigoLiga('');
+      navigation.navigate('Clasificacion', { 
+        ligaId: ligaResponse.league.id, 
+        ligaName: ligaResponse.league.name
+      });
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo unir a la liga');
     } finally {
-      setLoading(false);
+      setLoadingUnirse(false);
     }
   };
 
@@ -91,7 +80,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
-       <TopNavBar />
+       <TopNavBar backTo="Home" />
       <ScrollView contentContainerStyle={styles.container}>
        
         {/* Crear liga privada */}
@@ -115,13 +104,13 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           </View>
 
           <TouchableOpacity
-            style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
+            style={[styles.primaryButton, loadingCrear && styles.primaryButtonDisabled]}
             onPress={handleCrearLiga}
-            disabled={loading}
+            disabled={loadingCrear}
             activeOpacity={0.8}
           >
-            <Text style={[styles.primaryButtonText, loading && styles.primaryButtonTextDisabled]}>
-              {loading ? 'Creando...' : 'Crear Liga'}
+            <Text style={[styles.primaryButtonText, loadingCrear && styles.primaryButtonTextDisabled]}>
+              {loadingCrear ? 'Creando...' : 'Crear Liga'}
             </Text>
           </TouchableOpacity>
 
@@ -155,13 +144,13 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           </View>
 
           <TouchableOpacity
-            style={[styles.secondaryButton, loading && styles.primaryButtonDisabled]}
+            style={[styles.primaryButton, loadingUnirse && styles.primaryButtonDisabled]}
             onPress={handleUnirseLiga}
-            disabled={loading}
+            disabled={loadingUnirse}
             activeOpacity={0.8}
           >
-            <Text style={[styles.secondaryButtonText, loading && styles.primaryButtonTextDisabled]}>
-              {loading ? 'Uniéndose...' : 'Unirse a Liga'}
+            <Text style={[styles.primaryButtonText, loadingUnirse && styles.primaryButtonTextDisabled]}>
+              {loadingUnirse ? 'Uniéndose...' : 'Unirse a Liga'}
             </Text>
           </TouchableOpacity>
 

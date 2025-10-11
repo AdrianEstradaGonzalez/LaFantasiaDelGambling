@@ -245,10 +245,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
           ) : (
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{ color: '#cbd5e1', textAlign: 'center', marginBottom: 8 }}>
-                No se pudieron cargar las ligas
-              </Text>
-              <Text style={{ color: '#94a3b8', textAlign: 'center', fontSize: 12 }}>
-                Verifica tu conexión y que el servidor esté ejecutándose
+                No participas en ninguna liga. Crea una nueva liga o únete a una existente para empezar a competir con amigos.
               </Text>
             </View>
           )}
