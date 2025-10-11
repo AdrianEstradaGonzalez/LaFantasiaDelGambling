@@ -218,6 +218,14 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
         {/* Ligas */}
         <View style={styles.ligasList}>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={() => navigation.navigate('PlayersList')}
+            >
+              <Text style={styles.createButtonText}>Jugadores LaLiga</Text>
+            </TouchableOpacity>
+          </View>
           {loading ? (
             <View style={{ padding: 20, alignItems: 'center' }}>
               <ActivityIndicator size="small" color="#94a3b8" />
