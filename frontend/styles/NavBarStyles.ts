@@ -36,6 +36,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     minWidth: 50,
     backgroundColor: 'transparent',
+    position: 'relative',
   },
 
   // Botón activo con efecto glow
@@ -48,6 +49,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+    overflow: 'visible',
   },
 
   // Iconos base

@@ -16,7 +16,7 @@ export const HomeIcon = ({ size = 24, color = '#ffffff', isActive = false }: Ico
       strokeWidth={isActive ? 2.5 : 2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      fill={isActive ? 'rgba(59, 130, 246, 0.1)' : 'none'}
+      fill="none"
     />
     <Path
       d="M9 22V12h6v10"
@@ -43,7 +43,7 @@ export const TrophyIcon = ({ size = 24, color = '#ffffff', isActive = false }: I
       strokeWidth={isActive ? 2.5 : 2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      fill={isActive ? 'rgba(59, 130, 246, 0.1)' : 'none'}
+      fill="none"
     />
     <Path
       d="M8 22h8M12 18v4"
@@ -63,7 +63,7 @@ export const ShieldIcon = ({ size = 24, color = '#ffffff', isActive = false }: I
       strokeWidth={isActive ? 2.5 : 2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      fill={isActive ? 'rgba(59, 130, 246, 0.1)' : 'none'}
+      fill="none"
     />
   </Svg>
 );
@@ -85,7 +85,7 @@ export const UsersIcon = ({ size = 24, color = '#ffffff', isActive = false }: Ic
       strokeWidth={isActive ? 2.5 : 2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      fill={isActive ? 'rgba(59, 130, 246, 0.1)' : 'none'}
+      fill="none"
     />
     <Path
       d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
@@ -107,7 +107,7 @@ export const TargetIcon = ({ size = 24, color = '#ffffff', isActive = false }: I
       strokeWidth={isActive ? 2.5 : 2}
       strokeLinecap="round"
       strokeLinejoin="round"
-      fill={isActive ? 'rgba(59, 130, 246, 0.1)' : 'none'}
+      fill="none"
     />
     <Circle
       cx="12"
@@ -135,6 +135,138 @@ export const LogoutIcon = ({ size = 24, color = '#ffffff', isActive = false }: I
     <Path
       d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
       stroke={isActive ? '#ef4444' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de clasificación/tabla con números de posición
+export const LeaderboardIcon = ({ size = 24, color = '#ffffff', isActive = false }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="3"
+      y="4"
+      width="18"
+      height="16"
+      rx="2"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M7 8h10M7 12h10M7 16h6"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Circle cx="5" cy="8" r="0.5" fill={isActive ? '#3b82f6' : color} />
+    <Circle cx="5" cy="12" r="0.5" fill={isActive ? '#3b82f6' : color} />
+    <Circle cx="5" cy="16" r="0.5" fill={isActive ? '#3b82f6' : color} />
+  </Svg>
+);
+
+// Icono de campo de fútbol
+export const JerseyIcon = ({ size = 24, color = '#ffffff', isActive = false }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="2"
+      y="4"
+      width="20"
+      height="16"
+      rx="2"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    {/* Línea central */}
+    <Path
+      d="M12 4v16"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+    />
+    {/* Círculo central */}
+    <Circle
+      cx="12"
+      cy="12"
+      r="3"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      fill="none"
+    />
+    {/* Áreas de penalti */}
+    <Rect
+      x="2"
+      y="8"
+      width="4"
+      height="8"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      fill="none"
+    />
+    <Rect
+      x="18"
+      y="8"
+      width="4"
+      height="8"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      fill="none"
+    />
+  </Svg>
+);
+
+// Icono de bolsa de la compra
+export const TrendingIcon = ({ size = 24, color = '#ffffff', isActive = false }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M3 6h18"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M16 10a4 4 0 01-8 0"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de símbolo de dólar
+export const DiceIcon = ({ size = 24, color = '#ffffff', isActive = false }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M12 6v12M9.5 9a2.5 2.5 0 015 0c0 2-3 3-3 3s3 1 3 3a2.5 2.5 0 11-5 0"
+      stroke={isActive ? '#3b82f6' : color}
       strokeWidth={isActive ? 2.5 : 2}
       strokeLinecap="round"
       strokeLinejoin="round"

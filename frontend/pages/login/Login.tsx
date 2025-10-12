@@ -202,7 +202,9 @@ const Login: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
         </ScrollView>
+        
       </KeyboardAvoidingView>
+  
     </LinearGradient>
   );
 };

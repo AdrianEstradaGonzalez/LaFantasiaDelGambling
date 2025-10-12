@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, Pressable } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
@@ -44,30 +44,49 @@ const BottomNavBar: React.FC = () => {
       {buttons.map((button, index) => {
         const IconComponent = button.icon;
         return (
-          <TouchableOpacity
+          <View
             key={index}
-            onPress={button.onPress}
             style={[
               styles.navButton,
-              button.isActive && styles.navButtonActive,
-              { marginHorizontal: 30 } // Más espacio entre botones
+              // button.isActive && styles.navButtonActive, // Temporalmente comentado
+              { 
+                marginHorizontal: 30,
+                backgroundColor: button.isActive ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                borderRadius: 16,
+                // Sin shadow, sin elevation, sin border
+              }
             ]}
-            activeOpacity={0.7}
           >
-            <View style={{ marginBottom: 4 }}>
-              <IconComponent 
-                size={button.isActive ? 28 : 24}
-                color="rgba(255, 255, 255, 0.7)"
-                isActive={button.isActive}
-              />
-            </View>
-            <Text style={[
-              styles.navText,
-              button.isActive && styles.navTextActive
-            ]}>
-              {button.label}
-            </Text>
-          </TouchableOpacity>
+            <Pressable
+              onPress={button.onPress}
+              style={({ pressed }) => ({
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'transparent',
+                opacity: pressed && !button.isActive ? 0.7 : 1,
+              })}
+            >
+              <View style={{ 
+                marginBottom: 4, 
+                backgroundColor: 'transparent',
+                overflow: 'visible'
+              }}>
+                <IconComponent 
+                  size={button.isActive ? 28 : 24}
+                  color="rgba(255, 255, 255, 0.7)"
+                  isActive={button.isActive}
+                />
+              </View>
+              <Text style={[
+                styles.navText,
+                button.isActive && styles.navTextActive
+              ]}>
+                {button.label}
+              </Text>
+            </Pressable>
+          </View>
         );
       })}
       

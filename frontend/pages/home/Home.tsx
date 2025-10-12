@@ -121,10 +121,22 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
     if (jornadaActual === 1) {
       const nextJornada = upcoming ?? fallback;
-      if (nextJornada != null) setJornadaActual(nextJornada);
+      if (nextJornada != null) {
+        setJornadaActual(nextJornada);
+        // Centrar el scroll después de un breve delay
+        setTimeout(() => {
+          scrollToJornada(nextJornada);
+        }, 500);
+      }
     } else if (!jornadasDisponibles.includes(jornadaActual)) {
       const nextJornada = upcoming ?? fallback;
-      if (nextJornada != null) setJornadaActual(nextJornada);
+      if (nextJornada != null) {
+        setJornadaActual(nextJornada);
+        // Centrar el scroll después de un breve delay
+        setTimeout(() => {
+          scrollToJornada(nextJornada);
+        }, 500);
+      }
     }
   } catch (error) {
     console.warn('Error al obtener partidos:', error);
@@ -164,8 +176,12 @@ export const Home = ({ navigation, route }: HomeProps) => {
       const screenWidth = Dimensions.get('window').width;
       const offset = index * itemWidth - screenWidth / 2 + itemWidth / 2;
 
+      // Asegurar que no sea negativo y que no exceda el contenido
+      const maxScrollX = (jornadas.length * itemWidth) - screenWidth + 24; // 24 para padding
+      const finalOffset = Math.max(0, Math.min(offset, maxScrollX));
+
       jornadasScrollRef.current.scrollTo({
-        x: Math.max(0, offset),
+        x: finalOffset,
         animated: true,
       });
     },
@@ -174,9 +190,22 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
   useEffect(() => {
     if (jornadaActual && jornadas.length > 0) {
-      scrollToJornada(jornadaActual);
+      // Pequeño delay para asegurar que el ScrollView esté renderizado
+      setTimeout(() => {
+        scrollToJornada(jornadaActual);
+      }, 300);
     }
   }, [jornadaActual, jornadas, scrollToJornada]);
+
+  // useEffect adicional para centrar cuando se carga por primera vez
+  useEffect(() => {
+    if (!loading && !loadingPartidos && jornadaActual && jornadas.length > 0 && jornadaActual !== 1) {
+      // Delay más largo para asegurar que todo esté renderizado
+      setTimeout(() => {
+        scrollToJornada(jornadaActual);
+      }, 800);
+    }
+  }, [loading, loadingPartidos, jornadaActual, jornadas, scrollToJornada]);
 
   const jornadaAnterior = () => {
     setJornadaActual((prev) => {
