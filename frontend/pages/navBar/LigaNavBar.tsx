@@ -21,7 +21,7 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
 
   const handleClasificacion = () => navigation.navigate('Clasificacion', { ligaId, ligaName });
   const handleEquipo = () => navigation.navigate('Equipo', { ligaId, ligaName });
-  const handleMercado = () => navigation.navigate('Mercado');
+  const handleJugadores = () => navigation.navigate('PlayersList', { ligaId, ligaName });
   const handleApuestas = () => navigation.navigate('Apuestas');
   const handleHome = () => navigation.navigate('Home');
 
@@ -53,9 +53,9 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
         <Image source={equipoIcon} style={styles.navIcon} resizeMode="contain" />
       </TouchableOpacity>
 
-      {/* Botón Mercado */}
+      {/* Botón Jugadores */}
       <TouchableOpacity
-        onPress={handleMercado}
+        onPress={handleJugadores}
         style={styles.navButton}
         activeOpacity={0.8}
       >

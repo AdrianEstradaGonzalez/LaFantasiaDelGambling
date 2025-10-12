@@ -19,7 +19,7 @@ export type RootStackParamList = {
   Login: undefined;
   Register: undefined;
   Clasificacion: { ligaId: string, ligaName: string};
-  PlayersList: { selectMode?: boolean; filterByRole?: string; onPlayerSelected?: (player: any) => void } | undefined;
+  PlayersList: { selectMode?: boolean; filterByRole?: string; onPlayerSelected?: (player: any) => void; ligaId?: string; ligaName?: string } | undefined;
   MiPlantilla: undefined;
   Equipo: { ligaId: string, ligaName: string};
   InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string };

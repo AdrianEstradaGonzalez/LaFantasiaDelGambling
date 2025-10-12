@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService, { Player, TeamMinimal } from '../../services/FutbolService';
+import { SquadService } from '../../services/SquadService';
 import LoadingScreen from '../../components/LoadingScreen';
+import LigaNavBar from '../navBar/LigaNavBar';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 
@@ -150,6 +152,90 @@ export const PlayersList = ({ navigation, route }: {
   const selectMode = route.params?.selectMode || false;
   const filterByRole = route.params?.filterByRole;
   const onPlayerSelected = route.params?.onPlayerSelected;
+  
+  // Parámetros de liga para añadir a plantilla
+  const ligaId = route.params?.ligaId;
+  const ligaName = route.params?.ligaName;
+
+  // Función para añadir jugador a plantilla
+  const addPlayerToSquad = async (player: Player) => {
+    if (!ligaId) {
+      return;
+    }
+
+    try {
+      // Obtener plantilla actual
+      const currentSquad = await SquadService.getUserSquad(ligaId);
+      
+      // Determinar rol del jugador
+      const position = normalizePosition(player.position);
+      let role = 'DEF'; // fallback
+      if (position === 'Goalkeeper') role = 'GK';
+      else if (position === 'Defender') role = 'DEF';
+      else if (position === 'Midfielder') role = 'MID';
+      else if (position === 'Attacker') role = 'ATT';
+
+      // Definir posiciones según formación 4-3-3 (por defecto)
+      const positionsByRole = {
+        'GK': ['gk'],
+        'DEF': ['def1', 'def2', 'def3', 'def4'],
+        'MID': ['mid1', 'mid2', 'mid3'],
+        'ATT': ['att1', 'att2', 'att3']
+      };
+
+      let updatedPlayers: {
+        position: string;
+        playerId: number;
+        playerName: string;
+        role: string;
+      }[] = [];
+      let formation = '4-3-3'; // formación por defecto
+
+      if (currentSquad) {
+        // Ya existe plantilla, agregar jugador
+        updatedPlayers = currentSquad.players.map(p => ({
+          position: p.position,
+          playerId: p.playerId,
+          playerName: p.playerName,
+          role: p.role
+        }));
+        formation = currentSquad.formation;
+      }
+
+      // Buscar primera posición libre del rol correspondiente
+      const availablePositions = positionsByRole[role as keyof typeof positionsByRole] || [];
+      const occupiedPositions = updatedPlayers.map(p => p.position);
+      let freePosition = availablePositions.find(pos => !occupiedPositions.includes(pos));
+
+      if (!freePosition) {
+        // Si no hay posición libre, buscar cualquier posición libre
+        const allPositions = ['gk', 'def1', 'def2', 'def3', 'def4', 'mid1', 'mid2', 'mid3', 'att1', 'att2', 'att3'];
+        freePosition = allPositions.find(pos => !occupiedPositions.includes(pos));
+      }
+
+      if (freePosition) {
+        // Añadir el nuevo jugador
+        updatedPlayers.push({
+          position: freePosition,
+          playerId: player.id,
+          playerName: player.name,
+          role: role
+        });
+
+        // Guardar la plantilla actualizada
+        await SquadService.saveSquad(ligaId, {
+          formation: formation,
+          players: updatedPlayers
+        });
+
+        // Navegar a la plantilla
+        navigation.navigate('Equipo', { ligaId, ligaName });
+      }
+      
+    } catch (error) {
+      console.error('Error al añadir jugador a plantilla:', error);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -287,7 +373,7 @@ export const PlayersList = ({ navigation, route }: {
         <LoadingScreen />
       )}
       {!loading && (
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 140 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 180 }}>
         <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 12 }}>
           {selectMode ? `Seleccionar ${filterByRole || 'Jugador'}` : 'Jugadores LaLiga'}
         </Text>
@@ -407,13 +493,15 @@ export const PlayersList = ({ navigation, route }: {
                 if (selectMode && onPlayerSelected) {
                   onPlayerSelected(p);
                   navigation.goBack();
+                } else if (!selectMode && ligaId) {
+                  addPlayerToSquad(p);
                 }
               };
               
               return (
                 <TouchableOpacity 
                   key={key} 
-                  onPress={selectMode ? handlePress : undefined}
+                  onPress={handlePress}
                   style={{ 
                     backgroundColor: '#1a2332', 
                     borderWidth: 1, 
@@ -421,7 +509,7 @@ export const PlayersList = ({ navigation, route }: {
                     borderRadius: 12, 
                     padding: 12, 
                     marginBottom: 10,
-                    opacity: selectMode ? 1 : 1
+                    opacity: 1
                   }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -455,6 +543,11 @@ export const PlayersList = ({ navigation, route }: {
                         <Text style={{ color: '#10b981', fontSize: 16 }}>→</Text>
                       </View>
                     )}
+                    {!selectMode && ligaId && (
+                      <View style={{ marginLeft: 8 }}>
+                        <Text style={{ color: '#3b82f6', fontSize: 16 }}>+</Text>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
               );
@@ -466,6 +559,9 @@ export const PlayersList = ({ navigation, route }: {
         }
       </ScrollView>
       )}
+      
+      {/* Barra de navegación */}
+      <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
     </LinearGradient>
   );
 };

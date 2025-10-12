@@ -3,8 +3,9 @@ import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-na
 import LinearGradient from 'react-native-linear-gradient';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useRoute } from '@react-navigation/native';
-import { Player } from '../../services/FutbolService';
+import FootballService, { Player } from '../../services/FutbolService';
 import { SquadService } from '../../services/SquadService';
+import LigaNavBar from '../navBar/LigaNavBar';
 
 type Formation = {
   id: string;
@@ -170,7 +171,7 @@ const Dropdown = ({
               maxHeight: 200,
             }}
           >
-            <ScrollView style={{ maxHeight: 200 }}>
+            <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
               {items.map((item, index) => (
                 <TouchableOpacity
                   key={index}
@@ -213,6 +214,57 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Función para adaptar jugadores a nueva formación
+  const adaptPlayersToFormation = (newFormation: Formation, currentPlayers: Record<string, any>) => {
+    const adaptedPlayers: Record<string, any> = {};
+    
+    // Contar posiciones disponibles por rol en la nueva formación
+    const availablePositionsByRole: Record<string, string[]> = {
+      'GK': [],
+      'DEF': [],
+      'MID': [],
+      'ATT': []
+    };
+    
+    newFormation.positions.forEach(pos => {
+      availablePositionsByRole[pos.role].push(pos.id);
+    });
+    
+    // Agrupar jugadores actuales por rol
+    const playersByRole: Record<string, Array<{positionId: string, player: any}>> = {
+      'GK': [],
+      'DEF': [],
+      'MID': [],
+      'ATT': []
+    };
+    
+    Object.entries(currentPlayers).forEach(([positionId, player]) => {
+      // Determinar el rol basado en la posición actual usando la formación actual
+      const position = selectedFormation.positions.find(p => p.id === positionId);
+      if (position && player) {
+        playersByRole[position.role].push({ positionId, player });
+      }
+    });
+    
+    // Asignar jugadores a las nuevas posiciones disponibles
+    Object.keys(availablePositionsByRole).forEach(role => {
+      const availablePositions = availablePositionsByRole[role];
+      const playersForRole = playersByRole[role];
+      
+      // Asignar jugadores hasta el límite de posiciones disponibles
+      for (let i = 0; i < Math.min(availablePositions.length, playersForRole.length); i++) {
+        adaptedPlayers[availablePositions[i]] = playersForRole[i].player;
+      }
+      
+      // Si hay jugadores excedentes, los perderemos (este es el comportamiento deseado)
+      if (playersForRole.length > availablePositions.length) {
+        console.log(`Se eliminarán ${playersForRole.length - availablePositions.length} jugadores del rol ${role} al cambiar formación`);
+      }
+    });
+    
+    return adaptedPlayers;
+  };
+
   // Cargar plantilla existente al montar el componente
   useEffect(() => {
     const loadExistingSquad = async () => {
@@ -232,14 +284,22 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             setSelectedFormation(formation);
           }
 
-          // Cargar jugadores existentes
+          // Cargar jugadores existentes con datos completos
+          const allPlayers = await FootballService.getAllPlayersCached();
           const playersMap: Record<string, any> = {};
+          
           existingSquad.players.forEach(squadPlayer => {
-            playersMap[squadPlayer.position] = {
-              id: squadPlayer.playerId,
-              name: squadPlayer.playerName,
-              // Nota: Aquí podrías cargar más datos del jugador si es necesario
-            };
+            // Buscar el jugador completo en la lista
+            const fullPlayer = allPlayers.find(p => p.id === squadPlayer.playerId);
+            if (fullPlayer) {
+              playersMap[squadPlayer.position] = fullPlayer;
+            } else {
+              // Fallback si no se encuentra el jugador
+              playersMap[squadPlayer.position] = {
+                id: squadPlayer.playerId,
+                name: squadPlayer.playerName,
+              };
+            }
           });
           setSelectedPlayers(playersMap);
         }
@@ -359,7 +419,12 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           value={selectedFormation.id}
           onValueChange={(formationId) => {
             const formation = formations.find(f => f.id === formationId);
-            if (formation) setSelectedFormation(formation);
+            if (formation) {
+              // Adaptar jugadores a la nueva formación
+              const adaptedPlayers = adaptPlayersToFormation(formation, selectedPlayers);
+              setSelectedFormation(formation);
+              setSelectedPlayers(adaptedPlayers);
+            }
           }}
           items={formations.map(f => ({ label: f.name, value: f.id }))}
         />
@@ -531,6 +596,14 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           ) : (
             Object.entries(selectedPlayers).map(([positionId, player]) => {
               const position = selectedFormation.positions.find(p => p.id === positionId);
+              
+              // Generar URL de avatar si no hay foto del jugador
+              const getAvatarUri = (playerName: string) => {
+                const bg = '334155';
+                const color = 'ffffff';
+                return `https://ui-avatars.com/api/?name=${encodeURIComponent(playerName)}&background=${bg}&color=${color}&size=128`;
+              };
+              
               return (
                 <View key={positionId} style={{
                   flexDirection: 'row',
@@ -552,8 +625,41 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                       {position?.role}
                     </Text>
                   </View>
-                  <Text style={{ color: '#cbd5e1', flex: 1 }}>{player.name}</Text>
-                  <Text style={{ color: '#94a3b8', fontSize: 12, marginRight: 12 }}>{player.teamName}</Text>
+                  
+                  {/* Foto del jugador */}
+                  <Image
+                    source={{ uri: getAvatarUri(player.name) }}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 16,
+                      marginRight: 8,
+                      borderWidth: 1,
+                      borderColor: '#334155'
+                    }}
+                    resizeMode="cover"
+                  />
+                  
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#cbd5e1', fontWeight: '600' }}>{player.name}</Text>
+                    {player.teamName && (
+                      <Text style={{ color: '#94a3b8', fontSize: 12 }}>{player.teamName}</Text>
+                    )}
+                  </View>
+                  
+                  {/* Logo del equipo si existe */}
+                  {player.teamCrest && (
+                    <Image
+                      source={{ uri: player.teamCrest }}
+                      style={{
+                        width: 20,
+                        height: 20,
+                        marginRight: 8
+                      }}
+                      resizeMode="contain"
+                    />
+                  )}
+                  
                   <TouchableOpacity
                     onPress={() => removePlayer(positionId)}
                     style={{
@@ -574,6 +680,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         </View>
       </ScrollView>
       )}
+      
+      {/* Barra de navegación */}
+      <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
     </LinearGradient>
   );
 };
