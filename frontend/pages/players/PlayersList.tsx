@@ -3,6 +3,8 @@ import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity,
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService, { Player, TeamMinimal } from '../../services/FutbolService';
 import LoadingScreen from '../../components/LoadingScreen';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 
 // Posiciones en español para los filtros
 const positionsEs = ['Todos','Portero','Defensa','Centrocampista','Delantero'] as const;
@@ -131,7 +133,10 @@ const Dropdown = ({
   );
 };
 
-export const PlayersList = () => {
+export const PlayersList = ({ navigation, route }: { 
+  navigation: NativeStackNavigationProp<any>; 
+  route: RouteProp<any, any>; 
+}) => {
   // loading: para mostrar LoadingScreen inicialmente
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -140,6 +145,11 @@ export const PlayersList = () => {
   const [posFilter, setPosFilter] = useState<PositionFilterEs>('Todos');
   const [query, setQuery] = useState('');
   const [loadingProgress, setLoadingProgress] = useState<{ done: number; total: number; currentTeam?: string } | null>(null);
+
+  // Modo selección
+  const selectMode = route.params?.selectMode || false;
+  const filterByRole = route.params?.filterByRole;
+  const onPlayerSelected = route.params?.onPlayerSelected;
 
   useEffect(() => {
     let mounted = true;
@@ -199,6 +209,25 @@ export const PlayersList = () => {
 
   const filtered = useMemo(() => {
     let list = players;
+    
+    // Filtro por rol si estamos en modo selección
+    if (selectMode && filterByRole) {
+      const roleMapping: Record<string, CanonicalPos> = {
+        'GK': 'Goalkeeper',
+        'DEF': 'Defender', 
+        'MID': 'Midfielder',
+        'ATT': 'Attacker'
+      };
+      const targetRole = roleMapping[filterByRole];
+      if (targetRole) {
+        list = list.filter(p => {
+          const n = normalizePosition(p.position);
+          if (n) return n === targetRole;
+          return targetRole === 'Midfielder'; // fallback
+        });
+      }
+    }
+    
     if (teamFilter !== 'all') list = list.filter(p => p.teamId === teamFilter);
     const canonical = canonicalFromEs(posFilter);
     if (canonical) list = list.filter(p => {
@@ -212,7 +241,7 @@ export const PlayersList = () => {
       list = list.filter(p => p.name.toLowerCase().includes(q));
     }
     return list;
-  }, [players, teamFilter, posFilter, query]);
+  }, [players, teamFilter, posFilter, query, selectMode, filterByRole]);
 
   // Cargar fotos de jugadores (Wikipedia thumbnail) con caché simple
   const [photoMap, setPhotoMap] = useState<Record<string, string>>({});
@@ -259,7 +288,9 @@ export const PlayersList = () => {
       )}
       {!loading && (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 140 }}>
-        <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 12 }}>Jugadores LaLiga</Text>
+        <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 12 }}>
+          {selectMode ? `Seleccionar ${filterByRole || 'Jugador'}` : 'Jugadores LaLiga'}
+        </Text>
         
         {/* Progress indicator when loading progressively */}
         {loadingProgress && (
@@ -283,9 +314,10 @@ export const PlayersList = () => {
           </View>
         )}
         
-        {/* Filtros con Dropdowns en la misma línea */}
-        <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-          <View style={{ flex: 1 }}>
+        {/* Filtros con Dropdowns */}
+        {selectMode ? (
+          // En modo selección: solo equipo y búsqueda
+          <View>
             <Dropdown
               label="Equipo"
               value={teamFilter}
@@ -295,35 +327,69 @@ export const PlayersList = () => {
                 ...teams.map(t => ({ label: t.name, value: t.id }))
               ]}
             />
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Buscar jugador</Text>
+              <TextInput
+                placeholder="Escribe un nombre"
+                placeholderTextColor="#94a3b8"
+                value={query}
+                onChangeText={setQuery}
+                style={{ 
+                  backgroundColor: '#1a2332', 
+                  borderWidth: 1, 
+                  borderColor: '#334155', 
+                  color: '#fff', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 12, 
+                  borderRadius: 10 
+                }}
+              />
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Dropdown
-              label="Posición"
-              value={posFilter}
-              onValueChange={setPosFilter}
-              items={positionsEs.map(p => ({ label: p, value: p }))}
-            />
+        ) : (
+          // Modo normal: todos los filtros
+          <View>
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Dropdown
+                  label="Equipo"
+                  value={teamFilter}
+                  onValueChange={setTeamFilter}
+                  items={[
+                    { label: 'Todos los equipos', value: 'all' },
+                    ...teams.map(t => ({ label: t.name, value: t.id }))
+                  ]}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Dropdown
+                  label="Posición"
+                  value={posFilter}
+                  onValueChange={setPosFilter}
+                  items={positionsEs.map(p => ({ label: p, value: p }))}
+                />
+              </View>
+            </View>
+            <View style={{ marginBottom: 12 }}>
+              <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Buscar jugador</Text>
+              <TextInput
+                placeholder="Escribe un nombre"
+                placeholderTextColor="#94a3b8"
+                value={query}
+                onChangeText={setQuery}
+                style={{ 
+                  backgroundColor: '#1a2332', 
+                  borderWidth: 1, 
+                  borderColor: '#334155', 
+                  color: '#fff', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 12, 
+                  borderRadius: 10 
+                }}
+              />
+            </View>
           </View>
-        </View>
-        
-        <View style={{ marginBottom: 12 }}>
-          <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Buscar jugador</Text>
-          <TextInput
-            placeholder="Escribe un nombre"
-            placeholderTextColor="#94a3b8"
-            value={query}
-            onChangeText={setQuery}
-            style={{ 
-              backgroundColor: '#1a2332', 
-              borderWidth: 1, 
-              borderColor: '#334155', 
-              color: '#fff', 
-              paddingHorizontal: 12, 
-              paddingVertical: 12, 
-              borderRadius: 10 
-            }}
-          />
-        </View>
+        )}
 
         {
           <View>
@@ -336,8 +402,28 @@ export const PlayersList = () => {
               const key = `${p.teamId}-${p.id}`;
               const photo = photoMap[key] ?? getAvatarUri(p);
               const isAvatar = photo.includes('ui-avatars.com');
+              
+              const handlePress = () => {
+                if (selectMode && onPlayerSelected) {
+                  onPlayerSelected(p);
+                  navigation.goBack();
+                }
+              };
+              
               return (
-                <View key={key} style={{ backgroundColor: '#1a2332', borderWidth: 1, borderColor: '#334155', borderRadius: 12, padding: 12, marginBottom: 10 }}>
+                <TouchableOpacity 
+                  key={key} 
+                  onPress={selectMode ? handlePress : undefined}
+                  style={{ 
+                    backgroundColor: '#1a2332', 
+                    borderWidth: 1, 
+                    borderColor: '#334155', 
+                    borderRadius: 12, 
+                    padding: 12, 
+                    marginBottom: 10,
+                    opacity: selectMode ? 1 : 1
+                  }}
+                >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Image
                       source={{ uri: photo }}
@@ -364,8 +450,13 @@ export const PlayersList = () => {
                         ) : null}
                       </View>
                     </View>
+                    {selectMode && (
+                      <View style={{ marginLeft: 8 }}>
+                        <Text style={{ color: '#10b981', fontSize: 16 }}>→</Text>
+                      </View>
+                    )}
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             })}
             {filtered.length === 0 && (

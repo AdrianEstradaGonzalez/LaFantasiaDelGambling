@@ -11,11 +11,16 @@ const mercadoIcon = require('../../assets/iconos/mercado.png');
 const apuestasIcon = require('../../assets/iconos/apuestas.png');
 const homeIcon = require('../../assets/iconos/home.png');
 
-const LigaNavBar: React.FC = () => {
+type LigaNavBarProps = {
+  ligaId?: string;
+  ligaName?: string;
+};
+
+const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
 
-  const handleClasificacion = () => navigation.navigate('Clasificacion');
-  const handleEquipo = () => navigation.navigate('Equipo');
+  const handleClasificacion = () => navigation.navigate('Clasificacion', { ligaId, ligaName });
+  const handleEquipo = () => navigation.navigate('Equipo', { ligaId, ligaName });
   const handleMercado = () => navigation.navigate('Mercado');
   const handleApuestas = () => navigation.navigate('Apuestas');
   const handleHome = () => navigation.navigate('Home');

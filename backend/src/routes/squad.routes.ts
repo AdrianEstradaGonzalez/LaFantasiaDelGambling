@@ -1,0 +1,31 @@
+import { FastifyInstance } from 'fastify';
+import { SquadController } from '../controllers/squad.controller';
+
+async function squadRoutes(fastify: FastifyInstance) {
+  // GET /api/squads/:ligaId - Obtener plantilla del usuario para una liga
+  fastify.get('/:ligaId', {
+    preHandler: [fastify.auth]
+  }, SquadController.getUserSquad);
+
+  // POST /api/squads/:ligaId/save - Guardar o actualizar plantilla
+  fastify.post('/:ligaId/save', {
+    preHandler: [fastify.auth]
+  }, SquadController.saveSquad);
+
+  // POST /api/squads - Crear nueva plantilla
+  fastify.post('/', {
+    preHandler: [fastify.auth]
+  }, SquadController.createSquad);
+
+  // PUT /api/squads/:ligaId - Actualizar plantilla existente
+  fastify.put('/:ligaId', {
+    preHandler: [fastify.auth]
+  }, SquadController.updateSquad);
+
+  // DELETE /api/squads/:ligaId - Eliminar plantilla
+  fastify.delete('/:ligaId', {
+    preHandler: [fastify.auth]
+  }, SquadController.deleteSquad);
+}
+
+export default squadRoutes;

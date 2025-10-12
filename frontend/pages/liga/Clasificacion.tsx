@@ -130,7 +130,7 @@ export const Clasificacion = () => {
       )}
 
       {/* Barra inferior */}
-      <LigaNavBar />
+      <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
     </LinearGradient>
   );
 };
