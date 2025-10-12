@@ -78,7 +78,8 @@ export const Clasificacion = () => {
       nombreLiga={ligaNombre}
       onInvitePress={() => navigation.navigate('InvitarAmigos', { 
         ligaNombre: ligaNombre, 
-        codigo: codigoLiga 
+        codigo: codigoLiga,
+        ligaId: ligaId
       })}
     />
       {/* Header */}

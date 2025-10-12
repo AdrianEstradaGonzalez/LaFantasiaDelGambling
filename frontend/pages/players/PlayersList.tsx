@@ -87,13 +87,20 @@ const Dropdown = ({
             borderColor: '#334155',
             borderRadius: 10,
             paddingHorizontal: 12,
-            paddingVertical: 12,
+            // Fixed height to keep consistent with sibling dropdowns
+            height: 46,
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center'
           }}
         >
-          <Text style={{ color: '#fff', flex: 1 }}>{selectedLabel}</Text>
+          <Text
+            style={{ color: '#fff', flex: 1, fontSize: 14 }}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {selectedLabel}
+          </Text>
           <Text style={{ color: '#94a3b8', fontSize: 16 }}>{isOpen ? '▲' : '▼'}</Text>
         </TouchableOpacity>
         {isOpen && (
@@ -207,30 +214,56 @@ export const PlayersList = ({ navigation, route }: {
       const occupiedPositions = updatedPlayers.map(p => p.position);
       let freePosition = availablePositions.find(pos => !occupiedPositions.includes(pos));
 
-      if (!freePosition) {
-        // Si no hay posición libre, buscar cualquier posición libre
-        const allPositions = ['gk', 'def1', 'def2', 'def3', 'def4', 'mid1', 'mid2', 'mid3', 'att1', 'att2', 'att3'];
-        freePosition = allPositions.find(pos => !occupiedPositions.includes(pos));
-      }
-
       if (freePosition) {
-        // Añadir el nuevo jugador
+        // Hay espacio libre del mismo rol, añadir el nuevo jugador
         updatedPlayers.push({
           position: freePosition,
           playerId: player.id,
           playerName: player.name,
           role: role
         });
-
-        // Guardar la plantilla actualizada
-        await SquadService.saveSquad(ligaId, {
-          formation: formation,
-          players: updatedPlayers
-        });
-
-        // Navegar a la plantilla
-        navigation.navigate('Equipo', { ligaId, ligaName });
+      } else {
+        // No hay espacio libre del mismo rol, reemplazar el primero de ese rol
+        const sameRolePositions = availablePositions.filter(pos => 
+          updatedPlayers.some(p => p.position === pos)
+        );
+        
+        if (sameRolePositions.length > 0) {
+          // Reemplazar el primer jugador del mismo rol
+          const positionToReplace = sameRolePositions[0];
+          const playerIndex = updatedPlayers.findIndex(p => p.position === positionToReplace);
+          if (playerIndex !== -1) {
+            updatedPlayers[playerIndex] = {
+              position: positionToReplace,
+              playerId: player.id,
+              playerName: player.name,
+              role: role
+            };
+          }
+        } else {
+          // Si no hay jugadores del mismo rol, buscar cualquier posición libre
+          const allPositions = ['gk', 'def1', 'def2', 'def3', 'def4', 'mid1', 'mid2', 'mid3', 'att1', 'att2', 'att3'];
+          const anyFreePosition = allPositions.find(pos => !occupiedPositions.includes(pos));
+          
+          if (anyFreePosition) {
+            updatedPlayers.push({
+              position: anyFreePosition,
+              playerId: player.id,
+              playerName: player.name,
+              role: role
+            });
+          }
+        }
       }
+
+      // Guardar la plantilla actualizada
+      await SquadService.saveSquad(ligaId, {
+        formation: formation,
+        players: updatedPlayers
+      });
+
+      // Navegar a la plantilla
+      navigation.navigate('Equipo', { ligaId, ligaName });
       
     } catch (error) {
       console.error('Error al añadir jugador a plantilla:', error);

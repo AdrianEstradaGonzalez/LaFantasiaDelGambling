@@ -213,6 +213,22 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [selectedPlayers, setSelectedPlayers] = useState<Record<string, any>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Estados para detectar cambios
+  const [originalFormation, setOriginalFormation] = useState<Formation>(formations[0]);
+  const [originalPlayers, setOriginalPlayers] = useState<Record<string, any>>({});
+  
+  // Función para comparar si hay cambios
+  const hasChanges = () => {
+    // Comparar formación
+    if (selectedFormation.id !== originalFormation.id) return true;
+    
+    // Comparar jugadores (solo IDs para eficiencia)
+    const currentPlayerIds = Object.keys(selectedPlayers).sort().map(pos => `${pos}:${selectedPlayers[pos]?.id || 'empty'}`).join(',');
+    const originalPlayerIds = Object.keys(originalPlayers).sort().map(pos => `${pos}:${originalPlayers[pos]?.id || 'empty'}`).join(',');
+    
+    return currentPlayerIds !== originalPlayerIds;
+  };
 
   // Función para adaptar jugadores a nueva formación
   const adaptPlayersToFormation = (newFormation: Formation, currentPlayers: Record<string, any>) => {
@@ -282,6 +298,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           const formation = formations.find(f => f.id === existingSquad.formation);
           if (formation) {
             setSelectedFormation(formation);
+            setOriginalFormation(formation); // Guardar formación original
           }
 
           // Cargar jugadores existentes con datos completos
@@ -302,6 +319,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             }
           });
           setSelectedPlayers(playersMap);
+          setOriginalPlayers(playersMap); // Guardar jugadores originales
         }
       } catch (error) {
         console.error('Error al cargar plantilla existente:', error);
@@ -343,10 +361,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     }
 
     const playersList = Object.entries(selectedPlayers);
-    if (playersList.length === 0) {
-      Alert.alert('Error', 'Debes seleccionar al menos un jugador para guardar la plantilla');
-      return;
-    }
+    // Permitir guardar plantilla vacía - se eliminó la validación
 
     setIsSaving(true);
     try {
@@ -362,6 +377,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
       await SquadService.saveSquad(ligaId, squadData);
       // Plantilla guardada silenciosamente, sin popup
+      
+      // Actualizar estados originales después de guardar exitosamente
+      setOriginalFormation(selectedFormation);
+      setOriginalPlayers({ ...selectedPlayers });
       
     } catch (error) {
       console.error('Error al guardar plantilla:', error);
@@ -386,7 +405,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               {ligaName && <Text style={{ color: '#94a3b8', fontSize: 14, marginTop: 2 }}>{ligaName}</Text>}
             </View>
             
-            {ligaId && (
+            {ligaId && hasChanges() && (
               <TouchableOpacity
                 onPress={saveSquad}
                 disabled={isSaving}

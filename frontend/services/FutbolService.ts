@@ -46,7 +46,7 @@ function fmtFechaHoraES(isoUtc?: string) {
   if (!isoUtc) return { fecha: undefined, hora: undefined };
   const d = new Date(isoUtc);
   const fecha = new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Madrid"
+    day: "2-digit", month: "2-digit", timeZone: "Europe/Madrid"
   }).format(d);
   const hora = new Intl.DateTimeFormat("es-ES", {
     hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Madrid"

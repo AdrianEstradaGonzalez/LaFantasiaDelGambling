@@ -226,7 +226,13 @@ export const Home = ({ navigation, route }: HomeProps) => {
                 activeOpacity={0.85}
                 onPress={() => navigation.navigate('Clasificacion', { ligaId: liga.id, ligaName: liga.nombre })}
               >
-                <Text style={styles.ligaName}>{liga.nombre}</Text>
+                <Text
+                  style={styles.ligaName}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {liga.nombre}
+                </Text>
               </TouchableOpacity>
             ))
           ) : (
@@ -305,17 +311,32 @@ export const Home = ({ navigation, route }: HomeProps) => {
                       source={{ uri: partido.localCrest }}
                       style={{ width: 40, height: 40, marginRight: 8 }}
                     />
-                    <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                    <Text
+                      style={styles.tableTeamName}
+                    >
                       {partido.local}
                     </Text>
 
-                    <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
-                      {partido.finished
-                        ? partido.resultado
-                        : `${partido.fecha} ${partido.hora}`}
-                    </Text>
+                    <View style={{ flex: 3, alignItems: 'center', justifyContent: 'center' }}>
+                      {partido.finished ? (
+                        <Text style={[styles.tableCell, { textAlign: 'center' }]}>
+                          {partido.resultado}
+                        </Text>
+                      ) : (
+                        <View style={{ alignItems: 'center' }}>
+                          <Text style={[styles.tableCell, { textAlign: 'center', fontSize: 13 }]}>
+                            {partido.fecha}
+                          </Text>
+                          <Text style={[styles.tableCell, { textAlign: 'center', fontSize: 12, color: '#94a3b8' }]}>
+                            {partido.hora}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
 
-                    <Text style={[styles.tableCell, { flex: 3, textAlign: 'center' }]}>
+                    <Text
+                      style={styles.tableTeamName}
+                    >
                       {partido.visitante}
                     </Text>
                     <Image

@@ -64,6 +64,9 @@ export const AppNavigator = () => {
         <Stack.Screen name="Equipo" component={MiPlantilla} options={{
           animation: 'slide_from_right',
         }} />
+        <Stack.Screen name="InvitarAmigos" component={InvitarAmigos} options={{
+          animation: 'slide_from_right',
+        }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

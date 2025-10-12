@@ -165,6 +165,18 @@ export const HomeStyles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // Team name cells: allow shrinking and wrapping (no truncation)
+  tableTeamName: {
+    fontSize: 13,
+    color: '#cbd5e1',
+    fontWeight: '600',
+    flex: 3,
+    textAlign: 'center',
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    lineHeight: 16,
+  },
+
   logoutButton: {
     position: 'absolute',
     bottom: 28,
