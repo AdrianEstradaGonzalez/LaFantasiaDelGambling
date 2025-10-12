@@ -1,15 +1,9 @@
 import React from 'react';
-import { View, TouchableOpacity, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, TouchableOpacity, Text } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
-
-// 🔹 Importa los iconos
-const clasificacionIcon = require('../../assets/iconos/clasificacion.png');
-const equipoIcon = require('../../assets/iconos/equipo.png');
-const mercadoIcon = require('../../assets/iconos/mercado.png');
-const apuestasIcon = require('../../assets/iconos/apuestas.png');
-const homeIcon = require('../../assets/iconos/home.png');
+import { HomeIcon, TrophyIcon, ShieldIcon, UsersIcon, TargetIcon } from '../../components/VectorIcons';
 
 type LigaNavBarProps = {
   ligaId?: string;
@@ -18,6 +12,10 @@ type LigaNavBarProps = {
 
 const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const route = useRoute();
+  
+  // Determinar qué página está activa
+  const currentRoute = route.name;
 
   const handleClasificacion = () => navigation.navigate('Clasificacion', { ligaId, ligaName });
   const handleEquipo = () => navigation.navigate('Equipo', { ligaId, ligaName });
@@ -25,51 +23,70 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
   const handleApuestas = () => navigation.navigate('Apuestas');
   const handleHome = () => navigation.navigate('Home');
 
+  // Configuración de botones con iconos SVG elegantes
+  const buttons = [
+    {
+      icon: HomeIcon,
+      label: 'Inicio',
+      onPress: handleHome,
+      isActive: currentRoute === 'Home'
+    },
+    {
+      icon: TrophyIcon,
+      label: 'Liga',
+      onPress: handleClasificacion,
+      isActive: currentRoute === 'Clasificacion'
+    },
+    {
+      icon: ShieldIcon,
+      label: 'Equipo',
+      onPress: handleEquipo,
+      isActive: currentRoute === 'Equipo' || currentRoute === 'MiPlantilla'
+    },
+    {
+      icon: UsersIcon,
+      label: 'Mercado',
+      onPress: handleJugadores,
+      isActive: currentRoute === 'PlayersList'
+    },
+    {
+      icon: TargetIcon,
+      label: 'Apuestas',
+      onPress: handleApuestas,
+      isActive: currentRoute === 'Apuestas'
+    }
+  ];
+
   return (
     <View style={styles.navBar}>
-        {/* Botón Home */}
-      <TouchableOpacity
-        onPress={handleHome}
-        style={styles.navButton}
-        activeOpacity={0.8}
-      >
-        <Image source={homeIcon} style={styles.navIcon} resizeMode="contain" />
-      </TouchableOpacity>
-      {/* Botón Clasificación */}
-      <TouchableOpacity
-        onPress={handleClasificacion}
-        style={styles.navButton}
-        activeOpacity={0.8}
-      >
-        <Image source={clasificacionIcon} style={styles.navIcon} resizeMode="contain" />
-      </TouchableOpacity>
-
-      {/* Botón Equipo */}
-      <TouchableOpacity
-        onPress={handleEquipo}
-        style={styles.navButton}
-        activeOpacity={0.8}
-      >
-        <Image source={equipoIcon} style={styles.navIcon} resizeMode="contain" />
-      </TouchableOpacity>
-
-      {/* Botón Jugadores */}
-      <TouchableOpacity
-        onPress={handleJugadores}
-        style={styles.navButton}
-        activeOpacity={0.8}
-      >
-        <Image source={mercadoIcon} style={styles.navIcon} resizeMode="contain" />
-      </TouchableOpacity>
-
-      {/* Botón Apuestas */}
-      <TouchableOpacity
-        onPress={handleApuestas}
-        style={styles.navButton}
-        activeOpacity={0.8}
-      >
-        <Image source={apuestasIcon} style={styles.navIcon} resizeMode="contain" />
-      </TouchableOpacity>
+      {buttons.map((button, index) => {
+        const IconComponent = button.icon;
+        return (
+          <TouchableOpacity
+            key={index}
+            onPress={button.onPress}
+            style={[
+              styles.navButton,
+              button.isActive && styles.navButtonActive
+            ]}
+            activeOpacity={0.7}
+          >
+            <View style={{ marginBottom: 4 }}>
+              <IconComponent 
+                size={button.isActive ? 28 : 24}
+                color="rgba(255, 255, 255, 0.7)"
+                isActive={button.isActive}
+              />
+            </View>
+            <Text style={[
+              styles.navText,
+              button.isActive && styles.navTextActive
+            ]}>
+              {button.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 };

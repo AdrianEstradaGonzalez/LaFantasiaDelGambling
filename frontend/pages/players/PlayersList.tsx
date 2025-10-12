@@ -373,7 +373,7 @@ export const PlayersList = ({ navigation, route }: {
         <LoadingScreen />
       )}
       {!loading && (
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 180 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 200 }}>
         <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 12 }}>
           {selectMode ? `Seleccionar ${filterByRole || 'Jugador'}` : 'Jugadores LaLiga'}
         </Text>

@@ -378,7 +378,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           <Text style={{ color: '#cbd5e1', fontSize: 16 }}>Cargando plantilla...</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 180 }}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 200 }}>
           {/* Header con título y botón guardar */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ flex: 1 }}>

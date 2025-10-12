@@ -8,6 +8,7 @@ export const CrearLigaStyles = StyleSheet.create({
     flexGrow: 1,
     paddingTop: Platform.OS === 'android' ? 80 : 100,
     paddingHorizontal: Spacing.lg,
+    paddingBottom: 200,
   },
 
   // 🎯 Header Elegante

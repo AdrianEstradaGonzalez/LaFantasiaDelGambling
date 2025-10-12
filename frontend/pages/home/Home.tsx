@@ -203,7 +203,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
       <ScrollView
         ref={scrollRef}
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: 200 }}
       >
         {/* Header */}
         <View style={styles.header}>
