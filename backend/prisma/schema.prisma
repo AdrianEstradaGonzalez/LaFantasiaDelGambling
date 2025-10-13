@@ -90,3 +90,23 @@ model SquadPlayer {
   @@unique([squadId, position]) // Una posición solo puede tener un jugador
   @@index([squadId])
 }
+
+model Player {
+  id           Int      @id // ID del jugador de la API de LaLiga
+  name         String
+  position     String   // "Goalkeeper", "Defender", "Midfielder", "Attacker"
+  teamId       Int
+  teamName     String
+  teamCrest    String?
+  nationality  String?
+  shirtNumber  Int?
+  photo        String?
+  price        Int      // Precio en millones (1-250)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([teamId])
+  @@index([position])
+  @@index([price])
+  @@map("player")
+}

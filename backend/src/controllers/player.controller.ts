@@ -1,0 +1,146 @@
+import { FastifyRequest, FastifyReply } from 'fastify';
+import { PlayerService } from '../services/player.service';
+
+export class PlayerController {
+  /**
+   * Sincronizar jugadores desde la API
+   * POST /api/players/sync
+   */
+  static async syncPlayers(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const result = await PlayerService.syncPlayersFromAPI();
+      
+      return reply.status(200).send({
+        success: result.success,
+        message: 'Sincronización completada',
+        data: result,
+      });
+    } catch (error: any) {
+      console.error('Error en sincronización:', error);
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al sincronizar jugadores',
+      });
+    }
+  }
+
+  /**
+   * Obtener todos los jugadores
+   * GET /api/players
+   */
+  static async getAllPlayers(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const query = req.query as any;
+      const { position, teamId, minPrice, maxPrice, search } = query;
+
+      let players;
+
+      if (search) {
+        players = await PlayerService.searchPlayers(search as string);
+      } else if (position) {
+        players = await PlayerService.getPlayersByPosition(position as string);
+      } else if (teamId) {
+        players = await PlayerService.getPlayersByTeam(Number(teamId));
+      } else {
+        players = await PlayerService.getAllPlayers();
+      }
+
+      // Filtrar por rango de precio si se proporciona
+      if (minPrice || maxPrice) {
+        const min = minPrice ? Number(minPrice) : 0;
+        const max = maxPrice ? Number(maxPrice) : 250;
+        players = players.filter((p: any) => p.price >= min && p.price <= max);
+      }
+
+      return reply.status(200).send({
+        success: true,
+        data: players,
+        count: players.length,
+      });
+    } catch (error: any) {
+      console.error('Error obteniendo jugadores:', error);
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al obtener jugadores',
+      });
+    }
+  }
+
+  /**
+   * Obtener jugador por ID
+   * GET /api/players/:id
+   */
+  static async getPlayerById(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const params = req.params as any;
+      const { id } = params;
+      const player = await PlayerService.getPlayerById(Number(id));
+
+      return reply.status(200).send({
+        success: true,
+        data: player,
+      });
+    } catch (error: any) {
+      console.error('Error obteniendo jugador:', error);
+      return reply.status(404).send({
+        success: false,
+        message: error?.message || 'Jugador no encontrado',
+      });
+    }
+  }
+
+  /**
+   * Actualizar precio de jugador
+   * PATCH /api/players/:id/price
+   */
+  static async updatePlayerPrice(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const params = req.params as any;
+      const body = req.body as any;
+      const { id } = params;
+      const { price } = body;
+
+      if (!price || price < 1 || price > 250) {
+        return reply.status(400).send({
+          success: false,
+          message: 'El precio debe estar entre 1M y 250M',
+        });
+      }
+
+      const player = await PlayerService.updatePlayerPrice(Number(id), Number(price));
+
+      return reply.status(200).send({
+        success: true,
+        message: 'Precio actualizado correctamente',
+        data: player,
+      });
+    } catch (error: any) {
+      console.error('Error actualizando precio:', error);
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al actualizar precio',
+      });
+    }
+  }
+
+  /**
+   * Obtener estadísticas de jugadores
+   * GET /api/players/stats
+   */
+  static async getStats(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const stats = await PlayerService.getStats();
+
+      return reply.status(200).send({
+        success: true,
+        data: stats,
+      });
+    } catch (error: any) {
+      console.error('Error obteniendo estadísticas:', error);
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al obtener estadísticas',
+      });
+    }
+  }
+}
