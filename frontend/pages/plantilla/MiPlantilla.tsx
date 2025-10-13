@@ -107,10 +107,24 @@ const formations: Formation[] = [
 ];
 
 const getAvatarUri = (p: Player) => {
-  // Siempre avatar basado en nombre (no usar crest del equipo)
+  // Extraer iniciales del nombre del jugador
+  const words = p.name.trim().split(/\s+/);
+  let initials = '';
+  
+  if (words.length === 1) {
+    // Un solo nombre: primeras 2 letras
+    initials = words[0].substring(0, 2).toUpperCase();
+  } else {
+    // Múltiples nombres: primera letra de cada palabra (máx 2)
+    initials = words
+      .slice(0, 2)
+      .map(w => w.charAt(0).toUpperCase())
+      .join('');
+  }
+  
   const bg = '334155';
   const color = 'ffffff';
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=${bg}&color=${color}&size=128`;
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${bg}&color=${color}&size=128&length=2`;
 };
 
 const getRoleColor = (role: string) => {
@@ -561,6 +575,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           {/* Posiciones de jugadores */}
           {selectedFormation.positions.map(position => {
             const player = selectedPlayers[position.id];
+            const photoUri = player?.photo || (player ? getAvatarUri(player) : undefined);
+            
             return (
               <TouchableOpacity
                 key={position.id}
@@ -569,36 +585,80 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   position: 'absolute',
                   left: `${position.x}%`,
                   top: `${position.y}%`,
-                  width: 50,
-                  height: 60,
-                  marginLeft: -25,
-                  marginTop: -30,
-                  backgroundColor: player ? getRoleColor(position.role) : '#374151',
-                  borderRadius: 8,
-                  borderWidth: 2,
-                  borderColor: '#fff',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 3 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 6,
-                  elevation: 6
+                  width: 70,
+                  height: 95,
+                  marginLeft: -35,
+                  marginTop: -47,
+                  alignItems: 'center'
                 }}
               >
                 {player ? (
                   <View style={{ alignItems: 'center' }}>
-                    <Text style={{ color: '#fff', fontSize: 9, fontWeight: 'bold', textAlign: 'center' }} numberOfLines={1}>
-                      {player.name.split(' ')[0]}
-                    </Text>
-                    <Text style={{ color: '#fff', fontSize: 7, opacity: 0.8, textAlign: 'center' }} numberOfLines={1}>
-                      {player.name.split(' ')[1] || ''}
+                    <View
+                      style={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 30,
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                        backgroundColor: '#0b1220',
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 3 },
+                        shadowOpacity: 0.5,
+                        shadowRadius: 6,
+                        elevation: 6,
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <Image
+                        source={{ uri: photoUri }}
+                        style={{
+                          width: 56,
+                          height: 56,
+                          borderRadius: 28
+                        }}
+                        resizeMode="cover"
+                      />
+                    </View>
+                    <Text
+                      style={{
+                        color: '#fff',
+                        fontSize: 11,
+                        fontWeight: 'bold',
+                        textAlign: 'center',
+                        marginTop: 4,
+                        textShadowColor: '#000',
+                        textShadowOffset: { width: 0, height: 1 },
+                        textShadowRadius: 3,
+                        maxWidth: 70
+                      }}
+                      numberOfLines={1}
+                    >
+                      {player.name}
                     </Text>
                   </View>
                 ) : (
-                  <Text style={{ color: '#9ca3af', fontSize: 11, fontWeight: 'bold' }}>
-                    {position.role}
-                  </Text>
+                  <View
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 30,
+                      backgroundColor: '#374151',
+                      borderWidth: 2,
+                      borderColor: '#fff',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: 0.4,
+                      shadowRadius: 6,
+                      elevation: 6
+                    }}
+                  >
+                    <Text style={{ color: '#9ca3af', fontSize: 12, fontWeight: 'bold' }}>
+                      {position.role}
+                    </Text>
+                  </View>
                 )}
               </TouchableOpacity>
             );
@@ -616,12 +676,26 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             Object.entries(selectedPlayers).map(([positionId, player]) => {
               const position = selectedFormation.positions.find(p => p.id === positionId);
               
-              // Generar URL de avatar si no hay foto del jugador
-              const getAvatarUri = (playerName: string) => {
+              // Generar URL de avatar con iniciales si no hay foto del jugador
+              const getAvatarUriWithInitials = (playerName: string) => {
+                const words = playerName.trim().split(/\s+/);
+                let initials = '';
+                
+                if (words.length === 1) {
+                  initials = words[0].substring(0, 2).toUpperCase();
+                } else {
+                  initials = words
+                    .slice(0, 2)
+                    .map(w => w.charAt(0).toUpperCase())
+                    .join('');
+                }
+                
                 const bg = '334155';
                 const color = 'ffffff';
-                return `https://ui-avatars.com/api/?name=${encodeURIComponent(playerName)}&background=${bg}&color=${color}&size=128`;
+                return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${bg}&color=${color}&size=128&length=2`;
               };
+              
+              const photoUri = player.photo || getAvatarUriWithInitials(player.name);
               
               return (
                 <View key={positionId} style={{
@@ -647,7 +721,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   
                   {/* Foto del jugador */}
                   <Image
-                    source={{ uri: getAvatarUri(player.name) }}
+                    source={{ uri: photoUri }}
                     style={{
                       width: 32,
                       height: 32,

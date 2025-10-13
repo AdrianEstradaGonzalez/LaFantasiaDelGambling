@@ -54,10 +54,24 @@ const posAbbr: Record<CanonicalPos, string> = {
 };
 
 const getAvatarUri = (p: Player) => {
-  // Siempre avatar basado en nombre (no usar crest del equipo)
+  // Extraer iniciales del nombre del jugador
+  const words = p.name.trim().split(/\s+/);
+  let initials = '';
+  
+  if (words.length === 1) {
+    // Un solo nombre: primeras 2 letras
+    initials = words[0].substring(0, 2).toUpperCase();
+  } else {
+    // Múltiples nombres: primera letra de cada palabra (máx 2)
+    initials = words
+      .slice(0, 2)
+      .map(w => w.charAt(0).toUpperCase())
+      .join('');
+  }
+  
   const bg = '334155';
   const color = 'ffffff';
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=${bg}&color=${color}&size=128`;
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${bg}&color=${color}&size=128&length=2`;
 };
 
 // Componente Dropdown personalizado
@@ -76,7 +90,7 @@ const Dropdown = ({
   const selectedLabel = items.find(item => item.value === value)?.label || label;
 
   return (
-    <View style={{ marginBottom: 12 }}>
+    <View style={{ marginBottom: 12}}>
       <Text style={{ color: '#94a3b8', marginBottom: 6 }}>{label}</Text>
       <View>
         <TouchableOpacity
@@ -113,9 +127,18 @@ const Dropdown = ({
               borderBottomLeftRadius: 10,
               borderBottomRightRadius: 10,
               maxHeight: 200,
+              position: 'absolute',
+              top: 46,
+              left: 0,
+              right: 0,
+              zIndex: 1000
             }}
           >
-            <ScrollView style={{ maxHeight: 200 }}>
+            <ScrollView 
+              style={{ maxHeight: 200 }}
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={true}
+            >
               {items.map((item, index) => (
                 <TouchableOpacity
                   key={index}
@@ -299,6 +322,15 @@ export const PlayersList = ({ navigation, route }: {
         // No cached players - do progressive loading
         console.log('PlayersList: No hay caché, cargando progresivamente...');
         setLoading(false); // Stop showing LoadingScreen, start showing progressive UI
+        // Si no había equipos en caché, traerlos ahora para habilitar filtros por equipo
+        if (!teamsCached.length) {
+          try {
+            const freshTeams = await FootballService.getLaLigaTeams();
+            if (mounted) setTeams(freshTeams);
+          } catch (e) {
+            console.warn('PlayersList: Error cargando equipos frescos', e);
+          }
+        }
         
         const allPlayers = await (FootballService as any).getAllPlayersProgressive(
           (currentPlayers: Player[], teamName: string, progress: { done: number; total: number }) => {
@@ -359,6 +391,30 @@ export const PlayersList = ({ navigation, route }: {
       const q = query.trim().toLowerCase();
       list = list.filter(p => p.name.toLowerCase().includes(q));
     }
+    
+    // Ordenar por posición: Portero -> Defensa -> Centrocampista -> Delantero
+    const positionOrder: Record<CanonicalPos, number> = {
+      'Goalkeeper': 1,
+      'Defender': 2,
+      'Midfielder': 3,
+      'Attacker': 4
+    };
+    
+    list.sort((a, b) => {
+      const posA = normalizePosition(a.position) ?? 'Midfielder';
+      const posB = normalizePosition(b.position) ?? 'Midfielder';
+      const orderA = positionOrder[posA];
+      const orderB = positionOrder[posB];
+      
+      // Primero por posición
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // Luego por nombre alfabéticamente dentro de la misma posición
+      return a.name.localeCompare(b.name);
+    });
+    
     return list;
   }, [players, teamFilter, posFilter, query, selectMode, filterByRole]);
 
@@ -519,7 +575,7 @@ export const PlayersList = ({ navigation, route }: {
               const badgeColor = posColors[displayCat];
               const badgeAbbr = posAbbr[displayCat];
               const key = `${p.teamId}-${p.id}`;
-              const photo = photoMap[key] ?? getAvatarUri(p);
+              const photo = p.photo ?? photoMap[key] ?? getAvatarUri(p);
               const isAvatar = photo.includes('ui-avatars.com');
               
               const handlePress = () => {
@@ -548,7 +604,7 @@ export const PlayersList = ({ navigation, route }: {
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Image
                       source={{ uri: photo }}
-                      style={{ width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#334155', marginRight: 12 }}
+                      style={{ width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#334155', marginRight: 12, backgroundColor: '#0b1220' }}
                       resizeMode="cover"
                       onError={() => {
                         if (!isAvatar) {

@@ -20,7 +20,7 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
   const handleClasificacion = () => navigation.navigate('Clasificacion', { ligaId, ligaName });
   const handleEquipo = () => navigation.navigate('Equipo', { ligaId, ligaName });
   const handleJugadores = () => navigation.navigate('PlayersList', { ligaId, ligaName });
-  const handleApuestas = () => navigation.navigate('Apuestas');
+  const handleApuestas = () => navigation.navigate('Apuestas', { ligaId, ligaName });
   const handleHome = () => navigation.navigate('Home');
 
   // Configuración de botones con iconos SVG más representativos
