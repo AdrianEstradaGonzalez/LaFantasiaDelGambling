@@ -235,13 +235,37 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   // Función para comparar si hay cambios
   const hasChanges = () => {
     // Comparar formación
-    if (selectedFormation.id !== originalFormation.id) return true;
+    if (selectedFormation.id !== originalFormation.id) {
+      console.log('Hay cambio en formación:', selectedFormation.id, '!=', originalFormation.id);
+      return true;
+    }
     
-    // Comparar jugadores (solo IDs para eficiencia)
-    const currentPlayerIds = Object.keys(selectedPlayers).sort().map(pos => `${pos}:${selectedPlayers[pos]?.id || 'empty'}`).join(',');
-    const originalPlayerIds = Object.keys(originalPlayers).sort().map(pos => `${pos}:${originalPlayers[pos]?.id || 'empty'}`).join(',');
+    // Obtener todas las posiciones únicas de ambos objetos
+    const allPositions = new Set([
+      ...Object.keys(selectedPlayers),
+      ...Object.keys(originalPlayers)
+    ]);
     
-    return currentPlayerIds !== originalPlayerIds;
+    // Comparar jugador por jugador en cada posición
+    for (const pos of allPositions) {
+      const currentPlayer = selectedPlayers[pos];
+      const originalPlayer = originalPlayers[pos];
+      
+      // Si uno tiene jugador y el otro no, hay cambio
+      if ((currentPlayer && !originalPlayer) || (!currentPlayer && originalPlayer)) {
+        console.log('Hay cambio en posición', pos, ':', currentPlayer?.name || 'vacío', 'vs', originalPlayer?.name || 'vacío');
+        return true;
+      }
+      
+      // Si ambos tienen jugador pero son diferentes, hay cambio
+      if (currentPlayer && originalPlayer && currentPlayer.id !== originalPlayer.id) {
+        console.log('Hay cambio en posición', pos, ':', currentPlayer.name, 'vs', originalPlayer.name);
+        return true;
+      }
+    }
+    
+    console.log('No hay cambios detectados');
+    return false;
   };
 
   // Función para adaptar jugadores a nueva formación
@@ -313,6 +337,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           if (formation) {
             setSelectedFormation(formation);
             setOriginalFormation(formation); // Guardar formación original
+            console.log('Formación original cargada:', formation.id);
           }
 
           // Cargar jugadores existentes con datos completos
@@ -334,6 +359,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           });
           setSelectedPlayers(playersMap);
           setOriginalPlayers(playersMap); // Guardar jugadores originales
+          console.log('Jugadores originales cargados:', Object.keys(playersMap).length, 'jugadores');
         }
       } catch (error) {
         console.error('Error al cargar plantilla existente:', error);
@@ -419,7 +445,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               {ligaName && <Text style={{ color: '#94a3b8', fontSize: 14, marginTop: 2 }}>{ligaName}</Text>}
             </View>
             
-            {ligaId && hasChanges() && (
+            {(() => {
+              const shouldShowButton = ligaId && hasChanges();
+              console.log('Render botón guardar - ligaId:', ligaId, 'hasChanges:', hasChanges(), 'shouldShow:', shouldShowButton);
+              return shouldShowButton ? (
               <TouchableOpacity
                 onPress={saveSquad}
                 disabled={isSaving}
@@ -443,7 +472,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   {isSaving ? 'Guardando...' : 'Guardar'}
                 </Text>
               </TouchableOpacity>
-            )}
+              ) : null;
+            })()}
           </View>
         
         {/* Selector de Formación */}
