@@ -17,14 +17,39 @@ type CanonicalPos = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker';
 const normalizePosition = (pos?: string): CanonicalPos | undefined => {
   if (!pos) return undefined;
   const p = pos.trim().toLowerCase();
-  // Portero
-  if (p.includes('goal') || p.includes('keeper') || p === 'gk') return 'Goalkeeper';
-  // Defensa (cubre distintos tipos de backs)
-  if (p.includes('defen') || p.includes('back') || p.includes('centre-back') || p.includes('center back') || p.includes('fullback') || p.includes('left back') || p.includes('right back') || p.includes('wing-back') || p.includes('wingback')) return 'Defender';
-  // Delantero (incluye extremos como atacantes)
-  if (p.includes('attack') || p.includes('offen') || p.includes('forward') || p.includes('striker') || p.includes('winger')) return 'Attacker';
-  // Centrocampista
-  if (p.includes('midf') || p.includes('mid') || p.includes('medio') || p.includes('centrocamp')) return 'Midfielder';
+  
+  // Portero (G, Goalkeeper)
+  if (p === 'g' || p === 'goalkeeper' || p.includes('goal') || p.includes('keeper')) {
+    return 'Goalkeeper';
+  }
+  
+  // Defensa (D, DC, DL, DR, DLC, DRC, WB, WBL, WBR, Defender, Centre-Back, etc.)
+  if (p === 'd' || p === 'dc' || p === 'dl' || p === 'dr' || p === 'dlc' || p === 'drc' || 
+      p === 'wb' || p === 'wbl' || p === 'wbr' || p === 'defender' ||
+      p.includes('defen') || p.includes('back') || p.includes('centre-back') || 
+      p.includes('center back') || p.includes('fullback') || p.includes('wing-back') || 
+      p.includes('wingback')) {
+    return 'Defender';
+  }
+  
+  // Delantero (F, CF, ST, LW, RW, SS, Forward, Striker, Winger)
+  // IMPORTANTE: Procesar extremos (LW, RW) ANTES que los centrocampistas
+  if (p === 'f' || p === 'cf' || p === 'st' || p === 'lw' || p === 'rw' || p === 'ss' ||
+      p === 'forward' || p === 'striker' || p.includes('winger') || p.includes('wing') ||
+      p.includes('striker') || p.includes('forward') || p.includes('attack') || 
+      p.includes('offen') || p.includes('extremo') || p.includes('delantero')) {
+    return 'Attacker';
+  }
+  
+  // Centrocampista (M, MC, ML, MR, DM, AM, AML, AMR, AMC, Midfielder)
+  // Esta comprobación va AL FINAL para que LW/RW no se confundan con ML/MR
+  if (p === 'm' || p === 'mc' || p === 'ml' || p === 'mr' || p === 'dm' || 
+      p === 'am' || p === 'aml' || p === 'amr' || p === 'amc' || p === 'midfielder' ||
+      p.includes('midf') || p.includes('mid') || p.includes('medio') || 
+      p.includes('centrocamp') || p.includes('pivot') || p.includes('playmaker')) {
+    return 'Midfielder';
+  }
+  
   return undefined;
 };
 
@@ -392,7 +417,7 @@ export const PlayersList = ({ navigation, route }: {
       list = list.filter(p => p.name.toLowerCase().includes(q));
     }
     
-    // Ordenar por posición: Portero -> Defensa -> Centrocampista -> Delantero
+    // Ordenar primero por equipo (alfabéticamente) y luego por posición dentro de cada equipo
     const positionOrder: Record<CanonicalPos, number> = {
       'Goalkeeper': 1,
       'Defender': 2,
@@ -401,18 +426,27 @@ export const PlayersList = ({ navigation, route }: {
     };
     
     list.sort((a, b) => {
+      // Primero por equipo (alfabético)
+      const teamA = (a.teamName || '').trim();
+      const teamB = (b.teamName || '').trim();
+      const teamComparison = teamA.localeCompare(teamB, 'es', { sensitivity: 'base' });
+      
+      if (teamComparison !== 0) {
+        return teamComparison;
+      }
+      
+      // Si el equipo es el mismo, ordenar por posición
       const posA = normalizePosition(a.position) ?? 'Midfielder';
       const posB = normalizePosition(b.position) ?? 'Midfielder';
       const orderA = positionOrder[posA];
       const orderB = positionOrder[posB];
       
-      // Primero por posición
       if (orderA !== orderB) {
         return orderA - orderB;
       }
       
-      // Luego por nombre alfabéticamente dentro de la misma posición
-      return a.name.localeCompare(b.name);
+      // Si equipo y posición son iguales, ordenar por nombre alfabéticamente
+      return a.name.localeCompare(b.name, 'es', { sensitivity: 'base' });
     });
     
     return list;
