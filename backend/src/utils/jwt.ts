@@ -2,10 +2,10 @@ import jwt from "jsonwebtoken";
 const SECRET = process.env.JWT_SECRET || "dev";
 
 export function signAccess(sub: string, email?: string) {
-  return jwt.sign({ sub, email }, SECRET, { expiresIn: "15m" });
+  return jwt.sign({ sub, email }, SECRET, { expiresIn: "365d" }); // 1 año
 }
 export function signRefresh(sub: string) {
-  return jwt.sign({ sub, type: "refresh" }, SECRET, { expiresIn: "7d" });
+  return jwt.sign({ sub, type: "refresh" }, SECRET, { expiresIn: "365d" }); // 1 año
 }
 export function signReset(prcId: string, email: string, minutes: number) {
   return jwt.sign({ type: "password_reset", prcId, email }, SECRET, { expiresIn: `${minutes}m` });

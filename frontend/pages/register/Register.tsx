@@ -101,10 +101,11 @@ const Register: React.FC<Props> = ({ navigation }) => {
                         <Image
                         source={
                             showPassword
-                            ? require('../../assets/iconos/eye_off.png')
-                            : require('../../assets/iconos/eye_on.png')
+                            ? require('../../assets/iconos/eye_on.png')
+                            : require('../../assets/iconos/eye_off.png')
                         }
-                        style={{ width: 24, height: 24 }}
+                        style={{ width: 20, height: 20, tintColor: '#666' }}
+                        resizeMode="contain"
                         />
                     )}
                     onPress={() => setShowPassword(!showPassword)}

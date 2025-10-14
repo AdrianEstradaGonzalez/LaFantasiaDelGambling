@@ -39,7 +39,7 @@ export async function buildApp() {
   await app.register(jwt, {
     secret: env.JWT_SECRET,
     sign: {
-      expiresIn: "15m"
+      expiresIn: "365d" // 1 año - sesión sin expiración práctica
     }
   });
 
