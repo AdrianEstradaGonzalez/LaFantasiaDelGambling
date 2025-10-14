@@ -233,6 +233,28 @@ export const PlayersMarket = ({ navigation, route }: {
     }
   };
 
+  // Establecer todos los jugadores a 1M
+  const setAllToMinimum = () => {
+    Alert.alert(
+      'Confirmar acción',
+      '¿Establecer todos los jugadores a 1M?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Establecer',
+          style: 'destructive',
+          onPress: () => {
+            const newPrices: Record<number, number> = {};
+            players.forEach(p => {
+              newPrices[p.id] = 1;
+            });
+            setEditedPrices(newPrices);
+          }
+        }
+      ]
+    );
+  };
+
   // Guardar cambios en BD
   const saveChanges = async () => {
     const updates = Object.entries(editedPrices)
@@ -354,6 +376,31 @@ export const PlayersMarket = ({ navigation, route }: {
                 <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 12 }}>
                   Mercado de Jugadores
                 </Text>
+
+                {/* Botón para establecer todos a 1M */}
+                <TouchableOpacity
+                  onPress={setAllToMinimum}
+                  style={{
+                    backgroundColor: '#ef4444',
+                    paddingVertical: 12,
+                    paddingHorizontal: 20,
+                    borderRadius: 10,
+                    marginBottom: 16,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    shadowColor: '#ef4444',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 4,
+                    elevation: 4
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15, marginRight: 8 }}>
+                    Establecer todos a 1M
+                  </Text>
+                  <Text style={{ color: '#fff', fontSize: 16 }}>⚡</Text>
+                </TouchableOpacity>
                 
                 {/* Filtros */}
                 <View>
