@@ -41,4 +41,11 @@ export default async function playerRoutes(app: FastifyInstance) {
    * @access Private (Admin)
    */
   app.patch('/:id/price', PlayerController.updatePlayerPrice);
+
+  /**
+   * @route PATCH /api/players/:id/position
+   * @desc Actualizar posición de un jugador
+   * @access Private (Admin)
+   */
+  app.patch('/:id/position', PlayerController.updatePlayerPosition);
 }

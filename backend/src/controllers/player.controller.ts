@@ -124,6 +124,41 @@ export class PlayerController {
   }
 
   /**
+   * Actualizar posición de jugador
+   * PATCH /api/players/:id/position
+   */
+  static async updatePlayerPosition(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const params = req.params as any;
+      const body = req.body as any;
+      const { id } = params;
+      const { position } = body;
+
+      const validPositions = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker'];
+      if (!position || !validPositions.includes(position)) {
+        return reply.status(400).send({
+          success: false,
+          message: `La posición debe ser una de: ${validPositions.join(', ')}`,
+        });
+      }
+
+      const player = await PlayerService.updatePlayerPosition(Number(id), position);
+
+      return reply.status(200).send({
+        success: true,
+        message: 'Posición actualizada correctamente',
+        data: player,
+      });
+    } catch (error: any) {
+      console.error('Error actualizando posición:', error);
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al actualizar posición',
+      });
+    }
+  }
+
+  /**
    * Obtener estadísticas de jugadores
    * GET /api/players/stats
    */

@@ -109,6 +109,37 @@ export class PlayerService {
   }
 
   /**
+   * Actualizar posición de un jugador
+   */
+  static async updatePlayerPosition(id: number, position: string): Promise<PlayerWithPrice> {
+    try {
+      const validPositions = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker'];
+      if (!validPositions.includes(position)) {
+        throw new Error(`La posición debe ser una de: ${validPositions.join(', ')}`);
+      }
+
+      const response = await fetch(`${this.BASE_URL}/${id}/position`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ position }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error ${response.status}`);
+      }
+
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('Error actualizando posición:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Actualizar precios de múltiples jugadores
    */
   static async updateMultiplePrices(updates: { id: number; price: number }[]): Promise<void> {
@@ -120,6 +151,37 @@ export class PlayerService {
       await Promise.all(promises);
     } catch (error) {
       console.error('Error actualizando múltiples precios:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Establecer todos los jugadores a un precio específico
+   */
+  static async resetAllPrices(price: number = 1): Promise<void> {
+    try {
+      if (price < 1 || price > 250) {
+        throw new Error('El precio debe estar entre 1M y 250M');
+      }
+
+      // Obtener todos los jugadores
+      const players = await this.getAllPlayers();
+      
+      // Crear actualizaciones para todos
+      const updates = players.map(player => ({
+        id: player.id,
+        price
+      }));
+
+      // Actualizar en lotes de 50 para no saturar el servidor
+      const batchSize = 50;
+      for (let i = 0; i < updates.length; i += batchSize) {
+        const batch = updates.slice(i, i + batchSize);
+        await this.updateMultiplePrices(batch);
+        console.log(`Actualizados ${Math.min(i + batchSize, updates.length)}/${updates.length} jugadores`);
+      }
+    } catch (error) {
+      console.error('Error estableciendo precios:', error);
       throw error;
     }
   }

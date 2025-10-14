@@ -38,14 +38,36 @@ export class PlayerService {
 
   /**
    * Normalizar posición de la API
+   * Mapea todas las variantes de posiciones a las 4 categorías canónicas
    */
   private static normalizePosition(pos?: string): string {
-    const normalized = (pos ?? '').toUpperCase();
-    if (['G', 'GOALKEEPER'].includes(normalized)) return 'Goalkeeper';
-    if (['D', 'DEFENDER'].includes(normalized)) return 'Defender';
-    if (['M', 'MIDFIELDER'].includes(normalized)) return 'Midfielder';
-    if (['F', 'ATTACKER'].includes(normalized)) return 'Attacker';
-    return pos || 'Midfielder';
+    if (!pos) return 'Midfielder';
+    
+    const normalized = pos.trim().toLowerCase();
+    
+    // Porteros
+    if (normalized === 'g' || normalized === 'goalkeeper' || normalized.includes('goal') || normalized.includes('keeper')) {
+      return 'Goalkeeper';
+    }
+    
+    // Defensas
+    if (normalized === 'd' || normalized === 'defender' || normalized.includes('defen') || normalized.includes('back')) {
+      return 'Defender';
+    }
+    
+    // Centrocampistas (incluye mediocentros defensivos, centrales, ofensivos)
+    // Se evalúa ANTES que delanteros para capturar "Defensive Midfield", "Central Midfield", etc.
+    if (normalized === 'm' || normalized === 'midfielder' || normalized.includes('midfield') || normalized.includes('midf')) {
+      return 'Midfielder';
+    }
+    
+    // Delanteros (incluye extremos/wingers, atacantes, delanteros centro)
+    if (normalized === 'f' || normalized === 'attacker' || normalized === 'forward' || normalized.includes('attack') || normalized.includes('forward') || normalized.includes('striker') || normalized.includes('wing')) {
+      return 'Attacker';
+    }
+    
+    // Default
+    return 'Midfielder';
   }
 
   /**
@@ -57,10 +79,9 @@ export class PlayerService {
     playersUpdated: number;
     errors: number;
   }> {
-    const allPlayers: PlayerData[] = [];
+    const allPlayersMap = new Map<number, PlayerData & { appearances: number }>();
     let page = 1;
     let totalPages = 1;
-    const seen = new Set<number>();
     let errors = 0;
 
     try {
@@ -83,29 +104,63 @@ export class PlayerService {
 
           for (const item of list) {
             const player = item?.player;
-            const stats = item?.statistics?.[0];
+            if (!player?.id) continue;
 
-            if (!player?.id || seen.has(player.id)) continue;
-            seen.add(player.id);
+            // 🔍 LOG COMPLETO: Mostrar objeto raw de la API para jugadores específicos
+            const playerNameLower = (player.name || '').toLowerCase();
+            if (playerNameLower.includes('yamal') || playerNameLower.includes('nico williams') || playerNameLower.includes('vinícius') || playerNameLower.includes('eyong')) {
+              console.log(`\n🔍 ===== DATOS RAW DE LA API PARA ${player.name.toUpperCase()} =====`);
+              console.log(JSON.stringify(item, null, 2));
+              console.log('===== FIN DATOS RAW =====\n');
+            }
 
-            const position = this.normalizePosition(stats?.games?.position || player.position);
-            const price = this.generatePrice(position);
+            // ⚠️ IMPORTANTE: Un jugador puede tener múltiples estadísticas (equipos diferentes)
+            // Por ejemplo, jugadores cedidos aparecen con stats del equipo original Y del equipo cedido
+            const allStats = item?.statistics || [];
 
-            allPlayers.push({
-              id: player.id,
-              name: player.name,
-              position,
-              teamId: stats?.team?.id,
-              teamName: stats?.team?.name,
-              teamCrest: stats?.team?.logo,
-              nationality: player.nationality,
-              shirtNumber: stats?.games?.number,
-              photo: player.photo,
-              price,
-            });
+            for (const stats of allStats) {
+              // Posición ORIGINAL de la API (antes de normalizar)
+              const rawPosition = stats?.games?.position || player.position;
+              const position = this.normalizePosition(rawPosition);
+              const price = this.generatePrice(position);
+
+              // Número de apariciones (partidos jugados)
+              const appearances = stats?.games?.appearences || stats?.games?.lineups || 0;
+
+              // 🔍 LOG: Ver posición original vs normalizada
+              if (page === 1 && allPlayersMap.size < 5) {
+                console.log(`📊 Jugador: ${player.name} | Posición API: "${rawPosition}" → Normalizada: "${position}"`);
+              }
+
+              const playerData = {
+                id: player.id,
+                name: player.name,
+                position,
+                teamId: stats?.team?.id,
+                teamName: stats?.team?.name,
+                teamCrest: stats?.team?.logo,
+                nationality: player.nationality,
+                shirtNumber: stats?.games?.number,
+                photo: player.photo,
+                price,
+                appearances
+              };
+
+              // Si el jugador ya existe, quedarse con el que tiene más apariciones
+              // (el equipo donde está cedido/jugando actualmente)
+              const existing = allPlayersMap.get(player.id);
+              if (!existing || appearances > existing.appearances) {
+                if (existing && appearances > existing.appearances) {
+                  console.log(`🔄 ${player.name}: Reemplazando ${existing.teamName} (${existing.appearances} partidos) por ${stats?.team?.name} (${appearances} partidos)`);
+                }
+                allPlayersMap.set(player.id, playerData);
+              } else if (existing && appearances < existing.appearances) {
+                console.log(`⏭️ ${player.name}: Manteniendo ${existing.teamName} (${existing.appearances} partidos), ignorando ${stats?.team?.name} (${appearances} partidos)`);
+              }
+            }
           }
 
-          console.log(`📄 Página ${page}/${totalPages} procesada: ${list.length} jugadores (Total acumulado: ${allPlayers.length})`);
+          console.log(`📄 Página ${page}/${totalPages} procesada: ${list.length} jugadores (Total únicos: ${allPlayersMap.size})`);
           page += 1;
           await new Promise(r => setTimeout(r, 200)); // Aumentar delay para evitar rate limit
         } catch (e: any) {
@@ -121,6 +176,9 @@ export class PlayerService {
           break;
         }
       } while (page <= totalPages);
+
+      // Convertir el Map a array de jugadores (sin el campo 'appearances')
+      const allPlayers = Array.from(allPlayersMap.values()).map(({ appearances, ...player }) => player);
 
       console.log(`✅ Total de jugadores obtenidos de la API: ${allPlayers.length}`);
 
@@ -175,7 +233,29 @@ export class PlayerService {
    * Obtener todos los jugadores de la base de datos
    */
   static async getAllPlayers() {
-    return PlayerRepository.getAllPlayers();
+    const players = await PlayerRepository.getAllPlayers();
+    
+    // Ordenar por equipo y luego por posición en el orden lógico
+    const positionOrder: Record<string, number> = {
+      'Goalkeeper': 1,
+      'Defender': 2,
+      'Midfielder': 3,
+      'Attacker': 4
+    };
+    
+    return players.sort((a, b) => {
+      // Primero ordenar por equipo (alfabéticamente)
+      const teamCompare = a.teamName.localeCompare(b.teamName);
+      if (teamCompare !== 0) return teamCompare;
+      
+      // Luego por posición (orden lógico)
+      const posA = positionOrder[a.position] || 999;
+      const posB = positionOrder[b.position] || 999;
+      if (posA !== posB) return posA - posB;
+      
+      // Finalmente por nombre
+      return a.name.localeCompare(b.name);
+    });
   }
 
   /**
@@ -218,6 +298,17 @@ export class PlayerService {
       throw new Error('El precio debe estar entre 1M y 250M');
     }
     return PlayerRepository.updatePlayerPrice(id, price);
+  }
+
+  /**
+   * Actualizar posición de jugador
+   */
+  static async updatePlayerPosition(id: number, position: string) {
+    const validPositions = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker'];
+    if (!validPositions.includes(position)) {
+      throw new Error(`La posición debe ser una de: ${validPositions.join(', ')}`);
+    }
+    return PlayerRepository.updatePlayerPosition(id, position);
   }
 
   /**

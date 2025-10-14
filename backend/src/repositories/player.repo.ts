@@ -18,6 +18,7 @@ export interface PlayerData {
 export class PlayerRepository {
   /**
    * Crear o actualizar un jugador
+   * ⚠️ IMPORTANTE: NO sobrescribe el precio si el jugador ya existe
    */
   static async upsertPlayer(data: PlayerData) {
     return prisma.player.upsert({
@@ -31,7 +32,8 @@ export class PlayerRepository {
         nationality: data.nationality,
         shirtNumber: data.shirtNumber,
         photo: data.photo,
-        price: data.price,
+        // ⚠️ NO actualizar el precio - mantener el valor existente en BD
+        // price: data.price, <-- COMENTADO para preservar precios manuales
       },
       create: data,
     });
@@ -39,6 +41,7 @@ export class PlayerRepository {
 
   /**
    * Crear o actualizar múltiples jugadores
+   * ⚠️ IMPORTANTE: NO sobrescribe el precio si el jugador ya existe
    */
   static async upsertMany(players: PlayerData[]) {
     const operations = players.map((player) =>
@@ -53,7 +56,8 @@ export class PlayerRepository {
           nationality: player.nationality,
           shirtNumber: player.shirtNumber,
           photo: player.photo,
-          price: player.price,
+          // ⚠️ NO actualizar el precio - mantener el valor existente en BD
+          // price: player.price, <-- COMENTADO para preservar precios manuales
         },
         create: player,
       })
@@ -150,6 +154,16 @@ export class PlayerRepository {
     return prisma.player.update({
       where: { id },
       data: { price },
+    });
+  }
+
+  /**
+   * Actualizar posición de un jugador
+   */
+  static async updatePlayerPosition(id: number, position: string) {
+    return prisma.player.update({
+      where: { id },
+      data: { position },
     });
   }
 

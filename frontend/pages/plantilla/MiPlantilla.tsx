@@ -378,6 +378,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     const position = selectedFormation.positions.find(p => p.id === positionId);
     if (position) {
       navigation.navigate('PlayersMarket', { 
+        ligaId,
+        ligaName,
         selectMode: true, 
         filterByRole: position.role,
         onPlayerSelected: (player: any) => {
