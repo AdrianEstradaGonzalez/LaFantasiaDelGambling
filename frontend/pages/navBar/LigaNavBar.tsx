@@ -19,7 +19,7 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
 
   const handleClasificacion = () => navigation.navigate('Clasificacion', { ligaId, ligaName });
   const handleEquipo = () => navigation.navigate('Equipo', { ligaId, ligaName });
-  const handleJugadores = () => navigation.navigate('PlayersList', { ligaId, ligaName });
+  const handleJugadores = () => navigation.navigate('PlayersMarket', { ligaId, ligaName });
   const handleApuestas = () => navigation.navigate('Apuestas', { ligaId, ligaName });
   const handleHome = () => navigation.navigate('Home');
 
@@ -47,7 +47,7 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
       icon: TrendingIcon,
       label: 'Mercado',
       onPress: handleJugadores,
-      isActive: currentRoute === 'PlayersList'
+      isActive: currentRoute === 'PlayersMarket' || currentRoute === 'PlayersList'
     },
     {
       icon: DiceIcon,
