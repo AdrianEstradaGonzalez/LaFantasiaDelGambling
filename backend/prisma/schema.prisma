@@ -47,10 +47,12 @@ model League {
 }
 
 model LeagueMember {
-  leagueId String
-  userId   String
-  points   Int      @default(0)
-  joinedAt DateTime @default(now())
+  leagueId      String
+  userId        String
+  points        Int      @default(0)
+  budget        Int      @default(500) // Presupuesto actual en millones
+  initialBudget Int      @default(500) // Presupuesto inicial de la jornada (público)
+  joinedAt      DateTime @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -78,12 +80,14 @@ model Squad {
 }
 
 model SquadPlayer {
-  id         String @id @default(cuid())
+  id         String   @id @default(cuid())
   squadId    String
-  playerId   Int    // ID del jugador de LaLiga API
+  playerId   Int      // ID del jugador de LaLiga API
   playerName String
-  position   String // "gk", "def1", "mid2", "att1", etc.
-  role       String // "GK", "DEF", "MID", "ATT"
+  position   String   // "gk", "def1", "mid2", "att1", etc.
+  role       String   // "GK", "DEF", "MID", "ATT"
+  pricePaid  Int      @default(1) // Precio pagado en el momento de la compra (en millones)
+  createdAt  DateTime @default(now())
 
   squad      Squad  @relation(fields: [squadId], references: [id], onDelete: Cascade)
 

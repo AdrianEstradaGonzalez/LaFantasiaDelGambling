@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, Alert, FlatList, Modal } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { PlayerService, PlayerWithPrice } from '../../services/PlayerService';
+import { SquadService } from '../../services/SquadService';
 import FootballService, { TeamMinimal } from '../../services/FutbolService';
 import LoadingScreen from '../../components/LoadingScreen';
 import LigaNavBar from '../navBar/LigaNavBar';
@@ -11,6 +12,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { LoginService } from '../../services/LoginService';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { Buffer } from 'buffer';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Icono de flecha para volver
 const backIcon = require('../../assets/iconos/backIcon.png');
@@ -23,6 +25,14 @@ function decodeJwt(token: string): any {
   } catch {
     return {};
   }
+}
+
+// Función para normalizar texto (eliminar acentos y convertir a minúsculas)
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, ''); // Eliminar marcas diacríticas (acentos)
 }
 
 // Posiciones en español para los filtros
@@ -207,6 +217,9 @@ export const PlayersMarket = ({ navigation, route }: {
   const [editedPrices, setEditedPrices] = useState<{ [key: number]: number }>({});
   const [editedPositions, setEditedPositions] = useState<{ [key: number]: CanonicalPos }>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [focusedPriceId, setFocusedPriceId] = useState<number | null>(null);
+  const [budget, setBudget] = useState<number>(0);
+  const [squadPlayerIds, setSquadPlayerIds] = useState<Set<number>>(new Set());
 
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
@@ -214,6 +227,8 @@ export const PlayersMarket = ({ navigation, route }: {
   // Modo selección (cuando viene desde MiPlantilla)
   const selectMode = route.params?.selectMode || false;
   const filterByRole = route.params?.filterByRole;
+  const targetPosition = route.params?.targetPosition; // Posición específica donde fichar
+  const currentFormation = route.params?.currentFormation; // Formación actual (aunque no esté guardada)
   const onPlayerSelected = route.params?.onPlayerSelected;
 
   // Verificar si el usuario es admin
@@ -237,23 +252,71 @@ export const PlayersMarket = ({ navigation, route }: {
   const loadPlayers = useCallback(async () => {
     try {
       setLoading(true);
-      const [playersData, teamsData] = await Promise.all([
-        PlayerService.getAllPlayers(),
-        FootballService.getLaLigaTeamsCached()
-      ]);
+      const playersData = await PlayerService.getAllPlayers();
+      const teamsData = await FootballService.getLaLigaTeamsCached();
+      
       setPlayers(playersData);
       setTeams(teamsData);
+      
+      // Cargar presupuesto y plantilla si tenemos ligaId
+      if (ligaId) {
+        try {
+          const [budgetData, squad] = await Promise.all([
+            SquadService.getUserBudget(ligaId),
+            SquadService.getUserSquad(ligaId)
+          ]);
+          setBudget(budgetData);
+          
+          // Guardar IDs de jugadores ya fichados
+          if (squad && squad.players) {
+            const playerIds = new Set(squad.players.map(p => p.playerId));
+            setSquadPlayerIds(playerIds);
+          }
+        } catch (error) {
+          console.error('Error cargando presupuesto:', error);
+          setBudget(0);
+        }
+      }
     } catch (error) {
       Alert.alert('Error', 'No se pudieron cargar los jugadores');
       console.error(error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [ligaId]);
 
   useEffect(() => {
     loadPlayers();
   }, [loadPlayers]);
+
+  // Recargar presupuesto y plantilla cuando la pantalla obtiene el foco
+  useFocusEffect(
+    useCallback(() => {
+      const reloadBudgetAndSquad = async () => {
+        if (ligaId) {
+          try {
+            const [budgetData, squad] = await Promise.all([
+              SquadService.getUserBudget(ligaId),
+              SquadService.getUserSquad(ligaId)
+            ]);
+            setBudget(budgetData);
+            
+            // Actualizar IDs de jugadores fichados
+            if (squad && squad.players) {
+              const playerIds = new Set(squad.players.map(p => p.playerId));
+              setSquadPlayerIds(playerIds);
+            } else {
+              setSquadPlayerIds(new Set());
+            }
+          } catch (error) {
+            console.error('Error recargando presupuesto:', error);
+          }
+        }
+      };
+      
+      reloadBudgetAndSquad();
+    }, [ligaId])
+  );
 
   // Aplicar filtro inicial si viene desde modo selección
   useEffect(() => {
@@ -304,10 +367,10 @@ export const PlayersMarket = ({ navigation, route }: {
       }
     }
     
-    // Filtro por búsqueda de nombre
+    // Filtro por búsqueda de nombre (insensible a mayúsculas y acentos)
     if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      list = list.filter(p => p.name.toLowerCase().includes(q));
+      const normalizedQuery = normalizeText(query.trim());
+      list = list.filter(p => normalizeText(p.name).includes(normalizedQuery));
     }
     
     // Filtro por equipo
@@ -369,47 +432,207 @@ export const PlayersMarket = ({ navigation, route }: {
   // Verificar si hay cambios pendientes
   const hasChanges = Object.keys(editedPrices).length > 0 || Object.keys(editedPositions).length > 0;
 
-  // Resetear todos los precios a 1M
-  const handleResetAllPrices = () => {
-    Alert.alert(
-      'Confirmar acción',
-      '¿Estás seguro de establecer TODOS los jugadores a 1M? Esta acción no se puede deshacer.',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel'
-        },
-        {
-          text: 'Confirmar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsSaving(true);
-              await PlayerService.resetAllPrices(1);
-              
-              // Recargar jugadores
-              await loadPlayers();
-              
-              // Limpiar precios editados
-              setEditedPrices({});
-              
-              Alert.alert('Éxito', 'Todos los precios se han establecido a 1M');
-            } catch (error) {
-              console.error('Error reseteando precios:', error);
-              Alert.alert('Error', 'No se pudieron resetear los precios');
-            } finally {
-              setIsSaving(false);
-            }
-          }
-        }
-      ]
-    );
+  // Manejar compra de jugador (modo normal, NO admin)
+  const handleBuyPlayer = async (player: PlayerWithPrice) => {
+    if (!ligaId || isAdmin) return;
+
+    try {
+      setIsSaving(true);
+      
+      // Verificar presupuesto
+      if (budget < player.price) {
+        Alert.alert('Presupuesto insuficiente', `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`);
+        return;
+      }
+
+      const position = normalizePosition(player.position);
+      if (!position) {
+        Alert.alert('Error', 'Posición del jugador no válida');
+        return;
+      }
+
+      // Mapear posición a rol
+      const roleMap: Record<CanonicalPos, string> = {
+        'Goalkeeper': 'GK',
+        'Defender': 'DEF',
+        'Midfielder': 'MID',
+        'Attacker': 'ATT'
+      };
+      const role = roleMap[position];
+
+      // Obtener plantilla actual para saber qué posiciones están ocupadas
+      const squad = await SquadService.getUserSquad(ligaId);
+      
+      // Definir todas las posiciones posibles por rol según formación 4-4-2
+      const allPositionsByRole: Record<string, string[]> = {
+        'GK': ['gk'],
+        'DEF': ['def1', 'def2', 'def3', 'def4', 'def5'], // hasta 5 defensas en 5-3-2
+        'MID': ['mid1', 'mid2', 'mid3', 'mid4', 'mid5'], // hasta 5 medios en 4-5-1
+        'ATT': ['att1', 'att2', 'att3'] // hasta 3 delanteros en 4-3-3
+      };
+
+      const availablePositions = allPositionsByRole[role] || [];
+      
+      // Encontrar posiciones ocupadas del mismo rol
+      const occupiedPositions = new Set(
+        squad?.players
+          .filter(p => p.role === role)
+          .map(p => p.position) || []
+      );
+
+      // Encontrar primera posición libre
+      let squadPosition = availablePositions.find(pos => !occupiedPositions.has(pos));
+
+      if (!squadPosition) {
+        Alert.alert('Sin espacio', `No hay espacio disponible para ${role === 'GK' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'MID' ? 'centrocampistas' : 'delanteros'} en tu plantilla.\n\nVende un jugador primero o cambia tu formación.`);
+        return;
+      }
+
+      const result = await SquadService.addPlayerToSquad(ligaId, {
+        position: squadPosition,
+        playerId: player.id,
+        playerName: player.name,
+        role,
+        pricePaid: player.price,
+        currentFormation // Enviar la formación actual si está disponible
+      });
+
+      // Verificar si la validación pasó
+      if (!result.success) {
+        Alert.alert('Límite de formación', result.message || 'No se puede añadir más jugadores de esta posición');
+        return;
+      }
+
+      console.log('Jugador añadido, nuevo presupuesto:', result.budget);
+      setBudget(result.budget!);
+      
+      // Actualizar lista de jugadores fichados
+      setSquadPlayerIds(prev => new Set(prev).add(player.id));
+      
+      // Si hay callback (modo selección desde plantilla), llamarlo
+      if (onPlayerSelected) {
+        onPlayerSelected(player);
+        navigation.goBack();
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo añadir el jugador';
+      Alert.alert('Error', message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Manejar venta de jugador fichado
+  const handleSellPlayer = async (player: PlayerWithPrice) => {
+    if (!ligaId || isAdmin) return;
+
+    try {
+      setIsSaving(true);
+      
+      // Encontrar en qué posición está el jugador
+      const squad = await SquadService.getUserSquad(ligaId);
+      if (!squad) {
+        Alert.alert('Error', 'No tienes plantilla');
+        return;
+      }
+
+      const playerInSquad = squad.players.find(p => p.playerId === player.id);
+      if (!playerInSquad) {
+        Alert.alert('Error', 'El jugador no está en tu plantilla');
+        return;
+      }
+
+      const result = await SquadService.removePlayerFromSquad(ligaId, playerInSquad.position);
+      
+      console.log('Jugador vendido, nuevo presupuesto:', result.budget);
+      setBudget(result.budget);
+      
+      // Actualizar lista de jugadores fichados
+      setSquadPlayerIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(player.id);
+        return newSet;
+      });
+      
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo vender el jugador';
+      Alert.alert('Error', message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Manejar selección de jugador desde plantilla (modo selección)
+  const handleSelectFromPlantilla = async (player: PlayerWithPrice) => {
+    if (!ligaId || !targetPosition) return;
+
+    try {
+      setIsSaving(true);
+      
+      // Verificar presupuesto
+      if (budget < player.price) {
+        Alert.alert('Presupuesto insuficiente', `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`);
+        return;
+      }
+
+      const position = normalizePosition(player.position);
+      if (!position) {
+        Alert.alert('Error', 'Posición del jugador no válida');
+        return;
+      }
+
+      // Mapear posición a rol
+      const roleMap: Record<CanonicalPos, string> = {
+        'Goalkeeper': 'GK',
+        'Defender': 'DEF',
+        'Midfielder': 'MID',
+        'Attacker': 'ATT'
+      };
+      const role = roleMap[position];
+
+      // Comprar jugador en la posición específica (puede reemplazar jugador existente)
+      const result = await SquadService.addPlayerToSquad(ligaId, {
+        position: targetPosition,
+        playerId: player.id,
+        playerName: player.name,
+        role,
+        pricePaid: player.price,
+        currentFormation // Enviar la formación actual si está disponible
+      });
+
+      // Verificar si la validación pasó
+      if (!result.success) {
+        Alert.alert('Límite de formación', result.message || 'No se puede añadir más jugadores de esta posición');
+        return;
+      }
+
+      console.log('Jugador fichado desde plantilla, nuevo presupuesto:', result.budget);
+      setBudget(result.budget!);
+      
+      // Actualizar lista de jugadores fichados
+      setSquadPlayerIds(prev => new Set(prev).add(player.id));
+      
+      // Llamar callback y volver a plantilla
+      if (onPlayerSelected) {
+        onPlayerSelected(player);
+      }
+      navigation.goBack();
+      
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo añadir el jugador';
+      Alert.alert('Error', message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Renderizar item de jugador
   const renderPlayer = ({ item: p }: { item: PlayerWithPrice }) => {
     const cat = normalizePosition(p.position);
     const displayCat: CanonicalPos = cat ?? 'Midfielder';
+    
+    // Verificar si el jugador ya está fichado
+    const isAlreadyInSquad = squadPlayerIds.has(p.id);
     
     // Posición actual (editada o original)
     const currentPosition = editedPositions[p.id] ?? displayCat;
@@ -459,10 +682,33 @@ export const PlayersMarket = ({ navigation, route }: {
                 <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Precio</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <TextInput
-                    value={currentPrice.toString()}
+                    value={focusedPriceId === p.id ? (editedPrices[p.id]?.toString() || '') : currentPrice.toString()}
+                    onFocus={() => {
+                      setFocusedPriceId(p.id);
+                    }}
+                    onBlur={() => {
+                      setFocusedPriceId(null);
+                      // Si el campo está vacío al perder el foco, restaurar el precio original
+                      if (!editedPrices[p.id]) {
+                        setEditedPrices(prev => {
+                          const newPrices = { ...prev };
+                          delete newPrices[p.id];
+                          return newPrices;
+                        });
+                      }
+                    }}
                     onChangeText={(text) => {
-                      const numValue = parseInt(text) || 0;
-                      if (numValue >= 1 && numValue <= 250) {
+                      if (text === '') {
+                        // Permitir campo vacío mientras se escribe
+                        setEditedPrices(prev => {
+                          const newPrices = { ...prev };
+                          delete newPrices[p.id];
+                          return newPrices;
+                        });
+                        return;
+                      }
+                      const numValue = parseInt(text);
+                      if (!isNaN(numValue) && numValue >= 1 && numValue <= 250) {
                         setEditedPrices(prev => ({ ...prev, [p.id]: numValue }));
                       }
                     }}
@@ -492,7 +738,32 @@ export const PlayersMarket = ({ navigation, route }: {
               </View>
             )}
             
-            {selectMode && (
+            {/* Botones de acción según estado */}
+            {!isAdmin && !selectMode && (
+              isAlreadyInSquad ? (
+                // Botón de vender para jugadores fichados
+                <TouchableOpacity
+                  onPress={() => handleSellPlayer(p)}
+                  disabled={isSaving}
+                  style={{ 
+                    backgroundColor: '#ef4444', 
+                    paddingHorizontal: 12, 
+                    paddingVertical: 8, 
+                    borderRadius: 8,
+                    shadowColor: '#ef4444',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                    elevation: 4,
+                    opacity: isSaving ? 0.6 : 1
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>VENDER</Text>
+                </TouchableOpacity>
+              ) : null
+            )}
+            
+            {selectMode && !isAlreadyInSquad && (
               <View style={{ 
                 backgroundColor: '#10b981', 
                 width: 36, 
@@ -507,6 +778,17 @@ export const PlayersMarket = ({ navigation, route }: {
                 elevation: 4
               }}>
                 <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700', lineHeight: 24 }}>+</Text>
+              </View>
+            )}
+            
+            {selectMode && isAlreadyInSquad && (
+              <View style={{ 
+                backgroundColor: '#64748b', 
+                paddingHorizontal: 10, 
+                paddingVertical: 6, 
+                borderRadius: 8
+              }}>
+                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>FICHADO</Text>
               </View>
             )}
           </View>
@@ -537,18 +819,19 @@ export const PlayersMarket = ({ navigation, route }: {
       return (
         <TouchableOpacity
           onPress={() => {
-            if (onPlayerSelected) {
-              onPlayerSelected(p);
-              navigation.goBack();
+            if (!isAlreadyInSquad) {
+              handleSelectFromPlantilla(p);
             }
           }}
+          disabled={isAlreadyInSquad || isSaving}
           style={{ 
             backgroundColor: '#1a2332', 
             borderWidth: 1, 
-            borderColor: '#334155', 
+            borderColor: isAlreadyInSquad ? '#64748b' : '#334155', 
             borderRadius: 12, 
             padding: 12, 
-            marginBottom: 10
+            marginBottom: 10,
+            opacity: (isAlreadyInSquad || isSaving) ? 0.6 : 1
           }}
         >
           {content}
@@ -556,6 +839,47 @@ export const PlayersMarket = ({ navigation, route }: {
       );
     }
 
+    // Modo normal (no selección): Si NO es admin, permitir comprar
+    if (!isAdmin && ligaId) {
+      if (isAlreadyInSquad) {
+        // Jugador ya fichado: mostrar como card no clickeable
+        return (
+          <View style={{ 
+            backgroundColor: '#1a2332', 
+            borderWidth: 1, 
+            borderColor: '#ef4444', 
+            borderRadius: 12, 
+            padding: 12, 
+            marginBottom: 10,
+            opacity: 0.9
+          }}>
+            {content}
+          </View>
+        );
+      } else {
+        // Jugador no fichado: clickeable para comprar
+        return (
+          <TouchableOpacity
+            onPress={() => handleBuyPlayer(p)}
+            disabled={isSaving}
+            style={{ 
+              backgroundColor: '#1a2332', 
+              borderWidth: 1, 
+              borderColor: '#334155', 
+              borderRadius: 12, 
+              padding: 12, 
+              marginBottom: 10,
+              opacity: isSaving ? 0.6 : 1
+            }}
+            activeOpacity={0.7}
+          >
+            {content}
+          </TouchableOpacity>
+        );
+      }
+    }
+
+    // Admin mode: No clickeable
     return (
       <View style={{ 
         backgroundColor: '#1a2332', 
@@ -652,15 +976,53 @@ export const PlayersMarket = ({ navigation, route }: {
             contentContainerStyle={{ padding: 16, paddingTop: 70, paddingBottom: 120 }}
             ListHeaderComponent={
               <>
-                <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 4 }}>
-                  {selectMode ? 'Seleccionar Jugador' : 'Mercado de Jugadores'}
-                </Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800' }}>
+                    {selectMode ? 'Seleccionar Jugador' : 'Mercado de Jugadores'}
+                  </Text>
+                  {/* Mostrar presupuesto si NO es admin y tenemos ligaId */}
+                  {!isAdmin && ligaId && (
+                    <View 
+                      key={`budget-${budget}`}
+                      style={{ 
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: '#1e293b',
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: '#10b981',
+                        shadowColor: '#10b981',
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 4,
+                        elevation: 3
+                      }}>
+                      <View style={{ 
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        backgroundColor: '#10b981',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginRight: 8
+                      }}>
+                        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900' }}>$</Text>
+                      </View>
+                      <View>
+                        <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '600', marginBottom: 2 }}>PRESUPUESTO</Text>
+                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 18 }}>{budget}M</Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
                 {selectMode && filterByRole && (
                   <Text style={{ color: '#94a3b8', fontSize: 14, marginBottom: 12 }}>
                     Posición: {filterByRole === 'GK' ? 'Portero' : filterByRole === 'DEF' ? 'Defensa' : filterByRole === 'MID' ? 'Centrocampista' : 'Delantero'}
                   </Text>
                 )}
-                {!selectMode && <View style={{ marginBottom: 12 }} />}
+                {!selectMode && <View style={{ marginBottom: 0 }} />}
                 
                 {/* Filtros */}
                 <View>
@@ -708,32 +1070,6 @@ export const PlayersMarket = ({ navigation, route }: {
                       }}
                     />
                   </View>
-
-                  {/* Botón admin: Reset precios a 1M */}
-                  {isAdmin && !selectMode && (
-                    <TouchableOpacity
-                      onPress={handleResetAllPrices}
-                      disabled={isSaving}
-                      style={{
-                        backgroundColor: '#ef4444',
-                        paddingVertical: 12,
-                        paddingHorizontal: 16,
-                        borderRadius: 10,
-                        alignItems: 'center',
-                        marginBottom: 12,
-                        opacity: isSaving ? 0.5 : 1
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      {isSaving ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : (
-                        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
-                          🔄 Establecer todos a 1M
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  )}
                 </View>
               </>
             }

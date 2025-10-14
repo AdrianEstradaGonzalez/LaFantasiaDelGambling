@@ -20,6 +20,8 @@ export interface SquadPlayer {
   playerName: string;
   position: string;
   role: string;
+  pricePaid: number;
+  createdAt: string;
 }
 
 export interface SaveSquadRequest {
@@ -29,7 +31,17 @@ export interface SaveSquadRequest {
     playerId: number;
     playerName: string;
     role: string;
+    pricePaid?: number;
   }[];
+}
+
+export interface AddPlayerRequest {
+  position: string;
+  playerId: number;
+  playerName: string;
+  role: string;
+  pricePaid: number;
+  currentFormation?: string; // Formación actual que puede no estar guardada
 }
 
 export class SquadService {
@@ -67,7 +79,7 @@ export class SquadService {
   }
 
   // Guardar o actualizar plantilla (método unificado)
-  static async saveSquad(ligaId: string, squadData: SaveSquadRequest): Promise<Squad> {
+  static async saveSquad(ligaId: string, squadData: SaveSquadRequest): Promise<{ squad: Squad; budget?: number; refundedAmount?: number }> {
     try {
       const token = await EncryptedStorage.getItem('accessToken');
       if (!token) {
@@ -119,6 +131,91 @@ export class SquadService {
       return await response.json();
     } catch (error) {
       console.error('Error en deleteSquad:', error);
+      throw error;
+    }
+  }
+
+  // Obtener presupuesto del usuario
+  static async getUserBudget(ligaId: string): Promise<number> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/budget`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al obtener el presupuesto');
+      }
+
+      const data = await response.json();
+      return data.budget;
+    } catch (error) {
+      console.error('Error en getUserBudget:', error);
+      throw error;
+    }
+  }
+
+  // Añadir jugador a la plantilla
+  static async addPlayerToSquad(ligaId: string, playerData: AddPlayerRequest): Promise<{ success: boolean; player?: SquadPlayer; budget?: number; message?: string }> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/players`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(playerData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al añadir el jugador');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error en addPlayerToSquad:', error);
+      throw error;
+    }
+  }
+
+  // Eliminar jugador de la plantilla
+  static async removePlayerFromSquad(ligaId: string, position: string): Promise<{ success: boolean; refundedAmount: number; budget: number }> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/players/${position}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al eliminar el jugador');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error en removePlayerFromSquad:', error);
       throw error;
     }
   }

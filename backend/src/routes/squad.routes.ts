@@ -7,6 +7,21 @@ async function squadRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.auth]
   }, SquadController.getUserSquad);
 
+  // GET /api/squads/:ligaId/budget - Obtener presupuesto del usuario
+  fastify.get('/:ligaId/budget', {
+    preHandler: [fastify.auth]
+  }, SquadController.getUserBudget);
+
+  // POST /api/squads/:ligaId/players - Añadir jugador a la plantilla
+  fastify.post('/:ligaId/players', {
+    preHandler: [fastify.auth]
+  }, SquadController.addPlayerToSquad);
+
+  // DELETE /api/squads/:ligaId/players/:position - Eliminar jugador de la plantilla
+  fastify.delete('/:ligaId/players/:position', {
+    preHandler: [fastify.auth]
+  }, SquadController.removePlayerFromSquad);
+
   // POST /api/squads/:ligaId/save - Guardar o actualizar plantilla
   fastify.post('/:ligaId/save', {
     preHandler: [fastify.auth]

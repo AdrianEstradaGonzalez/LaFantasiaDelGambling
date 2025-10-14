@@ -21,7 +21,17 @@ export interface UpdateSquadDto {
     playerId: number;
     playerName: string;
     role: string;
+    pricePaid?: number;
   }[];
+}
+
+export interface AddPlayerDto {
+  position: string;
+  playerId: number;
+  playerName: string;
+  role: string;
+  pricePaid: number;
+  currentFormation?: string; // Formación actual que puede no estar guardada aún
 }
 
 export class SquadService {
@@ -87,7 +97,7 @@ export class SquadService {
     }
   }
 
-  // Actualizar plantilla existente
+  // Actualizar plantilla existente (ahora SÍ actualiza presupuesto al cambiar formación)
   static async updateSquad(userId: string, ligaId: string, data: UpdateSquadDto) {
     try {
       // Verificar que la plantilla existe y pertenece al usuario
@@ -97,6 +107,9 @@ export class SquadService {
             userId,
             leagueId: ligaId
           }
+        },
+        include: {
+          players: true
         }
       });
 
@@ -104,8 +117,44 @@ export class SquadService {
         throw new Error('Plantilla no encontrada');
       }
 
-      // Eliminar jugadores existentes si se proporcionan nuevos
+      // Si se proporcionan nuevos jugadores, calcular jugadores eliminados y devolver su dinero
+      let budgetRefund = 0;
       if (data.players) {
+        // Obtener IDs de jugadores nuevos
+        const newPlayerIds = new Set(data.players.map(p => p.playerId));
+        
+        // Encontrar jugadores que se están eliminando
+        const removedPlayers = existingSquad.players.filter(p => !newPlayerIds.has(p.playerId));
+        
+        // Calcular dinero a devolver (precio de mercado actual de cada jugador eliminado)
+        for (const removedPlayer of removedPlayers) {
+          const marketPlayer = await prisma.player.findUnique({
+            where: { id: removedPlayer.playerId }
+          });
+          const refundAmount = marketPlayer?.price || removedPlayer.pricePaid;
+          budgetRefund += refundAmount;
+        }
+
+        console.log(`Jugadores eliminados: ${removedPlayers.length}, Dinero a devolver: ${budgetRefund}M`);
+
+        // Actualizar presupuesto si hay dinero a devolver
+        if (budgetRefund > 0) {
+          await prisma.leagueMember.update({
+            where: {
+              leagueId_userId: {
+                leagueId: ligaId,
+                userId
+              }
+            },
+            data: {
+              budget: {
+                increment: budgetRefund
+              }
+            }
+          });
+        }
+
+        // Eliminar jugadores existentes
         await prisma.squadPlayer.deleteMany({
           where: { squadId: existingSquad.id }
         });
@@ -128,7 +177,21 @@ export class SquadService {
         }
       });
 
-      return updatedSquad;
+      // Obtener el presupuesto actualizado
+      const membership = await prisma.leagueMember.findUnique({
+        where: {
+          leagueId_userId: {
+            leagueId: ligaId,
+            userId
+          }
+        }
+      });
+
+      return {
+        squad: updatedSquad,
+        budget: membership?.budget || 0,
+        refundedAmount: budgetRefund
+      };
     } catch (error) {
       console.error('Error al actualizar plantilla:', error);
       throw error;
@@ -158,6 +221,256 @@ export class SquadService {
       return { success: true };
     } catch (error) {
       console.error('Error al eliminar plantilla:', error);
+      throw error;
+    }
+  }
+
+  // Obtener presupuesto del usuario en una liga
+  static async getUserBudget(userId: string, ligaId: string) {
+    try {
+      const membership = await prisma.leagueMember.findUnique({
+        where: {
+          leagueId_userId: {
+            leagueId: ligaId,
+            userId
+          }
+        }
+      });
+
+      if (!membership) {
+        throw new Error('El usuario no es miembro de esta liga');
+      }
+
+      return membership.budget;
+    } catch (error) {
+      console.error('Error al obtener presupuesto:', error);
+      throw error;
+    }
+  }
+
+  // Añadir jugador a una posición específica (AHORA SÍ actualiza presupuesto)
+  static async addPlayerToSquad(userId: string, ligaId: string, playerData: AddPlayerDto) {
+    try {
+      // Obtener plantilla
+      let squad = await prisma.squad.findUnique({
+        where: {
+          userId_leagueId: {
+            userId,
+            leagueId: ligaId
+          }
+        },
+        include: {
+          players: true
+        }
+      });
+
+      // Si no existe plantilla, crearla con formación por defecto
+      if (!squad) {
+        squad = await prisma.squad.create({
+          data: {
+            userId,
+            leagueId: ligaId,
+            formation: '4-4-2',
+            isActive: true
+          },
+          include: {
+            players: true
+          }
+        });
+      }
+
+      // Validar que no se exceda el límite de jugadores según la formación
+      // Usar la formación actual del parámetro si existe, sino usar la guardada en BD
+      const formation = playerData.currentFormation || squad.formation;
+      const [defenders, midfielders, attackers] = formation.split('-').map(Number);
+      
+      // Contar jugadores actuales por rol (excluyendo la posición que se va a reemplazar)
+      const currentPlayersByRole = squad.players
+        .filter(p => p.position !== playerData.position)
+        .reduce((acc, p) => {
+          acc[p.role] = (acc[p.role] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+      // Obtener límites según formación
+      const limits: Record<string, number> = {
+        'POR': 1,
+        'DEF': defenders,
+        'CEN': midfielders,
+        'DEL': attackers
+      };
+
+      // Verificar si se excedería el límite
+      const currentCount = currentPlayersByRole[playerData.role] || 0;
+      const limit = limits[playerData.role] || 0;
+      
+      if (currentCount >= limit) {
+        const roleNames: Record<string, string> = {
+          'POR': 'porteros',
+          'DEF': 'defensas',
+          'CEN': 'centrocampistas',
+          'DEL': 'delanteros'
+        };
+        // No lanzar error, devolver validación fallida
+        return {
+          success: false,
+          message: `Tu formación ${formation} solo permite ${limit} ${roleNames[playerData.role]}. Cambia la formación o vende un jugador primero.`
+        };
+      }
+
+      // Obtener presupuesto actual
+      const membership = await prisma.leagueMember.findUnique({
+        where: {
+          leagueId_userId: {
+            leagueId: ligaId,
+            userId
+          }
+        }
+      });
+
+      if (!membership) {
+        throw new Error('Usuario no es miembro de la liga');
+      }
+
+      // Verificar si ya existe un jugador en esa posición
+      const existingPlayer = await prisma.squadPlayer.findUnique({
+        where: {
+          squadId_position: {
+            squadId: squad.id,
+            position: playerData.position
+          }
+        }
+      });
+
+      // Calcular ajuste de presupuesto
+      let budgetAdjustment = -playerData.pricePaid;
+      if (existingPlayer) {
+        // Obtener precio actual de mercado del jugador existente
+        const existingMarketPlayer = await prisma.player.findUnique({
+          where: { id: existingPlayer.playerId }
+        });
+        const existingPrice = existingMarketPlayer?.price || existingPlayer.pricePaid;
+        budgetAdjustment += existingPrice; // Devolver el precio del jugador que sale
+      }
+
+      // Verificar presupuesto
+      const newBudget = membership.budget + budgetAdjustment;
+      if (newBudget < 0) {
+        const required = playerData.pricePaid - (existingPlayer ? (await prisma.player.findUnique({ where: { id: existingPlayer.playerId } }))?.price || 0 : 0);
+        throw new Error(`Presupuesto insuficiente. Necesitas ${required}M adicionales`);
+      }
+
+      // Si existe jugador en esa posición, eliminarlo
+      if (existingPlayer) {
+        await prisma.squadPlayer.delete({
+          where: { id: existingPlayer.id }
+        });
+      }
+
+      // Añadir nuevo jugador
+      const newPlayer = await prisma.squadPlayer.create({
+        data: {
+          squadId: squad.id,
+          playerId: playerData.playerId,
+          playerName: playerData.playerName,
+          position: playerData.position,
+          role: playerData.role,
+          pricePaid: playerData.pricePaid
+        }
+      });
+
+      // Actualizar presupuesto
+      const updatedMembership = await prisma.leagueMember.update({
+        where: {
+          leagueId_userId: {
+            leagueId: ligaId,
+            userId
+          }
+        },
+        data: {
+          budget: newBudget
+        }
+      });
+
+      return {
+        success: true,
+        player: newPlayer,
+        budget: updatedMembership.budget
+      };
+    } catch (error) {
+      console.error('Error al añadir jugador:', error);
+      throw error;
+    }
+  }
+
+  // Eliminar/vender jugador de una posición (AHORA SÍ actualiza presupuesto)
+  static async removePlayerFromSquad(userId: string, ligaId: string, position: string) {
+    try {
+      // Obtener plantilla
+      const squad = await prisma.squad.findUnique({
+        where: {
+          userId_leagueId: {
+            userId,
+            leagueId: ligaId
+          }
+        },
+        include: {
+          players: true
+        }
+      });
+
+      if (!squad) {
+        throw new Error('No tienes una plantilla en esta liga');
+      }
+
+      // Buscar jugador en esa posición
+      const playerToRemove = await prisma.squadPlayer.findUnique({
+        where: {
+          squadId_position: {
+            squadId: squad.id,
+            position
+          }
+        }
+      });
+
+      if (!playerToRemove) {
+        throw new Error('No hay ningún jugador en esa posición');
+      }
+
+      // Obtener precio actual de mercado del jugador
+      const marketPlayer = await prisma.player.findUnique({
+        where: { id: playerToRemove.playerId }
+      });
+
+      const refundAmount = marketPlayer?.price || playerToRemove.pricePaid;
+
+      // Eliminar jugador
+      await prisma.squadPlayer.delete({
+        where: { id: playerToRemove.id }
+      });
+
+      // Devolver dinero al presupuesto
+      const updatedMembership = await prisma.leagueMember.update({
+        where: {
+          leagueId_userId: {
+            leagueId: ligaId,
+            userId
+          }
+        },
+        data: {
+          budget: {
+            increment: refundAmount
+          }
+        }
+      });
+
+      return {
+        success: true,
+        refundedAmount: refundAmount,
+        budget: updatedMembership.budget
+      };
+    } catch (error) {
+      console.error('Error al eliminar jugador:', error);
       throw error;
     }
   }
