@@ -79,7 +79,7 @@ export class PlayerService {
           });
 
           const list = data?.response ?? [];
-          totalPages = Math.min(data?.paging?.total ?? 1, 20);
+          totalPages = data?.paging?.total ?? 1; // SIN límite - obtener TODAS las páginas
 
           for (const item of list) {
             const player = item?.player;
@@ -105,14 +105,16 @@ export class PlayerService {
             });
           }
 
-          console.log(`📄 Página ${page}/${totalPages} procesada: ${list.length} jugadores`);
+          console.log(`📄 Página ${page}/${totalPages} procesada: ${list.length} jugadores (Total acumulado: ${allPlayers.length})`);
           page += 1;
-          await new Promise(r => setTimeout(r, 100));
+          await new Promise(r => setTimeout(r, 200)); // Aumentar delay para evitar rate limit
         } catch (e: any) {
           const status = e?.response?.status;
           if (status === 429 || status === 403) {
-            console.warn('⚠️ Rate limit alcanzado, deteniendo sincronización');
-            break;
+            console.warn('⚠️ Rate limit alcanzado, esperando 2 segundos...');
+            await new Promise(r => setTimeout(r, 2000));
+            // Reintentar la misma página
+            continue;
           }
           console.warn('Error en página:', e?.message);
           errors++;
