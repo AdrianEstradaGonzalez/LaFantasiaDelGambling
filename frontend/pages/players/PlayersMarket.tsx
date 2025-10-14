@@ -229,7 +229,7 @@ export const PlayersMarket = ({ navigation, route }: {
   const filterByRole = route.params?.filterByRole;
   const targetPosition = route.params?.targetPosition; // Posición específica donde fichar
   const currentFormation = route.params?.currentFormation; // Formación actual (aunque no esté guardada)
-  const onPlayerSelected = route.params?.onPlayerSelected;
+  const returnTo = route.params?.returnTo; // Pantalla a la que volver
 
   // Verificar si el usuario es admin
   useEffect(() => {
@@ -323,10 +323,10 @@ export const PlayersMarket = ({ navigation, route }: {
     if (selectMode && filterByRole) {
       // Mapear rol a posición en español
       const roleToPosition: Record<string, PositionFilterEs> = {
-        'GK': 'Portero',
+        'POR': 'Portero',
         'DEF': 'Defensa',
-        'MID': 'Centrocampista',
-        'ATT': 'Delantero'
+        'CEN': 'Centrocampista',
+        'DEL': 'Delantero'
       };
       const initialFilter = roleToPosition[filterByRole];
       if (initialFilter) {
@@ -342,10 +342,10 @@ export const PlayersMarket = ({ navigation, route }: {
     // Filtro por rol si estamos en modo selección
     if (selectMode && filterByRole) {
       const roleMapping: Record<string, CanonicalPos> = {
-        'GK': 'Goalkeeper',
+        'POR': 'Goalkeeper',
         'DEF': 'Defender', 
-        'MID': 'Midfielder',
-        'ATT': 'Attacker'
+        'CEN': 'Midfielder',
+        'DEL': 'Attacker'
       };
       const targetRole = roleMapping[filterByRole];
       if (targetRole) {
@@ -453,22 +453,22 @@ export const PlayersMarket = ({ navigation, route }: {
 
       // Mapear posición a rol
       const roleMap: Record<CanonicalPos, string> = {
-        'Goalkeeper': 'GK',
+        'Goalkeeper': 'POR',
         'Defender': 'DEF',
-        'Midfielder': 'MID',
-        'Attacker': 'ATT'
+        'Midfielder': 'CEN',
+        'Attacker': 'DEL'
       };
       const role = roleMap[position];
 
       // Obtener plantilla actual para saber qué posiciones están ocupadas
       const squad = await SquadService.getUserSquad(ligaId);
       
-      // Definir todas las posiciones posibles por rol según formación 4-4-2
+      // Definir todas las posiciones posibles por rol según formación
       const allPositionsByRole: Record<string, string[]> = {
-        'GK': ['gk'],
+        'POR': ['por'],
         'DEF': ['def1', 'def2', 'def3', 'def4', 'def5'], // hasta 5 defensas en 5-3-2
-        'MID': ['mid1', 'mid2', 'mid3', 'mid4', 'mid5'], // hasta 5 medios en 4-5-1
-        'ATT': ['att1', 'att2', 'att3'] // hasta 3 delanteros en 4-3-3
+        'CEN': ['cen1', 'cen2', 'cen3', 'cen4', 'cen5'], // hasta 5 medios en 4-5-1
+        'DEL': ['del1', 'del2', 'del3'] // hasta 3 delanteros en 4-3-3
       };
 
       const availablePositions = allPositionsByRole[role] || [];
@@ -484,7 +484,7 @@ export const PlayersMarket = ({ navigation, route }: {
       let squadPosition = availablePositions.find(pos => !occupiedPositions.has(pos));
 
       if (!squadPosition) {
-        Alert.alert('Sin espacio', `No hay espacio disponible para ${role === 'GK' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'MID' ? 'centrocampistas' : 'delanteros'} en tu plantilla.\n\nVende un jugador primero o cambia tu formación.`);
+        Alert.alert('Sin espacio', `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.\n\nVende un jugador primero o cambia tu formación.`);
         return;
       }
 
@@ -509,10 +509,14 @@ export const PlayersMarket = ({ navigation, route }: {
       // Actualizar lista de jugadores fichados
       setSquadPlayerIds(prev => new Set(prev).add(player.id));
       
-      // Si hay callback (modo selección desde plantilla), llamarlo
-      if (onPlayerSelected) {
-        onPlayerSelected(player);
-        navigation.goBack();
+      // Si estamos en modo selección desde plantilla, volver con el jugador seleccionado
+      if (selectMode && returnTo) {
+        navigation.navigate(returnTo, {
+          ligaId,
+          ligaName,
+          selectedPlayer: player,
+          targetPosition
+        });
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo añadir el jugador';
@@ -569,9 +573,22 @@ export const PlayersMarket = ({ navigation, route }: {
     try {
       setIsSaving(true);
       
+      // Obtener plantilla actual para ver si hay jugador en esta posición
+      const squad = await SquadService.getUserSquad(ligaId);
+      const existingPlayerInPosition = squad?.players.find(p => p.position === targetPosition);
+      
+      // Calcular presupuesto disponible (presupuesto actual + valor del jugador a reemplazar)
+      let availableBudget = budget;
+      if (existingPlayerInPosition) {
+        availableBudget += existingPlayerInPosition.pricePaid;
+      }
+      
       // Verificar presupuesto
-      if (budget < player.price) {
-        Alert.alert('Presupuesto insuficiente', `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`);
+      if (availableBudget < player.price) {
+        const message = existingPlayerInPosition 
+          ? `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M\nValor del jugador a sustituir: ${existingPlayerInPosition.pricePaid}M\nTotal disponible: ${availableBudget}M`
+          : `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`;
+        Alert.alert('Presupuesto insuficiente', message);
         return;
       }
 
@@ -583,10 +600,10 @@ export const PlayersMarket = ({ navigation, route }: {
 
       // Mapear posición a rol
       const roleMap: Record<CanonicalPos, string> = {
-        'Goalkeeper': 'GK',
+        'Goalkeeper': 'POR',
         'Defender': 'DEF',
-        'Midfielder': 'MID',
-        'Attacker': 'ATT'
+        'Midfielder': 'CEN',
+        'Attacker': 'DEL'
       };
       const role = roleMap[position];
 
@@ -612,11 +629,17 @@ export const PlayersMarket = ({ navigation, route }: {
       // Actualizar lista de jugadores fichados
       setSquadPlayerIds(prev => new Set(prev).add(player.id));
       
-      // Llamar callback y volver a plantilla
-      if (onPlayerSelected) {
-        onPlayerSelected(player);
+      // Volver a plantilla con el jugador seleccionado
+      if (returnTo) {
+        navigation.navigate(returnTo, {
+          ligaId,
+          ligaName,
+          selectedPlayer: player,
+          targetPosition
+        });
+      } else {
+        navigation.goBack();
       }
-      navigation.goBack();
       
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo añadir el jugador';
@@ -1019,7 +1042,7 @@ export const PlayersMarket = ({ navigation, route }: {
                 </View>
                 {selectMode && filterByRole && (
                   <Text style={{ color: '#94a3b8', fontSize: 14, marginBottom: 12 }}>
-                    Posición: {filterByRole === 'GK' ? 'Portero' : filterByRole === 'DEF' ? 'Defensa' : filterByRole === 'MID' ? 'Centrocampista' : 'Delantero'}
+                    Posición: {filterByRole === 'POR' ? 'Portero' : filterByRole === 'DEF' ? 'Defensa' : filterByRole === 'CEN' ? 'Centrocampista' : 'Delantero'}
                   </Text>
                 )}
                 {!selectMode && <View style={{ marginBottom: 0 }} />}

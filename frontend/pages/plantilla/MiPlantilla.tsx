@@ -265,10 +265,29 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isChangingFormation, setIsChangingFormation] = useState(false);
   const [budget, setBudget] = useState<number>(0);
+  const [targetPosition, setTargetPosition] = useState<string | null>(null);
   
   // Estados para detectar cambios
   const [originalFormation, setOriginalFormation] = useState<Formation>(formations[0]);
   const [originalPlayers, setOriginalPlayers] = useState<Record<string, any>>({});
+  
+  // Listener para cuando se selecciona un jugador desde PlayersMarket
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Verificar si hay datos de vuelta de PlayersMarket
+      const params = route.params as any;
+      if (params?.selectedPlayer && params?.targetPosition) {
+        setSelectedPlayers(prev => ({ 
+          ...prev, 
+          [params.targetPosition]: params.selectedPlayer 
+        }));
+        // Limpiar los parámetros
+        navigation.setParams({ selectedPlayer: undefined, targetPosition: undefined });
+      }
+    });
+    
+    return unsubscribe;
+  }, [navigation, route.params]);
   
   // Función para comparar si hay cambios
   const hasChanges = () => {
@@ -312,10 +331,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     
     // Contar posiciones disponibles por rol en la nueva formación
     const availablePositionsByRole: Record<string, string[]> = {
-      'GK': [],
+      'POR': [],
       'DEF': [],
-      'MID': [],
-      'ATT': []
+      'CEN': [],
+      'DEL': []
     };
     
     newFormation.positions.forEach(pos => {
@@ -324,10 +343,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     
     // Agrupar jugadores actuales por rol
     const playersByRole: Record<string, Array<{positionId: string, player: any}>> = {
-      'GK': [],
+      'POR': [],
       'DEF': [],
-      'MID': [],
-      'ATT': []
+      'CEN': [],
+      'DEL': []
     };
     
     Object.entries(currentPlayers).forEach(([positionId, player]) => {
@@ -438,17 +457,15 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     // Navegar al mercado con filtro por posición
     const position = selectedFormation.positions.find(p => p.id === positionId);
     if (position) {
+      setTargetPosition(positionId);
       navigation.navigate('PlayersMarket', { 
         ligaId,
         ligaName,
         selectMode: true, 
         filterByRole: position.role,
-        targetPosition: positionId, // Pasar la posición específica
-        currentFormation: selectedFormation.id, // Pasar la formación actual (aunque no esté guardada)
-        onPlayerSelected: (player: any) => {
-          // Actualizar jugador en el estado local
-          setSelectedPlayers(prev => ({ ...prev, [positionId]: player }));
-        }
+        targetPosition: positionId,
+        currentFormation: selectedFormation.id,
+        returnTo: 'MiPlantilla'
       });
     }
   };
