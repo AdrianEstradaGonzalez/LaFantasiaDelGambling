@@ -577,16 +577,22 @@ export const PlayersMarket = ({ navigation, route }: {
       const squad = await SquadService.getUserSquad(ligaId);
       const existingPlayerInPosition = squad?.players.find(p => p.position === targetPosition);
       
-      // Calcular presupuesto disponible (presupuesto actual + valor del jugador a reemplazar)
+      // Calcular presupuesto disponible (presupuesto actual + valor de mercado del jugador a reemplazar)
       let availableBudget = budget;
+      let existingPlayerMarketPrice = 0;
+      
       if (existingPlayerInPosition) {
-        availableBudget += existingPlayerInPosition.pricePaid;
+        // Buscar el precio de mercado actual del jugador a sustituir
+        const allPlayers = await PlayerService.getAllPlayers();
+        const existingPlayerData = allPlayers.find(p => p.id === existingPlayerInPosition.playerId);
+        existingPlayerMarketPrice = existingPlayerData?.price || 0;
+        availableBudget += existingPlayerMarketPrice;
       }
       
       // Verificar presupuesto
       if (availableBudget < player.price) {
         const message = existingPlayerInPosition 
-          ? `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M\nValor del jugador a sustituir: ${existingPlayerInPosition.pricePaid}M\nTotal disponible: ${availableBudget}M`
+          ? `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M\nValor de mercado del jugador a sustituir: ${existingPlayerMarketPrice}M\nTotal disponible: ${availableBudget}M`
           : `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`;
         Alert.alert('Presupuesto insuficiente', message);
         return;

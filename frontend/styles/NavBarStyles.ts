@@ -29,12 +29,11 @@ const styles = StyleSheet.create({
 
   // Contenedor de cada botón
   navButton: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 12,
     borderRadius: 16,
-    minWidth: 50,
     backgroundColor: 'transparent',
     position: 'relative',
   },

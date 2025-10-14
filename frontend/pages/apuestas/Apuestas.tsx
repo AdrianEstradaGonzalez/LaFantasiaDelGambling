@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Image } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
+import LoadingScreen from '../../components/LoadingScreen';
 
 type Bet = {
   matchId: number;
@@ -54,25 +55,24 @@ export const Apuestas: React.FC = () => {
   }, []);
 
   return (
-    <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
-        <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Apuestas Recomendadas</Text>
-        {jornada != null && (
-          <Text style={{ color: '#94a3b8', marginBottom: 16 }}>Próxima jornada: {jornada}</Text>
-        )}
-        {loading ? (
-          <View style={{ padding: 40, alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#3b82f6" />
-            <Text style={{ color: '#94a3b8', marginTop: 12 }}>Cargando apuestas…</Text>
-          </View>
-        ) : bets.length === 0 ? (
-          <View style={{ padding: 20, alignItems: 'center' }}>
-            <Text style={{ color: '#94a3b8', textAlign: 'center' }}>
-              No hay apuestas disponibles en este momento.
-            </Text>
-          </View>
-        ) : (
-          bets.map((b, index) => (
+    <>
+      {loading ? (
+        <LoadingScreen />
+      ) : (
+        <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
+          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+            <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Apuestas Recomendadas</Text>
+            {jornada != null && (
+              <Text style={{ color: '#94a3b8', marginBottom: 16 }}>Próxima jornada: {jornada}</Text>
+            )}
+            {bets.length === 0 ? (
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Text style={{ color: '#94a3b8', textAlign: 'center' }}>
+                  No hay apuestas disponibles en este momento.
+                </Text>
+              </View>
+            ) : (
+              bets.map((b, index) => (
             <View 
               key={b.matchId} 
               style={{ 
@@ -161,9 +161,11 @@ export const Apuestas: React.FC = () => {
             </View>
           ))
         )}
-      </ScrollView>
-  <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
-    </LinearGradient>
+          </ScrollView>
+          <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+        </LinearGradient>
+      )}
+    </>
   );
 };
 

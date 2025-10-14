@@ -75,10 +75,10 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
             <Pressable
               onPress={button.onPress}
               style={({ pressed }) => ({
+                flex: 1,
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '100%',
-                height: '100%',
+                paddingHorizontal: 8,
                 backgroundColor: 'transparent',
                 opacity: pressed && !button.isActive ? 0.7 : 1,
               })}
@@ -86,7 +86,9 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
               <View style={{ 
                 marginBottom: 4, 
                 backgroundColor: 'transparent',
-                overflow: 'visible'
+                overflow: 'visible',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}>
                 <IconComponent 
                   size={button.isActive ? 28 : 24}

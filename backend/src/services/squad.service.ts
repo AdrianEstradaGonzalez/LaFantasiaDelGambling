@@ -350,13 +350,15 @@ export class SquadService {
           where: { id: existingPlayer.playerId }
         });
         const existingPrice = existingMarketPlayer?.price || existingPlayer.pricePaid;
-        budgetAdjustment += existingPrice; // Devolver el precio del jugador que sale
+        budgetAdjustment += existingPrice; // Devolver el precio de mercado del jugador que sale
       }
 
       // Verificar presupuesto
       const newBudget = membership.budget + budgetAdjustment;
       if (newBudget < 0) {
-        const required = playerData.pricePaid - (existingPlayer ? (await prisma.player.findUnique({ where: { id: existingPlayer.playerId } }))?.price || 0 : 0);
+        const existingMarketPlayer = existingPlayer ? await prisma.player.findUnique({ where: { id: existingPlayer.playerId } }) : null;
+        const refundFromExisting = existingMarketPlayer?.price || (existingPlayer ? existingPlayer.pricePaid : 0);
+        const required = playerData.pricePaid - refundFromExisting;
         throw new Error(`Presupuesto insuficiente. Necesitas ${required}M adicionales`);
       }
 

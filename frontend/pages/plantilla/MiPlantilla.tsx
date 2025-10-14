@@ -410,12 +410,17 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             // Buscar el jugador completo en la lista
             const fullPlayer = allPlayers.find(p => p.id === squadPlayer.playerId);
             if (fullPlayer) {
-              playersMap[squadPlayer.position] = fullPlayer;
+              // Agregar el pricePaid del squadPlayer al jugador completo
+              playersMap[squadPlayer.position] = {
+                ...fullPlayer,
+                pricePaid: squadPlayer.pricePaid // IMPORTANTE: Preservar el precio pagado
+              };
             } else {
               // Fallback si no se encuentra el jugador
               playersMap[squadPlayer.position] = {
                 id: squadPlayer.playerId,
                 name: squadPlayer.playerName,
+                pricePaid: squadPlayer.pricePaid
               };
             }
           });
@@ -513,8 +518,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           position,
           playerId: player.id,
           playerName: player.name,
-          role: selectedFormation.positions.find(p => p.id === position)?.role || 'DEF'
-          // NO enviar pricePaid - ya está guardado en BD
+          role: selectedFormation.positions.find(p => p.id === position)?.role || 'DEF',
+          // Enviar pricePaid si está disponible (para jugadores recién agregados o existentes)
+          pricePaid: player.pricePaid
         }))
       };
 
@@ -650,7 +656,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                     position,
                     playerId: player.id,
                     playerName: player.name,
-                    role: formation.positions.find(p => p.id === position)?.role || 'DEF'
+                    role: formation.positions.find(p => p.id === position)?.role || 'DEF',
+                    pricePaid: player.pricePaid // Enviar pricePaid para preservar el precio
                   }))
                 };
 
@@ -825,18 +832,54 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         shadowOpacity: 0.5,
                         shadowRadius: 6,
                         elevation: 6,
-                        overflow: 'hidden'
+                        overflow: 'visible',
+                        position: 'relative'
                       }}
                     >
-                      <Image
-                        source={{ uri: photoUri }}
-                        style={{
-                          width: 66,
-                          height: 66,
-                          borderRadius: 33
-                        }}
-                        resizeMode="cover"
-                      />
+                      <View style={{ overflow: 'hidden', borderRadius: 33, width: 66, height: 66 }}>
+                        <Image
+                          source={{ uri: photoUri }}
+                          style={{
+                            width: 66,
+                            height: 66,
+                            borderRadius: 33
+                          }}
+                          resizeMode="cover"
+                        />
+                      </View>
+                      {/* Escudo del equipo en esquina superior derecha */}
+                      {player.teamCrest && (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            top: -2,
+                            right: -2,
+                            width: 24,
+                            height: 24,
+                            borderRadius: 12,
+                            backgroundColor: '#fff',
+                            borderWidth: 1.5,
+                            borderColor: '#fff',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 3,
+                            elevation: 4
+                          }}
+                        >
+                          <Image
+                            source={{ uri: player.teamCrest }}
+                            style={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: 10
+                            }}
+                            resizeMode="contain"
+                          />
+                        </View>
+                      )}
                     </View>
                     <Text
                       style={{
@@ -891,7 +934,30 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               Toca las posiciones en el campo para seleccionar jugadores
             </Text>
           ) : (
-            Object.entries(selectedPlayers).map(([positionId, player]) => {
+            Object.entries(selectedPlayers)
+              .sort(([positionIdA], [positionIdB]) => {
+                // Ordenar por rol: POR -> DEF -> CEN -> DEL
+                const posA = selectedFormation.positions.find(p => p.id === positionIdA);
+                const posB = selectedFormation.positions.find(p => p.id === positionIdB);
+                
+                const roleOrder: Record<string, number> = {
+                  'POR': 1,
+                  'DEF': 2,
+                  'CEN': 3,
+                  'DEL': 4
+                };
+                
+                const orderA = roleOrder[posA?.role || ''] || 999;
+                const orderB = roleOrder[posB?.role || ''] || 999;
+                
+                if (orderA !== orderB) {
+                  return orderA - orderB;
+                }
+                
+                // Si son del mismo rol, ordenar por ID de posición
+                return positionIdA.localeCompare(positionIdB);
+              })
+              .map(([positionId, player]) => {
               const position = selectedFormation.positions.find(p => p.id === positionId);
               
               // Generar URL de avatar con iniciales si no hay foto del jugador
@@ -1029,7 +1095,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 borderWidth: 1,
                 borderColor: '#334155'
               }}>
-                <Text style={{ color: '#94a3b8', fontSize: 14 }}>Guardando formación...</Text>
+                <Text style={{ color: '#94a3b8', fontSize: 14 }}>Cambiando formación...</Text>
               </View>
             </View>
           )}
