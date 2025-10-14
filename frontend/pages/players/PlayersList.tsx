@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService, { Player, TeamMinimal } from '../../services/FutbolService';
+import { PlayerService } from '../../services/PlayerService';
 import { SquadService } from '../../services/SquadService';
 import LoadingScreen from '../../components/LoadingScreen';
 import LigaNavBar from '../navBar/LigaNavBar';
@@ -322,52 +323,29 @@ export const PlayersList = ({ navigation, route }: {
     let mounted = true;
     (async () => {
       try {
-        console.log('PlayersList: Intentando carga desde caché...');
+        console.log('PlayersList: Cargando desde base de datos...');
         
-        // First, try to load from cache
-        const [teamsCached, playersCached] = await Promise.all([
-          FootballService.getLaLigaTeamsCached(),
-          FootballService.getAllPlayersCached(),
-        ]);
-        
+        // Cargar equipos desde caché (para los filtros)
+        const teamsCached = await FootballService.getLaLigaTeamsCached();
         if (!mounted) return;
         
         if (teamsCached.length > 0) {
           setTeams(teamsCached);
         }
         
-        if (playersCached.length > 0) {
-          // We have cached players - load instantly
-          console.log('PlayersList: Jugadores cargados desde caché:', playersCached.length);
-          setPlayers(playersCached);
+        // Cargar jugadores desde la base de datos (instantáneo)
+        const playersFromDB = await PlayerService.getAllPlayers();
+        
+        if (!mounted) return;
+        
+        if (playersFromDB.length > 0) {
+          console.log('PlayersList: Jugadores cargados desde BD:', playersFromDB.length);
+          setPlayers(playersFromDB);
           setLoading(false);
-          return;
-        }
-        
-        // No cached players - do progressive loading
-        console.log('PlayersList: No hay caché, cargando progresivamente...');
-        setLoading(false); // Stop showing LoadingScreen, start showing progressive UI
-        // Si no había equipos en caché, traerlos ahora para habilitar filtros por equipo
-        if (!teamsCached.length) {
-          try {
-            const freshTeams = await FootballService.getLaLigaTeams();
-            if (mounted) setTeams(freshTeams);
-          } catch (e) {
-            console.warn('PlayersList: Error cargando equipos frescos', e);
-          }
-        }
-        
-        const allPlayers = await (FootballService as any).getAllPlayersProgressive(
-          (currentPlayers: Player[], teamName: string, progress: { done: number; total: number }) => {
-            if (!mounted) return;
-            setPlayers([...currentPlayers]);
-            setLoadingProgress({ ...progress, currentTeam: teamName });
-          }
-        );
-        
-        if (mounted) {
-          setPlayers(allPlayers);
-          setLoadingProgress(null);
+        } else {
+          console.log('PlayersList: No hay jugadores en la BD');
+          setPlayers([]);
+          setLoading(false);
         }
         
       } catch (e) {

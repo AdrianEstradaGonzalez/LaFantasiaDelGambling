@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, Alert, FlatList } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { PlayerService, PlayerWithPrice } from '../../services/PlayerService';
+import FootballService, { TeamMinimal } from '../../services/FutbolService';
 import LoadingScreen from '../../components/LoadingScreen';
 import LigaNavBar from '../navBar/LigaNavBar';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -150,24 +151,30 @@ export const PlayersMarket = ({ navigation, route }: {
   route: RouteProp<any, any>; 
 }) => {
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [players, setPlayers] = useState<PlayerWithPrice[]>([]);
-  const [editedPrices, setEditedPrices] = useState<Record<number, number>>({});
+  const [teams, setTeams] = useState<TeamMinimal[]>([]);
   const [posFilter, setPosFilter] = useState<PositionFilterEs>('Todos');
+  const [teamFilter, setTeamFilter] = useState<number | 'all'>('all');
   const [query, setQuery] = useState('');
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
 
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
+  
+  // Modo selección (cuando viene desde MiPlantilla)
+  const selectMode = route.params?.selectMode || false;
+  const filterByRole = route.params?.filterByRole;
+  const onPlayerSelected = route.params?.onPlayerSelected;
 
-  // Cargar jugadores desde el backend
+  // Cargar jugadores y equipos desde el backend
   const loadPlayers = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await PlayerService.getAllPlayers();
-      setPlayers(data);
-      setEditedPrices({}); // Resetear ediciones al cargar
+      const [playersData, teamsData] = await Promise.all([
+        PlayerService.getAllPlayers(),
+        FootballService.getLaLigaTeamsCached()
+      ]);
+      setPlayers(playersData);
+      setTeams(teamsData);
     } catch (error) {
       Alert.alert('Error', 'No se pudieron cargar los jugadores');
       console.error(error);
@@ -180,17 +187,53 @@ export const PlayersMarket = ({ navigation, route }: {
     loadPlayers();
   }, [loadPlayers]);
 
+  // Aplicar filtro inicial si viene desde modo selección
+  useEffect(() => {
+    if (selectMode && filterByRole) {
+      // Mapear rol a posición en español
+      const roleToPosition: Record<string, PositionFilterEs> = {
+        'GK': 'Portero',
+        'DEF': 'Defensa',
+        'MID': 'Centrocampista',
+        'ATT': 'Delantero'
+      };
+      const initialFilter = roleToPosition[filterByRole];
+      if (initialFilter) {
+        setPosFilter(initialFilter);
+      }
+    }
+  }, [selectMode, filterByRole]);
+
   // Filtrado de jugadores
   const filtered = useMemo(() => {
     let list = players;
     
-    // Filtro por posición
-    const canonical = canonicalFromEs(posFilter);
-    if (canonical) {
-      list = list.filter(p => {
-        const n = normalizePosition(p.position);
-        return n === canonical;
-      });
+    // Filtro por rol si estamos en modo selección
+    if (selectMode && filterByRole) {
+      const roleMapping: Record<string, CanonicalPos> = {
+        'GK': 'Goalkeeper',
+        'DEF': 'Defender', 
+        'MID': 'Midfielder',
+        'ATT': 'Attacker'
+      };
+      const targetRole = roleMapping[filterByRole];
+      if (targetRole) {
+        list = list.filter(p => {
+          const n = normalizePosition(p.position);
+          return n === targetRole;
+        });
+      }
+    }
+    
+    // Filtro por posición del dropdown (solo si no está en modo selección con rol fijo)
+    if (!selectMode || !filterByRole) {
+      const canonical = canonicalFromEs(posFilter);
+      if (canonical) {
+        list = list.filter(p => {
+          const n = normalizePosition(p.position);
+          return n === canonical;
+        });
+      }
     }
     
     // Filtro por búsqueda de nombre
@@ -199,96 +242,13 @@ export const PlayersMarket = ({ navigation, route }: {
       list = list.filter(p => p.name.toLowerCase().includes(q));
     }
     
-    // Filtro por rango de precio
-    if (minPrice) {
-      const min = parseInt(minPrice);
-      if (!isNaN(min)) {
-        list = list.filter(p => {
-          const currentPrice = editedPrices[p.id] ?? p.price;
-          return currentPrice >= min;
-        });
-      }
-    }
-    if (maxPrice) {
-      const max = parseInt(maxPrice);
-      if (!isNaN(max)) {
-        list = list.filter(p => {
-          const currentPrice = editedPrices[p.id] ?? p.price;
-          return currentPrice <= max;
-        });
-      }
+    // Filtro por equipo
+    if (teamFilter !== 'all') {
+      list = list.filter(p => p.teamId === teamFilter);
     }
     
     return list;
-  }, [players, posFilter, query, minPrice, maxPrice, editedPrices]);
-
-  // Manejar cambio de precio
-  const handlePriceChange = (playerId: number, newPrice: string) => {
-    const price = parseInt(newPrice);
-    if (newPrice === '' || (price >= 1 && price <= 250)) {
-      setEditedPrices(prev => ({
-        ...prev,
-        [playerId]: newPrice === '' ? 0 : price
-      }));
-    }
-  };
-
-  // Establecer todos los jugadores a 1M
-  const setAllToMinimum = () => {
-    Alert.alert(
-      'Confirmar acción',
-      '¿Establecer todos los jugadores a 1M?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Establecer',
-          style: 'destructive',
-          onPress: () => {
-            const newPrices: Record<number, number> = {};
-            players.forEach(p => {
-              newPrices[p.id] = 1;
-            });
-            setEditedPrices(newPrices);
-          }
-        }
-      ]
-    );
-  };
-
-  // Guardar cambios en BD
-  const saveChanges = async () => {
-    const updates = Object.entries(editedPrices)
-      .filter(([_, price]) => price > 0)
-      .map(([id, price]) => ({ id: parseInt(id), price }));
-
-    if (updates.length === 0) {
-      Alert.alert('Sin cambios', 'No hay precios modificados para guardar');
-      return;
-    }
-
-    Alert.alert(
-      'Confirmar cambios',
-      `¿Guardar ${updates.length} precio(s) modificado(s)?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Guardar',
-          onPress: async () => {
-            try {
-              setSaving(true);
-              await PlayerService.updateMultiplePrices(updates);
-              Alert.alert('Éxito', 'Precios actualizados correctamente');
-              await loadPlayers(); // Recargar datos
-            } catch (error: any) {
-              Alert.alert('Error', error?.message || 'No se pudieron guardar los cambios');
-            } finally {
-              setSaving(false);
-            }
-          }
-        }
-      ]
-    );
-  };
+  }, [players, posFilter, teamFilter, query, selectMode, filterByRole]);
 
   // Renderizar item de jugador
   const renderPlayer = ({ item: p }: { item: PlayerWithPrice }) => {
@@ -297,69 +257,80 @@ export const PlayersMarket = ({ navigation, route }: {
     const badgeColor = posColors[displayCat];
     const badgeAbbr = posAbbr[displayCat];
     const photo = p.photo ?? getAvatarUri(p);
-    const currentPrice = editedPrices[p.id] ?? p.price;
-    const hasChanges = editedPrices[p.id] !== undefined && editedPrices[p.id] !== p.price;
+
+    // En modo selección, envolver en TouchableOpacity
+    const content = (
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Image
+          source={{ uri: photo }}
+          style={{ width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#334155', marginRight: 12, backgroundColor: '#0b1220' }}
+          resizeMode="cover"
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: '#cbd5e1', fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{p.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <View style={{ backgroundColor: badgeColor, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+              <Text style={{ color: '#0f1419', fontWeight: '800', fontSize: 11 }}>{badgeAbbr}</Text>
+            </View>
+            {p.teamCrest && (
+              <Image
+                source={{ uri: p.teamCrest }}
+                style={{ width: 22, height: 22, marginLeft: 8, backgroundColor: 'transparent' }}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </View>
+        {!selectMode && (
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ color: '#94a3b8', fontSize: 12 }}>Precio</Text>
+            <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{p.price}M</Text>
+          </View>
+        )}
+        {selectMode && (
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ color: '#10b981', fontSize: 14, fontWeight: '700' }}>Seleccionar →</Text>
+          </View>
+        )}
+      </View>
+    );
+
+    if (selectMode) {
+      return (
+        <TouchableOpacity
+          onPress={() => {
+            if (onPlayerSelected) {
+              onPlayerSelected(p);
+              navigation.goBack();
+            }
+          }}
+          style={{ 
+            backgroundColor: '#1a2332', 
+            borderWidth: 1, 
+            borderColor: '#334155', 
+            borderRadius: 12, 
+            padding: 12, 
+            marginBottom: 10
+          }}
+        >
+          {content}
+        </TouchableOpacity>
+      );
+    }
 
     return (
       <View style={{ 
         backgroundColor: '#1a2332', 
         borderWidth: 1, 
-        borderColor: hasChanges ? '#10b981' : '#334155', 
+        borderColor: '#334155', 
         borderRadius: 12, 
         padding: 12, 
         marginBottom: 10
       }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Image
-            source={{ uri: photo }}
-            style={{ width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#334155', marginRight: 12, backgroundColor: '#0b1220' }}
-            resizeMode="cover"
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#cbd5e1', fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{p.name}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <View style={{ backgroundColor: badgeColor, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
-                <Text style={{ color: '#0f1419', fontWeight: '800', fontSize: 11 }}>{badgeAbbr}</Text>
-              </View>
-              {p.teamCrest && (
-                <Image
-                  source={{ uri: p.teamCrest }}
-                  style={{ width: 22, height: 22, marginLeft: 8, backgroundColor: 'transparent' }}
-                  resizeMode="contain"
-                />
-              )}
-            </View>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Precio (M)</Text>
-            <TextInput
-              value={currentPrice === 0 ? '' : currentPrice.toString()}
-              onChangeText={(text) => handlePriceChange(p.id, text)}
-              keyboardType="numeric"
-              placeholder={p.price.toString()}
-              placeholderTextColor="#64748b"
-              style={{
-                backgroundColor: '#0b1220',
-                borderWidth: 1,
-                borderColor: hasChanges ? '#10b981' : '#475569',
-                color: hasChanges ? '#10b981' : '#fff',
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 8,
-                width: 80,
-                textAlign: 'center',
-                fontWeight: '700',
-                fontSize: 16
-              }}
-              maxLength={3}
-            />
-          </View>
-        </View>
+        {content}
       </View>
     );
   };
-
-  const hasChanges = Object.keys(editedPrices).length > 0;
 
   return (
     <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
@@ -373,84 +344,38 @@ export const PlayersMarket = ({ navigation, route }: {
             contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
             ListHeaderComponent={
               <>
-                <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 12 }}>
-                  Mercado de Jugadores
+                <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 4 }}>
+                  {selectMode ? 'Seleccionar Jugador' : 'Mercado de Jugadores'}
                 </Text>
-
-                {/* Botón para establecer todos a 1M */}
-                <TouchableOpacity
-                  onPress={setAllToMinimum}
-                  style={{
-                    backgroundColor: '#ef4444',
-                    paddingVertical: 12,
-                    paddingHorizontal: 20,
-                    borderRadius: 10,
-                    marginBottom: 16,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    shadowColor: '#ef4444',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 4,
-                    elevation: 4
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15, marginRight: 8 }}>
-                    Establecer todos a 1M
+                {selectMode && filterByRole && (
+                  <Text style={{ color: '#94a3b8', fontSize: 14, marginBottom: 12 }}>
+                    Posición: {filterByRole === 'GK' ? 'Portero' : filterByRole === 'DEF' ? 'Defensa' : filterByRole === 'MID' ? 'Centrocampista' : 'Delantero'}
                   </Text>
-                  <Text style={{ color: '#fff', fontSize: 16 }}>⚡</Text>
-                </TouchableOpacity>
+                )}
+                {!selectMode && <View style={{ marginBottom: 12 }} />}
                 
                 {/* Filtros */}
                 <View>
                   <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+                    {!selectMode && (
+                      <View style={{ flex: 1 }}>
+                        <Dropdown
+                          label="Posición"
+                          value={posFilter}
+                          onValueChange={setPosFilter}
+                          items={positionsEs.map(p => ({ label: p, value: p }))}
+                        />
+                      </View>
+                    )}
                     <View style={{ flex: 1 }}>
                       <Dropdown
-                        label="Posición"
-                        value={posFilter}
-                        onValueChange={setPosFilter}
-                        items={positionsEs.map(p => ({ label: p, value: p }))}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Precio mín (M)</Text>
-                      <TextInput
-                        value={minPrice}
-                        onChangeText={setMinPrice}
-                        keyboardType="numeric"
-                        placeholder="1"
-                        placeholderTextColor="#94a3b8"
-                        style={{
-                          backgroundColor: '#1a2332',
-                          borderWidth: 1,
-                          borderColor: '#334155',
-                          color: '#fff',
-                          paddingHorizontal: 12,
-                          paddingVertical: 12,
-                          borderRadius: 10,
-                          height: 46
-                        }}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Precio máx (M)</Text>
-                      <TextInput
-                        value={maxPrice}
-                        onChangeText={setMaxPrice}
-                        keyboardType="numeric"
-                        placeholder="250"
-                        placeholderTextColor="#94a3b8"
-                        style={{
-                          backgroundColor: '#1a2332',
-                          borderWidth: 1,
-                          borderColor: '#334155',
-                          color: '#fff',
-                          paddingHorizontal: 12,
-                          paddingVertical: 12,
-                          borderRadius: 10,
-                          height: 46
-                        }}
+                        label="Equipo"
+                        value={teamFilter}
+                        onValueChange={setTeamFilter}
+                        items={[
+                          { label: 'Todos los equipos', value: 'all' },
+                          ...teams.map(t => ({ label: t.name, value: t.id }))
+                        ]}
                       />
                     </View>
                   </View>
@@ -474,40 +399,6 @@ export const PlayersMarket = ({ navigation, route }: {
                     />
                   </View>
                 </View>
-
-                {/* Botón de guardar */}
-                {hasChanges && (
-                  <TouchableOpacity
-                    onPress={saveChanges}
-                    disabled={saving}
-                    style={{
-                      backgroundColor: '#10b981',
-                      paddingVertical: 14,
-                      paddingHorizontal: 24,
-                      borderRadius: 12,
-                      marginBottom: 12,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      shadowColor: '#10b981',
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 8
-                    }}
-                  >
-                    {saving ? (
-                      <ActivityIndicator color="#fff" />
-                    ) : (
-                      <>
-                        <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16, marginRight: 8 }}>
-                          Guardar Cambios
-                        </Text>
-                        <Text style={{ color: '#fff', fontSize: 16 }}>💾</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                )}
               </>
             }
             ListEmptyComponent={
@@ -518,8 +409,8 @@ export const PlayersMarket = ({ navigation, route }: {
             showsVerticalScrollIndicator={true}
           />
 
-          {/* Barra de navegación */}
-          <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+          {/* Barra de navegación - solo en modo normal */}
+          {!selectMode && <LigaNavBar ligaId={ligaId} ligaName={ligaName} />}
         </>
       )}
     </LinearGradient>

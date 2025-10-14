@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import FootballService, { Player } from '../../services/FutbolService';
 import { SquadService } from '../../services/SquadService';
+import { PlayerService } from '../../services/PlayerService';
 import LigaNavBar from '../navBar/LigaNavBar';
 
 type Formation = {
@@ -341,7 +342,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           }
 
           // Cargar jugadores existentes con datos completos
-          const allPlayers = await FootballService.getAllPlayersCached();
+          const allPlayers = await PlayerService.getAllPlayers(); // Cambio: ahora desde la BD
           const playersMap: Record<string, any> = {};
           
           existingSquad.players.forEach(squadPlayer => {
@@ -373,10 +374,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   }, [ligaId]);
 
   const selectPlayer = (positionId: string) => {
-    // Navegar a la lista de jugadores con filtro por posición
+    // Navegar al mercado con filtro por posición
     const position = selectedFormation.positions.find(p => p.id === positionId);
     if (position) {
-      navigation.navigate('PlayersList', { 
+      navigation.navigate('PlayersMarket', { 
         selectMode: true, 
         filterByRole: position.role,
         onPlayerSelected: (player: any) => {
