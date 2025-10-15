@@ -8,7 +8,7 @@ import { SquadService } from '../../services/SquadService';
 import { PlayerService } from '../../services/PlayerService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { TacticsIcon, ChartBarIcon } from '../../components/VectorIcons';
+import { TacticsIcon, ChartBarIcon, DeleteIcon } from '../../components/VectorIcons';
 
 type Formation = {
   id: string;
@@ -1230,7 +1230,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         }}
                       >
                         <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>
-                          ?
+                          -
                         </Text>
                       </View>
                     </View>
@@ -1418,7 +1418,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                       alignItems: 'center'
                     }}
                   >
-                    <Text style={{ color: '#fff', fontSize: 14, fontWeight: 'bold' }}>Ã—</Text>
+                    <DeleteIcon size={14} color="#fff" />
                   </TouchableOpacity>
                 </View>
               );

@@ -13,22 +13,6 @@ import { LoginService } from '../../services/LoginService';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { Buffer } from 'buffer';
 import { useFocusEffect } from '@react-navigation/native';
-import { 
-  FootballIcon, 
-  AssistIcon, 
-  SaveIcon, 
-  CleanSheetIcon, 
-  ShotOnTargetIcon, 
-  DribbleIcon, 
-  KeyPassIcon, 
-  DuelIcon, 
-  RecoveryIcon, 
-  GoalsConcededIcon, 
-  FoulsDrawnIcon,
-  MinutesIcon,
-  YellowCardIcon,
-  RedCardIcon
-} from '../../components/VectorIcons';
 
 // Icono de flecha para volver
 const backIcon = require('../../assets/iconos/backIcon.png');
@@ -236,9 +220,6 @@ export const PlayersMarket = ({ navigation, route }: {
   const [focusedPriceId, setFocusedPriceId] = useState<number | null>(null);
   const [budget, setBudget] = useState<number>(0);
   const [squadPlayerIds, setSquadPlayerIds] = useState<Set<number>>(new Set());
-  
-  // Cache de estadÃ­sticas para las tarjetas de jugadores (season stats)
-  const [playerStatsCache, setPlayerStatsCache] = useState<{ [playerId: number]: any }>({});
 
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
@@ -396,44 +377,6 @@ export const PlayersMarket = ({ navigation, route }: {
     
     return list;
   }, [players, posFilter, teamFilter, query, selectMode, filterByRole]);
-
-  // Cargar estadÃ­sticas para jugadores visibles
-  const loadPlayerStats = useCallback(async (playerId: number) => {
-    // Si ya estÃ¡n en cache, no recargar
-    if (playerStatsCache[playerId]) return;
-    
-    try {
-      const stats = await FootballService.getPlayerStatistics(playerId, null);
-      setPlayerStatsCache(prev => ({ ...prev, [playerId]: stats }));
-    } catch (error) {
-      console.error(`Error cargando stats para jugador ${playerId}:`, error);
-    }
-  }, [playerStatsCache]);
-
-  // Componente para mostrar un stat compacto con icono
-  const CompactStat = ({ icon, value, color = '#cbd5e1' }: { icon: React.ReactNode; value: number | string; color?: string }) => {
-    if (!value || value === 0) return null;
-    
-    return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-        {icon}
-        <Text style={{ color, fontSize: 12, fontWeight: '700' }}>{value}</Text>
-      </View>
-    );
-  };
-
-  // Cargar estadÃ­sticas para los jugadores visibles (solo si no es admin)
-  useEffect(() => {
-    if (isAdmin || loading) return;
-    
-    // Cargar stats para los primeros 20 jugadores visibles
-    const playersToLoad = filtered.slice(0, 20);
-    playersToLoad.forEach(player => {
-      if (!playerStatsCache[player.id]) {
-        loadPlayerStats(player.id);
-      }
-    });
-  }, [filtered, isAdmin, loading, playerStatsCache, loadPlayerStats]);
 
   // Guardar precios editados
   const handleSavePrices = async () => {
@@ -711,10 +654,15 @@ export const PlayersMarket = ({ navigation, route }: {
 
   // Manejar apertura del modal de estadÃ­sticas -> Ahora navega a pantalla de detalles
   const handleOpenPlayerStats = async (player: PlayerWithPrice) => {
+    // Verificar si el jugador ya está fichado
+    const isAlreadyInSquad = squadPlayerIds.has(player.id);
+    
     navigation.navigate('PlayerDetail', {
       player,
       ligaId,
-      ligaName
+      ligaName,
+      budget,
+      isAlreadyInSquad
     });
   };
 
@@ -737,9 +685,6 @@ export const PlayersMarket = ({ navigation, route }: {
     // Precio actual (editado o original)
     const currentPrice = editedPrices[p.id] ?? p.price;
     const isPriceEdited = editedPrices[p.id] !== undefined;
-    
-    // Obtener stats del cache (si existen)
-    const stats = playerStatsCache[p.id];
 
     // En modo selecciÃ³n, envolver en TouchableOpacity
     const content = (
@@ -833,10 +778,10 @@ export const PlayersMarket = ({ navigation, route }: {
               </View>
             )}
             
-            {/* Botones de acciÃ³n segÃºn estado */}
-            {!isAdmin && !selectMode && (
+            {/* Botones de acción según estado */}
+            {!isAdmin && (
               isAlreadyInSquad ? (
-                // BotÃ³n de vender para jugadores fichados
+                // Botón de vender para jugadores fichados
                 <TouchableOpacity
                   onPress={() => handleSellPlayer(p)}
                   disabled={isSaving}
@@ -855,36 +800,27 @@ export const PlayersMarket = ({ navigation, route }: {
                 >
                   <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>VENDER</Text>
                 </TouchableOpacity>
-              ) : null
-            )}
-            
-            {selectMode && !isAlreadyInSquad && (
-              <View style={{ 
-                backgroundColor: '#10b981', 
-                width: 36, 
-                height: 36, 
-                borderRadius: 18, 
-                justifyContent: 'center', 
-                alignItems: 'center',
-                shadowColor: '#10b981',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4,
-                elevation: 4
-              }}>
-                <Text style={{ color: '#fff', fontSize: 24, fontWeight: '700', lineHeight: 24 }}>+</Text>
-              </View>
-            )}
-            
-            {selectMode && isAlreadyInSquad && (
-              <View style={{ 
-                backgroundColor: '#64748b', 
-                paddingHorizontal: 10, 
-                paddingVertical: 6, 
-                borderRadius: 8
-              }}>
-                <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>FICHADO</Text>
-              </View>
+              ) : (
+                // Botón de fichar para jugadores NO fichados
+                <TouchableOpacity
+                  onPress={() => selectMode ? handleSelectFromPlantilla(p) : handleBuyPlayer(p)}
+                  disabled={isSaving}
+                  style={{ 
+                    backgroundColor: '#10b981', 
+                    paddingHorizontal: 12, 
+                    paddingVertical: 8, 
+                    borderRadius: 8,
+                    shadowColor: '#10b981',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                    elevation: 4,
+                    opacity: isSaving ? 0.6 : 1
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>FICHAR</Text>
+                </TouchableOpacity>
+              )
             )}
           </View>
         </View>
@@ -907,209 +843,13 @@ export const PlayersMarket = ({ navigation, route }: {
             />
           </View>
         )}
-        
-        {/* Estadísticas compactas (solo si NO es admin y tenemos stats) */}
-        {!isAdmin && stats && (
-          <View style={{ 
-            marginTop: 12, 
-            paddingTop: 12, 
-            borderTopWidth: 1, 
-            borderTopColor: '#334155' 
-          }}>
-            {/* Stats Generales (todos los jugadores) */}
-            <View style={{ 
-              flexDirection: 'row', 
-              flexWrap: 'wrap', 
-              gap: 8,
-              marginBottom: 8
-            }}>
-              <CompactStat 
-                icon={<MinutesIcon size={14} color="#94a3b8" />} 
-                value={stats.games?.minutes || 0} 
-                color="#94a3b8" 
-              />
-              <CompactStat 
-                icon={<AssistIcon size={14} color="#0892D0" />} 
-                value={stats.goals?.assists || 0} 
-                color="#0892D0" 
-              />
-              {(stats.cards?.yellow || 0) > 0 && (
-                <CompactStat 
-                  icon={<YellowCardIcon size={14} color="#f59e0b" />} 
-                  value={stats.cards?.yellow} 
-                  color="#f59e0b" 
-                />
-              )}
-              {(stats.cards?.red || 0) > 0 && (
-                <CompactStat 
-                  icon={<RedCardIcon size={14} color="#ef4444" />} 
-                  value={stats.cards?.red} 
-                  color="#ef4444" 
-                />
-              )}
-            </View>
-
-            {/* Stats por posiciÃ³n */}
-            {currentPosition === 'Goalkeeper' && stats.goalkeeper && (
-              <View style={{ 
-                flexDirection: 'row', 
-                flexWrap: 'wrap', 
-                gap: 8 
-              }}>
-                <CompactStat 
-                  icon={<CleanSheetIcon size={14} color="#10b981" />} 
-                  value={stats.goalkeeper.cleanSheets || 0} 
-                  color="#10b981" 
-                />
-                <CompactStat 
-                  icon={<SaveIcon size={14} color="#3b82f6" />} 
-                  value={stats.goalkeeper.saves || 0} 
-                  color="#3b82f6" 
-                />
-                <CompactStat 
-                  icon={<GoalsConcededIcon size={14} color="#ef4444" />} 
-                  value={stats.goalkeeper.conceded || 0} 
-                  color="#ef4444" 
-                />
-                {(stats.goals?.total || 0) > 0 && (
-                  <CompactStat 
-                    icon={<FootballIcon size={14} color="#10b981" />} 
-                    value={stats.goals.total} 
-                    color="#10b981" 
-                  />
-                )}
-              </View>
-            )}
-
-            {currentPosition === 'Defender' && (
-              <View style={{ 
-                flexDirection: 'row', 
-                flexWrap: 'wrap', 
-                gap: 8 
-              }}>
-                <CompactStat 
-                  icon={<FootballIcon size={14} color="#10b981" />} 
-                  value={stats.goals?.total || 0} 
-                  color="#10b981" 
-                />
-                <CompactStat 
-                  icon={<DuelIcon size={14} color="#3b82f6" />} 
-                  value={stats.duels?.won || 0} 
-                  color="#3b82f6" 
-                />
-                <CompactStat 
-                  icon={<RecoveryIcon size={14} color="#f59e0b" />} 
-                  value={stats.tackles?.interceptions || 0} 
-                  color="#f59e0b" 
-                />
-                {(stats.shots?.on || 0) > 0 && (
-                  <CompactStat 
-                    icon={<ShotOnTargetIcon size={14} color="#94a3b8" />} 
-                    value={stats.shots.on} 
-                    color="#94a3b8" 
-                  />
-                )}
-              </View>
-            )}
-
-            {currentPosition === 'Midfielder' && (
-              <View style={{ 
-                flexDirection: 'row', 
-                flexWrap: 'wrap', 
-                gap: 8 
-              }}>
-                <CompactStat 
-                  icon={<FootballIcon size={14} color="#10b981" />} 
-                  value={stats.goals?.total || 0} 
-                  color="#10b981" 
-                />
-                <CompactStat 
-                  icon={<KeyPassIcon size={14} color="#0892D0" />} 
-                  value={stats.passes?.key || 0} 
-                  color="#0892D0" 
-                />
-                <CompactStat 
-                  icon={<DribbleIcon size={14} color="#f59e0b" />} 
-                  value={stats.dribbles?.success || 0} 
-                  color="#f59e0b" 
-                />
-                <CompactStat 
-                  icon={<FoulsDrawnIcon size={14} color="#94a3b8" />} 
-                  value={stats.fouls?.drawn || 0} 
-                  color="#94a3b8" 
-                />
-                {(stats.shots?.total || 0) > 0 && (
-                  <CompactStat 
-                    icon={<ShotOnTargetIcon size={14} color="#3b82f6" />} 
-                    value={stats.shots.on || 0} 
-                    color="#3b82f6" 
-                  />
-                )}
-              </View>
-            )}
-
-            {currentPosition === 'Attacker' && (
-              <View style={{ 
-                flexDirection: 'row', 
-                flexWrap: 'wrap', 
-                gap: 8 
-              }}>
-                <CompactStat 
-                  icon={<FootballIcon size={14} color="#10b981" />} 
-                  value={stats.goals?.total || 0} 
-                  color="#10b981" 
-                />
-                <CompactStat 
-                  icon={<KeyPassIcon size={14} color="#0892D0" />} 
-                  value={stats.passes?.key || 0} 
-                  color="#0892D0" 
-                />
-                <CompactStat 
-                  icon={<FoulsDrawnIcon size={14} color="#f59e0b" />} 
-                  value={stats.fouls?.drawn || 0} 
-                  color="#f59e0b" 
-                />
-                <CompactStat 
-                  icon={<DribbleIcon size={14} color="#3b82f6" />} 
-                  value={stats.dribbles?.success || 0} 
-                  color="#3b82f6" 
-                />
-                <CompactStat 
-                  icon={<ShotOnTargetIcon size={14} color="#94a3b8" />} 
-                  value={stats.shots?.on || 0} 
-                  color="#94a3b8" 
-                />
-              </View>
-            )}
-          </View>
-        )}
       </View>
     );
 
-    if (selectMode) {
-      return (
-        <TouchableOpacity
-          onPress={() => handleOpenPlayerStats(p)}
-          disabled={isSaving}
-          style={{ 
-            backgroundColor: '#1a2332', 
-            borderWidth: 1, 
-            borderColor: isAlreadyInSquad ? '#64748b' : '#334155', 
-            borderRadius: 12, 
-            padding: 12, 
-            marginBottom: 10,
-            opacity: isSaving ? 0.6 : 1
-          }}
-        >
-          {content}
-        </TouchableOpacity>
-      );
-    }
-
-    // Modo normal (no selecciÃ³n): Si NO es admin, permitir comprar
+    // Si NO es admin, permitir comprar/vender (tanto en modo normal como selectMode)
     if (!isAdmin && ligaId) {
       if (isAlreadyInSquad) {
-        // Jugador ya fichado: mostrar como card clickeable para ver estadÃ­sticas
+        // Jugador ya fichado: mostrar como card clickeable para ver estadísticas
         return (
           <TouchableOpacity
             onPress={() => handleOpenPlayerStats(p)}
@@ -1126,7 +866,7 @@ export const PlayersMarket = ({ navigation, route }: {
           </TouchableOpacity>
         );
       } else {
-        // Jugador no fichado: clickeable para ver estadÃ­sticas
+        // Jugador no fichado: clickeable para ver estadísticas
         return (
           <TouchableOpacity
             onPress={() => handleOpenPlayerStats(p)}

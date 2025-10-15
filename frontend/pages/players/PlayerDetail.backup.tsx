@@ -6,6 +6,22 @@ import { SquadService } from '../../services/SquadService';
 import LoadingScreen from '../../components/LoadingScreen';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
+import {
+  FootballIcon,
+  AssistIcon,
+  SaveIcon,
+  CleanSheetIcon,
+  ShotOnTargetIcon,
+  DribbleIcon,
+  KeyPassIcon,
+  DuelIcon,
+  RecoveryIcon,
+  GoalsConcededIcon,
+  FoulsDrawnIcon,
+  MinutesIcon,
+  YellowCardIcon,
+  RedCardIcon,
+} from '../../components/VectorIcons';
 
 // Icono de flecha para volver
 const backIcon = require('../../assets/iconos/backIcon.png');
@@ -90,6 +106,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     points += (stats.goals?.assists || 0) * 3;
     points -= (stats.cards?.yellow || 0) * 1;
     points -= (stats.cards?.red || 0) * 3;
+    points += (stats.penalty?.won || 0) * 2;
     points -= (stats.penalty?.committed || 0) * 2;
     points += (stats.penalty?.scored || 0) * 3;
     points -= (stats.penalty?.missed || 0) * 2;
@@ -99,22 +116,28 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       if (minutes >= 60 && (stats.goalkeeper?.cleanSheets || 0) > 0) points += 5;
       points -= (stats.goalkeeper?.conceded || 0) * 2;
       points += (stats.goalkeeper?.saves || 0) * 1;
-      points += (stats.penalty?.saved || 0) * 5;
+      points += (stats.goalkeeper?.savedPenalties || 0) * 5;
+      points += (stats.goals?.total || 0) * 10;
+      points += Math.floor((stats.tackles?.interceptions || 0) / 5) * 1;
     }
 
     // DEFENSA
     if (role === 'Defender') {
-      if (minutes >= 60 && (stats.goals?.conceded || 0) === 0) points += 5;
+      if (minutes >= 60 && (stats.goalkeeper?.cleanSheets || 0) > 0) points += 4;
       points += (stats.goals?.total || 0) * 6;
-      points += Math.floor((stats.fouls?.drawn || 0) / 3) * 1;
-      points += Math.floor((stats.tackles?.interceptions || 0) / 3) * 1;
+      points += Math.floor((stats.duels?.won || 0) / 2) * 1;
+      points += Math.floor((stats.tackles?.interceptions || 0) / 5) * 1;
+      points -= (stats.goalkeeper?.conceded || 0) * 1;
       points += (stats.shots?.on || 0) * 1;
     }
 
     // CENTROCAMPISTA
     if (role === 'Midfielder') {
+      if (minutes >= 60 && (stats.goalkeeper?.cleanSheets || 0) > 0) points += 1;
       points += (stats.goals?.total || 0) * 5;
+      points -= Math.floor((stats.goalkeeper?.conceded || 0) / 2) * 1;
       points += (stats.passes?.key || 0) * 1;
+      points += Math.floor((stats.dribbles?.success || 0) / 2) * 1;
       points += Math.floor((stats.fouls?.drawn || 0) / 3) * 1;
       points += Math.floor((stats.tackles?.interceptions || 0) / 3) * 1;
       points += (stats.shots?.on || 0) * 1;
@@ -178,6 +201,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
   // Auto-scroll a la derecha cuando se carguen las jornadas
   useEffect(() => {
     if (matchdayPoints.length > 0 && matchdayScrollRef.current) {
+      // Hacer scroll al final después de un pequeño delay
       setTimeout(() => {
         matchdayScrollRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -196,6 +220,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       const playerPosition = normalizePosition(player.position);
       if (!playerPosition) return;
 
+      // Mapear posición a rol
       const roleMap: Record<CanonicalPos, string> = {
         'Goalkeeper': 'POR',
         'Defender': 'DEF',
@@ -204,8 +229,10 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       };
       const role = roleMap[playerPosition];
 
+      // Obtener plantilla actual
       const squad = await SquadService.getUserSquad(ligaId);
       
+      // Definir todas las posiciones posibles por rol
       const allPositionsByRole: Record<string, string[]> = {
         'POR': ['por'],
         'DEF': ['def1', 'def2', 'def3', 'def4', 'def5'],
@@ -215,12 +242,14 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
 
       const availablePositions = allPositionsByRole[role] || [];
       
+      // Encontrar posiciones ocupadas del mismo rol
       const occupiedPositions = new Set(
         squad?.players
           .filter(p => p.role === role)
           .map(p => p.position) || []
       );
 
+      // Encontrar primera posición libre
       const squadPosition = availablePositions.find(pos => !occupiedPositions.has(pos));
 
       if (!squadPosition) {
@@ -231,6 +260,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         return;
       }
 
+      // Fichar directamente
       const result = await SquadService.addPlayerToSquad(ligaId, {
         position: squadPosition,
         playerId: player.id,
@@ -244,6 +274,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         return;
       }
 
+      // Actualizar estado: ahora está en la plantilla y reducir presupuesto
       setPlayerInSquad(true);
       if (budget !== undefined) {
         setBudget(budget - player.price);
@@ -263,14 +294,17 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     try {
       setIsBuying(true);
       
+      // Encontrar en qué posición está el jugador
       const squad = await SquadService.getUserSquad(ligaId);
       if (!squad) return;
 
       const playerInSquadData = squad.players.find(p => p.playerId === player.id);
       if (!playerInSquadData) return;
 
+      // Vender directamente
       await SquadService.removePlayerFromSquad(ligaId, playerInSquadData.position);
       
+      // Actualizar estado: ya no está en la plantilla y devolver el dinero
       setPlayerInSquad(false);
       if (budget !== undefined) {
         setBudget(budget + playerInSquadData.pricePaid);
@@ -302,18 +336,21 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         borderBottomWidth: 0.5,
         borderBottomColor: '#334155'
       }}>
+        {/* Columna Cantidad */}
         <View style={{ width: 70, alignItems: 'center' }}>
-          <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>
+          <Text style={{ color: '#cbd5e1', fontSize: 15, fontWeight: '700' }}>
             {cantidad}
           </Text>
         </View>
         
+        {/* Columna Estadística */}
         <View style={{ flex: 1, paddingHorizontal: 12 }}>
-          <Text style={{ color: '#fff', fontSize: 14 }}>
+          <Text style={{ color: '#94a3b8', fontSize: 14 }}>
             {estadistica}
           </Text>
         </View>
         
+        {/* Columna Puntos */}
         <View style={{ width: 70, alignItems: 'center' }}>
           <View style={{
             backgroundColor: puntos > 0 ? '#10b98120' : puntos < 0 ? '#ef444420' : '#64748b20',
@@ -336,6 +373,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     );
   };
 
+  // Obtener datos de la jornada seleccionada
   const selectedData = selectedMatchday !== null 
     ? matchdayPoints.find(mp => mp.matchday === selectedMatchday)
     : null;
@@ -346,6 +384,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         <LoadingScreen />
       ) : (
         <>
+          {/* Top NavBar con botón de volver */}
           <View
             style={{
               position: 'absolute',
@@ -363,6 +402,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
               paddingHorizontal: 16,
             }}
           >
+            {/* Botón volver */}
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={{ padding: 4 }}
@@ -371,6 +411,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
               <Image source={backIcon} style={{ width: 28, height: 28, tintColor: '#fff' }} resizeMode="contain" />
             </TouchableOpacity>
 
+            {/* Título centrado */}
             <Text
               style={{
                 color: '#fff',
@@ -387,17 +428,21 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
               </Text>
             </Text>
 
+            {/* Espacio para balancear */}
             <View style={{ width: 28 }} />
           </View>
 
           <ScrollView style={{ flex: 1, paddingTop: 60 }} contentContainerStyle={{ paddingBottom: 40 }}>
+          {/* Header del jugador - Rediseñado */}
           <View style={{ 
             backgroundColor: '#0f172a', 
             padding: 20,
             borderBottomWidth: 1,
             borderBottomColor: '#334155'
           }}>
+            {/* Fila superior: Foto + Info básica */}
             <View style={{ flexDirection: 'row', gap: 16, marginBottom: 16 }}>
+              {/* Foto del jugador */}
               <Image
                 source={{ uri: player.photo }}
                 style={{ 
@@ -411,6 +456,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                 resizeMode="cover"
               />
               
+              {/* Info básica + Badges */}
               <View style={{ flex: 1, justifyContent: 'space-between' }}>
                 <View>
                   <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900', marginBottom: 4, letterSpacing: 0.5 }}>
@@ -421,6 +467,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   </Text>
                 </View>
                 
+                {/* Badges de posición y precio */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <View style={{
                     backgroundColor: posColor,
@@ -446,37 +493,40 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
               </View>
             </View>
 
+            {/* Fila inferior: Stats cards + Botón */}
             <View style={{ flexDirection: 'row', gap: 12, alignItems: 'stretch' }}>
+              {/* Card TOTAL */}
               <View style={{
                 flex: 1,
                 backgroundColor: '#0b1a2e',
                 borderRadius: 12,
-                padding: 10,
+                padding: 14,
                 alignItems: 'center',
                 borderWidth: 2,
                 borderColor: '#0892D0'
               }}>
-                <Text style={{ color: '#94a3b8', fontSize: 10, marginBottom: 4, fontWeight: '700', letterSpacing: 0.5 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6, fontWeight: '700', letterSpacing: 0.5 }}>
                   PUNTOS TOTAL
                 </Text>
-                <Text style={{ color: '#0892D0', fontSize: 28, fontWeight: '900', lineHeight: 28 }}>
+                <Text style={{ color: '#0892D0', fontSize: 36, fontWeight: '900', lineHeight: 36 }}>
                   {totalPoints}
                 </Text>
               </View>
 
+              {/* Card MEDIA */}
               <View style={{
                 flex: 1,
                 backgroundColor: '#0b1a2e',
                 borderRadius: 12,
-                padding: 10,
+                padding: 14,
                 alignItems: 'center',
                 borderWidth: 2,
                 borderColor: '#10b981'
               }}>
-                <Text style={{ color: '#94a3b8', fontSize: 10, marginBottom: 4, fontWeight: '700', letterSpacing: 0.5 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6, fontWeight: '700', letterSpacing: 0.5 }}>
                   MEDIA/PARTIDO
                 </Text>
-                <Text style={{ color: '#10b981', fontSize: 28, fontWeight: '900', lineHeight: 28 }}>
+                <Text style={{ color: '#10b981', fontSize: 36, fontWeight: '900', lineHeight: 36 }}>
                   {(() => {
                     const playedMatchdays = matchdayPoints.filter(mp => mp.stats.games?.minutes > 0);
                     if (playedMatchdays.length === 0) return '0';
@@ -486,6 +536,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                 </Text>
               </View>
 
+              {/* Botón FICHAR/VENDER */}
               {ligaId && budget !== undefined && (
                 <View style={{ flex: 1 }}>
                   {playerInSquad ? (
@@ -496,7 +547,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                         flex: 1,
                         backgroundColor: '#ef4444',
                         borderRadius: 12,
-                        paddingVertical: 10,
+                        paddingVertical: 14,
                         paddingHorizontal: 12,
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -509,7 +560,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       }}
                       activeOpacity={0.7}
                     >
-                      <Text style={{ color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: 0.5 }}>
+                      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '900', letterSpacing: 0.5 }}>
                         VENDER
                       </Text>
                     </TouchableOpacity>
@@ -521,7 +572,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                         flex: 1,
                         backgroundColor: player.price > budget ? '#64748b' : '#10b981',
                         borderRadius: 12,
-                        paddingVertical: 10,
+                        paddingVertical: 14,
                         paddingHorizontal: 12,
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -536,7 +587,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                     >
                       <Text style={{ 
                         color: '#fff', 
-                        fontSize: 15, 
+                        fontSize: 16, 
                         fontWeight: '900',
                         letterSpacing: 0.5,
                         textAlign: 'center'
@@ -551,6 +602,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
           </View>
 
       
+          {/* Selector de jornadas - Scrollable horizontal */}
           <View style={{ backgroundColor: '#0f172a', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
             <ScrollView 
               ref={matchdayScrollRef}
@@ -560,63 +612,35 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
             >
               {matchdayPoints.map((mp) => {
                 const isSelected = selectedMatchday === mp.matchday;
-                const pointsColor = mp.points > 0 ? '#10b981' : mp.points < 0 ? '#ef4444' : '#f59e0b';
-                
-                // Calcular porcentaje de la barra (máximo 20 puntos positivos, -10 negativos)
-                const maxPoints = 20;
-                const minPoints = -10;
-                let barPercentage = 0;
-                
-                if (mp.points > 0) {
-                  barPercentage = Math.min((mp.points / maxPoints) * 100, 100);
-                } else if (mp.points < 0) {
-                  barPercentage = Math.min((Math.abs(mp.points) / Math.abs(minPoints)) * 100, 100);
-                } else {
-                  barPercentage = 10; // Mínimo visible para 0 puntos
-                }
+                const pointsColor = mp.points >= 0 ? '#10b981' : '#ef4444';
                 
                 return (
                   <TouchableOpacity
                     key={mp.matchday}
                     onPress={() => setSelectedMatchday(mp.matchday)}
                     style={{
-                      backgroundColor: '#0b1a2e',
+                      backgroundColor: isSelected ? '#0892D0' : '#0b1a2e',
                       borderRadius: 12,
                       paddingHorizontal: 16,
                       paddingVertical: 12,
                       minWidth: 100,
                       alignItems: 'center',
                       borderWidth: 2,
-                      borderColor: isSelected ? '#0892D0' : '#334155',
-                      overflow: 'hidden',
-                      position: 'relative'
+                      borderColor: isSelected ? '#0892D0' : '#334155'
                     }}
                   >
-                    {/* Barra de progreso */}
-                    <View style={{
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: `${barPercentage}%`,
-                      backgroundColor: `${pointsColor}80`,
-                      borderRadius: 12
-                    }} />
-                    
                     <Text style={{ 
-                      color: '#94a3b8', 
+                      color: isSelected ? '#fff' : '#94a3b8', 
                       fontSize: 11, 
                       fontWeight: '600',
-                      marginBottom: 4,
-                      zIndex: 1
+                      marginBottom: 4
                     }}>
                       Jornada {mp.matchday}
                     </Text>
                     <Text style={{ 
-                      color: '#fff', 
+                      color: isSelected ? '#fff' : pointsColor, 
                       fontSize: 20, 
-                      fontWeight: '900',
-                      zIndex: 1
+                      fontWeight: '900' 
                     }}>
                       {mp.points}
                     </Text>
@@ -626,6 +650,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
             </ScrollView>
           </View>
 
+          {/* Detalles de la jornada seleccionada */}
           {selectedData && (
             <View style={{ marginBottom: 20 }}>
               <View style={{
@@ -657,186 +682,327 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                 </View>
               </View>
 
-              <ScrollView style={{ backgroundColor: '#0f172a' }}>
-                <View style={{
-                  flexDirection: 'row',
-                  paddingVertical: 14,
-                  paddingHorizontal: 16,
-                  backgroundColor: '#1e293b',
-                  borderBottomWidth: 2,
-                  borderBottomColor: '#0892D0'
-                }}>
-                  <View style={{ width: 70, alignItems: 'center' }}>
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>
-                      CANTIDAD
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1, paddingHorizontal: 12 }}>
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>
-                      ESTADÍSTICA
-                    </Text>
-                  </View>
-                  <View style={{ width: 70, alignItems: 'center' }}>
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>
-                      PUNTOS
-                    </Text>
-                  </View>
+              <View style={{ backgroundColor: '#0f172a' }}>
+                {/* BASE GENERAL */}
+                <View style={{ paddingTop: 12 }}>
+                  <Text style={{ 
+                    color: '#64748b', 
+                    fontSize: 11, 
+                    fontWeight: '800',
+                    paddingHorizontal: 12,
+                    marginBottom: 8
+                  }}>
+                    BASE GENERAL
+                  </Text>
+                  
+                  <StatItem
+                    icon={<MinutesIcon size={16} color="#94a3b8" />}
+                    label="Minutos jugados"
+                    value={selectedData.stats.games?.minutes || 0}
+                    points={
+                      (selectedData.stats.games?.minutes || 0) > 0 && (selectedData.stats.games?.minutes || 0) < 45 ? 1 :
+                      (selectedData.stats.games?.minutes || 0) >= 45 ? 2 : 0
+                    }
+                    color="#94a3b8"
+                  />
+                  <StatItem
+                    icon={<AssistIcon size={16} color="#0892D0" />}
+                    label="Asistencias"
+                    value={selectedData.stats.goals?.assists || 0}
+                    points={(selectedData.stats.goals?.assists || 0) * 3}
+                    color="#0892D0"
+                  />
+                  <StatItem
+                    icon={<YellowCardIcon size={16} color="#f59e0b" />}
+                    label="Tarjetas amarillas"
+                    value={selectedData.stats.cards?.yellow || 0}
+                    points={(selectedData.stats.cards?.yellow || 0) * -1}
+                    color="#f59e0b"
+                  />
+                  <StatItem
+                    icon={<RedCardIcon size={16} color="#ef4444" />}
+                    label="Tarjetas rojas"
+                    value={selectedData.stats.cards?.red || 0}
+                    points={(selectedData.stats.cards?.red || 0) * -3}
+                    color="#ef4444"
+                  />
+                  {(selectedData.stats.penalty?.won || 0) > 0 && (
+                    <StatItem
+                      icon={<FootballIcon size={16} color="#10b981" />}
+                      label="Penaltis ganados"
+                      value={selectedData.stats.penalty.won}
+                      points={selectedData.stats.penalty.won * 2}
+                      color="#10b981"
+                    />
+                  )}
+                  {(selectedData.stats.penalty?.committed || 0) > 0 && (
+                    <StatItem
+                      icon={<FootballIcon size={16} color="#ef4444" />}
+                      label="Penaltis cometidos"
+                      value={selectedData.stats.penalty.committed}
+                      points={selectedData.stats.penalty.committed * -2}
+                      color="#ef4444"
+                    />
+                  )}
+                  {(selectedData.stats.penalty?.scored || 0) > 0 && (
+                    <StatItem
+                      icon={<FootballIcon size={16} color="#10b981" />}
+                      label="Penaltis marcados"
+                      value={selectedData.stats.penalty.scored}
+                      points={selectedData.stats.penalty.scored * 3}
+                      color="#10b981"
+                    />
+                  )}
+                  {(selectedData.stats.penalty?.missed || 0) > 0 && (
+                    <StatItem
+                      icon={<FootballIcon size={16} color="#ef4444" />}
+                      label="Penaltis fallados"
+                      value={selectedData.stats.penalty.missed}
+                      points={selectedData.stats.penalty.missed * -2}
+                      color="#ef4444"
+                    />
+                  )}
                 </View>
 
-                <StatRow
-                  cantidad={selectedData.stats.games?.minutes || 0}
-                  estadistica="Minutos jugados"
-                  puntos={
-                    (selectedData.stats.games?.minutes || 0) > 0 && (selectedData.stats.games?.minutes || 0) < 45 ? 1 :
-                    (selectedData.stats.games?.minutes || 0) >= 45 ? 2 : 0
-                  }
-                />
-                <StatRow
-                  cantidad={selectedData.stats.goals?.assists || 0}
-                  estadistica="Asistencias"
-                  puntos={(selectedData.stats.goals?.assists || 0) * 3}
-                />
-                <StatRow
-                  cantidad={selectedData.stats.cards?.yellow || 0}
-                  estadistica="Tarjetas amarillas"
-                  puntos={(selectedData.stats.cards?.yellow || 0) * -1}
-                />
-                <StatRow
-                  cantidad={selectedData.stats.cards?.red || 0}
-                  estadistica="Tarjetas rojas"
-                  puntos={(selectedData.stats.cards?.red || 0) * -3}
-                />
-                <StatRow
-                  cantidad={selectedData.stats.penalty?.committed || 0}
-                  estadistica="Penaltis cometidos"
-                  puntos={(selectedData.stats.penalty?.committed || 0) * -2}
-                />
-                <StatRow
-                  cantidad={selectedData.stats.penalty?.scored || 0}
-                  estadistica="Penaltis marcados"
-                  puntos={(selectedData.stats.penalty?.scored || 0) * 3}
-                />
-                <StatRow
-                  cantidad={selectedData.stats.penalty?.missed || 0}
-                  estadistica="Penaltis fallados"
-                  puntos={(selectedData.stats.penalty?.missed || 0) * -2}
-                />
-
+                {/* PORTERO */}
                 {position === 'Goalkeeper' && (
-                  <>
-                    <StatRow
-                      cantidad={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 'SÍ' : 'NO'}
-                      estadistica="Portería a cero"
-                      puntos={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 5 : 0}
+                  <View style={{ paddingTop: 12 }}>
+                    <Text style={{ 
+                      color: '#64748b', 
+                      fontSize: 11, 
+                      fontWeight: '800',
+                      paddingHorizontal: 12,
+                      marginBottom: 8
+                    }}>
+                      PORTERO
+                    </Text>
+                    
+                    <StatItem
+                      icon={<CleanSheetIcon size={16} color="#10b981" />}
+                      label="Portería a cero (≥60min)"
+                      value={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 'Sí' : 'No'}
+                      points={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 5 : 0}
+                      color="#10b981"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.goalkeeper?.conceded || 0}
-                      estadistica="Goles encajados"
-                      puntos={(selectedData.stats.goalkeeper?.conceded || 0) * -2}
+                    <StatItem
+                      icon={<GoalsConcededIcon size={16} color="#ef4444" />}
+                      label="Goles encajados"
+                      value={selectedData.stats.goalkeeper?.conceded || 0}
+                      points={(selectedData.stats.goalkeeper?.conceded || 0) * -2}
+                      color="#ef4444"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.goalkeeper?.saves || 0}
-                      estadistica="Paradas"
-                      puntos={selectedData.stats.goalkeeper?.saves || 0}
+                    <StatItem
+                      icon={<SaveIcon size={16} color="#10b981" />}
+                      label="Paradas"
+                      value={selectedData.stats.goalkeeper?.saves || 0}
+                      points={selectedData.stats.goalkeeper?.saves || 0}
+                      color="#10b981"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.penalty?.saved || 0}
-                      estadistica="Penaltis parados"
-                      puntos={(selectedData.stats.penalty?.saved || 0) * 5}
+                    <StatItem
+                      icon={<SaveIcon size={16} color="#10b981" />}
+                      label="Penaltis parados"
+                      value={selectedData.stats.goalkeeper?.savedPenalties || 0}
+                      points={(selectedData.stats.goalkeeper?.savedPenalties || 0) * 5}
+                      color="#10b981"
                     />
-                  </>
+                    <StatItem
+                      icon={<FootballIcon size={16} color="#10b981" />}
+                      label="Goles marcados"
+                      value={selectedData.stats.goals?.total || 0}
+                      points={(selectedData.stats.goals?.total || 0) * 10}
+                      color="#10b981"
+                    />
+                    <StatItem
+                      icon={<RecoveryIcon size={16} color="#94a3b8" />}
+                      label="Recuperaciones (cada 5)"
+                      value={selectedData.stats.tackles?.interceptions || 0}
+                      points={Math.floor((selectedData.stats.tackles?.interceptions || 0) / 5)}
+                      color="#94a3b8"
+                    />
+                  </View>
                 )}
 
+                {/* DEFENSA */}
                 {position === 'Defender' && (
-                  <>
-                    <StatRow
-                      cantidad={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goals?.conceded || 0) === 0 ? 'SÍ' : 'NO'}
-                      estadistica="Portería a cero"
-                      puntos={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goals?.conceded || 0) === 0 ? 5 : 0}
+                  <View style={{ paddingTop: 12 }}>
+                    <Text style={{ 
+                      color: '#64748b', 
+                      fontSize: 11, 
+                      fontWeight: '800',
+                      paddingHorizontal: 12,
+                      marginBottom: 8
+                    }}>
+                      DEFENSA
+                    </Text>
+                    
+                    <StatItem
+                      icon={<CleanSheetIcon size={16} color="#10b981" />}
+                      label="Portería a cero (≥60min)"
+                      value={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 'Sí' : 'No'}
+                      points={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 4 : 0}
+                      color="#10b981"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.goals?.total || 0}
-                      estadistica="Goles marcados"
-                      puntos={(selectedData.stats.goals?.total || 0) * 6}
+                    <StatItem
+                      icon={<FootballIcon size={16} color="#10b981" />}
+                      label="Goles marcados"
+                      value={selectedData.stats.goals?.total || 0}
+                      points={(selectedData.stats.goals?.total || 0) * 6}
+                      color="#10b981"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.fouls?.drawn || 0}
-                      estadistica="Faltas recibidas"
-                      puntos={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
+                    <StatItem
+                      icon={<DuelIcon size={16} color="#94a3b8" />}
+                      label="Duelos ganados (cada 2)"
+                      value={selectedData.stats.duels?.won || 0}
+                      points={Math.floor((selectedData.stats.duels?.won || 0) / 2)}
+                      color="#94a3b8"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.tackles?.interceptions || 0}
-                      estadistica="Intercepciones"
-                      puntos={Math.floor((selectedData.stats.tackles?.interceptions || 0) / 3)}
+                    <StatItem
+                      icon={<RecoveryIcon size={16} color="#94a3b8" />}
+                      label="Recuperaciones (cada 5)"
+                      value={selectedData.stats.tackles?.interceptions || 0}
+                      points={Math.floor((selectedData.stats.tackles?.interceptions || 0) / 5)}
+                      color="#94a3b8"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.shots?.on || 0}
-                      estadistica="Tiros a puerta"
-                      puntos={selectedData.stats.shots?.on || 0}
+                    <StatItem
+                      icon={<GoalsConcededIcon size={16} color="#ef4444" />}
+                      label="Goles encajados"
+                      value={selectedData.stats.goalkeeper?.conceded || 0}
+                      points={(selectedData.stats.goalkeeper?.conceded || 0) * -1}
+                      color="#ef4444"
                     />
-                  </>
+                    <StatItem
+                      icon={<ShotOnTargetIcon size={16} color="#94a3b8" />}
+                      label="Tiros a puerta"
+                      value={selectedData.stats.shots?.on || 0}
+                      points={selectedData.stats.shots?.on || 0}
+                      color="#94a3b8"
+                    />
+                  </View>
                 )}
 
+                {/* CENTROCAMPISTA */}
                 {position === 'Midfielder' && (
-                  <>
-                    <StatRow
-                      cantidad={selectedData.stats.goals?.total || 0}
-                      estadistica="Goles marcados"
-                      puntos={(selectedData.stats.goals?.total || 0) * 5}
+                  <View style={{ paddingTop: 12 }}>
+                    <Text style={{ 
+                      color: '#64748b', 
+                      fontSize: 11, 
+                      fontWeight: '800',
+                      paddingHorizontal: 12,
+                      marginBottom: 8
+                    }}>
+                      CENTROCAMPISTA
+                    </Text>
+                    
+                    <StatItem
+                      icon={<CleanSheetIcon size={16} color="#10b981" />}
+                      label="Portería a cero (≥60min)"
+                      value={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 'Sí' : 'No'}
+                      points={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 1 : 0}
+                      color="#10b981"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.passes?.key || 0}
-                      estadistica="Pases clave"
-                      puntos={selectedData.stats.passes?.key || 0}
+                    <StatItem
+                      icon={<FootballIcon size={16} color="#10b981" />}
+                      label="Goles marcados"
+                      value={selectedData.stats.goals?.total || 0}
+                      points={(selectedData.stats.goals?.total || 0) * 5}
+                      color="#10b981"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.fouls?.drawn || 0}
-                      estadistica="Faltas recibidas"
-                      puntos={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
+                    <StatItem
+                      icon={<GoalsConcededIcon size={16} color="#ef4444" />}
+                      label="Goles encajados (cada 2)"
+                      value={selectedData.stats.goalkeeper?.conceded || 0}
+                      points={Math.floor((selectedData.stats.goalkeeper?.conceded || 0) / 2) * -1}
+                      color="#ef4444"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.tackles?.interceptions || 0}
-                      estadistica="Intercepciones"
-                      puntos={Math.floor((selectedData.stats.tackles?.interceptions || 0) / 3)}
+                    <StatItem
+                      icon={<KeyPassIcon size={16} color="#0892D0" />}
+                      label="Pases clave"
+                      value={selectedData.stats.passes?.key || 0}
+                      points={selectedData.stats.passes?.key || 0}
+                      color="#0892D0"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.shots?.on || 0}
-                      estadistica="Tiros a puerta"
-                      puntos={selectedData.stats.shots?.on || 0}
+                    <StatItem
+                      icon={<DribbleIcon size={16} color="#f59e0b" />}
+                      label="Regates (cada 2)"
+                      value={selectedData.stats.dribbles?.success || 0}
+                      points={Math.floor((selectedData.stats.dribbles?.success || 0) / 2)}
+                      color="#f59e0b"
                     />
-                  </>
+                    <StatItem
+                      icon={<FoulsDrawnIcon size={16} color="#94a3b8" />}
+                      label="Faltas recibidas (cada 3)"
+                      value={selectedData.stats.fouls?.drawn || 0}
+                      points={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
+                      color="#94a3b8"
+                    />
+                    <StatItem
+                      icon={<RecoveryIcon size={16} color="#94a3b8" />}
+                      label="Recuperaciones (cada 3)"
+                      value={selectedData.stats.tackles?.interceptions || 0}
+                      points={Math.floor((selectedData.stats.tackles?.interceptions || 0) / 3)}
+                      color="#94a3b8"
+                    />
+                    <StatItem
+                      icon={<ShotOnTargetIcon size={16} color="#94a3b8" />}
+                      label="Tiros a puerta"
+                      value={selectedData.stats.shots?.on || 0}
+                      points={selectedData.stats.shots?.on || 0}
+                      color="#94a3b8"
+                    />
+                  </View>
                 )}
 
+                {/* DELANTERO */}
                 {position === 'Attacker' && (
-                  <>
-                    <StatRow
-                      cantidad={selectedData.stats.goals?.total || 0}
-                      estadistica="Goles marcados"
-                      puntos={(selectedData.stats.goals?.total || 0) * 4}
+                  <View style={{ paddingTop: 12 }}>
+                    <Text style={{ 
+                      color: '#64748b', 
+                      fontSize: 11, 
+                      fontWeight: '800',
+                      paddingHorizontal: 12,
+                      marginBottom: 8
+                    }}>
+                      DELANTERO
+                    </Text>
+                    
+                    <StatItem
+                      icon={<FootballIcon size={16} color="#10b981" />}
+                      label="Goles marcados"
+                      value={selectedData.stats.goals?.total || 0}
+                      points={(selectedData.stats.goals?.total || 0) * 4}
+                      color="#10b981"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.passes?.key || 0}
-                      estadistica="Pases clave"
-                      puntos={selectedData.stats.passes?.key || 0}
+                    <StatItem
+                      icon={<KeyPassIcon size={16} color="#0892D0" />}
+                      label="Pases clave"
+                      value={selectedData.stats.passes?.key || 0}
+                      points={selectedData.stats.passes?.key || 0}
+                      color="#0892D0"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.fouls?.drawn || 0}
-                      estadistica="Faltas recibidas"
-                      puntos={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
+                    <StatItem
+                      icon={<FoulsDrawnIcon size={16} color="#94a3b8" />}
+                      label="Faltas recibidas (cada 3)"
+                      value={selectedData.stats.fouls?.drawn || 0}
+                      points={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
+                      color="#94a3b8"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.dribbles?.success || 0}
-                      estadistica="Regates"
-                      puntos={Math.floor((selectedData.stats.dribbles?.success || 0) / 2)}
+                    <StatItem
+                      icon={<DribbleIcon size={16} color="#f59e0b" />}
+                      label="Regates (cada 2)"
+                      value={selectedData.stats.dribbles?.success || 0}
+                      points={Math.floor((selectedData.stats.dribbles?.success || 0) / 2)}
+                      color="#f59e0b"
                     />
-                    <StatRow
-                      cantidad={selectedData.stats.shots?.on || 0}
-                      estadistica="Tiros a puerta"
-                      puntos={selectedData.stats.shots?.on || 0}
+                    <StatItem
+                      icon={<ShotOnTargetIcon size={16} color="#94a3b8" />}
+                      label="Tiros a puerta"
+                      value={selectedData.stats.shots?.on || 0}
+                      points={selectedData.stats.shots?.on || 0}
+                      color="#94a3b8"
                     />
-                  </>
+                  </View>
                 )}
-              </ScrollView>
+              </View>
             </View>
           )}
         </ScrollView>
