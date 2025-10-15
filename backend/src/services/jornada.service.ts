@@ -14,6 +14,7 @@ interface UserBalance {
   totalProfit: number;
   wonBets: number;
   lostBets: number;
+  squadPoints: number; // Puntos conseguidos por la plantilla
 }
 
 export class JornadaService {
@@ -279,6 +280,7 @@ export class JornadaService {
           totalProfit: 0,
           wonBets: 0,
           lostBets: 0,
+          squadPoints: 0,
         });
       }
 
@@ -293,6 +295,166 @@ export class JornadaService {
     }
 
     return balances;
+  }
+
+  /**
+   * Calcular puntos de la plantilla de un usuario en una jornada
+   */
+  private static async calculateSquadPoints(userId: string, leagueId: string, jornada: number): Promise<number> {
+    try {
+      // Obtener la plantilla del usuario
+      const squad = await prisma.squad.findUnique({
+        where: {
+          userId_leagueId: { userId, leagueId },
+        },
+        include: {
+          players: true,
+        },
+      });
+
+      if (!squad || !squad.players || squad.players.length === 0) {
+        return 0;
+      }
+
+      let totalPoints = 0;
+
+      // Obtener estadísticas de cada jugador para la jornada
+      for (const squadPlayer of squad.players) {
+        try {
+          // Obtener partidos de la jornada donde jugó este jugador
+          const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
+            headers: {
+              'x-rapidapi-key': this.API_KEY,
+              'x-rapidapi-host': 'v3.football.api-sports.io',
+            },
+            params: {
+              league: 140, // La Liga
+              season: 2024,
+              round: `Regular Season - ${jornada}`,
+            },
+          });
+
+          const fixtures = data?.response || [];
+          let playerPoints = 0;
+
+          // Buscar el partido del equipo del jugador
+          for (const fixture of fixtures) {
+            // Obtener estadísticas del jugador en este partido
+            const statsResponse = await axios.get(`${this.API_BASE}/fixtures/players`, {
+              headers: {
+                'x-rapidapi-key': this.API_KEY,
+                'x-rapidapi-host': 'v3.football.api-sports.io',
+              },
+              params: { fixture: fixture.fixture.id },
+            });
+
+            const teamsData = statsResponse.data?.response || [];
+            let playerStats = null;
+
+            // Buscar las estadísticas del jugador
+            for (const teamData of teamsData) {
+              const players = teamData.players || [];
+              const found = players.find((p: any) => p.player?.id === squadPlayer.playerId);
+              if (found) {
+                playerStats = found.statistics?.[0];
+                break;
+              }
+            }
+
+            if (playerStats) {
+              // Calcular puntos según el rol del jugador
+              playerPoints += this.calculatePlayerPoints(playerStats, squadPlayer.role);
+              break; // Solo contar el primer partido encontrado
+            }
+          }
+
+          totalPoints += playerPoints;
+
+          // Pequeña pausa para rate limit
+          await new Promise((r) => setTimeout(r, 100));
+        } catch (error) {
+          console.error(`Error obteniendo estadísticas del jugador ${squadPlayer.playerName}:`, error);
+        }
+      }
+
+      return totalPoints;
+    } catch (error) {
+      console.error('Error calculando puntos de plantilla:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Calcular puntos de un jugador según DreamLeague
+   */
+  private static calculatePlayerPoints(stats: any, role: string): number {
+    if (!stats || !stats.games) return 0;
+
+    let points = 0;
+    const minutes = stats.games?.minutes || 0;
+
+    // BASE GENERAL (para todos)
+    if (minutes > 0 && minutes < 45) points += 1;
+    else if (minutes >= 45) points += 2;
+
+    const goals = stats.goals || {};
+    const cards = stats.cards || {};
+    const penalty = stats.penalty || {};
+    const passes = stats.passes || {};
+    const shots = stats.shots || {};
+    const dribbles = stats.dribbles || {};
+    const tackles = stats.tackles || {};
+    const duels = stats.duels || {};
+    const fouls = stats.fouls || {};
+
+    points += (goals.assists || 0) * 3;
+    points -= (cards.yellow || 0) * 1;
+    points -= (cards.red || 0) * 3;
+    points += (penalty.won || 0) * 2;
+    points -= (penalty.committed || 0) * 2;
+    points += (penalty.scored || 0) * 3;
+    points -= (penalty.missed || 0) * 2;
+
+    // ESPECÍFICO POR POSICIÓN
+    if (role === 'GK') {
+      // Portero
+      const conceded = stats.goals?.conceded || 0;
+      if (minutes >= 60 && conceded === 0) points += 5;
+      points -= conceded * 2;
+      points += (stats.goals?.saves || 0) * 1;
+      points += (penalty.saved || 0) * 5;
+      points += (goals.total || 0) * 10;
+      points += Math.floor((tackles.interceptions || 0) / 5);
+    } else if (role === 'DEF') {
+      // Defensa
+      const conceded = stats.goals?.conceded || 0;
+      if (minutes >= 60 && conceded === 0) points += 4;
+      points += (goals.total || 0) * 6;
+      points += Math.floor((duels.won || 0) / 2);
+      points += Math.floor((tackles.interceptions || 0) / 5);
+      points -= conceded * 1;
+      points += (shots.on || 0) * 1;
+    } else if (role === 'MID') {
+      // Centrocampista
+      const conceded = stats.goals?.conceded || 0;
+      if (minutes >= 60 && conceded === 0) points += 1;
+      points += (goals.total || 0) * 5;
+      points -= Math.floor(conceded / 2);
+      points += (passes.key || 0) * 1;
+      points += Math.floor((dribbles.success || 0) / 2);
+      points += Math.floor((fouls.drawn || 0) / 3);
+      points += Math.floor((tackles.interceptions || 0) / 3);
+      points += (shots.on || 0) * 1;
+    } else if (role === 'ATT') {
+      // Delantero
+      points += (goals.total || 0) * 4;
+      points += (passes.key || 0) * 1;
+      points += Math.floor((fouls.drawn || 0) / 3);
+      points += Math.floor((dribbles.success || 0) / 2);
+      points += (shots.on || 0) * 1;
+    }
+
+    return points;
   }
 
   /**
@@ -313,9 +475,36 @@ export class JornadaService {
 
       // 2. Calcular balances por usuario
       const balances = await this.calculateUserBalances(leagueId, evaluations);
-      console.log(`💰 Balances calculados para ${balances.size} usuarios\n`);
+      console.log(`💰 Balances de apuestas calculados para ${balances.size} usuarios\n`);
 
-      // 3. Actualizar presupuestos de los miembros
+      // 3. Calcular puntos de plantilla para cada usuario
+      const allMembers = await prisma.leagueMember.findMany({
+        where: { leagueId },
+      });
+
+      for (const member of allMembers) {
+        const squadPoints = await this.calculateSquadPoints(member.userId, leagueId, jornada);
+        
+        // Actualizar o crear balance del usuario
+        if (!balances.has(member.userId)) {
+          balances.set(member.userId, {
+            userId: member.userId,
+            totalProfit: 0,
+            wonBets: 0,
+            lostBets: 0,
+            squadPoints: 0,
+          });
+        }
+        
+        const userBalance = balances.get(member.userId)!;
+        userBalance.squadPoints = squadPoints;
+
+        console.log(`  ⚽ Usuario ${member.userId}: ${squadPoints} puntos de plantilla`);
+      }
+
+      console.log(`\n✅ Puntos de plantilla calculados\n`);
+
+      // 4. Actualizar presupuestos de los miembros
       let updatedMembers = 0;
 
       for (const [userId, balance] of balances) {
@@ -326,7 +515,11 @@ export class JornadaService {
         });
 
         if (member) {
-          const newBudget = 500 + balance.totalProfit;
+          // Calcular presupuesto: 500M base + ganancias de apuestas + 1M por cada punto de plantilla
+          const newBudget = 500 + balance.totalProfit + balance.squadPoints;
+          
+          // Actualizar también los puntos totales del miembro en la liga
+          const newTotalPoints = member.points + balance.squadPoints;
           
           await prisma.leagueMember.update({
             where: {
@@ -336,37 +529,17 @@ export class JornadaService {
               budget: newBudget,
               initialBudget: newBudget,
               bettingBudget: 250, // Resetear presupuesto de apuestas
+              points: newTotalPoints, // Actualizar puntos totales
             },
           });
 
           console.log(
-            `  👤 Usuario ${userId}: ${balance.wonBets}W/${balance.lostBets}L = ` +
-            `${balance.totalProfit >= 0 ? '+' : ''}${balance.totalProfit}M → Nuevo presupuesto: ${newBudget}M`
+            `  👤 Usuario ${userId}:\n` +
+            `     Apuestas: ${balance.wonBets}W/${balance.lostBets}L = ${balance.totalProfit >= 0 ? '+' : ''}${balance.totalProfit}M\n` +
+            `     Plantilla: ${balance.squadPoints} puntos = +${balance.squadPoints}M\n` +
+            `     Nuevo presupuesto: ${newBudget}M (${member.points} + ${balance.squadPoints} = ${newTotalPoints} puntos totales)`
           );
 
-          updatedMembers++;
-        }
-      }
-
-      // 4. Resetear usuarios que no tuvieron apuestas
-      const allMembers = await prisma.leagueMember.findMany({
-        where: { leagueId },
-      });
-
-      for (const member of allMembers) {
-        if (!balances.has(member.userId)) {
-          await prisma.leagueMember.update({
-            where: {
-              leagueId_userId: { leagueId, userId: member.userId },
-            },
-            data: {
-              budget: 500,
-              initialBudget: 500,
-              bettingBudget: 250,
-            },
-          });
-
-          console.log(`  👤 Usuario ${member.userId}: Sin apuestas → Presupuesto: 500M`);
           updatedMembers++;
         }
       }

@@ -4,9 +4,11 @@
 
 Sistema completo para gestionar el cambio de jornada en LaFantasiaDelGambling, que incluye:
 - ✅ Evaluación automática de apuestas
-- ✅ Cálculo de ganancias/pérdidas
-- ✅ Reseteo de presupuestos (500M + balance de apuestas)
+- ✅ Cálculo de puntos de plantilla (sistema DreamLeague)
+- ✅ Cálculo de ganancias/pérdidas de apuestas
+- ✅ Reseteo de presupuestos (500M + balance de apuestas + puntos de plantilla)
 - ✅ Reseteo de presupuesto de apuestas (250M)
+- ✅ Actualización de puntos totales en la clasificación de la liga
 
 ## 🎯 Funcionamiento
 
@@ -26,27 +28,56 @@ Cada vez que cambia de jornada, el sistema realiza automáticamente:
   - Doble oportunidad
 - Se marca cada apuesta como `won` o `lost`
 
-### 2. **Cálculo de Balances** 💰
+### 2. **Cálculo de Puntos de Plantilla** ⚽
+Por cada usuario se obtienen las estadísticas de sus 11 jugadores:
+- Se consulta la API de Football para obtener estadísticas de la jornada
+- Se calculan puntos según el sistema DreamLeague (ver `SISTEMA_PUNTUACION_PLANTILLA.md`)
+- Ejemplos:
+  - Portero con portería a cero (≥60 min): +5 puntos
+  - Defensa marca gol: +6 puntos
+  - Centrocampista marca gol: +5 puntos
+  - Delantero marca gol: +4 puntos
+  - Asistencia: +3 puntos (todos)
+  - Tarjeta amarilla: -1 punto (todos)
+- Se suma el total de puntos de los 11 jugadores
+
+### 3. **Cálculo de Balances** 💰
 Por cada usuario se calcula:
 - **Apuestas ganadas**: `amount × odd - amount` (ganancia neta)
 - **Apuestas perdidas**: `-amount` (pérdida)
-- **Balance total**: suma de todas las ganancias/pérdidas
+- **Balance de apuestas**: suma de todas las ganancias/pérdidas
+- **Puntos de plantilla**: suma de puntos de los 11 jugadores
 
 Ejemplo:
 ```
 Usuario1:
+  APUESTAS:
   - Apuesta 1: 50M × 2.5 = 125M → Ganancia: +75M ✅
   - Apuesta 2: 30M × 1.8 = 54M → Pérdida: -30M ❌
   - Apuesta 3: 20M × 3.0 = 60M → Ganancia: +40M ✅
+  Balance apuestas: +75M - 30M + 40M = +85M
   
-  Balance total: +75M - 30M + 40M = +85M
+  PLANTILLA:
+  - 11 jugadores → 52 puntos totales = +52M
+  
+  TOTAL: +85M (apuestas) + 52M (plantilla) = +137M extra
 ```
 
-### 3. **Reseteo de Presupuestos** 💵
+### 4. **Reseteo de Presupuestos** 💵
 
 #### Presupuesto de Fichajes:
 ```
-Nuevo presupuesto = 500M + Balance de apuestas
+Nuevo presupuesto = 500M + Balance de apuestas + Puntos de plantilla
+```
+
+#### Presupuesto de Apuestas:
+```
+Presupuesto apuestas = 250M (fijo cada jornada)
+```
+
+#### Puntos Totales (Clasificación):
+```
+Puntos totales = Puntos anteriores + Puntos de esta jornada
 ```
 
 Ejemplos:
