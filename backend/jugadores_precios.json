@@ -1,0 +1,3720 @@
+{
+  "generatedAt": "2025-10-14T23:55:59.752Z",
+  "totalPlayers": 615,
+  "statistics": {
+    "total": 615,
+    "byPosition": {
+      "goalkeepers": 77,
+      "defenders": 199,
+      "midfielders": 197,
+      "attackers": 142
+    },
+    "prices": {
+      "average": 20,
+      "max": 200,
+      "min": 1,
+      "mostExpensive": {
+        "name": "Kylian Mbappé",
+        "price": 200,
+        "team": "Real Madrid"
+      },
+      "cheapest": {
+        "name": "Z. Tassounte",
+        "price": 1,
+        "team": "Getafe"
+      }
+    }
+  },
+  "players": [
+    {
+      "name": "Kylian Mbappé",
+      "price": 200,
+      "position": "Attacker",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Lamine Yamal",
+      "price": 200,
+      "position": "Attacker",
+      "team": "Barcelona"
+    },
+    {
+      "name": "J. Álvarez",
+      "price": 180,
+      "position": "Attacker",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Vinícius Júnior",
+      "price": 170,
+      "position": "Attacker",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Pedri",
+      "price": 150,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Raphinha",
+      "price": 130,
+      "position": "Attacker",
+      "team": "Barcelona"
+    },
+    {
+      "name": "R. Lewandowski",
+      "price": 130,
+      "position": "Attacker",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Nico Williams",
+      "price": 120,
+      "position": "Attacker",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Álex Baena",
+      "price": 100,
+      "position": "Midfielder",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "M. Rashford",
+      "price": 100,
+      "position": "Attacker",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Oihan Sancet",
+      "price": 100,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "A. Güler",
+      "price": 90,
+      "position": "Midfielder",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Dani Olmo",
+      "price": 90,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "G. Lo Celso",
+      "price": 90,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Marcos Llorente",
+      "price": 90,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Antony",
+      "price": 80,
+      "position": "Attacker",
+      "team": "Real Betis"
+    },
+    {
+      "name": "A. Sørloth",
+      "price": 80,
+      "position": "Attacker",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Etta Eyong",
+      "price": 80,
+      "position": "Attacker",
+      "team": "Levante"
+    },
+    {
+      "name": "Isco",
+      "price": 80,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "I. Williams",
+      "price": 80,
+      "position": "Attacker",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "J. Bellingham",
+      "price": 80,
+      "position": "Midfielder",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "J. Koundé",
+      "price": 80,
+      "position": "Defender",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Joan García",
+      "price": 80,
+      "position": "Goalkeeper",
+      "team": "Barcelona"
+    },
+    {
+      "name": "T. Courtois",
+      "price": 80,
+      "position": "Goalkeeper",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "A. Griezmann",
+      "price": 70,
+      "position": "Attacker",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Alejandro Balde",
+      "price": 70,
+      "position": "Defender",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Borja Iglesias",
+      "price": 70,
+      "position": "Attacker",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "D. Affengruber",
+      "price": 70,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "Fermín",
+      "price": 70,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Luis Milla",
+      "price": 70,
+      "position": "Midfielder",
+      "team": "Getafe"
+    },
+    {
+      "name": "N. Pépé",
+      "price": 70,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Pau Cubarsí Paredes",
+      "price": 70,
+      "position": "Defender",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Robin Le Normand",
+      "price": 70,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Ayoze Pérez",
+      "price": 60,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Christantus Uche",
+      "price": 60,
+      "position": "Midfielder",
+      "team": "Getafe"
+    },
+    {
+      "name": "D. Hancko",
+      "price": 60,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "D. Huijsen",
+      "price": 60,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "D. Lukebakio",
+      "price": 60,
+      "position": "Attacker",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Éder Militão",
+      "price": 60,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Eric García",
+      "price": 60,
+      "position": "Defender",
+      "team": "Barcelona"
+    },
+    {
+      "name": "F. de Jong",
+      "price": 60,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Ferran Torres",
+      "price": 60,
+      "position": "Attacker",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Franco Mastantuono",
+      "price": 60,
+      "position": "Attacker",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "F. Valverde",
+      "price": 60,
+      "position": "Midfielder",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "G. Mikautadze",
+      "price": 60,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "G. Simeone",
+      "price": 60,
+      "position": "Midfielder",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Marcos Alonso",
+      "price": 60,
+      "position": "Defender",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Óscar Mingueza",
+      "price": 60,
+      "position": "Midfielder",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Pablo Fornals",
+      "price": 60,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Rodrygo",
+      "price": 60,
+      "position": "Attacker",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "W. Szczęsny",
+      "price": 60,
+      "position": "Goalkeeper",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Álvaro Fernández",
+      "price": 55,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "A. Budimir",
+      "price": 50,
+      "position": "Attacker",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Álex Berenguer",
+      "price": 50,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "A. Rüdiger",
+      "price": 50,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Aymeric Laporte",
+      "price": 50,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Brahim Díaz",
+      "price": 50,
+      "position": "Midfielder",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Bryan Zaragoza",
+      "price": 50,
+      "position": "Attacker",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "C. Lenglet",
+      "price": 50,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Dani Vivian",
+      "price": 50,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Iago Aspas",
+      "price": 50,
+      "position": "Attacker",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "I. Radu",
+      "price": 50,
+      "position": "Goalkeeper",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Javi Puado",
+      "price": 50,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "J. Cardoso",
+      "price": 50,
+      "position": "Midfielder",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "J. Oblak",
+      "price": 50,
+      "position": "Goalkeeper",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Miguel Gutiérrez",
+      "price": 50,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "Mikel Oyarzabal",
+      "price": 50,
+      "position": "Attacker",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Pablo Barrios",
+      "price": 50,
+      "position": "Midfielder",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "R. Araújo",
+      "price": 50,
+      "position": "Defender",
+      "team": "Barcelona"
+    },
+    {
+      "name": "T. Kubo",
+      "price": 50,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Unai Simón",
+      "price": 50,
+      "position": "Goalkeeper",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "A. Danjuma",
+      "price": 45,
+      "position": "Attacker",
+      "team": "Valencia"
+    },
+    {
+      "name": "Isi Palazón",
+      "price": 45,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Aarón Escandell",
+      "price": 40,
+      "position": "Goalkeeper",
+      "team": "Oviedo"
+    },
+    {
+      "name": "A. Christensen",
+      "price": 40,
+      "position": "Defender",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Aitor Paredes",
+      "price": 40,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "A. Rațiu",
+      "price": 40,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "A. Tchouaméni",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Barrenetxea",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Borja Mayoral",
+      "price": 40,
+      "position": "Attacker",
+      "team": "Getafe"
+    },
+    {
+      "name": "Carlos Álvarez",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "Carlos Vicente",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "Catena",
+      "price": 40,
+      "position": "Defender",
+      "team": "Osasuna"
+    },
+    {
+      "name": "C. Gallagher",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "C. Starfelt",
+      "price": 40,
+      "position": "Defender",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Dani Carvajal",
+      "price": 40,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "David Soria",
+      "price": 40,
+      "position": "Goalkeeper",
+      "team": "Getafe"
+    },
+    {
+      "name": "Domingos Duarte",
+      "price": 40,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "Edu Expósito",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "F. Lejeune",
+      "price": 40,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Gorka Guruzeta",
+      "price": 40,
+      "position": "Attacker",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Iñaki Peña",
+      "price": 40,
+      "position": "Goalkeeper",
+      "team": "Elche"
+    },
+    {
+      "name": "Iván Martín",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Girona"
+    },
+    {
+      "name": "Iván Romero",
+      "price": 40,
+      "position": "Attacker",
+      "team": "Levante"
+    },
+    {
+      "name": "Jorge de Frutos",
+      "price": 40,
+      "position": "Attacker",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "M. Arambarri",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Getafe"
+    },
+    {
+      "name": "Maroan Sannadi",
+      "price": 40,
+      "position": "Attacker",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "M. Dituro",
+      "price": 40,
+      "position": "Goalkeeper",
+      "team": "Elche"
+    },
+    {
+      "name": "M. ter Stegen",
+      "price": 40,
+      "position": "Goalkeeper",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Rafa Mir",
+      "price": 40,
+      "position": "Attacker",
+      "team": "Elche"
+    },
+    {
+      "name": "Raíllo",
+      "price": 40,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "R. Vargas",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "T. Alexander-Arnold",
+      "price": 40,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "T. Almada",
+      "price": 40,
+      "position": "Midfielder",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "V. Muriqi",
+      "price": 40,
+      "position": "Attacker",
+      "team": "Mallorca"
+    },
+    {
+      "name": "A. Ezzalzouli",
+      "price": 35,
+      "position": "Attacker",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Álvaro García",
+      "price": 35,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "André Silva",
+      "price": 35,
+      "position": "Attacker",
+      "team": "Elche"
+    },
+    {
+      "name": "Brais Méndez",
+      "price": 35,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Carles Aleñá",
+      "price": 35,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "César Tárrega",
+      "price": 35,
+      "position": "Defender",
+      "team": "Valencia"
+    },
+    {
+      "name": "D. Alaba",
+      "price": 35,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Darder",
+      "price": 35,
+      "position": "Midfielder",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Diego López",
+      "price": 35,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "Gerard Moreno",
+      "price": 35,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Leo Román",
+      "price": 35,
+      "position": "Goalkeeper",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Luis Rioja",
+      "price": 35,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "Marc Bartra",
+      "price": 35,
+      "position": "Defender",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Ruíz de Galarreta",
+      "price": 35,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Sergio Herrera",
+      "price": 35,
+      "position": "Goalkeeper",
+      "team": "Osasuna"
+    },
+    {
+      "name": "A. Abqar",
+      "price": 30,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "A. Batalla",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Álex Remiro",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "A. Lunin",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Álvaro Vallés",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Carlos Romero",
+      "price": 30,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "C. Hernández",
+      "price": 30,
+      "position": "Attacker",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Gavi",
+      "price": 30,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Hugo Duro",
+      "price": 30,
+      "position": "Attacker",
+      "team": "Valencia"
+    },
+    {
+      "name": "Hugo Sotelo",
+      "price": 30,
+      "position": "Midfielder",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Javi Rueda",
+      "price": 30,
+      "position": "Defender",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Jesús Areso",
+      "price": 30,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "J. Giménez",
+      "price": 30,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Julen Agirrezabala",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Valencia"
+    },
+    {
+      "name": "Koke",
+      "price": 30,
+      "position": "Midfielder",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "L. Cabrera",
+      "price": 30,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Marc Casadó",
+      "price": 30,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Mario Martín",
+      "price": 30,
+      "position": "Midfielder",
+      "team": "Getafe"
+    },
+    {
+      "name": "M. Dmitrović",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Mikel Jauregizar",
+      "price": 30,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Natan",
+      "price": 30,
+      "position": "Defender",
+      "team": "Real Betis"
+    },
+    {
+      "name": "N. González",
+      "price": 30,
+      "position": "Attacker",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "N. Molina",
+      "price": 30,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "N. Tenaglia",
+      "price": 30,
+      "position": "Defender",
+      "team": "Alaves"
+    },
+    {
+      "name": "O. Vlachodimos",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Pau López",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Pere Milla",
+      "price": 30,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "P. Gazzaniga",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Girona"
+    },
+    {
+      "name": "Raúl Asencio",
+      "price": 30,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Roberto Fernández",
+      "price": 30,
+      "position": "Attacker",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Rodrigo Mendoza",
+      "price": 30,
+      "position": "Attacker",
+      "team": "Elche"
+    },
+    {
+      "name": "S. Amrabat",
+      "price": 30,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Sergi Cardona",
+      "price": 30,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Sivera",
+      "price": 30,
+      "position": "Goalkeeper",
+      "team": "Alaves"
+    },
+    {
+      "name": "T. Asano",
+      "price": 30,
+      "position": "Attacker",
+      "team": "Mallorca"
+    },
+    {
+      "name": "T. Dolan",
+      "price": 30,
+      "position": "Attacker",
+      "team": "Espanyol"
+    },
+    {
+      "name": "W. Swedberg",
+      "price": 30,
+      "position": "Attacker",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Y. Herrera",
+      "price": 30,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Yuri",
+      "price": 30,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Adrian Liso",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Getafe"
+    },
+    {
+      "name": "Alberto Moleiro",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Villarreal"
+    },
+    {
+      "name": "A. Ounahi",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Girona"
+    },
+    {
+      "name": "Arnau Tenas",
+      "price": 25,
+      "position": "Goalkeeper",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Dani Rodríguez",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Mallorca"
+    },
+    {
+      "name": "D. Blind",
+      "price": 25,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "F. Boyomo",
+      "price": 25,
+      "position": "Defender",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Gonçalo Guedes",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "G. Raspadori",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Héctor Bellerín",
+      "price": 25,
+      "position": "Defender",
+      "team": "Real Betis"
+    },
+    {
+      "name": "H. Hassan",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Ilias Akhomach",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "I. Moriba",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Isaac",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Sevilla"
+    },
+    {
+      "name": "J. Mojica",
+      "price": 25,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "L. Boyé",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Alaves"
+    },
+    {
+      "name": "Luíz Júnior",
+      "price": 25,
+      "position": "Goalkeeper",
+      "team": "Villarreal"
+    },
+    {
+      "name": "M. Diakhaby",
+      "price": 25,
+      "position": "Defender",
+      "team": "Valencia"
+    },
+    {
+      "name": "Moncayola",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Osasuna"
+    },
+    {
+      "name": "M. Valjent",
+      "price": 25,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "P. Gueye",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Renato Veiga",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Robert Navarro",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Rodrigo Riquelme",
+      "price": 25,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Sergio Gómez",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Víctor Muñoz",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Vitor Nunes",
+      "price": 25,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "V. Rosier",
+      "price": 25,
+      "position": "Defender",
+      "team": "Osasuna"
+    },
+    {
+      "name": "V. Tsygankov",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "V. Vanat",
+      "price": 25,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "Zubeldia",
+      "price": 25,
+      "position": "Defender",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Abel Bretones",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Aleix Febas",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Elche"
+    },
+    {
+      "name": "Álvaro Núñez",
+      "price": 20,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "Arnau Martínez",
+      "price": 20,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "A. Witsel",
+      "price": 20,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "Bryan Gil",
+      "price": 20,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "Carlos Soler",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Dani Ceballos",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "D. Ćaleta-Car",
+      "price": 20,
+      "position": "Defender",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "D. Greif",
+      "price": 20,
+      "position": "Goalkeeper",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Diego Llorente",
+      "price": 20,
+      "position": "Defender",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Diego Rico",
+      "price": 20,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "D. Livaković",
+      "price": 20,
+      "position": "Goalkeeper",
+      "team": "Girona"
+    },
+    {
+      "name": "E. Camavinga",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "F. Garcés",
+      "price": 20,
+      "position": "Defender",
+      "team": "Alaves"
+    },
+    {
+      "name": "Fran García",
+      "price": 20,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Gerard Martín",
+      "price": 20,
+      "position": "Defender",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Germán Valera",
+      "price": 20,
+      "position": "Attacker",
+      "team": "Elche"
+    },
+    {
+      "name": "Gorosabel",
+      "price": 20,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "I. Chaira",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Iván Villar",
+      "price": 20,
+      "position": "Goalkeeper",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Javi Galán",
+      "price": 20,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Javi Guerra",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "J. Musso",
+      "price": 20,
+      "position": "Goalkeeper",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Jon Gorrotxategi",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Jon Guridi",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "J. Solis",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Girona"
+    },
+    {
+      "name": "Kike Salas",
+      "price": 20,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Kiko Femenía",
+      "price": 20,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "L. Agoumé",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Manu Sánchez",
+      "price": 20,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "Marc Roca",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Martim Neto",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Elche"
+    },
+    {
+      "name": "M. Díaz",
+      "price": 20,
+      "position": "Attacker",
+      "team": "Alaves"
+    },
+    {
+      "name": "Moi Gómez",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Osasuna"
+    },
+    {
+      "name": "M. Ruggeri",
+      "price": 20,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "M. Ryan",
+      "price": 20,
+      "position": "Goalkeeper",
+      "team": "Levante"
+    },
+    {
+      "name": "M. Solomon",
+      "price": 20,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Ø. Nyland",
+      "price": 20,
+      "position": "Goalkeeper",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Pablo Durán",
+      "price": 20,
+      "position": "Attacker",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Pablo Maffeo",
+      "price": 20,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Pablo Torre",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Pep Chavarría",
+      "price": 20,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Pepelu",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "Rafa Marín",
+      "price": 20,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "R. Bardghji",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "R. Rodríguez",
+      "price": 20,
+      "position": "Defender",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Rubén García",
+      "price": 20,
+      "position": "Attacker",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Santi Comesaña",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Sergio Carreira",
+      "price": 20,
+      "position": "Defender",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "S. Mouriño",
+      "price": 20,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "S. Rondón",
+      "price": 20,
+      "position": "Attacker",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Toni Martínez",
+      "price": 20,
+      "position": "Attacker",
+      "team": "Alaves"
+    },
+    {
+      "name": "Y. Asprilla",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Girona"
+    },
+    {
+      "name": "Yeremy Pino",
+      "price": 20,
+      "position": "Midfielder",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Aimar Oroz",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Alemão",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Álex Moreno",
+      "price": 15,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "A. Rebbach",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Alaves"
+    },
+    {
+      "name": "Á. Rodríguez",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Elche"
+    },
+    {
+      "name": "Bigas",
+      "price": 15,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "B. Mendy",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "B. Santamaría",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "C. Ejuke",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Sevilla"
+    },
+    {
+      "name": "César Azpilicueta",
+      "price": 15,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Copete",
+      "price": 15,
+      "position": "Defender",
+      "team": "Valencia"
+    },
+    {
+      "name": "C. Stuani",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "E. Bailly",
+      "price": 15,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "F. Cervi",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "G. Misehouy",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Girona"
+    },
+    {
+      "name": "Hugo Álvarez",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "J. Aramburu",
+      "price": 15,
+      "position": "Defender",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Javi Rodríguez",
+      "price": 15,
+      "position": "Defender",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "J. Foyth",
+      "price": 15,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Jon Pacheco",
+      "price": 15,
+      "position": "Defender",
+      "team": "Alaves"
+    },
+    {
+      "name": "José Ángel Carmona",
+      "price": 15,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "José Gayà",
+      "price": 15,
+      "position": "Defender",
+      "team": "Valencia"
+    },
+    {
+      "name": "Junior Firpo",
+      "price": 15,
+      "position": "Defender",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Kike García",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Espanyol"
+    },
+    {
+      "name": "L. Dendoncker",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "L. Ilić",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Lucas Torró",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Manu Morlanes",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Marc Domenech",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Mallorca"
+    },
+    {
+      "name": "M. Kumbulla",
+      "price": 15,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "N. Deossa",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Pablo García",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Peque Fernández",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Portu",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "S. Becker",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Osasuna"
+    },
+    {
+      "name": "T. Buchanan",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "T. Lemar",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Girona"
+    },
+    {
+      "name": "T. Oluwaseyi",
+      "price": 15,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "T. Partey",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Unai Vencedor",
+      "price": 15,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "V. Gómez",
+      "price": 15,
+      "position": "Defender",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Abel Ruiz",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "A. Boiro",
+      "price": 10,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Adrià Pedrosa",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Elche"
+    },
+    {
+      "name": "A. Januzaj",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Alberto Reina",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Alfon González",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Álvaro Djaló",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "André Almeida",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "Antonio Blanco",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "Antonio Sánchez",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Mallorca"
+    },
+    {
+      "name": "A. Nyom",
+      "price": 10,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "A. Sánchez",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Beñat Prados",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Beñat Turrientes",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "B. Miovski",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "Carlos Domínguez",
+      "price": 10,
+      "position": "Defender",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Carlos Martín",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Coba",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Getafe"
+    },
+    {
+      "name": "C. Riedel",
+      "price": 10,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Damián Rodríguez",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Dani Parejo",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Dani Raba",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Valencia"
+    },
+    {
+      "name": "David Carmo",
+      "price": 10,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "David López",
+      "price": 10,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "Dela",
+      "price": 10,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "D. Foulquier",
+      "price": 10,
+      "position": "Defender",
+      "team": "Valencia"
+    },
+    {
+      "name": "Diego Conde",
+      "price": 10,
+      "position": "Goalkeeper",
+      "team": "Villarreal"
+    },
+    {
+      "name": "D. Sow",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "D. van de Beek",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Girona"
+    },
+    {
+      "name": "Endrick",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Ferran Jutglà",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "F. Mendy",
+      "price": 10,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Fran Beltrán",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "F. Viñas",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Gonzalo García",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "G. Suazo",
+      "price": 10,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Héctor Fort",
+      "price": 10,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "H. Moldovan",
+      "price": 10,
+      "position": "Goalkeeper",
+      "team": "Oviedo"
+    },
+    {
+      "name": "H. Traoré",
+      "price": 10,
+      "position": "Defender",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Jan Virgili",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Javi Muñoz",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Getafe"
+    },
+    {
+      "name": "Joel Roca",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Girona"
+    },
+    {
+      "name": "Jofre Torrents",
+      "price": 10,
+      "position": "Defender",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Jonny",
+      "price": 10,
+      "position": "Defender",
+      "team": "Alaves"
+    },
+    {
+      "name": "José Luis Morales",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Levante"
+    },
+    {
+      "name": "J. Toljan",
+      "price": 10,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "Juan Iglesias",
+      "price": 10,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "Juanlu Sánchez",
+      "price": 10,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Juanmi",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Getafe"
+    },
+    {
+      "name": "K. Arriaga",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "L. Krejčí",
+      "price": 10,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "L. Sučić",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Manu Fernández",
+      "price": 10,
+      "position": "Defender",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Marc Aguado",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Elche"
+    },
+    {
+      "name": "Marcão",
+      "price": 10,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Marc Bernal",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Mikel Vesga",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "M. Joseph",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Mallorca"
+    },
+    {
+      "name": "M. Moreno",
+      "price": 10,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "Nacho Vidal",
+      "price": 10,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "N. Gudelj",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Nico Serrano",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "O. El Hilali",
+      "price": 10,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "O. Óskarsson",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Pablo Ibáñez",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "Pau Navarro",
+      "price": 10,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Pedro Díaz",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Pedro Fernández",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Pol Lozano",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "R. Alhassane",
+      "price": 10,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Raúl García",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Samú Costa",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Santi Cazorla",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "S. Dimitrievski",
+      "price": 10,
+      "position": "Goalkeeper",
+      "team": "Valencia"
+    },
+    {
+      "name": "Sergi Altimira",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Thierry Correia",
+      "price": 10,
+      "position": "Defender",
+      "team": "Valencia"
+    },
+    {
+      "name": "Toni Fernández",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Unai López",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Unai Núñez",
+      "price": 10,
+      "position": "Defender",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Urko González",
+      "price": 10,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "U. Sadiq",
+      "price": 10,
+      "position": "Attacker",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Víctor Chust",
+      "price": 10,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "Yeray",
+      "price": 10,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Yusi",
+      "price": 10,
+      "position": "Defender",
+      "team": "Alaves"
+    },
+    {
+      "name": "A. Adams",
+      "price": 5,
+      "position": "Attacker",
+      "team": "Sevilla"
+    },
+    {
+      "name": "A. Espino",
+      "price": 5,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Aitor Ruibal",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "A. Mumin",
+      "price": 5,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "A. Zakharyan",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Bambo Diaby",
+      "price": 5,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "C. Bakambu",
+      "price": 5,
+      "position": "Attacker",
+      "team": "Real Betis"
+    },
+    {
+      "name": "C. Larin",
+      "price": 5,
+      "position": "Attacker",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Dani Calvo",
+      "price": 5,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "David Costas",
+      "price": 5,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Davinchi",
+      "price": 5,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "E. Ávila",
+      "price": 5,
+      "position": "Attacker",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Elustondo",
+      "price": 5,
+      "position": "Defender",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Fernando Calero",
+      "price": 5,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Guevara",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "Hugo Guillamón",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "Jaime Seoane",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Javi López",
+      "price": 5,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Jesús Vázquez",
+      "price": 5,
+      "position": "Defender",
+      "team": "Valencia"
+    },
+    {
+      "name": "Jon Ander Olasagasti",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "Josan",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Elche"
+    },
+    {
+      "name": "J. Vertrouwd",
+      "price": 5,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "K. Sibo",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Lekue",
+      "price": 5,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "L. Pétrot",
+      "price": 5,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "Mourad",
+      "price": 5,
+      "position": "Attacker",
+      "team": "Elche"
+    },
+    {
+      "name": "Pablo Marín",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Pedraza",
+      "price": 5,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Peter",
+      "price": 5,
+      "position": "Attacker",
+      "team": "Getafe"
+    },
+    {
+      "name": "Ramón Terrats",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "S. Colombatto",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Sergio Camello",
+      "price": 5,
+      "position": "Attacker",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "T. Nianzou",
+      "price": 5,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Unai Elgezabal",
+      "price": 5,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "Unai Gómez",
+      "price": 5,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Urko Izeta",
+      "price": 5,
+      "position": "Attacker",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Y. Neyou",
+      "price": 5,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "A. Andreev",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Girona"
+    },
+    {
+      "name": "Abdón Prats",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Adam Boayar",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Elche"
+    },
+    {
+      "name": "Adrià Alti",
+      "price": 1,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Adrián",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Adrián Molina",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Aihen Muñoz",
+      "price": 1,
+      "position": "Defender",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Aimar Blázquez",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Valencia"
+    },
+    {
+      "name": "Aitor Fernández",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Aitor Fraga",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "A. Kamara",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Getafe"
+    },
+    {
+      "name": "Alberto Flores",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Alberto Marí",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Valencia"
+    },
+    {
+      "name": "Alberto Risco",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Getafe"
+    },
+    {
+      "name": "A. Lebarbier",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Alejandro Francés",
+      "price": 1,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "Alejandro Iturbe",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Elche"
+    },
+    {
+      "name": "Alejandro Monserrate",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Alejandro Rego",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Álex Cardero",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Alex Costa",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Álex Forés",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Álex Padilla",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Álex Sancris",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Getafe"
+    },
+    {
+      "name": "Álex Sola",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Getafe"
+    },
+    {
+      "name": "Alfonso Pastor",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Levante"
+    },
+    {
+      "name": "Ali Houary",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Elche"
+    },
+    {
+      "name": "Álvaro Fernández",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Álvaro Lemos",
+      "price": 1,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "A. Matturro",
+      "price": 1,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "Andrés Castrín",
+      "price": 1,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Ángel Fortuño",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Ángel Ortiz",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Real Betis"
+    },
+    {
+      "name": "A. Niculăesei",
+      "price": 1,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "Antonio Martinez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Elche"
+    },
+    {
+      "name": "Antoniu Roca",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Arkaitz Mariezkurrena",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Asier Osambela",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Osasuna"
+    },
+    {
+      "name": "B. Dominguès",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Borja Sánchez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Brugui",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "Calebe",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "Carlos Ballestero García",
+      "price": 1,
+      "position": "Defender",
+      "team": "Alaves"
+    },
+    {
+      "name": "Carlos Espí",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Levante"
+    },
+    {
+      "name": "Cayetano",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Levante"
+    },
+    {
+      "name": "C. Benavídez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "Cheli",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "C. Pickel",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Cristian Rivero",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Valencia"
+    },
+    {
+      "name": "Dani Cárdenas",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Dani Pérez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "David Jiménez",
+      "price": 1,
+      "position": "Defender",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "David López",
+      "price": 1,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "David Otorbi",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Valencia"
+    },
+    {
+      "name": "D. Bladi",
+      "price": 1,
+      "position": "Defender",
+      "team": "Real Betis"
+    },
+    {
+      "name": "D. Camara",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "D. Dakonam",
+      "price": 1,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "Denis Suárez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "Diego Ferrer",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Getafe"
+    },
+    {
+      "name": "Diego Méndez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Diego Pampín",
+      "price": 1,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "D. Kochen",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Barcelona"
+    },
+    {
+      "name": "D. Luna",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Mallorca"
+    },
+    {
+      "name": "D. Stamatakis",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Osasuna"
+    },
+    {
+      "name": "E. Cömert",
+      "price": 1,
+      "position": "Defender",
+      "team": "Valencia"
+    },
+    {
+      "name": "Eder Aller",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Eduardo Altozano Agudo",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "E. Mensah",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Fábio Cardoso",
+      "price": 1,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Fran González",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Fran Pérez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "F. Redondo",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Elche"
+    },
+    {
+      "name": "F. Ugrinic",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "G. Diangana",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Elche"
+    },
+    {
+      "name": "Germán García",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Gibert Jordana",
+      "price": 1,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "G. Koyalipou",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Levante"
+    },
+    {
+      "name": "G. Swiderski",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Alaves"
+    },
+    {
+      "name": "Guille Fernández",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Barcelona"
+    },
+    {
+      "name": "Gumbau",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Hugo López",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Hugo Novoa",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Alaves"
+    },
+    {
+      "name": "Hugo Rincón",
+      "price": 1,
+      "position": "Defender",
+      "team": "Girona"
+    },
+    {
+      "name": "I. Balliu",
+      "price": 1,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Ibon Sánchez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Iker Benito",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Iker Losada",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Levante"
+    },
+    {
+      "name": "Iker Monreal",
+      "price": 1,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Iker Muñoz",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Osasuna"
+    },
+    {
+      "name": "I. Kostis",
+      "price": 1,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "I. Salhi",
+      "price": 1,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Isma Sierra",
+      "price": 1,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Ivan Corralejo",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Iván Cuéllar",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Jairo Izquierdo",
+      "price": 1,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "Javier Hernandez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Javier Navarro Girona",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "Javier Sarasa",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "Javi Llabrés",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Mallorca"
+    },
+    {
+      "name": "J. Brekalo",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "J. El Abdellaoui",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "J. Letáček",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Getafe"
+    },
+    {
+      "name": "Joan Ruiz",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "Jofre Carreras",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "John Nwankwo",
+      "price": 1,
+      "position": "Defender",
+      "team": "Elche"
+    },
+    {
+      "name": "J. Olaizola",
+      "price": 1,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Jon de Luis",
+      "price": 1,
+      "position": "Defender",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Jon Karrikaburu",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Jon Martín",
+      "price": 1,
+      "position": "Defender",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Jorge Benito",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Getafe"
+    },
+    {
+      "name": "Jorge Cabello",
+      "price": 1,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "Jorge Herrando",
+      "price": 1,
+      "position": "Defender",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Joselu",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Getafe"
+    },
+    {
+      "name": "José Salinas",
+      "price": 1,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Juan Berrocal",
+      "price": 1,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "Juan Carlos",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Girona"
+    },
+    {
+      "name": "Juan Cruz",
+      "price": 1,
+      "position": "Defender",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Juanpe",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "J. Valou",
+      "price": 1,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Kike Barja",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Lamine Gueye",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Lander Pinillos",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Alaves"
+    },
+    {
+      "name": "L. Beltrán",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "L. Bergström",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Mallorca"
+    },
+    {
+      "name": "L. Koleosho",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Espanyol"
+    },
+    {
+      "name": "L. Kourouma",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Girona"
+    },
+    {
+      "name": "Logan Costa",
+      "price": 1,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "L. Ramazani",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Valencia"
+    },
+    {
+      "name": "Lucas Ahijado",
+      "price": 1,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Lucas Nuñez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "Luiz Felipe",
+      "price": 1,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Luken Beitia",
+      "price": 1,
+      "position": "Defender",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Manu Bueno",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Manu González",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Real Betis"
+    },
+    {
+      "name": "Marco de las Sías",
+      "price": 1,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Marco Esteban",
+      "price": 1,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Marcos Fernández",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Marc Pubill",
+      "price": 1,
+      "position": "Defender",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Marc Vidal",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Marc Vilaplana",
+      "price": 1,
+      "position": "Defender",
+      "team": "Getafe"
+    },
+    {
+      "name": "Martin Pedroarena",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Mateu Morey",
+      "price": 1,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Mauro Echegoyen",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Osasuna"
+    },
+    {
+      "name": "M. Barry",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "M. Diarra",
+      "price": 1,
+      "position": "Defender",
+      "team": "Alaves"
+    },
+    {
+      "name": "Miguel Ángel",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Miguel Narváez",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Miguel Román",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Miguel Rubio",
+      "price": 1,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Mikel Goti",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Mikel Santos",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Athletic Club"
+    },
+    {
+      "name": "Miquel Salas",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Mallorca"
+    },
+    {
+      "name": "M. Krug",
+      "price": 1,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "M. Ristić",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Nacho Pérez",
+      "price": 1,
+      "position": "Defender",
+      "team": "Levante"
+    },
+    {
+      "name": "N. Maraš",
+      "price": 1,
+      "position": "Defender",
+      "team": "Alaves"
+    },
+    {
+      "name": "N. Mendy",
+      "price": 1,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Odriozola",
+      "price": 1,
+      "position": "Defender",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "O. Ejaria",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Oier Luengo",
+      "price": 1,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Omar Falah",
+      "price": 1,
+      "position": "Defender",
+      "team": "Oviedo"
+    },
+    {
+      "name": "Omar Mascarell",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Oriol Rey",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "Óscar Valentín",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Oso",
+      "price": 1,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Ó. Trejo",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Pablo Cuñat",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Levante"
+    },
+    {
+      "name": "Pablo López",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Valencia"
+    },
+    {
+      "name": "Pablo Martínez",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "Pablo Ramón",
+      "price": 1,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Paco Cortés",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Levante"
+    },
+    {
+      "name": "Pau Cabanes",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Villarreal"
+    },
+    {
+      "name": "P. Ba",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Girona"
+    },
+    {
+      "name": "P. Ciss",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Pelayo Fernández",
+      "price": 1,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Pol Tristán",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Primo",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Levante"
+    },
+    {
+      "name": "Rafael Romero",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Rafel Bauzà",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Ramón Martínez",
+      "price": 1,
+      "position": "Defender",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Raúl Chasco",
+      "price": 1,
+      "position": "Defender",
+      "team": "Osasuna"
+    },
+    {
+      "name": "Raúl Fernández",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Alaves"
+    },
+    {
+      "name": "Rayane Belid",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "R. Nteka",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Roger Hinojo",
+      "price": 1,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Rubén Gómez",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Rubén Montero",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Alaves"
+    },
+    {
+      "name": "Rubén Sánchez",
+      "price": 1,
+      "position": "Defender",
+      "team": "Espanyol"
+    },
+    {
+      "name": "Rubo Iranzo",
+      "price": 1,
+      "position": "Defender",
+      "team": "Valencia"
+    },
+    {
+      "name": "Salvador Esquivel",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "Samu Becerra",
+      "price": 1,
+      "position": "Defender",
+      "team": "Rayo Vallecano"
+    },
+    {
+      "name": "Sergi Canós",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Valencia"
+    },
+    {
+      "name": "Sergio Lozano",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "Sergio Mestre",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "S. Idumbo-Muzambo",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Sevilla"
+    },
+    {
+      "name": "Taufik Seidu",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Atletico Madrid"
+    },
+    {
+      "name": "T. Folgado",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Thiago Pitarch",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Real Madrid"
+    },
+    {
+      "name": "Toni Lato",
+      "price": 1,
+      "position": "Defender",
+      "team": "Mallorca"
+    },
+    {
+      "name": "Unai Marrero",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Real Sociedad"
+    },
+    {
+      "name": "Víctor Fernández",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "Víctor García",
+      "price": 1,
+      "position": "Midfielder",
+      "team": "Levante"
+    },
+    {
+      "name": "Víctor Parada",
+      "price": 1,
+      "position": "Defender",
+      "team": "Alaves"
+    },
+    {
+      "name": "V. Krapyvtsov",
+      "price": 1,
+      "position": "Goalkeeper",
+      "team": "Girona"
+    },
+    {
+      "name": "Willy Kambwala Ndengushi",
+      "price": 1,
+      "position": "Defender",
+      "team": "Villarreal"
+    },
+    {
+      "name": "Yago Alonso",
+      "price": 1,
+      "position": "Attacker",
+      "team": "Elche"
+    },
+    {
+      "name": "Yoel Lago",
+      "price": 1,
+      "position": "Defender",
+      "team": "Celta Vigo"
+    },
+    {
+      "name": "Z. Tassounte",
+      "price": 1,
+      "position": "Defender",
+      "team": "Getafe"
+    }
+  ]
+}

@@ -52,10 +52,12 @@ model LeagueMember {
   points        Int      @default(0)
   budget        Int      @default(500) // Presupuesto actual en millones
   initialBudget Int      @default(500) // Presupuesto inicial de la jornada (público)
+  bettingBudget Int      @default(250) // Presupuesto para apuestas en millones
   joinedAt      DateTime @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bets   Bet[]
 
   @@id([leagueId, userId])
   @@index([userId])
@@ -113,4 +115,26 @@ model Player {
   @@index([position])
   @@index([price])
   @@map("player")
+}
+
+model Bet {
+  id            String   @id @default(cuid())
+  leagueId      String
+  userId        String
+  jornada       Int
+  matchId       Int
+  betType       String   // "Resultado", "Goles totales", etc.
+  betLabel      String   // "Ganará Real Madrid", "Más de 2.5 goles", etc.
+  odd           Float    // Cuota de la apuesta
+  amount        Int      // Cantidad apostada en millones
+  potentialWin  Int      // Ganancia potencial = amount * odd
+  status        String   @default("pending") // "pending", "won", "lost"
+  createdAt     DateTime @default(now())
+
+  leagueMember  LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
+
+  @@index([leagueId, userId])
+  @@index([jornada])
+  @@index([status])
+  @@map("bet")
 }

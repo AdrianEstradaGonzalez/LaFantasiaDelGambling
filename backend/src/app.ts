@@ -12,6 +12,7 @@ import { ZodError } from "zod";
 import leagueRoutes from "./routes/league.routes";
 import squadRoutes from "./routes/squad.routes";
 import playerRoutes from "./routes/player.routes";
+import betRoutes from "./routes/bet.routes";
 export async function buildApp() {
   const app = Fastify({
     logger: {
@@ -113,6 +114,7 @@ export async function buildApp() {
   await app.register(leagueRoutes, { prefix: "/leagues" });
   await app.register(squadRoutes, { prefix: "/squads" });
   await app.register(playerRoutes, { prefix: "/players" });
+  await app.register(betRoutes, { prefix: "/bets" });
 
   return app;
 }

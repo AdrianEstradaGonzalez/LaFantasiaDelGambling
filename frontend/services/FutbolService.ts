@@ -602,7 +602,8 @@ export default class FootballService {
 
       const ligaId = options?.ligaId;
       const ligaName = options?.ligaName ?? 'Liga';
-      const storeKey = ligaId ? `apuestas_jornada_${nextJ}_liga_${ligaId}` : `apuestas_jornada_${nextJ}`;
+      // Agregar v3 para nueva estructura con opciones
+      const storeKey = ligaId ? `apuestas_jornada_${nextJ}_liga_${ligaId}_v3` : `apuestas_jornada_${nextJ}_v3`;
       
       // Revisar si ya tenemos apuestas persistidas para esta jornada
       try {
@@ -615,21 +616,19 @@ export default class FootballService {
         }
       } catch {}
 
-      const bets: Array<{
-        matchId: number;
-        jornada: number;
-        local: string;
-        visitante: string;
-        localCrest?: string;
-        visitanteCrest?: string;
-        fecha?: string;
-        hora?: string;
-        type: string;
-        label: string;
-        odd: number;
-      }> = [];
-
-      // Conjuntos para variedad
+    const bets: Array<{
+      matchId: number;
+      jornada: number;
+      local: string;
+      visitante: string;
+      localCrest?: string;
+      visitanteCrest?: string;
+      fecha?: string;
+      hora?: string;
+      type: string;
+      label: string;
+      odd: number;
+    }> = [];      // Conjuntos para variedad
       const usedLabels = new Set<string>();
       const typeCount = new Map<string, number>();
       const incType = (t: string) => typeCount.set(t, (typeCount.get(t) ?? 0) + 1);
@@ -858,91 +857,150 @@ export default class FootballService {
             }
           }
           
-          // Si hay apuestas candidatas, seleccionar UNA priorizando variedad
+          // Si hay apuestas candidatas, generar AMBAS opciones complementarias
           if (candidateOdds.length > 0) {
-            // Barajar y priorizar tipos menos usados; evitar etiquetas repetidas
-            candidateOdds = shuffle(candidateOdds)
-              .sort((a, b) => (typeCount.get(a.type) ?? 0) - (typeCount.get(b.type) ?? 0));
+            // Agrupar por tipo para encontrar pares complementarios
+            const byType = new Map<string, Array<{ type: string; label: string; odd: number }>>();
+            for (const c of candidateOdds) {
+              if (!byType.has(c.type)) byType.set(c.type, []);
+              byType.get(c.type)!.push(c);
+            }
 
-            let selectedBet = candidateOdds.find(c => !usedLabels.has(c.label.toLowerCase()));
-            if (!selectedBet) selectedBet = candidateOdds[0];
+            // Priorizar tipos menos usados
+            const typesSorted = Array.from(byType.keys()).sort((a, b) => (typeCount.get(a) ?? 0) - (typeCount.get(b) ?? 0));
             
-            bets.push({
-              matchId: match.id,
-              jornada: match.jornada,
-              local: match.local,
-              visitante: match.visitante,
-              localCrest: match.localCrest,
-              visitanteCrest: match.visitanteCrest,
-              fecha: match.fecha,
-              hora: match.hora,
-              type: selectedBet.type,
-              label: selectedBet.label,
-              odd: selectedBet.odd,
-            });
-            usedLabels.add(selectedBet.label.toLowerCase());
-            incType(selectedBet.type);
+            let selectedType = typesSorted[0];
+            const optionsForType = byType.get(selectedType)!;
+            
+            // Para cada opción del tipo seleccionado, agregar TODAS las opciones (ambas Sí/No, todas Home/Draw/Away, etc.)
+            for (const option of optionsForType) {
+              bets.push({
+                matchId: match.id,
+                jornada: match.jornada,
+                local: match.local,
+                visitante: match.visitante,
+                localCrest: match.localCrest,
+                visitanteCrest: match.visitanteCrest,
+                fecha: match.fecha,
+                hora: match.hora,
+                type: option.type,
+                label: option.label,
+                odd: option.odd,
+              });
+              usedLabels.add(option.label.toLowerCase());
+            }
+            incType(selectedType);
           } else {
-            // Si no hay odds elegibles en rango, generar fallback sintético en el rango 1.5-2.5
+            // Si no hay odds elegibles en rango, generar fallback sintético con TODAS las opciones complementarias
             const fallbackTypes = [
               'Resultado', 'Goles totales', 'Córners', 'Tarjetas', 'Ambos marcan', 'Par/Impar'
             ];
             const t = fallbackTypes[Math.floor(Math.random() * fallbackTypes.length)];
-            let label = '';
-            const odd = 1.5 + Math.random() * 1.0; // 1.5 - 2.5
+            const baseOdd = 1.5 + Math.random() * 0.5; // Base entre 1.5-2.0
+            
             if (t === 'Resultado') {
-              const opts = [`Ganará ${match.local}`, 'Empate', `Ganará ${match.visitante}`];
-              label = opts[Math.floor(Math.random() * opts.length)];
-            } else if (t === 'Goles totales') {
-              const n = [0.5, 1.5, 2.5, 3.5][Math.floor(Math.random() * 4)];
-              label = Math.random() < 0.5 ? `Se marcarán más de ${n} goles` : `Se marcarán menos de ${n} goles`;
-            } else if (t === 'Córners') {
-              const n = [6.5, 8.5, 9.5, 10.5][Math.floor(Math.random() * 4)];
-              label = Math.random() < 0.5 ? `Habrá más de ${n} córners` : `Habrá menos de ${n} córners`;
-            } else if (t === 'Tarjetas') {
-              const n = [3.5, 4.5, 5.5, 6.5][Math.floor(Math.random() * 4)];
-              label = Math.random() < 0.5 ? `Se mostrarán más de ${n} tarjetas` : `Se mostrarán menos de ${n} tarjetas`;
-            } else if (t === 'Ambos marcan') {
-              label = Math.random() < 0.5 ? `Marcan ${match.local} y ${match.visitante}` : 'Al menos un equipo no marcará';
-            } else if (t === 'Par/Impar') {
-              label = Math.random() < 0.5 ? 'Se marcarán un número impar de goles' : 'Se marcarán un número par de goles';
-            }
-            // Evitar repetición de etiqueta
-            let tries = 0;
-            while (usedLabels.has(label.toLowerCase()) && tries < 3) {
-              tries++;
-              if (t === 'Resultado') {
-                const opts = [`Ganará ${match.local}`, 'Empate', `Ganará ${match.visitante}`];
-                label = opts[Math.floor(Math.random() * opts.length)];
-              } else if (t === 'Goles totales') {
-                const n2 = [0.5, 1.5, 2.5, 3.5][Math.floor(Math.random() * 4)];
-                label = Math.random() < 0.5 ? `Se marcarán más de ${n2} goles` : `Se marcarán menos de ${n2} goles`;
+              // Generar las 3 opciones: Local, Empate, Visitante
+              const options = [
+                { label: `Ganará ${match.local}`, odd: parseFloat(baseOdd.toFixed(2)) },
+                { label: 'Empate', odd: parseFloat((baseOdd + 0.3).toFixed(2)) },
+                { label: `Ganará ${match.visitante}`, odd: parseFloat((baseOdd + 0.2).toFixed(2)) }
+              ];
+              for (const opt of options) {
+                bets.push({
+                  matchId: match.id,
+                  jornada: match.jornada,
+                  local: match.local,
+                  visitante: match.visitante,
+                  localCrest: match.localCrest,
+                  visitanteCrest: match.visitanteCrest,
+                  fecha: match.fecha,
+                  hora: match.hora,
+                  type: t,
+                  label: opt.label,
+                  odd: opt.odd,
+                });
+                usedLabels.add(opt.label.toLowerCase());
+              }
+            } else if (t === 'Goles totales' || t === 'Córners' || t === 'Tarjetas') {
+              // Generar AMBAS opciones: Más de X y Menos de X
+              let n: number;
+              let labelPrefix: string;
+              if (t === 'Goles totales') {
+                n = [0.5, 1.5, 2.5, 3.5][Math.floor(Math.random() * 4)];
+                labelPrefix = 'Se marcarán';
               } else if (t === 'Córners') {
-                const n2 = [6.5, 8.5, 9.5, 10.5][Math.floor(Math.random() * 4)];
-                label = Math.random() < 0.5 ? `Habrá más de ${n2} córners` : `Habrá menos de ${n2} córners`;
-              } else if (t === 'Tarjetas') {
-                const n2 = [3.5, 4.5, 5.5, 6.5][Math.floor(Math.random() * 4)];
-                label = Math.random() < 0.5 ? `Se mostrarán más de ${n2} tarjetas` : `Se mostrarán menos de ${n2} tarjetas`;
-              } else if (t === 'Ambos marcan') {
-                label = Math.random() < 0.5 ? `Marcan ${match.local} y ${match.visitante}` : 'Al menos un equipo no marcará';
-              } else if (t === 'Par/Impar') {
-                label = Math.random() < 0.5 ? 'Se marcarán un número impar de goles' : 'Se marcarán un número par de goles';
+                n = [6.5, 8.5, 9.5, 10.5][Math.floor(Math.random() * 4)];
+                labelPrefix = 'Habrá';
+              } else {
+                n = [3.5, 4.5, 5.5, 6.5][Math.floor(Math.random() * 4)];
+                labelPrefix = 'Se mostrarán';
+              }
+              const unit = t === 'Goles totales' ? 'goles' : t === 'Córners' ? 'córners' : 'tarjetas';
+              const options = [
+                { label: `${labelPrefix} más de ${n} ${unit}`, odd: parseFloat(baseOdd.toFixed(2)) },
+                { label: `${labelPrefix} menos de ${n} ${unit}`, odd: parseFloat((baseOdd + 0.3).toFixed(2)) }
+              ];
+              for (const opt of options) {
+                bets.push({
+                  matchId: match.id,
+                  jornada: match.jornada,
+                  local: match.local,
+                  visitante: match.visitante,
+                  localCrest: match.localCrest,
+                  visitanteCrest: match.visitanteCrest,
+                  fecha: match.fecha,
+                  hora: match.hora,
+                  type: t,
+                  label: opt.label,
+                  odd: opt.odd,
+                });
+                usedLabels.add(opt.label.toLowerCase());
+              }
+            } else if (t === 'Ambos marcan') {
+              // Generar AMBAS opciones: Sí marcan ambos, y No marcan ambos
+              const options = [
+                { label: `Marcan ${match.local} y ${match.visitante}`, odd: parseFloat(baseOdd.toFixed(2)) },
+                { label: 'Al menos un equipo no marcará', odd: parseFloat((baseOdd + 0.3).toFixed(2)) }
+              ];
+              for (const opt of options) {
+                bets.push({
+                  matchId: match.id,
+                  jornada: match.jornada,
+                  local: match.local,
+                  visitante: match.visitante,
+                  localCrest: match.localCrest,
+                  visitanteCrest: match.visitanteCrest,
+                  fecha: match.fecha,
+                  hora: match.hora,
+                  type: t,
+                  label: opt.label,
+                  odd: opt.odd,
+                });
+                usedLabels.add(opt.label.toLowerCase());
+              }
+            } else if (t === 'Par/Impar') {
+              // Generar AMBAS opciones: Par e Impar
+              const options = [
+                { label: 'Se marcarán un número impar de goles', odd: parseFloat(baseOdd.toFixed(2)) },
+                { label: 'Se marcarán un número par de goles', odd: parseFloat((baseOdd + 0.2).toFixed(2)) }
+              ];
+              for (const opt of options) {
+                bets.push({
+                  matchId: match.id,
+                  jornada: match.jornada,
+                  local: match.local,
+                  visitante: match.visitante,
+                  localCrest: match.localCrest,
+                  visitanteCrest: match.visitanteCrest,
+                  fecha: match.fecha,
+                  hora: match.hora,
+                  type: t,
+                  label: opt.label,
+                  odd: opt.odd,
+                });
+                usedLabels.add(opt.label.toLowerCase());
               }
             }
-            bets.push({
-              matchId: match.id,
-              jornada: match.jornada,
-              local: match.local,
-              visitante: match.visitante,
-              localCrest: match.localCrest,
-              visitanteCrest: match.visitanteCrest,
-              fecha: match.fecha,
-              hora: match.hora,
-              type: t,
-              label,
-              odd: parseFloat(odd.toFixed(2)),
-            });
-            usedLabels.add(label.toLowerCase());
             incType(t);
           }
           
@@ -950,128 +1008,121 @@ export default class FootballService {
           await new Promise(r => setTimeout(r, 150));
         } catch (err: any) {
           console.warn(`Error fetching odds for match ${match.id}:`, err?.message);
-          // Fallback: generar una apuesta sintética completamente aleatoria
+          // Fallback: generar apuestas sintéticas con TODAS las opciones complementarias
           const fallbackTypes = [
             'Resultado', 'Goles totales', 'Córners', 'Tarjetas', 'Ambos marcan', 'Par/Impar'
           ];
           const t = fallbackTypes[Math.floor(Math.random() * fallbackTypes.length)];
-          let label = '';
-          let odd = 1.5 + Math.random() * 1.0; // 1.5 - 2.5
+          const baseOdd = 1.5 + Math.random() * 0.5; // Base entre 1.5-2.0
+          
           if (t === 'Resultado') {
-            const opts = [`Ganará ${match.local}`, 'Empate', `Ganará ${match.visitante}`];
-            label = opts[Math.floor(Math.random() * opts.length)];
-          } else if (t === 'Goles totales') {
-            const n = [0.5, 1.5, 2.5, 3.5][Math.floor(Math.random() * 4)];
-            label = Math.random() < 0.5 ? `Se marcarán más de ${n} goles` : `Se marcarán menos de ${n} goles`;
-          } else if (t === 'Córners') {
-            const n = [6.5, 8.5, 9.5, 10.5][Math.floor(Math.random() * 4)];
-            label = Math.random() < 0.5 ? `Habrá más de ${n} córners` : `Habrá menos de ${n} córners`;
-          } else if (t === 'Tarjetas') {
-            const n = [3.5, 4.5, 5.5, 6.5][Math.floor(Math.random() * 4)];
-            label = Math.random() < 0.5 ? `Se mostrarán más de ${n} tarjetas` : `Se mostrarán menos de ${n} tarjetas`;
-          } else if (t === 'Ambos marcan') {
-            label = Math.random() < 0.5 ? `Marcan ${match.local} y ${match.visitante}` : 'Al menos un equipo no marcará';
-          } else if (t === 'Par/Impar') {
-            label = Math.random() < 0.5 ? 'Se marcarán un número impar de goles' : 'Se marcarán un número par de goles';
-          }
-          // Evitar repetición de etiqueta
-          let tries = 0;
-          while (usedLabels.has(label.toLowerCase()) && tries < 3) {
-            tries++;
-            if (t === 'Resultado') {
-              const opts = [`Ganará ${match.local}`, 'Empate', `Ganará ${match.visitante}`];
-              label = opts[Math.floor(Math.random() * opts.length)];
-            } else if (t === 'Goles totales') {
-              const n2 = [0.5, 1.5, 2.5, 3.5][Math.floor(Math.random() * 4)];
-              label = Math.random() < 0.5 ? `Se marcarán más de ${n2} goles` : `Se marcarán menos de ${n2} goles`;
+            // Generar las 3 opciones: Local, Empate, Visitante
+            const options = [
+              { label: `Ganará ${match.local}`, odd: parseFloat(baseOdd.toFixed(2)) },
+              { label: 'Empate', odd: parseFloat((baseOdd + 0.3).toFixed(2)) },
+              { label: `Ganará ${match.visitante}`, odd: parseFloat((baseOdd + 0.2).toFixed(2)) }
+            ];
+            for (const opt of options) {
+              bets.push({
+                matchId: match.id,
+                jornada: match.jornada,
+                local: match.local,
+                visitante: match.visitante,
+                localCrest: match.localCrest,
+                visitanteCrest: match.visitanteCrest,
+                fecha: match.fecha,
+                hora: match.hora,
+                type: t,
+                label: opt.label,
+                odd: opt.odd,
+              });
+              usedLabels.add(opt.label.toLowerCase());
+            }
+          } else if (t === 'Goles totales' || t === 'Córners' || t === 'Tarjetas') {
+            // Generar AMBAS opciones: Más de X y Menos de X
+            let n: number;
+            let labelPrefix: string;
+            if (t === 'Goles totales') {
+              n = [0.5, 1.5, 2.5, 3.5][Math.floor(Math.random() * 4)];
+              labelPrefix = 'Se marcarán';
             } else if (t === 'Córners') {
-              const n2 = [6.5, 8.5, 9.5, 10.5][Math.floor(Math.random() * 4)];
-              label = Math.random() < 0.5 ? `Habrá más de ${n2} córners` : `Habrá menos de ${n2} córners`;
-            } else if (t === 'Tarjetas') {
-              const n2 = [3.5, 4.5, 5.5, 6.5][Math.floor(Math.random() * 4)];
-              label = Math.random() < 0.5 ? `Se mostrarán más de ${n2} tarjetas` : `Se mostrarán menos de ${n2} tarjetas`;
-            } else if (t === 'Ambos marcan') {
-              label = Math.random() < 0.5 ? `Marcan ${match.local} y ${match.visitante}` : 'Al menos un equipo no marcará';
-            } else if (t === 'Par/Impar') {
-              label = Math.random() < 0.5 ? 'Se marcarán un número impar de goles' : 'Se marcarán un número par de goles';
+              n = [6.5, 8.5, 9.5, 10.5][Math.floor(Math.random() * 4)];
+              labelPrefix = 'Habrá';
+            } else {
+              n = [3.5, 4.5, 5.5, 6.5][Math.floor(Math.random() * 4)];
+              labelPrefix = 'Se mostrarán';
+            }
+            const unit = t === 'Goles totales' ? 'goles' : t === 'Córners' ? 'córners' : 'tarjetas';
+            const options = [
+              { label: `${labelPrefix} más de ${n} ${unit}`, odd: parseFloat(baseOdd.toFixed(2)) },
+              { label: `${labelPrefix} menos de ${n} ${unit}`, odd: parseFloat((baseOdd + 0.3).toFixed(2)) }
+            ];
+            for (const opt of options) {
+              bets.push({
+                matchId: match.id,
+                jornada: match.jornada,
+                local: match.local,
+                visitante: match.visitante,
+                localCrest: match.localCrest,
+                visitanteCrest: match.visitanteCrest,
+                fecha: match.fecha,
+                hora: match.hora,
+                type: t,
+                label: opt.label,
+                odd: opt.odd,
+              });
+              usedLabels.add(opt.label.toLowerCase());
+            }
+          } else if (t === 'Ambos marcan') {
+            // Generar AMBAS opciones: Sí marcan ambos, y No marcan ambos
+            const options = [
+              { label: `Marcan ${match.local} y ${match.visitante}`, odd: parseFloat(baseOdd.toFixed(2)) },
+              { label: 'Al menos un equipo no marcará', odd: parseFloat((baseOdd + 0.3).toFixed(2)) }
+            ];
+            for (const opt of options) {
+              bets.push({
+                matchId: match.id,
+                jornada: match.jornada,
+                local: match.local,
+                visitante: match.visitante,
+                localCrest: match.localCrest,
+                visitanteCrest: match.visitanteCrest,
+                fecha: match.fecha,
+                hora: match.hora,
+                type: t,
+                label: opt.label,
+                odd: opt.odd,
+              });
+              usedLabels.add(opt.label.toLowerCase());
+            }
+          } else if (t === 'Par/Impar') {
+            // Generar AMBAS opciones: Par e Impar
+            const options = [
+              { label: 'Se marcarán un número impar de goles', odd: parseFloat(baseOdd.toFixed(2)) },
+              { label: 'Se marcarán un número par de goles', odd: parseFloat((baseOdd + 0.2).toFixed(2)) }
+            ];
+            for (const opt of options) {
+              bets.push({
+                matchId: match.id,
+                jornada: match.jornada,
+                local: match.local,
+                visitante: match.visitante,
+                localCrest: match.localCrest,
+                visitanteCrest: match.visitanteCrest,
+                fecha: match.fecha,
+                hora: match.hora,
+                type: t,
+                label: opt.label,
+                odd: opt.odd,
+              });
+              usedLabels.add(opt.label.toLowerCase());
             }
           }
-          bets.push({
-            matchId: match.id,
-            jornada: match.jornada,
-            local: match.local,
-            visitante: match.visitante,
-            localCrest: match.localCrest,
-            visitanteCrest: match.visitanteCrest,
-            fecha: match.fecha,
-            hora: match.hora,
-            type: t,
-            label,
-            odd: parseFloat(odd.toFixed(2)),
-          });
-          usedLabels.add(label.toLowerCase());
           incType(t);
           continue;
         }
       }
 
-      // Apuestas especiales de liga (2)
-      if (ligaId) {
-        try {
-          const miembros = await LigaService.listarMiembros(ligaId);
-          const nombres: string[] = Array.isArray(miembros)
-            ? miembros.map((m: any) => m?.user?.name || m?.userName).filter(Boolean)
-            : [];
-          const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
-          const randOdd = () => parseFloat((1.5 + Math.random() * 1.0).toFixed(2));
-
-          if (nombres.length >= 1) {
-            const miembro1 = pick(nombres);
-            let label1 = `En esta jornada, ${miembro1} no hará más de ${25 + Math.floor(Math.random() * 36)} puntos`;
-            let tries1 = 0;
-            while (usedLabels.has(label1.toLowerCase()) && tries1 < 3) {
-              tries1++;
-              label1 = `En esta jornada, ${miembro1} no hará más de ${25 + Math.floor(Math.random() * 36)} puntos`;
-            }
-            bets.unshift({
-              matchId: -1,
-              jornada: nextJ,
-              local: `Liga ${ligaName}`,
-              visitante: miembro1,
-              type: 'Especial liga',
-              label: label1,
-              odd: randOdd(),
-            });
-            usedLabels.add(label1.toLowerCase());
-            incType('Especial liga');
-          }
-
-          if (nombres.length >= 1) {
-            const miembro2 = pick(nombres);
-            const y = [8, 10, 12, 15][Math.floor(Math.random() * 4)];
-            let label2 = `Al menos un jugador de ${miembro2} hará más de ${y} puntos`;
-            let tries2 = 0;
-            while (usedLabels.has(label2.toLowerCase()) && tries2 < 3) {
-              tries2++;
-              const y2 = [8, 10, 12, 15, 18][Math.floor(Math.random() * 5)];
-              label2 = `Al menos un jugador de ${miembro2} hará más de ${y2} puntos`;
-            }
-            bets.unshift({
-              matchId: -2,
-              jornada: nextJ,
-              local: `Liga ${ligaName}`,
-              visitante: miembro2,
-              type: 'Especial liga',
-              label: label2,
-              odd: randOdd(),
-            });
-            usedLabels.add(label2.toLowerCase());
-            incType('Especial liga');
-          }
-        } catch (e) {
-          console.warn('No se pudieron generar apuestas especiales de liga:', (e as any)?.message ?? e);
-        }
-      }
       // Persistir apuestas para esta jornada (sin TTL) para que no cambien con reload
       try {
         await EncryptedStorage.setItem(storeKey, JSON.stringify(bets));
