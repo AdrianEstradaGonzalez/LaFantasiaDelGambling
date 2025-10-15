@@ -118,7 +118,11 @@ export const Apuestas: React.FC = () => {
   const handleBetAmountChange = (key: string, value: string) => {
     // Solo permitir números
     if (value === '' || /^\d+$/.test(value)) {
-      setBetAmounts(prev => ({ ...prev, [key]: value }));
+      // Limitar a máximo 50M
+      const numValue = parseInt(value, 10);
+      if (value === '' || numValue <= 50) {
+        setBetAmounts(prev => ({ ...prev, [key]: value }));
+      }
     }
   };
 
@@ -146,8 +150,23 @@ export const Apuestas: React.FC = () => {
       return;
     }
 
+    if (amount > 50) {
+      showError('El máximo por apuesta es 50M');
+      return;
+    }
+
     if (amount > budget.available) {
       showError(`Presupuesto insuficiente. Disponible: ${budget.available}M`);
+      return;
+    }
+
+    // Verificar si ya existe una apuesta en este grupo (matchId + betType)
+    const existingBetInGroup = userBets.find(
+      (bet) => bet.matchId === matchId && bet.betType === betType
+    );
+
+    if (existingBetInGroup) {
+      showError('Ya tienes una apuesta en este grupo. Debes eliminarla primero para apostar a otra opción.');
       return;
     }
 
@@ -187,6 +206,11 @@ export const Apuestas: React.FC = () => {
 
   const handleUpdateBet = async (betId: string, newAmount: number) => {
     if (!ligaId) return;
+
+    if (newAmount > 50) {
+      showError('El máximo por apuesta es 50M');
+      return;
+    }
 
     try {
       setSavingBet(betId);
@@ -248,6 +272,11 @@ export const Apuestas: React.FC = () => {
     return userBets.find(
       (bet) => bet.matchId === matchId && bet.betType === betType && bet.betLabel === betLabel
     );
+  };
+
+  // Función para verificar si existe alguna apuesta en el grupo (mismo matchId + betType)
+  const hasAnyBetInGroup = (matchId: number, betType: string): boolean => {
+    return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType);
   };
 
   return (
@@ -415,31 +444,54 @@ export const Apuestas: React.FC = () => {
                     const isEditing = editingBet === userBet?.id;
                     const editAmount = betAmounts[`edit-${userBet?.id}`] || '';
                     
+                    // Verificar si hay alguna apuesta en este grupo
+                    const groupHasBet = hasAnyBetInGroup(b.matchId, b.type);
+                    const isBlocked = groupHasBet && !userBet; // Bloqueada si hay apuesta pero no es esta opción
+                    
                     return (
                       <View 
                         key={betKey}
                         style={{ 
-                          backgroundColor: userBet ? '#0c1829' : '#0f172a', 
+                          backgroundColor: userBet ? '#0c1829' : isBlocked ? '#0a0f1a' : '#0f172a', 
                           borderRadius: 10, 
                           padding: 12,
                           borderWidth: userBet ? 2 : 1,
-                          borderColor: userBet ? '#3b82f6' : '#334155',
+                          borderColor: userBet ? '#3b82f6' : isBlocked ? '#1e293b' : '#334155',
                           marginBottom: optionIndex < b.options.length - 1 ? 8 : 0,
+                          opacity: isBlocked ? 0.5 : 1,
                         }}
                       >
+                        {/* Indicador de bloqueado */}
+                        {isBlocked && (
+                          <View style={{
+                            backgroundColor: '#7f1d1d',
+                            borderRadius: 6,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            marginBottom: 8,
+                            alignSelf: 'flex-start',
+                          }}>
+                            <Text style={{ color: '#fca5a5', fontSize: 11, fontWeight: '700' }}>
+                              🔒 BLOQUEADA - Ya apostaste en otra opción
+                            </Text>
+                          </View>
+                        )}
+                        
                         {/* Label y Cuota */}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <Text style={{ color: '#e5e7eb', fontWeight: '600', fontSize: 15, flex: 1 }}>
+                          <Text style={{ color: isBlocked ? '#64748b' : '#e5e7eb', fontWeight: '600', fontSize: 15, flex: 1 }}>
                             {option.label}
                           </Text>
                           <View style={{
-                            backgroundColor: '#22c55e',
-                            borderRadius: 8,
-                            paddingHorizontal: 16,
+                            backgroundColor: 'transparent',
+                            borderRadius: 6,
+                            paddingHorizontal: 14,
                             paddingVertical: 6,
                             marginLeft: 8,
+                            borderWidth: 2,
+                            borderColor: isBlocked ? '#4b5563' : '#ef4444',
                           }}>
-                            <Text style={{ color: '#fff', fontWeight: '800', fontSize: 18 }}>
+                            <Text style={{ color: isBlocked ? '#64748b' : '#ef4444', fontWeight: '800', fontSize: 17, letterSpacing: 0.5 }}>
                               {option.odd.toFixed(2)}
                             </Text>
                           </View>
@@ -464,7 +516,7 @@ export const Apuestas: React.FC = () => {
                                   </View>
                                   <View style={{ alignItems: 'flex-end' }}>
                                     <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Ganancia potencial</Text>
-                                    <Text style={{ color: '#22c55e', fontSize: 18, fontWeight: '800' }}>
+                                    <Text style={{ color: '#10b981', fontSize: 18, fontWeight: '800' }}>
                                       +{userBet.potentialWin}M
                                     </Text>
                                   </View>
@@ -479,13 +531,15 @@ export const Apuestas: React.FC = () => {
                                     }}
                                     style={{
                                       flex: 1,
-                                      backgroundColor: '#3b82f6',
+                                      backgroundColor: '#0f766e',
                                       borderRadius: 6,
                                       paddingVertical: 10,
                                       flexDirection: 'row',
                                       alignItems: 'center',
                                       justifyContent: 'center',
                                       gap: 6,
+                                      borderWidth: 1,
+                                      borderColor: '#14b8a6',
                                     }}
                                   >
                                     <EditIcon size={16} color="#fff" />
@@ -540,12 +594,15 @@ export const Apuestas: React.FC = () => {
                                         fontSize: 16,
                                         fontWeight: '600',
                                       }}
-                                      placeholder="Nueva cantidad (M)"
+                                      placeholder="Nueva cantidad (máx 50M)"
                                       placeholderTextColor="#64748b"
                                       value={editAmount}
                                       onChangeText={(value) => {
                                         if (value === '' || /^\d+$/.test(value)) {
-                                          setBetAmounts(prev => ({ ...prev, [`edit-${userBet.id}`]: value }));
+                                          const numValue = parseInt(value, 10);
+                                          if (value === '' || numValue <= 50) {
+                                            setBetAmounts(prev => ({ ...prev, [`edit-${userBet.id}`]: value }));
+                                          }
                                         }
                                       }}
                                       keyboardType="numeric"
@@ -555,21 +612,25 @@ export const Apuestas: React.FC = () => {
                                   <TouchableOpacity
                                     onPress={() => {
                                       const newAmount = parseInt(editAmount, 10);
-                                      if (newAmount > 0) {
+                                      if (newAmount > 0 && newAmount <= 50) {
                                         handleUpdateBet(userBet.id, newAmount);
+                                      } else if (newAmount > 50) {
+                                        showError('El máximo por apuesta es 50M');
                                       } else {
                                         showError('Debes ingresar una cantidad mayor a 0');
                                       }
                                     }}
-                                    disabled={savingBet === userBet.id || !editAmount || parseInt(editAmount) <= 0}
+                                    disabled={savingBet === userBet.id || !editAmount || parseInt(editAmount) <= 0 || parseInt(editAmount) > 50}
                                     style={{
-                                      backgroundColor: savingBet === userBet.id ? '#64748b' : '#22c55e',
+                                      backgroundColor: savingBet === userBet.id ? '#64748b' : '#0f766e',
                                       borderRadius: 8,
                                       paddingHorizontal: 16,
                                       paddingVertical: 10,
-                                      opacity: (!editAmount || parseInt(editAmount) <= 0) ? 0.5 : 1,
+                                      opacity: (!editAmount || parseInt(editAmount) <= 0 || parseInt(editAmount) > 50) ? 0.5 : 1,
                                       justifyContent: 'center',
                                       alignItems: 'center',
+                                      borderWidth: 1,
+                                      borderColor: savingBet === userBet.id ? '#64748b' : '#14b8a6',
                                     }}
                                   >
                                     {savingBet === userBet.id ? (
@@ -603,7 +664,7 @@ export const Apuestas: React.FC = () => {
                                   <View style={{ marginTop: 8, alignItems: 'center' }}>
                                     <Text style={{ color: '#94a3b8', fontSize: 11 }}>
                                       Nueva ganancia potencial:{' '}
-                                      <Text style={{ color: '#22c55e', fontWeight: '700' }}>
+                                      <Text style={{ color: '#10b981', fontWeight: '700' }}>
                                         +{calculatePotentialWin(editAmount, option.odd)}M
                                       </Text>
                                     </Text>
@@ -617,62 +678,79 @@ export const Apuestas: React.FC = () => {
                         {/* Input y botón de apostar (solo si NO hay apuesta y hay ligaId) */}
                         {!userBet && ligaId && (
                           <>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                              <View style={{ flex: 1 }}>
-                                <TextInput
-                                  style={{
-                                    backgroundColor: '#1a2332',
-                                    borderWidth: 1,
-                                    borderColor: '#334155',
-                                    borderRadius: 8,
-                                    paddingHorizontal: 12,
-                                    paddingVertical: 10,
-                                    color: '#fff',
-                                    fontSize: 16,
-                                    fontWeight: '600',
-                                  }}
-                                  placeholder="Cantidad (M)"
-                                  placeholderTextColor="#64748b"
-                                  value={amount}
-                                  onChangeText={(value) => handleBetAmountChange(betKey, value)}
-                                  keyboardType="numeric"
-                                  editable={savingBet !== betKey}
-                                />
-                              </View>
-                              <TouchableOpacity
-                                onPress={() => handlePlaceBet(b.matchId, b.type, option.label, option.odd, betKey)}
-                                disabled={savingBet === betKey || !amount || parseInt(amount) <= 0}
-                                style={{
-                                  backgroundColor: savingBet === betKey ? '#64748b' : '#3b82f6',
-                                  borderRadius: 8,
-                                  paddingHorizontal: 20,
-                                  paddingVertical: 10,
-                                  opacity: (!amount || parseInt(amount) <= 0) ? 0.5 : 1,
-                                  minWidth: 100,
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                }}
-                              >
-                                {savingBet === betKey ? (
-                                  <ActivityIndicator size="small" color="#fff" />
-                                ) : (
-                                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
-                                    Apostar
-                                  </Text>
-                                )}
-                              </TouchableOpacity>
-                            </View>
-
-                            {/* Ganancia potencial */}
-                            {potentialWin > 0 && (
-                              <View style={{ marginTop: 8, alignItems: 'flex-end' }}>
-                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>
-                                  Ganancia potencial:{' '}
-                                  <Text style={{ color: '#22c55e', fontWeight: '700' }}>
-                                    +{potentialWin}M
-                                  </Text>
+                            {isBlocked ? (
+                              <View style={{
+                                backgroundColor: '#1e293b',
+                                borderRadius: 8,
+                                padding: 12,
+                                alignItems: 'center',
+                              }}>
+                                <Text style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
+                                  No puedes apostar aquí. Solo se permite una opción por grupo.
                                 </Text>
                               </View>
+                            ) : (
+                              <>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                  <View style={{ flex: 1 }}>
+                                    <TextInput
+                                      style={{
+                                        backgroundColor: '#1a2332',
+                                        borderWidth: 1,
+                                        borderColor: '#334155',
+                                        borderRadius: 8,
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 10,
+                                        color: '#fff',
+                                        fontSize: 16,
+                                        fontWeight: '600',
+                                      }}
+                                      placeholder="Cantidad (máx 50M)"
+                                      placeholderTextColor="#64748b"
+                                      value={amount}
+                                      onChangeText={(value) => handleBetAmountChange(betKey, value)}
+                                      keyboardType="numeric"
+                                      editable={savingBet !== betKey}
+                                    />
+                                  </View>
+                                  <TouchableOpacity
+                                    onPress={() => handlePlaceBet(b.matchId, b.type, option.label, option.odd, betKey)}
+                                    disabled={savingBet === betKey || !amount || parseInt(amount) <= 0}
+                                    style={{
+                                      backgroundColor: savingBet === betKey ? '#64748b' : '#0f766e',
+                                      borderRadius: 8,
+                                      paddingHorizontal: 20,
+                                      paddingVertical: 10,
+                                      opacity: (!amount || parseInt(amount) <= 0) ? 0.5 : 1,
+                                      minWidth: 100,
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      borderWidth: 1,
+                                      borderColor: savingBet === betKey ? '#64748b' : '#14b8a6',
+                                    }}
+                                  >
+                                    {savingBet === betKey ? (
+                                      <ActivityIndicator size="small" color="#fff" />
+                                    ) : (
+                                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
+                                        Apostar
+                                      </Text>
+                                    )}
+                                  </TouchableOpacity>
+                                </View>
+
+                                {/* Ganancia potencial */}
+                                {potentialWin > 0 && (
+                                  <View style={{ marginTop: 8, alignItems: 'flex-end' }}>
+                                    <Text style={{ color: '#94a3b8', fontSize: 12 }}>
+                                      Ganancia potencial:{' '}
+                                      <Text style={{ color: '#10b981', fontWeight: '700' }}>
+                                        +{potentialWin}M
+                                      </Text>
+                                    </Text>
+                                  </View>
+                                )}
+                              </>
                             )}
                           </>
                         )}

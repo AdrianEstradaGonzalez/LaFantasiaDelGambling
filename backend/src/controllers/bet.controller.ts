@@ -127,4 +127,36 @@ export class BetController {
       return reply.status(400).send({ error: error.message });
     }
   }
+
+  /**
+   * POST /api/bets/reset-budgets/:leagueId?
+   * Resetear presupuestos de apuestas a 250M
+   * Si se proporciona leagueId, solo resetea esa liga
+   * Si no, resetea todas las ligas
+   */
+  static async resetBettingBudgets(
+    request: FastifyRequest<{
+      Params: { leagueId?: string };
+    }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const userId = (request.user as any)?.sub || (request.user as any)?.id;
+      if (!userId) {
+        return reply.status(401).send({ error: 'No autenticado' });
+      }
+
+      const { leagueId } = request.params;
+      await BetService.resetBettingBudgets(leagueId);
+      
+      return reply.status(200).send({ 
+        success: true, 
+        message: leagueId 
+          ? `Presupuestos reseteados a 250M para la liga ${leagueId}` 
+          : 'Presupuestos reseteados a 250M para todas las ligas'
+      });
+    } catch (error: any) {
+      return reply.status(400).send({ error: error.message });
+    }
+  }
 }

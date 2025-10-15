@@ -553,12 +553,40 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         <LoadingScreen />
       ) : (
         <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+          {/* Top Header Bar - Estilo idéntico a LigaTopNavBar */}
+          {ligaName && (
+            <View style={{
+              backgroundColor: '#181818',
+              borderBottomWidth: 0.5,
+              borderBottomColor: '#333',
+              paddingVertical: 10,
+              paddingHorizontal: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: 20,
+                  fontWeight: '700',
+                  textAlign: 'center',
+                }}
+                numberOfLines={1}
+              >
+                LIGA{' '}
+                <Text style={{ color: '#0892D0' }}>
+                  {ligaName.toUpperCase()}
+                </Text>
+              </Text>
+            </View>
+          )}
+
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 200 }} scrollEnabled={!isChangingFormation}>
           {/* Header con título y botón guardar */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800' }}>Mi Plantilla</Text>
-              {ligaName && <Text style={{ color: '#94a3b8', fontSize: 14, marginTop: 2 }}>{ligaName}</Text>}
             </View>
             
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

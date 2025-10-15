@@ -52,7 +52,9 @@ export const AppNavigator = () => {
             animation: 'slide_from_right', // 👈 animación lateral
           }}
         />
-        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="Login" component={Login} options={{
+          animation: 'slide_from_left', // 👈 animación lateral
+        }} />
         <Stack.Screen name="Register" component={Register} options={{
           animation: 'slide_from_right', // 👈 animación lateral
         }} />

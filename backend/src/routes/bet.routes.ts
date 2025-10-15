@@ -26,4 +26,9 @@ export default async function betRoutes(fastify: FastifyInstance) {
   fastify.delete('/:leagueId/:betId', {
     preHandler: [fastify.auth],
   }, BetController.deleteBet);
+
+  // Resetear presupuestos de apuestas a 250M (para todos los miembros de una liga o todas las ligas)
+  fastify.post('/reset-budgets/:leagueId?', {
+    preHandler: [fastify.auth],
+  }, BetController.resetBettingBudgets);
 }

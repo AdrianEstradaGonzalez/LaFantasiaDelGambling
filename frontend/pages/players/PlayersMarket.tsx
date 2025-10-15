@@ -277,6 +277,7 @@ export const PlayersMarket = ({ navigation, route }: {
           setBudget(0);
         }
       }
+
     } catch (error) {
       Alert.alert('Error', 'No se pudieron cargar los jugadores');
       console.error(error);

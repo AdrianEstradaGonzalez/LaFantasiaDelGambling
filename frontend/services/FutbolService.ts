@@ -602,8 +602,8 @@ export default class FootballService {
 
       const ligaId = options?.ligaId;
       const ligaName = options?.ligaName ?? 'Liga';
-      // Agregar v3 para nueva estructura con opciones
-      const storeKey = ligaId ? `apuestas_jornada_${nextJ}_liga_${ligaId}_v3` : `apuestas_jornada_${nextJ}_v3`;
+      // Agregar v4 para nueva estructura con validación de mínimos
+      const storeKey = ligaId ? `apuestas_jornada_${nextJ}_liga_${ligaId}_v4` : `apuestas_jornada_${nextJ}_v4`;
       
       // Revisar si ya tenemos apuestas persistidas para esta jornada
       try {
@@ -611,7 +611,17 @@ export default class FootballService {
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+            // Validar que el caché cumple con los mínimos requeridos
+            const golesCount = parsed.filter(b => b.type === 'Goles totales').length;
+            const cornersCount = parsed.filter(b => b.type === 'Córners').length;
+            const tarjetasCount = parsed.filter(b => b.type === 'Tarjetas').length;
+            
+            if (golesCount >= 2 && cornersCount >= 2 && tarjetasCount >= 2) {
+              console.log(`✅ Caché válido: ${golesCount} goles, ${cornersCount} córners, ${tarjetasCount} tarjetas`);
+              return parsed;
+            } else {
+              console.log(`⚠️ Caché inválido: ${golesCount} goles, ${cornersCount} córners, ${tarjetasCount} tarjetas. Regenerando...`);
+            }
           }
         }
       } catch {}
@@ -1123,6 +1133,52 @@ export default class FootballService {
         }
       }
 
+      // GARANTIZAR MÍNIMOS: 2 Goles totales, 2 Córners, 2 Tarjetas
+      const requiredTypes = ['Goles totales', 'Córners', 'Tarjetas'];
+      const minPerType = 2;
+      
+      console.log('📊 Conteo de apuestas generadas:');
+      console.log(`   - Goles totales: ${bets.filter(b => b.type === 'Goles totales').length}`);
+      console.log(`   - Córners: ${bets.filter(b => b.type === 'Córners').length}`);
+      console.log(`   - Tarjetas: ${bets.filter(b => b.type === 'Tarjetas').length}`);
+      console.log(`   - Total: ${bets.length} apuestas`);
+      
+      for (const requiredType of requiredTypes) {
+        const currentCount = bets.filter(b => b.type === requiredType).length;
+        
+        if (currentCount < minPerType) {
+          const needed = minPerType - currentCount;
+          console.log(`⚠️ Faltan ${needed} apuestas de tipo "${requiredType}". Generando sintéticas...`);
+          
+          // Generar apuestas sintéticas para completar el mínimo
+          for (let i = 0; i < needed; i++) {
+            // Seleccionar un partido aleatorio que aún no tenga este tipo de apuesta
+            const availableMatches = jornadaMatches.filter(match => 
+              !bets.some(b => b.matchId === match.id && b.type === requiredType)
+            );
+            
+            if (availableMatches.length === 0) {
+              // Si todos los partidos ya tienen este tipo, usar cualquier partido
+              const match = jornadaMatches[Math.floor(Math.random() * jornadaMatches.length)];
+              const syntheticBet = this.generateSyntheticBet(match, requiredType);
+              bets.push(...syntheticBet);
+              console.log(`   ✅ Generada apuesta sintética de ${requiredType} para ${match.local} vs ${match.visitante}`);
+            } else {
+              const match = availableMatches[Math.floor(Math.random() * availableMatches.length)];
+              const syntheticBet = this.generateSyntheticBet(match, requiredType);
+              bets.push(...syntheticBet);
+              console.log(`   ✅ Generada apuesta sintética de ${requiredType} para ${match.local} vs ${match.visitante}`);
+            }
+          }
+        }
+      }
+      
+      console.log('📊 Conteo FINAL de apuestas:');
+      console.log(`   - Goles totales: ${bets.filter(b => b.type === 'Goles totales').length}`);
+      console.log(`   - Córners: ${bets.filter(b => b.type === 'Córners').length}`);
+      console.log(`   - Tarjetas: ${bets.filter(b => b.type === 'Tarjetas').length}`);
+      console.log(`   - Total: ${bets.length} apuestas`);
+
       // Persistir apuestas para esta jornada (sin TTL) para que no cambien con reload
       try {
         await EncryptedStorage.setItem(storeKey, JSON.stringify(bets));
@@ -1133,5 +1189,83 @@ export default class FootballService {
       console.error('Error fetching apuestas:', error);
       return [];
     }
+  }
+
+  private static generateSyntheticBet(match: any, type: string): any[] {
+    const baseOdd = 1.5 + Math.random() * 1.0; // Entre 1.5 y 2.5
+    const bets: any[] = [];
+    
+    if (type === 'Goles totales') {
+      const thresholds = [0.5, 1.5, 2.5, 3.5];
+      const n = thresholds[Math.floor(Math.random() * thresholds.length)];
+      const options = [
+        { label: `Se marcarán más de ${n} goles`, odd: parseFloat(baseOdd.toFixed(2)) },
+        { label: `Se marcarán menos de ${n} goles`, odd: parseFloat((2.5 - (baseOdd - 1.5)).toFixed(2)) }
+      ];
+      
+      for (const opt of options) {
+        bets.push({
+          matchId: match.id,
+          jornada: match.jornada,
+          local: match.local,
+          visitante: match.visitante,
+          localCrest: match.localCrest,
+          visitanteCrest: match.visitanteCrest,
+          fecha: match.fecha,
+          hora: match.hora,
+          type: 'Goles totales',
+          label: opt.label,
+          odd: opt.odd,
+        });
+      }
+    } else if (type === 'Córners') {
+      const thresholds = [6.5, 8.5, 9.5, 10.5];
+      const n = thresholds[Math.floor(Math.random() * thresholds.length)];
+      const options = [
+        { label: `Habrá más de ${n} córners`, odd: parseFloat(baseOdd.toFixed(2)) },
+        { label: `Habrá menos de ${n} córners`, odd: parseFloat((2.5 - (baseOdd - 1.5)).toFixed(2)) }
+      ];
+      
+      for (const opt of options) {
+        bets.push({
+          matchId: match.id,
+          jornada: match.jornada,
+          local: match.local,
+          visitante: match.visitante,
+          localCrest: match.localCrest,
+          visitanteCrest: match.visitanteCrest,
+          fecha: match.fecha,
+          hora: match.hora,
+          type: 'Córners',
+          label: opt.label,
+          odd: opt.odd,
+        });
+      }
+    } else if (type === 'Tarjetas') {
+      const thresholds = [3.5, 4.5, 5.5, 6.5];
+      const n = thresholds[Math.floor(Math.random() * thresholds.length)];
+      const options = [
+        { label: `Se mostrarán más de ${n} tarjetas`, odd: parseFloat(baseOdd.toFixed(2)) },
+        { label: `Se mostrarán menos de ${n} tarjetas`, odd: parseFloat((2.5 - (baseOdd - 1.5)).toFixed(2)) }
+      ];
+      
+      for (const opt of options) {
+        bets.push({
+          matchId: match.id,
+          jornada: match.jornada,
+          local: match.local,
+          visitante: match.visitante,
+          localCrest: match.localCrest,
+          visitanteCrest: match.visitanteCrest,
+          fecha: match.fecha,
+          hora: match.hora,
+          type: 'Tarjetas',
+          label: opt.label,
+          odd: opt.odd,
+        });
+      }
+    }
+    
+    return bets;
   }
 }

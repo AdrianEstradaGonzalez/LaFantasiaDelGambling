@@ -7,16 +7,15 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
+  TextInput as RNTextInput,
+  StatusBar,
 } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { TextInput, Button } from 'react-native-paper';
-import LinearGradient from 'react-native-linear-gradient';
 import { LoginStyles } from '../../styles/AuthStyles';
 import { RegisterData, RegisterService } from '../../services/RegisterService';
-
+import { EmailIcon, LockIcon } from '../../components/VectorIcons';
 
 type RegisterFormData = {
   username: string;
@@ -51,174 +50,276 @@ const Register: React.FC<Props> = ({ navigation }) => {
 
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [usernameFocused, setUsernameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [repeatPasswordFocused, setRepeatPasswordFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRepeatPassword, setShowRepeatPassword] = useState(false);
 
   const onSubmit = async (data: RegisterFormData) => {
-  setApiError(null);
-  setLoading(true);
+    setApiError(null);
+    setLoading(true);
 
-  try {
-    // Llamamos al servicio
-    await RegisterService.register(data as RegisterData);
-
-    // Redirigimos al Home si todo OK
-    navigation.replace('Home');
-  } catch (e: any) {
-    setApiError(e?.message || 'No se pudo registrar');
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const PasswordInput = ({
-    controlName,
-    label,
-  }: {
-    controlName: 'password' | 'repeatPassword';
-    label: string;
-  }) => {
-    const [showPassword, setShowPassword] = useState(false);
-
-    return (
-      <Controller
-        control={control}
-        name={controlName}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <>
-            <TextInput
-              mode="outlined"
-              label={label}
-              secureTextEntry={!showPassword}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-              style={LoginStyles.input}
-              outlineColor="#ccc"
-              activeOutlineColor="#1a2a6c"
-              textColor="#000"
-              right={
-                <TextInput.Icon
-                    icon={() => (
-                        <Image
-                        source={
-                            showPassword
-                            ? require('../../assets/iconos/eye_on.png')
-                            : require('../../assets/iconos/eye_off.png')
-                        }
-                        style={{ width: 20, height: 20, tintColor: '#666' }}
-                        resizeMode="contain"
-                        />
-                    )}
-                    onPress={() => setShowPassword(!showPassword)}
-                    forceTextInputFocus={false}
-                    />
-              }
-            />
-            {errors[controlName]?.message && (
-              <Text style={LoginStyles.error}>
-                {errors[controlName]?.message}
-              </Text>
-            )}
-          </>
-        )}
-      />
-    );
+    try {
+      await RegisterService.register(data as RegisterData);
+      navigation.replace('Home');
+    } catch (e: any) {
+      setApiError(e?.message || 'No se pudo completar el registro. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <LinearGradient colors={['#18395a', '#346335']} style={LoginStyles.gradient}>
+    <View style={LoginStyles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
+      
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
+        style={LoginStyles.scrollContent}
       >
-        <ScrollView
-          contentContainerStyle={LoginStyles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={LoginStyles.card}>
+        {/* Header Section */}
+        <View style={LoginStyles.headerSection}>
+          <View style={LoginStyles.logoContainer}>
             <Image
               source={require('../../assets/logo.png')}
               style={LoginStyles.logo}
             />
+          </View>
+          <Text style={LoginStyles.appName}>DreamLeague</Text>
+          <Text style={LoginStyles.appTagline}>
+            Tu fantasy football con apuestas
+          </Text>
+        </View>
 
-            <Text style={LoginStyles.title}>Bettasy</Text>
-            <Text style={LoginStyles.subtitle}>Regístrate para empezar</Text>
+        {/* Form Section */}
+        <View style={LoginStyles.formSection}>
+          {/* Error Banner */}
+          {apiError && (
+            <View style={LoginStyles.errorBanner}>
+              <Text style={LoginStyles.errorBannerText}>{apiError}</Text>
+            </View>
+          )}
 
-            <Controller
-              control={control}
-              name="username"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <>
-                  <TextInput
-                    mode="outlined"
-                    label="Nombre de usuario"
+          {/* Username Input */}
+          <Controller
+            control={control}
+            name="username"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={LoginStyles.inputContainer}>
+                <Text style={LoginStyles.inputLabel}>Nombre de usuario</Text>
+                <View
+                  style={[
+                    LoginStyles.inputWrapper,
+                    usernameFocused && LoginStyles.inputWrapperFocused,
+                    errors.username && LoginStyles.inputWrapperError,
+                  ]}
+                >
+                  <Image
+                    source={require('../../assets/iconos/equipo.png')}
+                    style={LoginStyles.inputIcon}
+                  />
+                  <View style={{ width: 12 }} />
+                  <RNTextInput
+                    style={LoginStyles.input}
+                    placeholder="tunombre"
+                    placeholderTextColor="#64748b"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    onBlur={onBlur}
+                    onBlur={() => {
+                      onBlur();
+                      setUsernameFocused(false);
+                    }}
+                    onFocus={() => setUsernameFocused(true)}
                     onChangeText={onChange}
                     value={value}
-                    style={LoginStyles.input}
-                    outlineColor="#ccc"
-                    activeOutlineColor="#1a2a6c"
-                    textColor="#000"
                   />
-                  {errors.username?.message && (
-                    <Text style={LoginStyles.error}>{errors.username.message}</Text>
-                  )}
-                </>
-              )}
-            />
+                </View>
+                {errors.username?.message && (
+                  <Text style={LoginStyles.errorText}>
+                    {errors.username.message}
+                  </Text>
+                )}
+              </View>
+            )}
+          />
 
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <>
-                  <TextInput
-                    mode="outlined"
-                    label="Correo electrónico"
+          {/* Email Input */}
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={LoginStyles.inputContainer}>
+                <Text style={LoginStyles.inputLabel}>Correo electrónico</Text>
+                <View
+                  style={[
+                    LoginStyles.inputWrapper,
+                    emailFocused && LoginStyles.inputWrapperFocused,
+                    errors.email && LoginStyles.inputWrapperError,
+                  ]}
+                >
+                  <EmailIcon size={20} color="#64748b" />
+                  <View style={{ width: 12 }} />
+                  <RNTextInput
+                    style={LoginStyles.input}
+                    placeholder="tu@email.com"
+                    placeholderTextColor="#64748b"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    onBlur={onBlur}
+                    onBlur={() => {
+                      onBlur();
+                      setEmailFocused(false);
+                    }}
+                    onFocus={() => setEmailFocused(true)}
                     onChangeText={onChange}
                     value={value}
-                    style={LoginStyles.input}
-                    outlineColor="#ccc"
-                    activeOutlineColor="#1a2a6c"
-                    textColor="#000"
                   />
-                  {errors.email?.message && (
-                    <Text style={LoginStyles.error}>{errors.email.message}</Text>
-                  )}
-                </>
-              )}
-            />
+                </View>
+                {errors.email?.message && (
+                  <Text style={LoginStyles.errorText}>
+                    {errors.email.message}
+                  </Text>
+                )}
+              </View>
+            )}
+          />
 
-            <PasswordInput controlName="password" label="Contraseña" />
-            <PasswordInput controlName="repeatPassword" label="Repetir contraseña" />
+          {/* Password Input */}
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={LoginStyles.inputContainer}>
+                <Text style={LoginStyles.inputLabel}>Contraseña</Text>
+                <View
+                  style={[
+                    LoginStyles.inputWrapper,
+                    passwordFocused && LoginStyles.inputWrapperFocused,
+                    errors.password && LoginStyles.inputWrapperError,
+                  ]}
+                >
+                  <LockIcon size={20} color="#64748b" />
+                  <View style={{ width: 12 }} />
+                  <RNTextInput
+                    style={LoginStyles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#64748b"
+                    secureTextEntry={!showPassword}
+                    onBlur={() => {
+                      onBlur();
+                      setPasswordFocused(false);
+                    }}
+                    onFocus={() => setPasswordFocused(true)}
+                    onChangeText={onChange}
+                    value={value}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Image
+                      source={
+                        showPassword
+                          ? require('../../assets/iconos/eye_on.png')
+                          : require('../../assets/iconos/eye_off.png')
+                      }
+                      style={LoginStyles.eyeIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password?.message && (
+                  <Text style={LoginStyles.errorText}>
+                    {errors.password.message}
+                  </Text>
+                )}
+              </View>
+            )}
+          />
 
-            {apiError && <Text style={LoginStyles.error}>{apiError}</Text>}
+          {/* Repeat Password Input */}
+          <Controller
+            control={control}
+            name="repeatPassword"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={LoginStyles.inputContainer}>
+                <Text style={LoginStyles.inputLabel}>Confirmar contraseña</Text>
+                <View
+                  style={[
+                    LoginStyles.inputWrapper,
+                    repeatPasswordFocused && LoginStyles.inputWrapperFocused,
+                    errors.repeatPassword && LoginStyles.inputWrapperError,
+                  ]}
+                >
+                  <LockIcon size={20} color="#64748b" />
+                  <View style={{ width: 12 }} />
+                  <RNTextInput
+                    style={LoginStyles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#64748b"
+                    secureTextEntry={!showRepeatPassword}
+                    onBlur={() => {
+                      onBlur();
+                      setRepeatPasswordFocused(false);
+                    }}
+                    onFocus={() => setRepeatPasswordFocused(true)}
+                    onChangeText={onChange}
+                    value={value}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowRepeatPassword(!showRepeatPassword)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Image
+                      source={
+                        showRepeatPassword
+                          ? require('../../assets/iconos/eye_on.png')
+                          : require('../../assets/iconos/eye_off.png')
+                      }
+                      style={LoginStyles.eyeIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.repeatPassword?.message && (
+                  <Text style={LoginStyles.errorText}>
+                    {errors.repeatPassword.message}
+                  </Text>
+                )}
+              </View>
+            )}
+          />
 
-            <Button
-              mode="contained"
-              onPress={handleSubmit(onSubmit)}
-              disabled={loading}
-              style={LoginStyles.button}
-              labelStyle={LoginStyles.buttonLabel}
-            >
-              {loading ? <ActivityIndicator color="#fff" /> : 'Registrarse'}
-            </Button>
+          {/* Register Button */}
+          <TouchableOpacity
+            style={[
+              LoginStyles.primaryButton,
+              loading && LoginStyles.primaryButtonDisabled,
+            ]}
+            onPress={handleSubmit(onSubmit)}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <View style={LoginStyles.loadingContainer}>
+                <ActivityIndicator color="#ffffff" size="small" />
+                <Text style={LoginStyles.loadingText}>Creando cuenta...</Text>
+              </View>
+            ) : (
+              <Text style={LoginStyles.primaryButtonText}>Crear Cuenta</Text>
+            )}
+          </TouchableOpacity>
+        </View>
 
-            <View style={LoginStyles.registerContainer}>
-              <Text style={LoginStyles.registerText}>¿Ya tienes cuenta?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={LoginStyles.registerLink}>Inicia sesión</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
+        {/* Footer */}
+        <View style={LoginStyles.footer}>
+          <Text style={LoginStyles.footerText}>¿Ya tienes cuenta?</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+            <Text style={LoginStyles.footerLink}>Inicia sesión</Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 };
 

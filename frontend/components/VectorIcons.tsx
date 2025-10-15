@@ -420,3 +420,57 @@ export const ClockIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
     />
   </Svg>
 );
+
+// Icono de email
+export const EmailIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="3"
+      y="5"
+      width="18"
+      height="14"
+      rx="2"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M3 7l9 6 9-6"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de candado
+export const LockIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="5"
+      y="11"
+      width="14"
+      height="10"
+      rx="2"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M12 17a1 1 0 100-2 1 1 0 000 2z"
+      fill={color}
+    />
+    <Path
+      d="M8 11V7a4 4 0 118 0v4"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);

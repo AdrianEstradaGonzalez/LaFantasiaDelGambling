@@ -7,16 +7,15 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  Switch,
+  TextInput as RNTextInput,
+  StatusBar,
 } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { TextInput, Button } from 'react-native-paper';
-import LinearGradient from 'react-native-linear-gradient';
 import { LoginStyles } from '../../styles/AuthStyles';
 import { LoginData, LoginService } from '../../services/LoginService';
+import { CheckIcon, EmailIcon, LockIcon } from '../../components/VectorIcons';
 
 type LoginFormData = { email: string; password: string };
 
@@ -42,170 +41,203 @@ const Login: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const onSubmit = async (data: LoginFormData) => {
-  setApiError(null);
-  setLoading(true);
+    setApiError(null);
+    setLoading(true);
 
-  try {
-    // Llamada al servicio
-    await LoginService.login(data as LoginData);
-    // Redirigir al Home si todo OK
-    navigation.replace('Home');
-  } catch (e: any) {
-    setApiError(e?.message ?? 'No se pudo iniciar sesión');
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      await LoginService.login(data as LoginData);
+      navigation.replace('Home');
+    } catch (e: any) {
+      setApiError(e?.message ?? 'No se pudo iniciar sesión. Verifica tus credenciales.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <LinearGradient
-        colors={['#18395a', '#346335']}
-        style={LoginStyles.gradient}
-      >
-
+    <View style={LoginStyles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
+      
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }} 
+        style={LoginStyles.scrollContent}
       >
-        <ScrollView
-          contentContainerStyle={LoginStyles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={LoginStyles.card}>
+        {/* Header Section */}
+        <View style={LoginStyles.headerSection}>
+          <View style={LoginStyles.logoContainer}>
             <Image
               source={require('../../assets/logo.png')}
               style={LoginStyles.logo}
             />
+          </View>
+          <Text style={LoginStyles.appName}>DreamLeague</Text>
+          <Text style={LoginStyles.appTagline}>
+            Tu fantasy football con apuestas
+          </Text>
+        </View>
 
-            <Text style={LoginStyles.title}>Bettasy</Text> 
-            <Text style={LoginStyles.subtitle}>
-              Inicia sesión 
-            </Text>
+        {/* Form Section */}
+        <View style={LoginStyles.formSection}>
+          {/* Error Banner */}
+          {apiError && (
+            <View style={LoginStyles.errorBanner}>
+              <Text style={LoginStyles.errorBannerText}>{apiError}</Text>
+            </View>
+          )}
 
-            <Controller
-              control={control}
-              name="email"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <>
-                  <TextInput
-                    mode="outlined"
-                    label="Correo electrónico"
+          {/* Email Input */}
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={LoginStyles.inputContainer}>
+                <Text style={LoginStyles.inputLabel}>Correo electrónico</Text>
+                <View
+                  style={[
+                    LoginStyles.inputWrapper,
+                    emailFocused && LoginStyles.inputWrapperFocused,
+                    errors.email && LoginStyles.inputWrapperError,
+                  ]}
+                >
+                  <EmailIcon size={20} color="#64748b" />
+                  <View style={{ width: 12 }} />
+                  <RNTextInput
+                    style={LoginStyles.input}
+                    placeholder="tu@email.com"
+                    placeholderTextColor="#64748b"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    onBlur={onBlur}
+                    onBlur={() => {
+                      onBlur();
+                      setEmailFocused(false);
+                    }}
+                    onFocus={() => setEmailFocused(true)}
                     onChangeText={onChange}
                     value={value}
-                    style={LoginStyles.input}
-                    outlineColor="#ccc"
-                    activeOutlineColor="#1a2a6c"
-                    textColor="#000"
                   />
-                  {errors.email?.message && (
-                    <Text style={LoginStyles.error}>
-                      {errors.email.message}
-                    </Text>
-                  )}
-                </>
-              )}
-            />
-
-        <Controller
-          control={control}
-          name="password"
-          render={({ field: { onChange, onBlur, value } }) => {
-            const [showPassword, setShowPassword] = useState(false);
-
-            return (
-              <>
-                <TextInput
-                  mode="outlined"
-                  label="Contraseña"
-                  secureTextEntry={!showPassword}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  style={LoginStyles.input}
-                  outlineColor="#ccc"
-                  activeOutlineColor="#1a2a6c"
-                  textColor="#000"
-                  right={
-                    <TextInput.Icon
-                      icon={() => (
-                        <Image
-                          source={
-                            showPassword
-                              ? require('../../assets/iconos/eye_on.png')
-                              : require('../../assets/iconos/eye_off.png')
-                          }
-                          style={{ width: 20, height: 20, tintColor: '#666' }}
-                          resizeMode="contain"
-                        />
-                      )}
-                      onPress={() => setShowPassword(!showPassword)}
-                      forceTextInputFocus={false}
-                    />
-                  }
-                />
-
-                {errors.password?.message && (
-                  <Text style={LoginStyles.error}>{errors.password.message}</Text>
+                </View>
+                {errors.email?.message && (
+                  <Text style={LoginStyles.errorText}>
+                    {errors.email.message}
+                  </Text>
                 )}
-              </>
-            );
-          }}
-        />
+              </View>
+            )}
+          />
 
+          {/* Password Input */}
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={LoginStyles.inputContainer}>
+                <Text style={LoginStyles.inputLabel}>Contraseña</Text>
+                <View
+                  style={[
+                    LoginStyles.inputWrapper,
+                    passwordFocused && LoginStyles.inputWrapperFocused,
+                    errors.password && LoginStyles.inputWrapperError,
+                  ]}
+                >
+                  <LockIcon size={20} color="#64748b" />
+                  <View style={{ width: 12 }} />
+                  <RNTextInput
+                    style={LoginStyles.input}
+                    placeholder="••••••••"
+                    placeholderTextColor="#64748b"
+                    secureTextEntry={!showPassword}
+                    onBlur={() => {
+                      onBlur();
+                      setPasswordFocused(false);
+                    }}
+                    onFocus={() => setPasswordFocused(true)}
+                    onChangeText={onChange}
+                    value={value}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Image
+                      source={
+                        showPassword
+                          ? require('../../assets/iconos/eye_on.png')
+                          : require('../../assets/iconos/eye_off.png')
+                      }
+                      style={LoginStyles.eyeIcon}
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password?.message && (
+                  <Text style={LoginStyles.errorText}>
+                    {errors.password.message}
+                  </Text>
+                )}
+              </View>
+            )}
+          />
 
-            {apiError && <Text style={LoginStyles.error}>{apiError}</Text>}
-            <View
-  style={{
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    alignSelf: 'flex-start',
-  }}
+          {/* Remember Me & Forgot Password */}
+          <View style={LoginStyles.optionsRow}>
+            <TouchableOpacity
+              style={LoginStyles.rememberMeContainer}
+              onPress={() => setRememberMe(!rememberMe)}
+              activeOpacity={0.7}
             >
-              <Switch
-                value={rememberMe}
-                onValueChange={setRememberMe}
-                thumbColor={Platform.OS === 'android' ? '#fff' : undefined}
-                trackColor={{ true: '#346335', false: '#ccc' }}
-              />
-              <Text style={{ marginLeft: 8, fontSize: 14, color: '#555' }}>
-                Recuérdame
-              </Text>
-            </View>
-            <Button
-              mode="contained"
-              onPress={handleSubmit(onSubmit)}
-              disabled={loading}
-              style={LoginStyles.button}
-              labelStyle={LoginStyles.buttonLabel}
-            >
-              {loading ? <ActivityIndicator color="#fff" /> : 'Entrar'}
-            </Button>
-
-            <TouchableOpacity>
-              <Text style={LoginStyles.link}>¿Olvidaste tu contraseña?</Text>
+              <View
+                style={[
+                  LoginStyles.checkbox,
+                  rememberMe && LoginStyles.checkboxChecked,
+                ]}
+              >
+                {rememberMe && <CheckIcon size={12} color="#ffffff" />}
+              </View>
+              <Text style={LoginStyles.rememberMeText}>Recuérdame</Text>
             </TouchableOpacity>
 
-            <View style={LoginStyles.registerContainer}>
-              <Text style={LoginStyles.registerText}>¿No tienes cuenta?</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Register')}
-              >
-                <Text style={LoginStyles.registerLink}>Regístrate</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={LoginStyles.forgotPasswordButton}>
+              <Text style={LoginStyles.forgotPasswordText}>
+                ¿Olvidaste tu contraseña?
+              </Text>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-        
+
+          {/* Login Button */}
+          <TouchableOpacity
+            style={[
+              LoginStyles.primaryButton,
+              loading && LoginStyles.primaryButtonDisabled,
+            ]}
+            onPress={handleSubmit(onSubmit)}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <View style={LoginStyles.loadingContainer}>
+                <ActivityIndicator color="#ffffff" size="small" />
+                <Text style={LoginStyles.loadingText}>Iniciando sesión...</Text>
+              </View>
+            ) : (
+              <Text style={LoginStyles.primaryButtonText}>Iniciar Sesión</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer */}
+        <View style={LoginStyles.footer}>
+          <Text style={LoginStyles.footerText}>¿No tienes cuenta?</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={LoginStyles.footerLink}>Regístrate gratis</Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
-  
-    </LinearGradient>
+    </View>
   );
 };
 
