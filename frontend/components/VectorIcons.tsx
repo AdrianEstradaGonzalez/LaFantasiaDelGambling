@@ -474,3 +474,336 @@ export const LockIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
     />
   </Svg>
 );
+
+// Icono de Táctica/Formación (para Alineación)
+export const TacticsIcon = ({ size = 24, color = '#ffffff', isActive = false }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    {/* Campo de fútbol */}
+    <Rect
+      x="2"
+      y="2"
+      width="20"
+      height="20"
+      rx="2"
+      stroke={isActive ? '#0892D0' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    {/* Línea central */}
+    <Path
+      d="M2 12h20"
+      stroke={isActive ? '#0892D0' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+    />
+    {/* Círculo central */}
+    <Circle
+      cx="12"
+      cy="12"
+      r="3"
+      stroke={isActive ? '#0892D0' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      fill="none"
+    />
+    {/* Jugadores (puntos estratégicos) */}
+    <Circle cx="6" cy="6" r="1.5" fill={isActive ? '#0892D0' : color} />
+    <Circle cx="18" cy="6" r="1.5" fill={isActive ? '#0892D0' : color} />
+    <Circle cx="12" cy="8" r="1.5" fill={isActive ? '#0892D0' : color} />
+    <Circle cx="12" cy="16" r="1.5" fill={isActive ? '#0892D0' : color} />
+    <Circle cx="6" cy="18" r="1.5" fill={isActive ? '#0892D0' : color} />
+    <Circle cx="18" cy="18" r="1.5" fill={isActive ? '#0892D0' : color} />
+  </Svg>
+);
+
+// Icono de Estadísticas/Gráfico (para Puntuación)
+export const ChartBarIcon = ({ size = 24, color = '#ffffff', isActive = false }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    {/* Barras de estadísticas con diferentes alturas */}
+    <Path
+      d="M18 20V10M12 20V4M6 20v-6"
+      stroke={isActive ? '#0892D0' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Base */}
+    <Path
+      d="M3 20h18"
+      stroke={isActive ? '#0892D0' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+    />
+    {/* Estrella de rendimiento en la barra central */}
+    <Path
+      d="M12 9l0.5 1.5h1.5l-1.2 0.9 0.5 1.5-1.3-1-1.3 1 0.5-1.5-1.2-0.9h1.5z"
+      fill={isActive ? '#0892D0' : color}
+      opacity="0.6"
+    />
+  </Svg>
+);
+
+// ===== ICONOS DE ESTADÍSTICAS DE JUGADORES =====
+
+// Icono de balón de fútbol (Goles)
+export const FootballIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M12 2l2.5 7.5h8l-6.5 4.7 2.5 7.8-6.5-4.7-6.5 4.7 2.5-7.8-6.5-4.7h8z"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+  </Svg>
+);
+
+// Icono de asistencia (Flecha hacia adelante con balón)
+export const AssistIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M5 12h14M12 5l7 7-7 7"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Circle cx="19" cy="12" r="2" fill={color} />
+  </Svg>
+);
+
+// Icono de tarjeta amarilla
+export const YellowCardIcon = ({ size = 16, color = '#f59e0b' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="8"
+      y="4"
+      width="8"
+      height="16"
+      rx="1"
+      fill={color}
+      stroke={color}
+      strokeWidth={1}
+    />
+  </Svg>
+);
+
+// Icono de tarjeta roja
+export const RedCardIcon = ({ size = 16, color = '#ef4444' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="8"
+      y="4"
+      width="8"
+      height="16"
+      rx="1"
+      fill={color}
+      stroke={color}
+      strokeWidth={1}
+    />
+  </Svg>
+);
+
+// Icono de paradas (Mano de portero)
+export const SaveIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M8 13v6M12 11v8M16 9v10M20 7v12"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Circle cx="8" cy="19" r="1" fill={color} />
+    <Circle cx="12" cy="19" r="1" fill={color} />
+    <Circle cx="16" cy="19" r="1" fill={color} />
+    <Circle cx="20" cy="19" r="1" fill={color} />
+  </Svg>
+);
+
+// Icono de portería a cero (Escudo con check)
+export const CleanSheetIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M9 12l2 2 4-4"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de disparos a puerta (Portería con flecha)
+export const ShotOnTargetIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="4"
+      y="8"
+      width="16"
+      height="10"
+      rx="1"
+      stroke={color}
+      strokeWidth={2}
+      fill="none"
+    />
+    <Path
+      d="M12 2v6M9 5l3 3 3-3"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de regates/dribbles (Jugador zigzag)
+export const DribbleIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M4 18l4-4 4 4 4-4 4 4"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M4 10l4-4 4 4 4-4 4 4"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de pases clave (Balón con estrella)
+export const KeyPassIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle
+      cx="12"
+      cy="12"
+      r="8"
+      stroke={color}
+      strokeWidth={2}
+      fill="none"
+    />
+    <Path
+      d="M12 8l1 3h3l-2.5 2 1 3-2.5-2-2.5 2 1-3-2.5-2h3z"
+      fill={color}
+    />
+  </Svg>
+);
+
+// Icono de duelos ganados (Dos jugadores enfrentados)
+export const DuelIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="9" cy="7" r="3" stroke={color} strokeWidth={2} fill="none" />
+    <Circle cx="15" cy="7" r="3" stroke={color} strokeWidth={2} fill="none" />
+    <Path
+      d="M6 20v-4a3 3 0 013-3h0M18 20v-4a3 3 0 00-3-3h0"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M9 13h6"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+// Icono de recuperaciones (Flecha hacia arriba)
+export const RecoveryIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 19V5M5 12l7-7 7 7"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Circle cx="12" cy="19" r="2" fill={color} />
+  </Svg>
+);
+
+// Icono de goles encajados (Portería con X)
+export const GoalsConcededIcon = ({ size = 16, color = '#ef4444' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="4"
+      y="8"
+      width="16"
+      height="10"
+      rx="1"
+      stroke={color}
+      strokeWidth={2}
+      fill="none"
+    />
+    <Path
+      d="M9 11l6 6M15 11l-6 6"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+// Icono de faltas recibidas (Silbato)
+export const FoulsDrawnIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="8" r="4" stroke={color} strokeWidth={2} fill="none" />
+    <Path
+      d="M12 12v8M8 16h8"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Circle cx="12" cy="20" r="1.5" fill={color} />
+  </Svg>
+);
+
+// Icono de minutos (Reloj pequeño)
+export const MinutesIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle
+      cx="12"
+      cy="12"
+      r="9"
+      stroke={color}
+      strokeWidth={2}
+      fill="none"
+    />
+    <Path
+      d="M12 6v6l4 2"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);

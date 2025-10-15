@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+﻿import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, Alert, FlatList, Modal } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { PlayerService, PlayerWithPrice } from '../../services/PlayerService';
@@ -13,11 +13,27 @@ import { LoginService } from '../../services/LoginService';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { Buffer } from 'buffer';
 import { useFocusEffect } from '@react-navigation/native';
+import { 
+  FootballIcon, 
+  AssistIcon, 
+  SaveIcon, 
+  CleanSheetIcon, 
+  ShotOnTargetIcon, 
+  DribbleIcon, 
+  KeyPassIcon, 
+  DuelIcon, 
+  RecoveryIcon, 
+  GoalsConcededIcon, 
+  FoulsDrawnIcon,
+  MinutesIcon,
+  YellowCardIcon,
+  RedCardIcon
+} from '../../components/VectorIcons';
 
 // Icono de flecha para volver
 const backIcon = require('../../assets/iconos/backIcon.png');
 
-// Función para decodificar JWT
+// FunciÃ³n para decodificar JWT
 function decodeJwt(token: string): any {
   try {
     const payload = token.split('.')[1];
@@ -27,22 +43,22 @@ function decodeJwt(token: string): any {
   }
 }
 
-// Función para normalizar texto (eliminar acentos y convertir a minúsculas)
+// FunciÃ³n para normalizar texto (eliminar acentos y convertir a minÃºsculas)
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, ''); // Eliminar marcas diacríticas (acentos)
+    .replace(/[\u0300-\u036f]/g, ''); // Eliminar marcas diacrÃ­ticas (acentos)
 }
 
-// Posiciones en español para los filtros
+// Posiciones en espaÃ±ol para los filtros
 const positionsEs = ['Todos','Portero','Defensa','Centrocampista','Delantero'] as const;
 type PositionFilterEs = typeof positionsEs[number];
 
-// Normalización de posiciones
+// NormalizaciÃ³n de posiciones
 type CanonicalPos = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker';
 
-// Mapeo de filtro ES -> canónico
+// Mapeo de filtro ES -> canÃ³nico
 const canonicalFromEs = (es: PositionFilterEs): CanonicalPos | undefined => {
   switch (es) {
     case 'Portero': return 'Goalkeeper';
@@ -53,7 +69,7 @@ const canonicalFromEs = (es: PositionFilterEs): CanonicalPos | undefined => {
   }
 };
 
-// Colores por posición
+// Colores por posiciÃ³n
 const posColors: Record<CanonicalPos, string> = {
   Goalkeeper: '#f59e0b',
   Defender: '#3b82f6',
@@ -79,7 +95,7 @@ const normalizePosition = (pos?: string): CanonicalPos | undefined => {
   if (p === 'defender' || p.includes('defen') || p.includes('back')) return 'Defender';
   
   // Centrocampistas (incluye mediocentros defensivos)
-  // Se evalúa ANTES que delanteros para capturar "Defensive Midfield", "Central Midfield", etc.
+  // Se evalÃºa ANTES que delanteros para capturar "Defensive Midfield", "Central Midfield", etc.
   if (p === 'midfielder' || p.includes('midfield') || p.includes('midf') || p === 'mid') return 'Midfielder';
   
   // Delanteros (incluye extremos/wingers)
@@ -136,7 +152,7 @@ const Dropdown = ({
         <Text style={{ color: '#fff', flex: 1, fontSize: 14 }} numberOfLines={1} ellipsizeMode="tail">
           {selectedLabel}
         </Text>
-        <Text style={{ color: '#94a3b8', fontSize: 16 }}>▼</Text>
+        <Text style={{ color: '#94a3b8', fontSize: 16 }}>â–¼</Text>
       </TouchableOpacity>
 
       <Modal
@@ -221,22 +237,17 @@ export const PlayersMarket = ({ navigation, route }: {
   const [budget, setBudget] = useState<number>(0);
   const [squadPlayerIds, setSquadPlayerIds] = useState<Set<number>>(new Set());
   
-  // Estados para el modal de estadísticas
-  const [selectedPlayerForStats, setSelectedPlayerForStats] = useState<PlayerWithPrice | null>(null);
-  const [playerStats, setPlayerStats] = useState<any>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [showStatsModal, setShowStatsModal] = useState(false);
-  const [selectedMatchday, setSelectedMatchday] = useState<number | null>(null); // null = temporada completa
-  const [availableMatchdays, setAvailableMatchdays] = useState<number[]>([]);
+  // Cache de estadÃ­sticas para las tarjetas de jugadores (season stats)
+  const [playerStatsCache, setPlayerStatsCache] = useState<{ [playerId: number]: any }>({});
 
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
   
-  // Modo selección (cuando viene desde MiPlantilla)
+  // Modo selecciÃ³n (cuando viene desde MiPlantilla)
   const selectMode = route.params?.selectMode || false;
   const filterByRole = route.params?.filterByRole;
-  const targetPosition = route.params?.targetPosition; // Posición específica donde fichar
-  const currentFormation = route.params?.currentFormation; // Formación actual (aunque no esté guardada)
+  const targetPosition = route.params?.targetPosition; // PosiciÃ³n especÃ­fica donde fichar
+  const currentFormation = route.params?.currentFormation; // FormaciÃ³n actual (aunque no estÃ© guardada)
   const returnTo = route.params?.returnTo; // Pantalla a la que volver
 
   // Verificar si el usuario es admin
@@ -327,10 +338,10 @@ export const PlayersMarket = ({ navigation, route }: {
     }, [ligaId])
   );
 
-  // Aplicar filtro inicial si viene desde modo selección
+  // Aplicar filtro inicial si viene desde modo selecciÃ³n
   useEffect(() => {
     if (selectMode && filterByRole) {
-      // Mapear rol a posición en español
+      // Mapear rol a posiciÃ³n en espaÃ±ol
       const roleToPosition: Record<string, PositionFilterEs> = {
         'POR': 'Portero',
         'DEF': 'Defensa',
@@ -348,7 +359,7 @@ export const PlayersMarket = ({ navigation, route }: {
   const filtered = useMemo(() => {
     let list = players;
     
-    // Filtro por rol si estamos en modo selección
+    // Filtro por rol si estamos en modo selecciÃ³n
     if (selectMode && filterByRole) {
       const roleMapping: Record<string, CanonicalPos> = {
         'POR': 'Goalkeeper',
@@ -365,7 +376,7 @@ export const PlayersMarket = ({ navigation, route }: {
       }
     }
     
-    // Filtro por posición del dropdown (solo si no está en modo selección con rol fijo)
+    // Filtro por posiciÃ³n del dropdown (solo si no estÃ¡ en modo selecciÃ³n con rol fijo)
     if (!selectMode || !filterByRole) {
       const canonical = canonicalFromEs(posFilter);
       if (canonical) {
@@ -376,7 +387,7 @@ export const PlayersMarket = ({ navigation, route }: {
       }
     }
     
-    // Filtro por búsqueda de nombre (insensible a mayúsculas y acentos)
+    // Filtro por bÃºsqueda de nombre (insensible a mayÃºsculas y acentos)
     if (query.trim()) {
       const normalizedQuery = normalizeText(query.trim());
       list = list.filter(p => normalizeText(p.name).includes(normalizedQuery));
@@ -389,6 +400,44 @@ export const PlayersMarket = ({ navigation, route }: {
     
     return list;
   }, [players, posFilter, teamFilter, query, selectMode, filterByRole]);
+
+  // Cargar estadÃ­sticas para jugadores visibles
+  const loadPlayerStats = useCallback(async (playerId: number) => {
+    // Si ya estÃ¡n en cache, no recargar
+    if (playerStatsCache[playerId]) return;
+    
+    try {
+      const stats = await FootballService.getPlayerStatistics(playerId, null);
+      setPlayerStatsCache(prev => ({ ...prev, [playerId]: stats }));
+    } catch (error) {
+      console.error(`Error cargando stats para jugador ${playerId}:`, error);
+    }
+  }, [playerStatsCache]);
+
+  // Componente para mostrar un stat compacto con icono
+  const CompactStat = ({ icon, value, color = '#cbd5e1' }: { icon: React.ReactNode; value: number | string; color?: string }) => {
+    if (!value || value === 0) return null;
+    
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+        {icon}
+        <Text style={{ color, fontSize: 12, fontWeight: '700' }}>{value}</Text>
+      </View>
+    );
+  };
+
+  // Cargar estadÃ­sticas para los jugadores visibles (solo si no es admin)
+  useEffect(() => {
+    if (isAdmin || loading) return;
+    
+    // Cargar stats para los primeros 20 jugadores visibles
+    const playersToLoad = filtered.slice(0, 20);
+    playersToLoad.forEach(player => {
+      if (!playerStatsCache[player.id]) {
+        loadPlayerStats(player.id);
+      }
+    });
+  }, [filtered, isAdmin, loading, playerStatsCache, loadPlayerStats]);
 
   // Guardar precios editados
   const handleSavePrices = async () => {
@@ -429,7 +478,7 @@ export const PlayersMarket = ({ navigation, route }: {
       
       const changesCount = (hasPriceChanges ? Object.keys(editedPrices).length : 0) + 
                           (hasPositionChanges ? Object.keys(editedPositions).length : 0);
-      Alert.alert('Éxito', `${changesCount} cambio(s) guardado(s) correctamente`);
+      Alert.alert('Ã‰xito', `${changesCount} cambio(s) guardado(s) correctamente`);
     } catch (error) {
       console.error('Error guardando cambios:', error);
       Alert.alert('Error', 'No se pudieron guardar los cambios');
@@ -456,11 +505,11 @@ export const PlayersMarket = ({ navigation, route }: {
 
       const position = normalizePosition(player.position);
       if (!position) {
-        Alert.alert('Error', 'Posición del jugador no válida');
+        Alert.alert('Error', 'PosiciÃ³n del jugador no vÃ¡lida');
         return;
       }
 
-      // Mapear posición a rol
+      // Mapear posiciÃ³n a rol
       const roleMap: Record<CanonicalPos, string> = {
         'Goalkeeper': 'POR',
         'Defender': 'DEF',
@@ -469,10 +518,10 @@ export const PlayersMarket = ({ navigation, route }: {
       };
       const role = roleMap[position];
 
-      // Obtener plantilla actual para saber qué posiciones están ocupadas
+      // Obtener plantilla actual para saber quÃ© posiciones estÃ¡n ocupadas
       const squad = await SquadService.getUserSquad(ligaId);
       
-      // Definir todas las posiciones posibles por rol según formación
+      // Definir todas las posiciones posibles por rol segÃºn formaciÃ³n
       const allPositionsByRole: Record<string, string[]> = {
         'POR': ['por'],
         'DEF': ['def1', 'def2', 'def3', 'def4', 'def5'], // hasta 5 defensas en 5-3-2
@@ -489,11 +538,11 @@ export const PlayersMarket = ({ navigation, route }: {
           .map(p => p.position) || []
       );
 
-      // Encontrar primera posición libre
+      // Encontrar primera posiciÃ³n libre
       let squadPosition = availablePositions.find(pos => !occupiedPositions.has(pos));
 
       if (!squadPosition) {
-        Alert.alert('Sin espacio', `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.\n\nVende un jugador primero o cambia tu formación.`);
+        Alert.alert('Sin espacio', `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.\n\nVende un jugador primero o cambia tu formaciÃ³n.`);
         return;
       }
 
@@ -503,22 +552,22 @@ export const PlayersMarket = ({ navigation, route }: {
         playerName: player.name,
         role,
         pricePaid: player.price,
-        currentFormation // Enviar la formación actual si está disponible
+        currentFormation // Enviar la formaciÃ³n actual si estÃ¡ disponible
       });
 
-      // Verificar si la validación pasó
+      // Verificar si la validaciÃ³n pasÃ³
       if (!result.success) {
-        Alert.alert('Límite de formación', result.message || 'No se puede añadir más jugadores de esta posición');
+        Alert.alert('LÃ­mite de formaciÃ³n', result.message || 'No se puede aÃ±adir mÃ¡s jugadores de esta posiciÃ³n');
         return;
       }
 
-      console.log('Jugador añadido, nuevo presupuesto:', result.budget);
+      console.log('Jugador aÃ±adido, nuevo presupuesto:', result.budget);
       setBudget(result.budget!);
       
       // Actualizar lista de jugadores fichados
       setSquadPlayerIds(prev => new Set(prev).add(player.id));
       
-      // Si estamos en modo selección desde plantilla, volver con el jugador seleccionado
+      // Si estamos en modo selecciÃ³n desde plantilla, volver con el jugador seleccionado
       if (selectMode && returnTo) {
         navigation.navigate(returnTo, {
           ligaId,
@@ -528,7 +577,7 @@ export const PlayersMarket = ({ navigation, route }: {
         });
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo añadir el jugador';
+      const message = error instanceof Error ? error.message : 'No se pudo aÃ±adir el jugador';
       Alert.alert('Error', message);
     } finally {
       setIsSaving(false);
@@ -542,7 +591,7 @@ export const PlayersMarket = ({ navigation, route }: {
     try {
       setIsSaving(true);
       
-      // Encontrar en qué posición está el jugador
+      // Encontrar en quÃ© posiciÃ³n estÃ¡ el jugador
       const squad = await SquadService.getUserSquad(ligaId);
       if (!squad) {
         Alert.alert('Error', 'No tienes plantilla');
@@ -551,7 +600,7 @@ export const PlayersMarket = ({ navigation, route }: {
 
       const playerInSquad = squad.players.find(p => p.playerId === player.id);
       if (!playerInSquad) {
-        Alert.alert('Error', 'El jugador no está en tu plantilla');
+        Alert.alert('Error', 'El jugador no estÃ¡ en tu plantilla');
         return;
       }
 
@@ -575,14 +624,14 @@ export const PlayersMarket = ({ navigation, route }: {
     }
   };
 
-  // Manejar selección de jugador desde plantilla (modo selección)
+  // Manejar selecciÃ³n de jugador desde plantilla (modo selecciÃ³n)
   const handleSelectFromPlantilla = async (player: PlayerWithPrice) => {
     if (!ligaId || !targetPosition) return;
 
     try {
       setIsSaving(true);
       
-      // Obtener plantilla actual para ver si hay jugador en esta posición
+      // Obtener plantilla actual para ver si hay jugador en esta posiciÃ³n
       const squad = await SquadService.getUserSquad(ligaId);
       const existingPlayerInPosition = squad?.players.find(p => p.position === targetPosition);
       
@@ -609,11 +658,11 @@ export const PlayersMarket = ({ navigation, route }: {
 
       const position = normalizePosition(player.position);
       if (!position) {
-        Alert.alert('Error', 'Posición del jugador no válida');
+        Alert.alert('Error', 'PosiciÃ³n del jugador no vÃ¡lida');
         return;
       }
 
-      // Mapear posición a rol
+      // Mapear posiciÃ³n a rol
       const roleMap: Record<CanonicalPos, string> = {
         'Goalkeeper': 'POR',
         'Defender': 'DEF',
@@ -622,19 +671,19 @@ export const PlayersMarket = ({ navigation, route }: {
       };
       const role = roleMap[position];
 
-      // Comprar jugador en la posición específica (puede reemplazar jugador existente)
+      // Comprar jugador en la posiciÃ³n especÃ­fica (puede reemplazar jugador existente)
       const result = await SquadService.addPlayerToSquad(ligaId, {
         position: targetPosition,
         playerId: player.id,
         playerName: player.name,
         role,
         pricePaid: player.price,
-        currentFormation // Enviar la formación actual si está disponible
+        currentFormation // Enviar la formaciÃ³n actual si estÃ¡ disponible
       });
 
-      // Verificar si la validación pasó
+      // Verificar si la validaciÃ³n pasÃ³
       if (!result.success) {
-        Alert.alert('Límite de formación', result.message || 'No se puede añadir más jugadores de esta posición');
+        Alert.alert('LÃ­mite de formaciÃ³n', result.message || 'No se puede aÃ±adir mÃ¡s jugadores de esta posiciÃ³n');
         return;
       }
 
@@ -657,70 +706,20 @@ export const PlayersMarket = ({ navigation, route }: {
       }
       
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo añadir el jugador';
+      const message = error instanceof Error ? error.message : 'No se pudo aÃ±adir el jugador';
       Alert.alert('Error', message);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Manejar apertura del modal de estadísticas
+  // Manejar apertura del modal de estadÃ­sticas -> Ahora navega a pantalla de detalles
   const handleOpenPlayerStats = async (player: PlayerWithPrice) => {
-    setSelectedPlayerForStats(player);
-    setShowStatsModal(true);
-    setLoadingStats(true);
-    setPlayerStats(null);
-    setSelectedMatchday(null); // Reset a temporada completa
-    
-    try {
-      // Cargar jornadas disponibles y estadísticas globales
-      const [matchdays, stats] = await Promise.all([
-        FootballService.getAvailableMatchdays(),
-        FootballService.getPlayerStatistics(player.id, null)
-      ]);
-      
-      setAvailableMatchdays(matchdays);
-      setPlayerStats(stats);
-    } catch (error) {
-      console.error('Error cargando estadísticas:', error);
-      Alert.alert('Error', 'No se pudieron cargar las estadísticas del jugador');
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  // Manejar cambio de jornada en el selector
-  const handleMatchdayChange = async (matchday: number | null) => {
-    if (!selectedPlayerForStats) return;
-    
-    setSelectedMatchday(matchday);
-    setLoadingStats(true);
-    
-    try {
-      const stats = await FootballService.getPlayerStatistics(selectedPlayerForStats.id, matchday);
-      setPlayerStats(stats);
-    } catch (error) {
-      console.error('Error cargando estadísticas:', error);
-      Alert.alert('Error', 'No se pudieron cargar las estadísticas');
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  // Manejar fichaje desde modal de estadísticas
-  const handleSignFromModal = async () => {
-    if (!selectedPlayerForStats) return;
-    
-    setShowStatsModal(false);
-    
-    // Esperar un momento para que se cierre el modal antes de ejecutar
-    setTimeout(() => {
-      if (selectMode && targetPosition) {
-        handleSelectFromPlantilla(selectedPlayerForStats);
-      } else {
-        handleBuyPlayer(selectedPlayerForStats);
-      }
-    }, 300);
+    navigation.navigate('PlayerDetail', {
+      player,
+      ligaId,
+      ligaName
+    });
   };
 
   // Renderizar item de jugador
@@ -728,10 +727,10 @@ export const PlayersMarket = ({ navigation, route }: {
     const cat = normalizePosition(p.position);
     const displayCat: CanonicalPos = cat ?? 'Midfielder';
     
-    // Verificar si el jugador ya está fichado
+    // Verificar si el jugador ya estÃ¡ fichado
     const isAlreadyInSquad = squadPlayerIds.has(p.id);
     
-    // Posición actual (editada o original)
+    // PosiciÃ³n actual (editada o original)
     const currentPosition = editedPositions[p.id] ?? displayCat;
     const isPositionEdited = editedPositions[p.id] !== undefined;
     
@@ -742,8 +741,11 @@ export const PlayersMarket = ({ navigation, route }: {
     // Precio actual (editado o original)
     const currentPrice = editedPrices[p.id] ?? p.price;
     const isPriceEdited = editedPrices[p.id] !== undefined;
+    
+    // Obtener stats del cache (si existen)
+    const stats = playerStatsCache[p.id];
 
-    // En modo selección, envolver en TouchableOpacity
+    // En modo selecciÃ³n, envolver en TouchableOpacity
     const content = (
       <View style={{ flexDirection: 'column', gap: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -773,7 +775,7 @@ export const PlayersMarket = ({ navigation, route }: {
             </View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {/* Precio (editable si es admin y no está en modo selección) */}
+            {/* Precio (editable si es admin y no estÃ¡ en modo selecciÃ³n) */}
             {isAdmin && !selectMode ? (
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Precio</Text>
@@ -785,7 +787,7 @@ export const PlayersMarket = ({ navigation, route }: {
                     }}
                     onBlur={() => {
                       setFocusedPriceId(null);
-                      // Si el campo está vacío al perder el foco, restaurar el precio original
+                      // Si el campo estÃ¡ vacÃ­o al perder el foco, restaurar el precio original
                       if (!editedPrices[p.id]) {
                         setEditedPrices(prev => {
                           const newPrices = { ...prev };
@@ -796,7 +798,7 @@ export const PlayersMarket = ({ navigation, route }: {
                     }}
                     onChangeText={(text) => {
                       if (text === '') {
-                        // Permitir campo vacío mientras se escribe
+                        // Permitir campo vacÃ­o mientras se escribe
                         setEditedPrices(prev => {
                           const newPrices = { ...prev };
                           delete newPrices[p.id];
@@ -835,10 +837,10 @@ export const PlayersMarket = ({ navigation, route }: {
               </View>
             )}
             
-            {/* Botones de acción según estado */}
+            {/* Botones de acciÃ³n segÃºn estado */}
             {!isAdmin && !selectMode && (
               isAlreadyInSquad ? (
-                // Botón de vender para jugadores fichados
+                // BotÃ³n de vender para jugadores fichados
                 <TouchableOpacity
                   onPress={() => handleSellPlayer(p)}
                   disabled={isSaving}
@@ -891,11 +893,11 @@ export const PlayersMarket = ({ navigation, route }: {
           </View>
         </View>
 
-        {/* Dropdown de posición editable (solo admin y no en modo selección) */}
+        {/* Dropdown de posiciÃ³n editable (solo admin y no en modo selecciÃ³n) */}
         {isAdmin && !selectMode && (
           <View style={{ marginTop: 4 }}>
             <Dropdown
-              label="Posición"
+              label="PosiciÃ³n"
               value={currentPosition}
               onValueChange={(value: CanonicalPos) => {
                 setEditedPositions(prev => ({ ...prev, [p.id]: value }));
@@ -907,6 +909,182 @@ export const PlayersMarket = ({ navigation, route }: {
                 { label: 'Delantero (DEL)', value: 'Attacker' },
               ]}
             />
+          </View>
+        )}
+        
+        {/* EstadÃ­sticas compactas (solo si NO es admin y tenemos stats) */}
+        {!isAdmin && stats && (
+          <View style={{ 
+            marginTop: 12, 
+            paddingTop: 12, 
+            borderTopWidth: 1, 
+            borderTopColor: '#334155' 
+          }}>
+            {/* Stats Generales (todos los jugadores) */}
+            <View style={{ 
+              flexDirection: 'row', 
+              flexWrap: 'wrap', 
+              gap: 8,
+              marginBottom: 8
+            }}>
+              <CompactStat 
+                icon={<MinutesIcon size={14} color="#94a3b8" />} 
+                value={stats.games?.minutes || 0} 
+                color="#94a3b8" 
+              />
+              <CompactStat 
+                icon={<AssistIcon size={14} color="#0892D0" />} 
+                value={stats.goals?.assists || 0} 
+                color="#0892D0" 
+              />
+              {(stats.cards?.yellow || 0) > 0 && (
+                <CompactStat 
+                  icon={<YellowCardIcon size={14} color="#f59e0b" />} 
+                  value={stats.cards?.yellow} 
+                  color="#f59e0b" 
+                />
+              )}
+              {(stats.cards?.red || 0) > 0 && (
+                <CompactStat 
+                  icon={<RedCardIcon size={14} color="#ef4444" />} 
+                  value={stats.cards?.red} 
+                  color="#ef4444" 
+                />
+              )}
+            </View>
+
+            {/* Stats por posiciÃ³n */}
+            {currentPosition === 'Goalkeeper' && stats.goalkeeper && (
+              <View style={{ 
+                flexDirection: 'row', 
+                flexWrap: 'wrap', 
+                gap: 8 
+              }}>
+                <CompactStat 
+                  icon={<CleanSheetIcon size={14} color="#10b981" />} 
+                  value={stats.goalkeeper.cleanSheets || 0} 
+                  color="#10b981" 
+                />
+                <CompactStat 
+                  icon={<SaveIcon size={14} color="#3b82f6" />} 
+                  value={stats.goalkeeper.saves || 0} 
+                  color="#3b82f6" 
+                />
+                <CompactStat 
+                  icon={<GoalsConcededIcon size={14} color="#ef4444" />} 
+                  value={stats.goalkeeper.conceded || 0} 
+                  color="#ef4444" 
+                />
+                {(stats.goals?.total || 0) > 0 && (
+                  <CompactStat 
+                    icon={<FootballIcon size={14} color="#10b981" />} 
+                    value={stats.goals.total} 
+                    color="#10b981" 
+                  />
+                )}
+              </View>
+            )}
+
+            {currentPosition === 'Defender' && (
+              <View style={{ 
+                flexDirection: 'row', 
+                flexWrap: 'wrap', 
+                gap: 8 
+              }}>
+                <CompactStat 
+                  icon={<FootballIcon size={14} color="#10b981" />} 
+                  value={stats.goals?.total || 0} 
+                  color="#10b981" 
+                />
+                <CompactStat 
+                  icon={<DuelIcon size={14} color="#3b82f6" />} 
+                  value={stats.duels?.won || 0} 
+                  color="#3b82f6" 
+                />
+                <CompactStat 
+                  icon={<RecoveryIcon size={14} color="#f59e0b" />} 
+                  value={stats.tackles?.interceptions || 0} 
+                  color="#f59e0b" 
+                />
+                {(stats.shots?.on || 0) > 0 && (
+                  <CompactStat 
+                    icon={<ShotOnTargetIcon size={14} color="#94a3b8" />} 
+                    value={stats.shots.on} 
+                    color="#94a3b8" 
+                  />
+                )}
+              </View>
+            )}
+
+            {currentPosition === 'Midfielder' && (
+              <View style={{ 
+                flexDirection: 'row', 
+                flexWrap: 'wrap', 
+                gap: 8 
+              }}>
+                <CompactStat 
+                  icon={<FootballIcon size={14} color="#10b981" />} 
+                  value={stats.goals?.total || 0} 
+                  color="#10b981" 
+                />
+                <CompactStat 
+                  icon={<KeyPassIcon size={14} color="#0892D0" />} 
+                  value={stats.passes?.key || 0} 
+                  color="#0892D0" 
+                />
+                <CompactStat 
+                  icon={<DribbleIcon size={14} color="#f59e0b" />} 
+                  value={stats.dribbles?.success || 0} 
+                  color="#f59e0b" 
+                />
+                <CompactStat 
+                  icon={<FoulsDrawnIcon size={14} color="#94a3b8" />} 
+                  value={stats.fouls?.drawn || 0} 
+                  color="#94a3b8" 
+                />
+                {(stats.shots?.total || 0) > 0 && (
+                  <CompactStat 
+                    icon={<ShotOnTargetIcon size={14} color="#3b82f6" />} 
+                    value={stats.shots.on || 0} 
+                    color="#3b82f6" 
+                  />
+                )}
+              </View>
+            )}
+
+            {currentPosition === 'Attacker' && (
+              <View style={{ 
+                flexDirection: 'row', 
+                flexWrap: 'wrap', 
+                gap: 8 
+              }}>
+                <CompactStat 
+                  icon={<FootballIcon size={14} color="#10b981" />} 
+                  value={stats.goals?.total || 0} 
+                  color="#10b981" 
+                />
+                <CompactStat 
+                  icon={<KeyPassIcon size={14} color="#0892D0" />} 
+                  value={stats.passes?.key || 0} 
+                  color="#0892D0" 
+                />
+                <CompactStat 
+                  icon={<FoulsDrawnIcon size={14} color="#f59e0b" />} 
+                  value={stats.fouls?.drawn || 0} 
+                  color="#f59e0b" 
+                />
+                <CompactStat 
+                  icon={<DribbleIcon size={14} color="#3b82f6" />} 
+                  value={stats.dribbles?.success || 0} 
+                  color="#3b82f6" 
+                />
+                <CompactStat 
+                  icon={<ShotOnTargetIcon size={14} color="#94a3b8" />} 
+                  value={stats.shots?.on || 0} 
+                  color="#94a3b8" 
+                />
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -932,10 +1110,10 @@ export const PlayersMarket = ({ navigation, route }: {
       );
     }
 
-    // Modo normal (no selección): Si NO es admin, permitir comprar
+    // Modo normal (no selecciÃ³n): Si NO es admin, permitir comprar
     if (!isAdmin && ligaId) {
       if (isAlreadyInSquad) {
-        // Jugador ya fichado: mostrar como card clickeable para ver estadísticas
+        // Jugador ya fichado: mostrar como card clickeable para ver estadÃ­sticas
         return (
           <TouchableOpacity
             onPress={() => handleOpenPlayerStats(p)}
@@ -952,7 +1130,7 @@ export const PlayersMarket = ({ navigation, route }: {
           </TouchableOpacity>
         );
       } else {
-        // Jugador no fichado: clickeable para ver estadísticas
+        // Jugador no fichado: clickeable para ver estadÃ­sticas
         return (
           <TouchableOpacity
             onPress={() => handleOpenPlayerStats(p)}
@@ -994,7 +1172,7 @@ export const PlayersMarket = ({ navigation, route }: {
       {loading && <LoadingScreen />}
       {!loading && (
         <>
-          {/* Top NavBar con botón de volver */}
+          {/* Top NavBar con botÃ³n de volver */}
           <View
             style={{
               position: 'absolute',
@@ -1012,7 +1190,7 @@ export const PlayersMarket = ({ navigation, route }: {
               paddingHorizontal: 16,
             }}
           >
-            {/* Botón volver */}
+            {/* BotÃ³n volver */}
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={{ padding: 4 }}
@@ -1021,7 +1199,7 @@ export const PlayersMarket = ({ navigation, route }: {
               <Image source={backIcon} style={{ width: 28, height: 28, tintColor: '#fff' }} resizeMode="contain" />
             </TouchableOpacity>
 
-            {/* Título centrado */}
+            {/* TÃ­tulo centrado */}
             <Text
               style={{
                 color: '#fff',
@@ -1038,7 +1216,7 @@ export const PlayersMarket = ({ navigation, route }: {
               </Text>
             </Text>
 
-            {/* Botón guardar (solo admin con cambios) */}
+            {/* BotÃ³n guardar (solo admin con cambios) */}
             {isAdmin && hasChanges ? (
               <TouchableOpacity
                 onPress={handleSavePrices}
@@ -1114,7 +1292,7 @@ export const PlayersMarket = ({ navigation, route }: {
                 </View>
                 {selectMode && filterByRole && (
                   <Text style={{ color: '#94a3b8', fontSize: 14, marginBottom: 12 }}>
-                    Posición: {filterByRole === 'POR' ? 'Portero' : filterByRole === 'DEF' ? 'Defensa' : filterByRole === 'CEN' ? 'Centrocampista' : 'Delantero'}
+                    PosiciÃ³n: {filterByRole === 'POR' ? 'Portero' : filterByRole === 'DEF' ? 'Defensa' : filterByRole === 'CEN' ? 'Centrocampista' : 'Delantero'}
                   </Text>
                 )}
                 {!selectMode && <View style={{ marginBottom: 0 }} />}
@@ -1125,7 +1303,7 @@ export const PlayersMarket = ({ navigation, route }: {
                     {!selectMode && (
                       <View style={{ flex: 1 }}>
                         <Dropdown
-                          label="Posición"
+                          label="PosiciÃ³n"
                           value={posFilter}
                           onValueChange={setPosFilter}
                           items={positionsEs.map(p => ({ label: p, value: p }))}
@@ -1176,580 +1354,13 @@ export const PlayersMarket = ({ navigation, route }: {
             showsVerticalScrollIndicator={true}
           />
 
-          {/* Barra de navegación - solo en modo normal */}
+          {/* Barra de navegaciÃ³n - solo en modo normal */}
           {!selectMode && <LigaNavBar ligaId={ligaId} ligaName={ligaName} />}
-
-          {/* Modal de estadísticas del jugador */}
-          <Modal
-            visible={showStatsModal}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setShowStatsModal(false)}
-          >
-            <TouchableOpacity
-              style={{
-                flex: 1,
-                backgroundColor: 'rgba(0,0,0,0.85)',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: 16
-              }}
-              activeOpacity={1}
-              onPress={() => setShowStatsModal(false)}
-            >
-              <TouchableOpacity
-                activeOpacity={1}
-                onPress={(e) => e.stopPropagation()}
-                style={{
-                  backgroundColor: '#1a2332',
-                  borderRadius: 16,
-                  width: '100%',
-                  maxWidth: 500,
-                  maxHeight: '90%',
-                  borderWidth: 1,
-                  borderColor: '#334155',
-                }}
-              >
-                {selectedPlayerForStats && (
-                  <>
-                    {/* Header del modal */}
-                    <View style={{
-                      paddingVertical: 20,
-                      paddingHorizontal: 20,
-                      borderBottomWidth: 1,
-                      borderBottomColor: '#334155',
-                      backgroundColor: '#0f172a'
-                    }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                        <Image
-                          source={{ uri: selectedPlayerForStats.photo ?? getAvatarUri(selectedPlayerForStats) }}
-                          style={{ 
-                            width: 70, 
-                            height: 70, 
-                            borderRadius: 35, 
-                            borderWidth: 2, 
-                            borderColor: posColors[normalizePosition(selectedPlayerForStats.position) ?? 'Midfielder'],
-                            marginRight: 16,
-                            backgroundColor: '#0b1220'
-                          }}
-                          resizeMode="cover"
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 20, marginBottom: 4 }}>
-                            {selectedPlayerForStats.name}
-                          </Text>
-                          <Text style={{ color: '#94a3b8', fontSize: 14, marginBottom: 6 }}>
-                            {selectedPlayerForStats.teamName}
-                          </Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <View style={{
-                              backgroundColor: posColors[normalizePosition(selectedPlayerForStats.position) ?? 'Midfielder'],
-                              paddingHorizontal: 10,
-                              paddingVertical: 4,
-                              borderRadius: 6
-                            }}>
-                              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>
-                                {posAbbr[normalizePosition(selectedPlayerForStats.position) ?? 'Midfielder']}
-                              </Text>
-                            </View>
-                            <View style={{
-                              backgroundColor: '#10b981',
-                              paddingHorizontal: 10,
-                              paddingVertical: 4,
-                              borderRadius: 6
-                            }}>
-                              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>
-                                {selectedPlayerForStats.price}M
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                        <TouchableOpacity
-                          onPress={() => setShowStatsModal(false)}
-                          style={{ 
-                            width: 32, 
-                            height: 32, 
-                            borderRadius: 16, 
-                            backgroundColor: '#334155',
-                            justifyContent: 'center',
-                            alignItems: 'center'
-                          }}
-                        >
-                          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>×</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-
-                    {/* Selector de jornada */}
-                    <View style={{
-                      paddingVertical: 12,
-                      paddingHorizontal: 20,
-                      borderBottomWidth: 1,
-                      borderBottomColor: '#334155',
-                      backgroundColor: '#0f172a'
-                    }}>
-                      <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8, fontWeight: '600' }}>
-                        FILTRAR ESTADÍSTICAS
-                      </Text>
-                      <ScrollView 
-                        horizontal 
-                        showsHorizontalScrollIndicator={false}
-                        style={{ marginHorizontal: -4 }}
-                      >
-                        <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 4 }}>
-                          {/* Opción de temporada completa */}
-                          <TouchableOpacity
-                            onPress={() => handleMatchdayChange(null)}
-                            disabled={loadingStats}
-                            style={{
-                              paddingHorizontal: 16,
-                              paddingVertical: 8,
-                              borderRadius: 8,
-                              backgroundColor: selectedMatchday === null ? '#0892D0' : '#1a2332',
-                              borderWidth: 1,
-                              borderColor: selectedMatchday === null ? '#0892D0' : '#334155',
-                              opacity: loadingStats ? 0.5 : 1
-                            }}
-                          >
-                            <Text style={{
-                              color: selectedMatchday === null ? '#fff' : '#cbd5e1',
-                              fontSize: 13,
-                              fontWeight: selectedMatchday === null ? '800' : '600'
-                            }}>
-                              Temporada Completa
-                            </Text>
-                          </TouchableOpacity>
-
-                          {/* Opciones de jornadas */}
-                          {availableMatchdays.map(matchday => (
-                            <TouchableOpacity
-                              key={matchday}
-                              onPress={() => handleMatchdayChange(matchday)}
-                              disabled={loadingStats}
-                              style={{
-                                paddingHorizontal: 14,
-                                paddingVertical: 8,
-                                borderRadius: 8,
-                                backgroundColor: selectedMatchday === matchday ? '#0892D0' : '#1a2332',
-                                borderWidth: 1,
-                                borderColor: selectedMatchday === matchday ? '#0892D0' : '#334155',
-                                opacity: loadingStats ? 0.5 : 1,
-                                minWidth: 80,
-                                alignItems: 'center'
-                              }}
-                            >
-                              <Text style={{
-                                color: selectedMatchday === matchday ? '#fff' : '#cbd5e1',
-                                fontSize: 13,
-                                fontWeight: selectedMatchday === matchday ? '800' : '600'
-                              }}>
-                                Jornada {matchday}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </ScrollView>
-                    </View>
-
-                    {/* Contenido scrolleable */}
-                    <ScrollView style={{ maxHeight: 500 }}>
-                      {loadingStats ? (
-                        <View style={{ padding: 40, alignItems: 'center' }}>
-                          <ActivityIndicator size="large" color="#0892D0" />
-                          <Text style={{ color: '#94a3b8', marginTop: 16 }}>Cargando estadísticas...</Text>
-                        </View>
-                      ) : playerStats ? (
-                        <View style={{ padding: 20 }}>
-                          {/* Rating general */}
-                          {playerStats.rating && (
-                            <View style={{
-                              backgroundColor: '#0f172a',
-                              borderRadius: 12,
-                              padding: 16,
-                              marginBottom: 16,
-                              alignItems: 'center'
-                            }}>
-                              <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>VALORACIÓN MEDIA</Text>
-                              <Text style={{ color: '#10b981', fontSize: 36, fontWeight: '900' }}>
-                                {parseFloat(playerStats.rating).toFixed(1)}
-                              </Text>
-                            </View>
-                          )}
-
-                          {/* Minutos jugados (común para todos) */}
-                          <View style={{ marginBottom: 20 }}>
-                            <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                              TIEMPO DE JUEGO
-                            </Text>
-                            <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                              <StatRow label="Minutos jugados" value={playerStats.games.minutes} highlight />
-                            </View>
-                          </View>
-
-                          {/* PORTEROS: Estadísticas de portero primero */}
-                          {playerStats.goalkeeper && (
-                            <>
-                              <View style={{ marginBottom: 20 }}>
-                                <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                  ESTADÍSTICAS DE PORTERO
-                                </Text>
-                                <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                  <StatRow label="Paradas" value={playerStats.goalkeeper.saves} highlight />
-                                  <StatRow label="Goles encajados" value={playerStats.goalkeeper.conceded} color="#ef4444" />
-                                  <StatRow label="Porterías a cero" value={playerStats.goalkeeper.cleanSheets} highlight />
-                                  {playerStats.goalkeeper.savedPenalties > 0 && (
-                                    <StatRow label="Penaltis detenidos" value={playerStats.goalkeeper.savedPenalties} color="#10b981" />
-                                  )}
-                                </View>
-                              </View>
-                            </>
-                          )}
-
-                          {/* Determinar posición del jugador para ordenar secciones */}
-                          {(() => {
-                            const playerPosition = normalizePosition(selectedPlayerForStats.position);
-                            const isGoalkeeper = playerPosition === 'Goalkeeper';
-                            const isDefender = playerPosition === 'Defender';
-                            const isAttackerOrMidfielder = playerPosition === 'Attacker' || playerPosition === 'Midfielder';
-
-                            // DEFENSAS: Defensa primero, luego ataque
-                            if (isDefender) {
-                              return (
-                                <>
-                                  {/* Defensa */}
-                                  <View style={{ marginBottom: 20 }}>
-                                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                      DEFENSA
-                                    </Text>
-                                    <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                      <StatRow label="Entradas" value={playerStats.tackles.total} highlight />
-                                      <StatRow label="Bloqueos" value={playerStats.tackles.blocks} highlight />
-                                      <StatRow label="Intercepciones" value={playerStats.tackles.interceptions} highlight />
-                                    </View>
-                                  </View>
-
-                                  {/* Duelos */}
-                                  <View style={{ marginBottom: 20 }}>
-                                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                      DUELOS
-                                    </Text>
-                                    <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                      <StatRow label="Duelos totales" value={playerStats.duels.total} />
-                                      <StatRow label="Duelos ganados" value={playerStats.duels.won} highlight />
-                                    </View>
-                                  </View>
-
-                                  {/* Pases */}
-                                  <View style={{ marginBottom: 20 }}>
-                                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                      PASES
-                                    </Text>
-                                    <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                      <StatRow label="Pases totales" value={playerStats.passes.total} />
-                                      <StatRow label="Precisión" value={playerStats.passes.accuracy} isPercentage />
-                                    </View>
-                                  </View>
-
-                                  {/* Goles y asistencias */}
-                                  {(playerStats.goals.total > 0 || playerStats.goals.assists > 0 || playerStats.shots.total > 0) && (
-                                    <View style={{ marginBottom: 20 }}>
-                                      <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                        ATAQUE
-                                      </Text>
-                                      <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                        {playerStats.goals.total > 0 && (
-                                          <StatRow label="Goles" value={playerStats.goals.total} highlight />
-                                        )}
-                                        {playerStats.goals.assists > 0 && (
-                                          <StatRow label="Asistencias" value={playerStats.goals.assists} highlight />
-                                        )}
-                                        {playerStats.shots.total > 0 && (
-                                          <>
-                                            <StatRow label="Disparos totales" value={playerStats.shots.total} />
-                                            <StatRow label="Disparos a puerta" value={playerStats.shots.on} />
-                                          </>
-                                        )}
-                                      </View>
-                                    </View>
-                                  )}
-                                </>
-                              );
-                            }
-
-                            // DELANTEROS Y MEDIOS: Ataque primero, luego defensa
-                            if (isAttackerOrMidfielder) {
-                              return (
-                                <>
-                                  {/* Goles y asistencias */}
-                                  <View style={{ marginBottom: 20 }}>
-                                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                      ATAQUE
-                                    </Text>
-                                    <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                      <StatRow label="Goles" value={playerStats.goals.total} highlight />
-                                      <StatRow label="Asistencias" value={playerStats.goals.assists} highlight />
-                                      <StatRow label="Disparos totales" value={playerStats.shots.total} />
-                                      <StatRow label="Disparos a puerta" value={playerStats.shots.on} />
-                                    </View>
-                                  </View>
-
-                                  {/* Regates */}
-                                  <View style={{ marginBottom: 20 }}>
-                                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                      REGATES
-                                    </Text>
-                                    <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                      <StatRow label="Intentos" value={playerStats.dribbles.attempts} />
-                                      <StatRow label="Exitosos" value={playerStats.dribbles.success} highlight />
-                                    </View>
-                                  </View>
-
-                                  {/* Pases */}
-                                  <View style={{ marginBottom: 20 }}>
-                                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                      PASES
-                                    </Text>
-                                    <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                      <StatRow label="Pases totales" value={playerStats.passes.total} />
-                                      <StatRow label="Precisión" value={playerStats.passes.accuracy} isPercentage />
-                                    </View>
-                                  </View>
-
-                                  {/* Duelos */}
-                                  <View style={{ marginBottom: 20 }}>
-                                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                      DUELOS
-                                    </Text>
-                                    <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                      <StatRow label="Duelos totales" value={playerStats.duels.total} />
-                                      <StatRow label="Duelos ganados" value={playerStats.duels.won} highlight />
-                                    </View>
-                                  </View>
-
-                                  {/* Defensa */}
-                                  {(playerStats.tackles.total > 0 || playerStats.tackles.blocks > 0 || playerStats.tackles.interceptions > 0) && (
-                                    <View style={{ marginBottom: 20 }}>
-                                      <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                        DEFENSA
-                                      </Text>
-                                      <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                        {playerStats.tackles.total > 0 && (
-                                          <StatRow label="Entradas" value={playerStats.tackles.total} />
-                                        )}
-                                        {playerStats.tackles.blocks > 0 && (
-                                          <StatRow label="Bloqueos" value={playerStats.tackles.blocks} />
-                                        )}
-                                        {playerStats.tackles.interceptions > 0 && (
-                                          <StatRow label="Intercepciones" value={playerStats.tackles.interceptions} />
-                                        )}
-                                      </View>
-                                    </View>
-                                  )}
-                                </>
-                              );
-                            }
-
-                            // PORTEROS: Solo mostrar pases y duelos si no se mostraron antes
-                            if (isGoalkeeper) {
-                              return (
-                                <>
-                                  {/* Pases */}
-                                  <View style={{ marginBottom: 20 }}>
-                                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                      PASES
-                                    </Text>
-                                    <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                      <StatRow label="Pases totales" value={playerStats.passes.total} />
-                                      <StatRow label="Precisión" value={playerStats.passes.accuracy} isPercentage />
-                                    </View>
-                                  </View>
-
-                                  {/* Duelos */}
-                                  {(playerStats.duels.total > 0 || playerStats.duels.won > 0) && (
-                                    <View style={{ marginBottom: 20 }}>
-                                      <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                        DUELOS
-                                      </Text>
-                                      <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                        <StatRow label="Duelos totales" value={playerStats.duels.total} />
-                                        <StatRow label="Duelos ganados" value={playerStats.duels.won} />
-                                      </View>
-                                    </View>
-                                  )}
-                                </>
-                              );
-                            }
-
-                            return null;
-                          })()}
-
-                          {/* Tarjetas (común para todos) */}
-                          <View style={{ marginBottom: 20 }}>
-                            <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                              DISCIPLINA
-                            </Text>
-                            <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                              <StatRow label="Tarjetas amarillas" value={playerStats.cards.yellow} color="#f59e0b" />
-                              <StatRow label="Tarjetas rojas" value={playerStats.cards.red} color="#ef4444" />
-                              <StatRow label="Faltas recibidas" value={playerStats.fouls.drawn} />
-                              <StatRow label="Faltas cometidas" value={playerStats.fouls.committed} />
-                            </View>
-                          </View>
-
-                          {/* Penaltis (solo si tiene datos relevantes) */}
-                          {(playerStats.penalty.won > 0 || playerStats.penalty.scored > 0 || 
-                            playerStats.penalty.missed > 0 || playerStats.penalty.saved > 0 ||
-                            playerStats.penalty.committed > 0) && (
-                            <View style={{ marginBottom: 20 }}>
-                              <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-                                PENALTIS
-                              </Text>
-                              <View style={{ backgroundColor: '#0f172a', borderRadius: 12, padding: 14 }}>
-                                {playerStats.penalty.won > 0 && (
-                                  <StatRow label="Penaltis ganados" value={playerStats.penalty.won} />
-                                )}
-                                {playerStats.penalty.scored > 0 && (
-                                  <StatRow label="Penaltis anotados" value={playerStats.penalty.scored} highlight />
-                                )}
-                                {playerStats.penalty.missed > 0 && (
-                                  <StatRow label="Penaltis fallados" value={playerStats.penalty.missed} color="#ef4444" />
-                                )}
-                                {playerStats.penalty.saved > 0 && (
-                                  <StatRow label="Penaltis detenidos" value={playerStats.penalty.saved} highlight />
-                                )}
-                                {playerStats.penalty.committed > 0 && (
-                                  <StatRow label="Penaltis cometidos" value={playerStats.penalty.committed} />
-                                )}
-                              </View>
-                            </View>
-                          )}
-                        </View>
-                      ) : (
-                        <View style={{ padding: 40, alignItems: 'center' }}>
-                          <Text style={{ color: '#94a3b8', textAlign: 'center' }}>
-                            No hay estadísticas disponibles para este jugador
-                          </Text>
-                        </View>
-                      )}
-                    </ScrollView>
-
-                    {/* Footer con botones de acción */}
-                    {!isAdmin && ligaId && (
-                      <View style={{
-                        paddingVertical: 16,
-                        paddingHorizontal: 20,
-                        borderTopWidth: 1,
-                        borderTopColor: '#334155',
-                        backgroundColor: '#0f172a',
-                        borderBottomLeftRadius: 16,
-                        borderBottomRightRadius: 16
-                      }}>
-                        {squadPlayerIds.has(selectedPlayerForStats.id) ? (
-                          <TouchableOpacity
-                            onPress={() => {
-                              setShowStatsModal(false);
-                              setTimeout(() => handleSellPlayer(selectedPlayerForStats), 300);
-                            }}
-                            disabled={isSaving}
-                            style={{
-                              backgroundColor: '#ef4444',
-                              paddingVertical: 14,
-                              borderRadius: 10,
-                              alignItems: 'center',
-                              shadowColor: '#ef4444',
-                              shadowOffset: { width: 0, height: 4 },
-                              shadowOpacity: 0.3,
-                              shadowRadius: 6,
-                              elevation: 6,
-                              opacity: isSaving ? 0.6 : 1
-                            }}
-                          >
-                            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
-                              VENDER JUGADOR
-                            </Text>
-                          </TouchableOpacity>
-                        ) : (
-                          <View>
-                            <View style={{ 
-                              flexDirection: 'row', 
-                              justifyContent: 'space-between', 
-                              alignItems: 'center',
-                              marginBottom: 12,
-                              paddingHorizontal: 4
-                            }}>
-                              <Text style={{ color: '#94a3b8', fontSize: 13 }}>Tu presupuesto:</Text>
-                              <Text style={{ color: '#10b981', fontSize: 16, fontWeight: '800' }}>{budget}M</Text>
-                            </View>
-                            <TouchableOpacity
-                              onPress={handleSignFromModal}
-                              disabled={isSaving || budget < selectedPlayerForStats.price}
-                              style={{
-                                backgroundColor: budget < selectedPlayerForStats.price ? '#64748b' : '#10b981',
-                                paddingVertical: 14,
-                                borderRadius: 10,
-                                alignItems: 'center',
-                                shadowColor: '#10b981',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.3,
-                                shadowRadius: 6,
-                                elevation: 6,
-                                opacity: isSaving ? 0.6 : 1
-                              }}
-                            >
-                              {isSaving ? (
-                                <ActivityIndicator size="small" color="#fff" />
-                              ) : (
-                                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
-                                  {budget < selectedPlayerForStats.price ? 'PRESUPUESTO INSUFICIENTE' : `FICHAR POR ${selectedPlayerForStats.price}M`}
-                                </Text>
-                              )}
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
-                    )}
-                  </>
-                )}
-              </TouchableOpacity>
-            </TouchableOpacity>
-          </Modal>
         </>
       )}
     </LinearGradient>
   );
 };
 
-// Componente auxiliar para mostrar una fila de estadística
-const StatRow = ({ 
-  label, 
-  value, 
-  highlight = false, 
-  isPercentage = false,
-  color 
-}: { 
-  label: string; 
-  value: number | string; 
-  highlight?: boolean;
-  isPercentage?: boolean;
-  color?: string;
-}) => (
-  <View style={{ 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#334155'
-  }}>
-    <Text style={{ color: '#cbd5e1', fontSize: 14 }}>{label}</Text>
-    <Text style={{ 
-      color: color || (highlight ? '#10b981' : '#fff'), 
-      fontSize: highlight ? 18 : 16, 
-      fontWeight: highlight ? '800' : '700' 
-    }}>
-      {isPercentage ? value : value}
-    </Text>
-  </View>
-);
 
 export default PlayersMarket;

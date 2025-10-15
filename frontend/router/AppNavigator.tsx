@@ -10,6 +10,7 @@ import Register from '../pages/register/Register';
 import Clasificacion from '../pages/liga/Clasificacion';
 import PlayersList from '../pages/players/PlayersList';
 import PlayersMarket from '../pages/players/PlayersMarket';
+import PlayerDetail from '../pages/players/PlayerDetail';
 import MiPlantilla from '../pages/plantilla/MiPlantilla';
 import FootballService from '../services/FutbolService';
 import { InvitarAmigos } from '../pages/liga/InvitarAmigos';
@@ -23,6 +24,7 @@ export type RootStackParamList = {
   Clasificacion: { ligaId: string, ligaName: string};
   PlayersList: { selectMode?: boolean; filterByRole?: string; onPlayerSelected?: (player: any) => void; ligaId?: string; ligaName?: string } | undefined;
   PlayersMarket: { ligaId?: string; ligaName?: string } | undefined;
+  PlayerDetail: { player: any; ligaId?: string; ligaName?: string };
   MiPlantilla: undefined;
   Equipo: { ligaId: string, ligaName: string};
   InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string };
@@ -65,6 +67,9 @@ export const AppNavigator = () => {
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="PlayersMarket" component={PlayersMarket} options={{
+          animation: 'slide_from_right',
+        }} />
+        <Stack.Screen name="PlayerDetail" component={PlayerDetail} options={{
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="MiPlantilla" component={MiPlantilla} options={{

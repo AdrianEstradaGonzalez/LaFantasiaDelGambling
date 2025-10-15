@@ -56,8 +56,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
         <Image source={backIcon} style={{ width: 28, height: 28, tintColor: '#fff' }} resizeMode="contain" />
       </TouchableOpacity>
 
-      {/* Título de liga si está en contexto de liga */}
-      {ligaName && (
+      {/* Título personalizado o título de liga */}
+      {(title || ligaName) && (
         <Text
           style={{
             color: '#fff',
@@ -70,15 +70,12 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
           }}
           numberOfLines={1}
         >
-          LIGA{' '}
-          <Text style={{ color: '#0892D0' }}>
-            {ligaName.toUpperCase()}
-          </Text>
+          {title || `LIGA ${ligaName?.toUpperCase()}`}
         </Text>
       )}
 
       {/* Espacio a la derecha para balance visual cuando hay título */}
-      {ligaName && <View style={{ width: 28 }} />}
+      {(title || ligaName) && <View style={{ width: 28 }} />}
     </View>
   );
 };
