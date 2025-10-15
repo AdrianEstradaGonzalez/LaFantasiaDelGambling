@@ -152,7 +152,7 @@ const Dropdown = ({
         <Text style={{ color: '#fff', flex: 1, fontSize: 14 }} numberOfLines={1} ellipsizeMode="tail">
           {selectedLabel}
         </Text>
-        <Text style={{ color: '#94a3b8', fontSize: 16 }}>â–¼</Text>
+        <Text style={{ color: '#94a3b8', fontSize: 16 }}>▼</Text>
       </TouchableOpacity>
 
       <Modal
@@ -254,12 +254,8 @@ export const PlayersMarket = ({ navigation, route }: {
   useEffect(() => {
     const checkAdmin = async () => {
       try {
-        const token = await EncryptedStorage.getItem('accessToken');
-        if (token) {
-          const payload = decodeJwt(token);
-          const email = payload?.email || '';
-          setIsAdmin(email === 'adrian.estrada2001@gmail.com');
-        }
+        const adminStatus = await LoginService.isAdmin();
+        setIsAdmin(adminStatus);
       } catch (error) {
         console.error('Error verificando admin:', error);
       }
@@ -478,7 +474,7 @@ export const PlayersMarket = ({ navigation, route }: {
       
       const changesCount = (hasPriceChanges ? Object.keys(editedPrices).length : 0) + 
                           (hasPositionChanges ? Object.keys(editedPositions).length : 0);
-      Alert.alert('Ã‰xito', `${changesCount} cambio(s) guardado(s) correctamente`);
+      Alert.alert('Éxito', `${changesCount} cambio(s) guardado(s) correctamente`);
     } catch (error) {
       console.error('Error guardando cambios:', error);
       Alert.alert('Error', 'No se pudieron guardar los cambios');
@@ -542,7 +538,7 @@ export const PlayersMarket = ({ navigation, route }: {
       let squadPosition = availablePositions.find(pos => !occupiedPositions.has(pos));
 
       if (!squadPosition) {
-        Alert.alert('Sin espacio', `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.\n\nVende un jugador primero o cambia tu formaciÃ³n.`);
+        Alert.alert('Sin espacio', `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.\n\nVende un jugador primero o cambia tu formación.`);
         return;
       }
 
@@ -552,16 +548,16 @@ export const PlayersMarket = ({ navigation, route }: {
         playerName: player.name,
         role,
         pricePaid: player.price,
-        currentFormation // Enviar la formaciÃ³n actual si estÃ¡ disponible
+        currentFormation // Enviar la formación actual si está disponible
       });
 
-      // Verificar si la validaciÃ³n pasÃ³
+      // Verificar si la validación pasó
       if (!result.success) {
-        Alert.alert('LÃ­mite de formaciÃ³n', result.message || 'No se puede aÃ±adir mÃ¡s jugadores de esta posiciÃ³n');
+        Alert.alert('Límite de formación', result.message || 'No se puede añadir más jugadores de esta posición');
         return;
       }
 
-      console.log('Jugador aÃ±adido, nuevo presupuesto:', result.budget);
+      console.log('Jugador añadido, nuevo presupuesto:', result.budget);
       setBudget(result.budget!);
       
       // Actualizar lista de jugadores fichados
@@ -600,7 +596,7 @@ export const PlayersMarket = ({ navigation, route }: {
 
       const playerInSquad = squad.players.find(p => p.playerId === player.id);
       if (!playerInSquad) {
-        Alert.alert('Error', 'El jugador no estÃ¡ en tu plantilla');
+        Alert.alert('Error', 'El jugador no está en tu plantilla');
         return;
       }
 
@@ -658,11 +654,11 @@ export const PlayersMarket = ({ navigation, route }: {
 
       const position = normalizePosition(player.position);
       if (!position) {
-        Alert.alert('Error', 'PosiciÃ³n del jugador no vÃ¡lida');
+        Alert.alert('Error', 'Posición del jugador no válida');
         return;
       }
 
-      // Mapear posiciÃ³n a rol
+      // Mapear posición a rol
       const roleMap: Record<CanonicalPos, string> = {
         'Goalkeeper': 'POR',
         'Defender': 'DEF',
@@ -678,12 +674,12 @@ export const PlayersMarket = ({ navigation, route }: {
         playerName: player.name,
         role,
         pricePaid: player.price,
-        currentFormation // Enviar la formaciÃ³n actual si estÃ¡ disponible
+        currentFormation // Enviar la formación actual si está disponible
       });
 
-      // Verificar si la validaciÃ³n pasÃ³
+      // Verificar si la validación pasó
       if (!result.success) {
-        Alert.alert('LÃ­mite de formaciÃ³n', result.message || 'No se puede aÃ±adir mÃ¡s jugadores de esta posiciÃ³n');
+        Alert.alert('Límite de formación', result.message || 'No se puede añadir más jugadores de esta posición');
         return;
       }
 
@@ -893,11 +889,11 @@ export const PlayersMarket = ({ navigation, route }: {
           </View>
         </View>
 
-        {/* Dropdown de posiciÃ³n editable (solo admin y no en modo selecciÃ³n) */}
+        {/* Dropdown de posición editable (solo admin y no en modo selección) */}
         {isAdmin && !selectMode && (
           <View style={{ marginTop: 4 }}>
             <Dropdown
-              label="PosiciÃ³n"
+              label="Posición"
               value={currentPosition}
               onValueChange={(value: CanonicalPos) => {
                 setEditedPositions(prev => ({ ...prev, [p.id]: value }));
@@ -912,7 +908,7 @@ export const PlayersMarket = ({ navigation, route }: {
           </View>
         )}
         
-        {/* EstadÃ­sticas compactas (solo si NO es admin y tenemos stats) */}
+        {/* Estadísticas compactas (solo si NO es admin y tenemos stats) */}
         {!isAdmin && stats && (
           <View style={{ 
             marginTop: 12, 
@@ -1292,7 +1288,7 @@ export const PlayersMarket = ({ navigation, route }: {
                 </View>
                 {selectMode && filterByRole && (
                   <Text style={{ color: '#94a3b8', fontSize: 14, marginBottom: 12 }}>
-                    PosiciÃ³n: {filterByRole === 'POR' ? 'Portero' : filterByRole === 'DEF' ? 'Defensa' : filterByRole === 'CEN' ? 'Centrocampista' : 'Delantero'}
+                    Posición: {filterByRole === 'POR' ? 'Portero' : filterByRole === 'DEF' ? 'Defensa' : filterByRole === 'CEN' ? 'Centrocampista' : 'Delantero'}
                   </Text>
                 )}
                 {!selectMode && <View style={{ marginBottom: 0 }} />}
@@ -1303,7 +1299,7 @@ export const PlayersMarket = ({ navigation, route }: {
                     {!selectMode && (
                       <View style={{ flex: 1 }}>
                         <Dropdown
-                          label="PosiciÃ³n"
+                          label="Posición"
                           value={posFilter}
                           onValueChange={setPosFilter}
                           items={positionsEs.map(p => ({ label: p, value: p }))}

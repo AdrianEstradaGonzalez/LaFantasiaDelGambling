@@ -208,7 +208,7 @@ const Dropdown = ({
           }}
         >
           <Text style={{ color: '#fff', flex: 1 }}>{selectedLabel}</Text>
-          <Text style={{ color: '#94a3b8', fontSize: 16 }}>{isOpen ? 'â–²' : 'â–¼'}</Text>
+          <Text style={{ color: '#94a3b8', fontSize: 16 }}>{isOpen ? '▲' : '▼'}</Text>
         </TouchableOpacity>
         {isOpen && (
           <View
@@ -803,9 +803,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             </View>
           </View>
         
-        {/* Selector de FormaciÃ³n */}
+        {/* Selector de Formación */}
         <Dropdown
-          label="FormaciÃ³n"
+          label="Formación"
           value={selectedFormation.id}
           onValueChange={async (formationId) => {
             const formation = formations.find(f => f.id === formationId);
@@ -848,8 +848,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 setOriginalPlayers({ ...adaptedPlayers });
                 
               } catch (error) {
-                console.error('Error al guardar formaciÃ³n:', error);
-                Alert.alert('Error', 'No se pudo guardar la formaciÃ³n');
+                console.error('Error al guardar formación:', error);
+                Alert.alert('Error', 'No se pudo guardar la formación');
               } finally {
                 // Desactivar estado de carga
                 setIsChangingFormation(false);
@@ -885,7 +885,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               textAlign: 'center',
               fontSize: 14,
             }}>
-              AlineaciÃ³n
+              Alineación
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -912,7 +912,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               textAlign: 'center',
               fontSize: 14,
             }}>
-              PuntuaciÃ³n
+              Puntuación
             </Text>
           </TouchableOpacity>
         </View>
@@ -1451,7 +1451,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 borderWidth: 1,
                 borderColor: '#334155'
               }}>
-                <Text style={{ color: '#94a3b8', fontSize: 14 }}>Cambiando formaciÃ³n...</Text>
+                <Text style={{ color: '#94a3b8', fontSize: 14 }}>Cambiando formación...</Text>
               </View>
             </View>
           )}

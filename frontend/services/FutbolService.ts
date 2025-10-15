@@ -2,6 +2,8 @@
 import axios from "axios";
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { LigaService } from './LigaService';
+import { ApuestasEvaluator } from './ApuestasEvaluator';
+import { PresupuestoService } from './PresupuestoService';
 
 // API-FOOTBALL (API-Sports v3)
 const API_BASE = "https://v3.football.api-sports.io";
@@ -1129,7 +1131,6 @@ export default class FootballService {
             }
           }
           incType(t);
-          continue;
         }
       }
 
@@ -1538,6 +1539,119 @@ export default class FootballService {
       return Array.from(matchdays).sort((a, b) => a - b);
     } catch (error) {
       console.error('Error fetching available matchdays:', error);
+      return [];
+    }
+  }
+
+  // Verificar si una jornada ha terminado completamente
+  static async isJornadaCompleta(jornada: number): Promise<boolean> {
+    try {
+      const matches = await this.getAllMatchesCached();
+      const jornadaMatches = matches.filter(m => m.jornada === jornada);
+      
+      if (jornadaMatches.length === 0) return false;
+      
+      // Verificar que todos los partidos hayan terminado
+      return jornadaMatches.every(m => m.finished);
+    } catch {
+      return false;
+    }
+  }
+
+  // Procesar fin de jornada: evaluar apuestas y generar nuevas
+  static async procesarFinJornada(
+    userId: string,
+    jornada: number
+  ): Promise<{
+    success: boolean;
+    resultados?: {
+      totalGanado: number;
+      totalPerdido: number;
+      balance: number;
+      nuevasApuestas: any[];
+    };
+    error?: string;
+  }> {
+    try {
+      // 1. Verificar que la jornada esté completa
+      const completa = await this.isJornadaCompleta(jornada);
+      if (!completa) {
+        return { success: false, error: 'La jornada aún no ha terminado' };
+      }
+
+      // 2. Obtener apuestas del usuario para esta jornada
+      const apuestasUsuario = await PresupuestoService.getApuestasJornada(userId, jornada);
+      
+      if (apuestasUsuario.length === 0) {
+        // No hay apuestas, solo generar nuevas
+        const nuevasApuestas = await this.getApuestasProximaJornada();
+        return {
+          success: true,
+          resultados: {
+            totalGanado: 0,
+            totalPerdido: 0,
+            balance: 0,
+            nuevasApuestas,
+          },
+        };
+      }
+
+      // 3. Evaluar apuestas
+      const resultadosEvaluacion = await ApuestasEvaluator.evaluarApuestasJornada(
+        apuestasUsuario.map(a => ({
+          matchId: a.matchId,
+          type: a.type,
+          label: a.label,
+        }))
+      );
+
+      // 4. Resolver apuestas y actualizar presupuesto
+      const { totalGanado, totalPerdido } = await PresupuestoService.resolverApuestasJornada(
+        userId,
+        jornada,
+        resultadosEvaluacion
+      );
+
+      // 5. Generar nuevas apuestas para la próxima jornada
+      const nuevasApuestas = await this.getApuestasProximaJornada();
+
+      // 6. Limpiar caché de apuestas anteriores
+      try {
+        await EncryptedStorage.removeItem(`apuestas_jornada_${jornada}_v4`);
+      } catch {}
+
+      return {
+        success: true,
+        resultados: {
+          totalGanado,
+          totalPerdido,
+          balance: totalGanado - totalPerdido,
+          nuevasApuestas,
+        },
+      };
+    } catch (error) {
+      console.error('Error procesando fin de jornada:', error);
+      return { success: false, error: 'Error al procesar la jornada' };
+    }
+  }
+
+  // Verificar automáticamente si hay jornadas pendientes de resolver
+  static async verificarJornadasPendientes(userId: string): Promise<number[]> {
+    try {
+      const apuestas = await PresupuestoService.getApuestasUsuario(userId);
+      const jornadasConApuestas = [...new Set(apuestas.map(a => a.jornada))];
+      
+      const jornadasPendientes: number[] = [];
+      
+      for (const jornada of jornadasConApuestas) {
+        const completa = await this.isJornadaCompleta(jornada);
+        if (completa) {
+          jornadasPendientes.push(jornada);
+        }
+      }
+      
+      return jornadasPendientes.sort((a, b) => a - b);
+    } catch {
       return [];
     }
   }

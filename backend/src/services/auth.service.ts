@@ -15,7 +15,7 @@ export async function register({ email, password, name }: { email: string; passw
   if (exists) throw new Error("email_in_use");
   const hash = await argon2.hash(password);
   const user = await UserRepo.create({ email, password: hash, name });
-  return { user: { id: user.id, email: user.email, name: user.name }, ...await issueTokens(user.id, user.email) };
+  return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email) };
 }
 
 export async function login({ email, password }: { email: string; password: string }) {
@@ -23,12 +23,12 @@ export async function login({ email, password }: { email: string; password: stri
   if (!user) throw new Error("invalid_credentials");
   const ok = await argon2.verify(user.password, password);
   if (!ok) throw new Error("invalid_credentials");
-  return { user: { id: user.id, email: user.email, name: user.name }, ...await issueTokens(user.id, user.email) };
+  return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email) };
 }
 
 export async function me(userId: string) {
   const u = await UserRepo.findById(userId);
-  return { user: u ? { id: u.id, email: u.email, name: u.name } : null };
+  return { user: u ? { id: u.id, email: u.email, name: u.name, isAdmin: u.isAdmin || false } : null };
 }
 
 export async function changePassword(userId: string, { currentPassword, newPassword }: { currentPassword: string; newPassword: string }) {

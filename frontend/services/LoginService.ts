@@ -35,22 +35,24 @@ export class LoginService {
       throw new Error(json?.error || 'Error de servidor');
     }
 
-    const { accessToken, refreshToken } = json ?? {};
+    const { accessToken, refreshToken, user } = json ?? {};
     if (!accessToken) throw new Error('Respuesta inválida: falta accessToken');
 
     // userId desde backend o, si no, desde el JWT (id/sub)
     const payload = decodeJwt(accessToken);
-    const userId = json?.userId ?? payload?.id ?? payload?.sub;
+    const userId = user?.id ?? json?.userId ?? payload?.id ?? payload?.sub;
+    const isAdmin = user?.isAdmin ?? false;
 
     // Guardar de forma robusta
     await EncryptedStorage.setItem('accessToken', String(accessToken));
     if (refreshToken) await EncryptedStorage.setItem('refreshToken', String(refreshToken));
     if (userId) await EncryptedStorage.setItem('userId', String(userId));
+    await EncryptedStorage.setItem('isAdmin', String(isAdmin));
 
     // 🔎 Verificación y trazas útiles
     const savedAccess = await EncryptedStorage.getItem('accessToken');
     const savedUserId = await EncryptedStorage.getItem('userId');
-    console.log('LoginService: accessToken(saved)=', !!savedAccess, 'userId(saved)=', savedUserId);
+    console.log('LoginService: accessToken(saved)=', !!savedAccess, 'userId(saved)=', savedUserId, 'isAdmin=', isAdmin);
 
     return { accessToken, refreshToken, userId, payload };
   }
@@ -72,10 +74,15 @@ export class LoginService {
     }
     return uid;
   }
+  static async isAdmin(): Promise<boolean> {
+    const isAdmin = await EncryptedStorage.getItem('isAdmin');
+    return isAdmin === 'true';
+  }
   static async logout(): Promise<void> {
     await EncryptedStorage.removeItem('accessToken');
     await EncryptedStorage.removeItem('refreshToken');
     await EncryptedStorage.removeItem('userId');
     await EncryptedStorage.removeItem('session');
+    await EncryptedStorage.removeItem('isAdmin');
   }
 }

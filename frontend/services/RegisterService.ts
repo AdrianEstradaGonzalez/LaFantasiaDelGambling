@@ -53,6 +53,11 @@ export const RegisterService = {
         console.log('❌ No se recibió user.id, result.user:', result.user);
       }
 
+      // Guardar estado de admin
+      const isAdmin = result.user?.isAdmin ?? false;
+      await EncryptedStorage.setItem('isAdmin', String(isAdmin));
+      console.log('✅ isAdmin guardado:', isAdmin);
+
       // 🔍 Verificar que se guardaron correctamente
       const savedAccessToken = await EncryptedStorage.getItem('accessToken');
       const savedUserId = await EncryptedStorage.getItem('userId');

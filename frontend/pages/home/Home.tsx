@@ -20,6 +20,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import BottomNavBar from '../navBar/BottomNavBar';
 import { LigaService } from '../../services/LigaService';
 import EncryptedStorage from 'react-native-encrypted-storage';
+import { LoginService } from '../../services/LoginService';
 
 type Liga = { id: string; nombre: string };
 const { height } = Dimensions.get('window');
@@ -36,6 +37,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
   const [jornadaActual, setJornadaActual] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingPartidos, setLoadingPartidos] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   const scrollRef = useRef<ScrollView>(null);
   const jornadasScrollRef = useRef<ScrollView>(null);
@@ -100,6 +102,9 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
   // useEffect inicial para cargar datos
   useEffect(() => {
+    // Verificar si el usuario es admin
+    LoginService.isAdmin().then(setIsAdmin);
+    
     fetchLigasUsuario();
 
     const fetchMatches = async () => {
@@ -237,12 +242,22 @@ export const Home = ({ navigation, route }: HomeProps) => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Mis Ligas</Text>
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => navigation.navigate('CrearLiga')}
-          >
-            <Text style={styles.createButtonText}>Crear Liga</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={() => navigation.navigate('CrearLiga')}
+            >
+              <Text style={styles.createButtonText}>Crear Liga</Text>
+            </TouchableOpacity>
+            {isAdmin && (
+              <TouchableOpacity
+                style={[styles.createButton, { backgroundColor: '#dc2626' }]}
+                onPress={() => navigation.navigate('AdminPanel')}
+              >
+                <Text style={styles.createButtonText}>Admin</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Ligas */}

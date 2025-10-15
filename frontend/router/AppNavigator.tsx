@@ -15,6 +15,7 @@ import MiPlantilla from '../pages/plantilla/MiPlantilla';
 import FootballService from '../services/FutbolService';
 import { InvitarAmigos } from '../pages/liga/InvitarAmigos';
 import Apuestas from '../pages/apuestas/Apuestas';
+import AdminPanel from '../pages/admin/AdminPanel';
 
 export type RootStackParamList = {
   Home: { refreshLigas?: boolean } | undefined;
@@ -29,6 +30,7 @@ export type RootStackParamList = {
   Equipo: { ligaId: string, ligaName: string};
   InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string };
   Apuestas: { ligaId?: string; ligaName?: string } | undefined;
+  AdminPanel: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -82,6 +84,9 @@ export const AppNavigator = () => {
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="Apuestas" component={Apuestas} options={{
+          animation: 'slide_from_right',
+        }} />
+        <Stack.Screen name="AdminPanel" component={AdminPanel} options={{
           animation: 'slide_from_right',
         }} />
       </Stack.Navigator>

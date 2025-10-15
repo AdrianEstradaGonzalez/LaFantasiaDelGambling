@@ -13,6 +13,7 @@ import leagueRoutes from "./routes/league.routes";
 import squadRoutes from "./routes/squad.routes";
 import playerRoutes from "./routes/player.routes";
 import betRoutes from "./routes/bet.routes";
+import jornadaRoutes from "./routes/jornada.routes";
 export async function buildApp() {
   const app = Fastify({
     logger: {
@@ -115,6 +116,7 @@ export async function buildApp() {
   await app.register(squadRoutes, { prefix: "/squads" });
   await app.register(playerRoutes, { prefix: "/players" });
   await app.register(betRoutes, { prefix: "/bets" });
+  await app.register(jornadaRoutes, { prefix: "/jornada" });
 
   return app;
 }
