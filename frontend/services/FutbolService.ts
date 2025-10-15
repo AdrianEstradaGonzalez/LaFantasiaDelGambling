@@ -1268,4 +1268,277 @@ export default class FootballService {
     
     return bets;
   }
+
+  // Obtener estadísticas de un jugador específico
+  // Si matchday es null o undefined, obtiene estadísticas globales de la temporada
+  // Si matchday es un número, obtiene estadísticas solo de esa jornada específica
+  static async getPlayerStatistics(playerId: number, matchday?: number | null): Promise<{
+    games: { appearances: number; lineups: number; minutes: number; position: string };
+    goals: { total: number; assists: number };
+    passes: { total: number; accuracy: string };
+    shots: { total: number; on: number };
+    dribbles: { attempts: number; success: number };
+    tackles: { total: number; blocks: number; interceptions: number };
+    duels: { total: number; won: number };
+    cards: { yellow: number; red: number };
+    rating?: string;
+    fouls: { drawn: number; committed: number };
+    penalty: { won: number; committed: number; scored: number; missed: number; saved: number };
+    // Estadísticas específicas de porteros
+    goalkeeper?: {
+      saves: number;
+      conceded: number;
+      cleanSheets: number;
+      savedPenalties: number;
+    };
+  } | null> {
+    try {
+      if (matchday != null && matchday > 0) {
+        // Obtener estadísticas de una jornada específica
+        // Primero obtenemos el partido de esa jornada donde jugó el jugador
+        const fixturesResponse = await axios.get(`${API_BASE}/fixtures`, {
+          headers: HEADERS,
+          timeout: 10000,
+          params: {
+            league: LA_LIGA_LEAGUE_ID,
+            season: this.season,
+            round: `Regular Season - ${matchday}`
+          }
+        });
+
+        const fixtures = fixturesResponse.data?.response || [];
+        
+        // Buscar en qué partido jugó el jugador (necesitamos obtener su equipo primero)
+        const playerInfoResponse = await axios.get(`${API_BASE}/players`, {
+          headers: HEADERS,
+          timeout: 10000,
+          params: { 
+            id: playerId, 
+            season: this.season,
+            league: LA_LIGA_LEAGUE_ID
+          },
+        });
+
+        const playerInfo = playerInfoResponse.data?.response?.[0];
+        if (!playerInfo) return null;
+
+        const playerTeamId = playerInfo.statistics?.[0]?.team?.id;
+        if (!playerTeamId) return null;
+
+        // Encontrar el fixture donde jugó su equipo en esa jornada
+        const teamFixture = fixtures.find((f: any) => 
+          f.teams?.home?.id === playerTeamId || f.teams?.away?.id === playerTeamId
+        );
+
+        if (!teamFixture) {
+          // No jugó en esa jornada
+          return {
+            games: { appearances: 0, lineups: 0, minutes: 0, position: '' },
+            goals: { total: 0, assists: 0 },
+            passes: { total: 0, accuracy: '0%' },
+            shots: { total: 0, on: 0 },
+            dribbles: { attempts: 0, success: 0 },
+            tackles: { total: 0, blocks: 0, interceptions: 0 },
+            duels: { total: 0, won: 0 },
+            cards: { yellow: 0, red: 0 },
+            fouls: { drawn: 0, committed: 0 },
+            penalty: { won: 0, committed: 0, scored: 0, missed: 0, saved: 0 },
+            rating: undefined
+          };
+        }
+
+        // Obtener estadísticas del jugador en ese partido específico
+        const statsResponse = await axios.get(`${API_BASE}/fixtures/players`, {
+          headers: HEADERS,
+          timeout: 10000,
+          params: {
+            fixture: teamFixture.fixture.id
+          }
+        });
+
+        const teamsData = statsResponse.data?.response || [];
+        let playerStats = null;
+
+        // Buscar las estadísticas del jugador en los datos del partido
+        for (const teamData of teamsData) {
+          const players = teamData.players || [];
+          const found = players.find((p: any) => p.player?.id === playerId);
+          if (found) {
+            playerStats = found.statistics?.[0];
+            break;
+          }
+        }
+
+        if (!playerStats) {
+          // Jugador no participó en el partido
+          return {
+            games: { appearances: 0, lineups: 0, minutes: 0, position: '' },
+            goals: { total: 0, assists: 0 },
+            passes: { total: 0, accuracy: '0%' },
+            shots: { total: 0, on: 0 },
+            dribbles: { attempts: 0, success: 0 },
+            tackles: { total: 0, blocks: 0, interceptions: 0 },
+            duels: { total: 0, won: 0 },
+            cards: { yellow: 0, red: 0 },
+            fouls: { drawn: 0, committed: 0 },
+            penalty: { won: 0, committed: 0, scored: 0, missed: 0, saved: 0 },
+            rating: undefined
+          };
+        }
+
+        // Retornar estadísticas del partido específico
+        return {
+          games: {
+            appearances: 1,
+            lineups: playerStats.games?.substitute === false ? 1 : 0,
+            minutes: playerStats.games?.minutes || 0,
+            position: playerStats.games?.position || ''
+          },
+          goals: {
+            total: playerStats.goals?.total || 0,
+            assists: playerStats.goals?.assists || 0
+          },
+          passes: {
+            total: playerStats.passes?.total || 0,
+            accuracy: playerStats.passes?.accuracy || '0%'
+          },
+          shots: {
+            total: playerStats.shots?.total || 0,
+            on: playerStats.shots?.on || 0
+          },
+          dribbles: {
+            attempts: playerStats.dribbles?.attempts || 0,
+            success: playerStats.dribbles?.success || 0
+          },
+          tackles: {
+            total: playerStats.tackles?.total || 0,
+            blocks: playerStats.tackles?.blocks || 0,
+            interceptions: playerStats.tackles?.interceptions || 0
+          },
+          duels: {
+            total: playerStats.duels?.total || 0,
+            won: playerStats.duels?.won || 0
+          },
+          cards: {
+            yellow: playerStats.cards?.yellow || 0,
+            red: playerStats.cards?.red || 0
+          },
+          fouls: {
+            drawn: playerStats.fouls?.drawn || 0,
+            committed: playerStats.fouls?.committed || 0
+          },
+          penalty: {
+            won: playerStats.penalty?.won || 0,
+            committed: playerStats.penalty?.commited || 0,
+            scored: playerStats.penalty?.scored || 0,
+            missed: playerStats.penalty?.missed || 0,
+            saved: playerStats.penalty?.saved || 0
+          },
+          rating: playerStats.games?.rating,
+          // Estadísticas de portero (si aplica)
+          goalkeeper: playerStats.goals?.saves != null ? {
+            saves: playerStats.goals?.saves || 0,
+            conceded: playerStats.goals?.conceded || 0,
+            cleanSheets: (playerStats.goals?.conceded || 0) === 0 && (playerStats.games?.minutes || 0) > 0 ? 1 : 0,
+            savedPenalties: playerStats.penalty?.saved || 0
+          } : undefined
+        };
+      } else {
+        // Obtener estadísticas globales de la temporada
+        const { data } = await axios.get(`${API_BASE}/players`, {
+          headers: HEADERS,
+          timeout: 10000,
+          params: { 
+            id: playerId, 
+            season: this.season,
+            league: LA_LIGA_LEAGUE_ID
+          },
+        });
+
+        const playerData = data?.response?.[0];
+        if (!playerData) return null;
+
+        const stats = playerData.statistics?.[0];
+        if (!stats) return null;
+
+        return {
+          games: {
+            appearances: stats.games?.appearences || 0,
+            lineups: stats.games?.lineups || 0,
+            minutes: stats.games?.minutes || 0,
+            position: stats.games?.position || ''
+          },
+          goals: {
+            total: stats.goals?.total || 0,
+            assists: stats.goals?.assists || 0
+          },
+          passes: {
+            total: stats.passes?.total || 0,
+            accuracy: stats.passes?.accuracy || '0%'
+          },
+          shots: {
+            total: stats.shots?.total || 0,
+            on: stats.shots?.on || 0
+          },
+          dribbles: {
+            attempts: stats.dribbles?.attempts || 0,
+            success: stats.dribbles?.success || 0
+          },
+          tackles: {
+            total: stats.tackles?.total || 0,
+            blocks: stats.tackles?.blocks || 0,
+            interceptions: stats.tackles?.interceptions || 0
+          },
+          duels: {
+            total: stats.duels?.total || 0,
+            won: stats.duels?.won || 0
+          },
+          cards: {
+            yellow: stats.cards?.yellow || 0,
+            red: stats.cards?.red || 0
+          },
+          fouls: {
+            drawn: stats.fouls?.drawn || 0,
+            committed: stats.fouls?.committed || 0
+          },
+          penalty: {
+            won: stats.penalty?.won || 0,
+            committed: stats.penalty?.commited || 0,
+            scored: stats.penalty?.scored || 0,
+            missed: stats.penalty?.missed || 0,
+            saved: stats.penalty?.saved || 0
+          },
+          rating: stats.games?.rating,
+          // Estadísticas de portero (si aplica)
+          goalkeeper: stats.goals?.saves != null ? {
+            saves: stats.goals?.saves || 0,
+            conceded: stats.goals?.conceded || 0,
+            cleanSheets: (stats.goals?.conceded === 0 && stats.games?.appearences > 0) ? stats.games?.appearences : 0,
+            savedPenalties: stats.penalty?.saved || 0
+          } : undefined
+        };
+      }
+    } catch (error) {
+      console.error('Error fetching player statistics:', error);
+      return null;
+    }
+  }
+
+  // Obtener lista de jornadas disponibles (jornadas que ya se han jugado o están en curso)
+  static async getAvailableMatchdays(): Promise<number[]> {
+    try {
+      const allMatches = await this.getAllMatchesCached();
+      const matchdays = new Set<number>();
+      
+      // Obtener jornadas que han empezado o terminado
+      allMatches
+        .filter(m => m.started || m.finished)
+        .forEach(m => matchdays.add(m.jornada));
+      
+      return Array.from(matchdays).sort((a, b) => a - b);
+    } catch (error) {
+      console.error('Error fetching available matchdays:', error);
+      return [];
+    }
+  }
 }
