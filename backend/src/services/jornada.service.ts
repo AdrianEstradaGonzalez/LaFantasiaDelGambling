@@ -302,6 +302,8 @@ export class JornadaService {
    */
   private static async calculateSquadPoints(userId: string, leagueId: string, jornada: number): Promise<number> {
     try {
+      console.log(`    🔍 Buscando plantilla para userId=${userId}, leagueId=${leagueId}, jornada=${jornada}`);
+      
       // Obtener la plantilla del usuario
       const squad = await prisma.squad.findUnique({
         where: {
@@ -313,14 +315,27 @@ export class JornadaService {
       });
 
       if (!squad || !squad.players || squad.players.length === 0) {
+        console.log(`    ⚠️  Sin plantilla o plantilla vacía`);
         return 0;
       }
+
+      console.log(`    📋 Plantilla encontrada con ${squad.players.length} jugadores`);
+
+      // 🔴 REGLA: Si no tiene 11 jugadores, 0 puntos
+      if (squad.players.length < 11) {
+        console.log(`    ❌ REGLA DE 11 JUGADORES: Solo ${squad.players.length}/11 jugadores - 0 puntos`);
+        return 0;
+      }
+
+      console.log(`    ✅ Plantilla válida (${squad.players.length} jugadores). Calculando puntos...`);
 
       let totalPoints = 0;
 
       // Obtener estadísticas de cada jugador para la jornada
       for (const squadPlayer of squad.players) {
         try {
+          console.log(`      🔍 Buscando estadísticas de ${squadPlayer.playerName} (ID: ${squadPlayer.playerId}) para jornada ${jornada}`);
+          
           // Obtener partidos de la jornada donde jugó este jugador
           const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
             headers: {
@@ -335,6 +350,8 @@ export class JornadaService {
           });
 
           const fixtures = data?.response || [];
+          console.log(`      📅 Encontrados ${fixtures.length} partidos en jornada ${jornada}`);
+          
           let playerPoints = 0;
 
           // Buscar el partido del equipo del jugador
@@ -364,8 +381,13 @@ export class JornadaService {
             if (playerStats) {
               // Calcular puntos según el rol del jugador
               playerPoints += this.calculatePlayerPoints(playerStats, squadPlayer.role);
+              console.log(`      ⚽ ${squadPlayer.playerName}: ${playerPoints} puntos`);
               break; // Solo contar el primer partido encontrado
             }
+          }
+
+          if (playerPoints === 0) {
+            console.log(`      ⚠️  ${squadPlayer.playerName}: No se encontraron estadísticas o 0 puntos`);
           }
 
           totalPoints += playerPoints;
@@ -373,13 +395,14 @@ export class JornadaService {
           // Pequeña pausa para rate limit
           await new Promise((r) => setTimeout(r, 100));
         } catch (error) {
-          console.error(`Error obteniendo estadísticas del jugador ${squadPlayer.playerName}:`, error);
+          console.error(`      ❌ Error obteniendo estadísticas del jugador ${squadPlayer.playerName}:`, error);
         }
       }
 
+      console.log(`    📊 TOTAL PUNTOS PLANTILLA: ${totalPoints}`);
       return totalPoints;
     } catch (error) {
-      console.error('Error calculando puntos de plantilla:', error);
+      console.error('❌ Error calculando puntos de plantilla:', error);
       return 0;
     }
   }
@@ -465,6 +488,8 @@ export class JornadaService {
     evaluations: BetEvaluation[];
     balances: Map<string, UserBalance>;
     updatedMembers: number;
+    clearedSquads: number;
+    deletedBets: number;
   }> {
     try {
       console.log(`\n🔄 Iniciando cambio de jornada ${jornada} para liga ${leagueId}...\n`);
@@ -480,9 +505,15 @@ export class JornadaService {
       // 3. Calcular puntos de plantilla para cada usuario
       const allMembers = await prisma.leagueMember.findMany({
         where: { leagueId },
+        include: {
+          user: true,
+        },
       });
 
+      console.log(`\n⚽ Calculando puntos de plantilla para ${allMembers.length} miembros...\n`);
+
       for (const member of allMembers) {
+        console.log(`\n📊 Procesando usuario: ${member.user.name} (${member.userId})`);
         const squadPoints = await this.calculateSquadPoints(member.userId, leagueId, jornada);
         
         // Actualizar o crear balance del usuario
@@ -499,12 +530,12 @@ export class JornadaService {
         const userBalance = balances.get(member.userId)!;
         userBalance.squadPoints = squadPoints;
 
-        console.log(`  ⚽ Usuario ${member.userId}: ${squadPoints} puntos de plantilla`);
+        console.log(`  ✅ ${member.user.name}: ${squadPoints} puntos de plantilla`);
       }
 
       console.log(`\n✅ Puntos de plantilla calculados\n`);
 
-      // 4. Actualizar presupuestos de los miembros
+      // 4. Actualizar presupuestos de los miembros y vaciar plantillas
       let updatedMembers = 0;
 
       for (const [userId, balance] of balances) {
@@ -515,8 +546,10 @@ export class JornadaService {
         });
 
         if (member) {
-          // Calcular presupuesto: 500M base + ganancias de apuestas + 1M por cada punto de plantilla
-          const newBudget = 500 + balance.totalProfit + balance.squadPoints;
+          // Calcular nuevo presupuesto: budget actual + profit apuestas + 1M por cada punto de plantilla
+          const budgetFromBets = balance.totalProfit;
+          const budgetFromSquad = balance.squadPoints; // 1M por punto
+          const newBudget = member.budget + budgetFromBets + budgetFromSquad;
           
           // Actualizar también los puntos totales del miembro en la liga
           const newTotalPoints = member.points + balance.squadPoints;
@@ -535,9 +568,11 @@ export class JornadaService {
 
           console.log(
             `  👤 Usuario ${userId}:\n` +
-            `     Apuestas: ${balance.wonBets}W/${balance.lostBets}L = ${balance.totalProfit >= 0 ? '+' : ''}${balance.totalProfit}M\n` +
-            `     Plantilla: ${balance.squadPoints} puntos = +${balance.squadPoints}M\n` +
-            `     Nuevo presupuesto: ${newBudget}M (${member.points} + ${balance.squadPoints} = ${newTotalPoints} puntos totales)`
+            `     Budget anterior: ${member.budget}M\n` +
+            `     Apuestas: ${balance.wonBets}W/${balance.lostBets}L = ${budgetFromBets >= 0 ? '+' : ''}${budgetFromBets}M\n` +
+            `     Plantilla: ${balance.squadPoints} puntos = +${budgetFromSquad}M\n` +
+            `     Nuevo presupuesto: ${newBudget}M\n` +
+            `     Puntos totales: ${member.points} + ${balance.squadPoints} = ${newTotalPoints}`
           );
 
           updatedMembers++;
@@ -546,11 +581,44 @@ export class JornadaService {
 
       console.log(`\n✨ Cambio de jornada completado: ${updatedMembers} miembros actualizados\n`);
 
+      // 5. Vaciar TODAS las plantillas de la liga (incluso usuarios sin balance)
+      console.log(`🗑️  Vaciando todas las plantillas de la liga ${leagueId}...\n`);
+      
+      const allSquads = await prisma.squad.findMany({
+        where: { leagueId },
+      });
+
+      let clearedSquads = 0;
+      for (const squad of allSquads) {
+        const deletedPlayers = await prisma.squadPlayer.deleteMany({
+          where: { squadId: squad.id },
+        });
+        
+        if (deletedPlayers.count > 0) {
+          console.log(`  🗑️  Usuario ${squad.userId}: ${deletedPlayers.count} jugadores eliminados de plantilla`);
+          clearedSquads++;
+        }
+      }
+      
+      console.log(`\n✅ ${clearedSquads} plantillas vaciadas en total\n`);
+
+      // 6. Eliminar apuestas evaluadas (ya pagadas)
+      const deletedBets = await prisma.bet.deleteMany({
+        where: {
+          leagueId,
+          jornada,
+          status: { in: ['won', 'lost'] },
+        },
+      });
+      console.log(`🗑️  ${deletedBets.count} apuestas evaluadas eliminadas\n`);
+
       return {
         success: true,
         evaluations,
         balances,
         updatedMembers,
+        clearedSquads,
+        deletedBets: deletedBets.count,
       };
     } catch (error) {
       console.error('❌ Error en cambio de jornada:', error);
