@@ -17,6 +17,8 @@ import { InvitarAmigos } from '../pages/liga/InvitarAmigos';
 import Apuestas from '../pages/apuestas/Apuestas';
 import AdminPanel from '../pages/admin/AdminPanel';
 import { GestionJugadores } from '../pages/admin/GestionJugadores';
+import GestionUsuarios from '../pages/admin/GestionUsuarios';
+import GestionLigas from '../pages/admin/GestionLigas';
 
 export type RootStackParamList = {
   Home: { refreshLigas?: boolean } | undefined;
@@ -33,6 +35,8 @@ export type RootStackParamList = {
   Apuestas: { ligaId?: string; ligaName?: string } | undefined;
   AdminPanel: undefined;
   GestionJugadores: undefined;
+  GestionUsuarios: undefined;
+  GestionLigas: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -92,6 +96,12 @@ export const AppNavigator = () => {
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="GestionJugadores" component={GestionJugadores} options={{
+          animation: 'slide_from_right',
+        }} />
+        <Stack.Screen name="GestionUsuarios" component={GestionUsuarios} options={{
+          animation: 'slide_from_right',
+        }} />
+        <Stack.Screen name="GestionLigas" component={GestionLigas} options={{
           animation: 'slide_from_right',
         }} />
       </Stack.Navigator>

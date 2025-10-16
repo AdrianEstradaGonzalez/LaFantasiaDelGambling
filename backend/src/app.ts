@@ -6,6 +6,7 @@ import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { authRoutes } from "./routes/auth.routes.js";
+import { adminRoutes } from "./routes/admin.routes.js";
 import { env } from "./config/env.js";
 import { AppError } from "./utils/errors.js";
 import { ZodError } from "zod";
@@ -112,6 +113,7 @@ export async function buildApp() {
   }));
 
   await app.register(authRoutes, { prefix: "/auth" });
+  await app.register(adminRoutes, { prefix: "/admin" });
   await app.register(leagueRoutes, { prefix: "/leagues" });
   await app.register(squadRoutes, { prefix: "/squads" });
   await app.register(playerRoutes, { prefix: "/players" });
@@ -131,7 +133,7 @@ declare module "fastify" {
 // If you want to type the JWT payload, augment @fastify/jwt instead:
 declare module "@fastify/jwt" {
   interface FastifyJWT {
-    payload: { id: string; email: string };
-    user: { id: string; email: string };
+    payload: { id: string; email: string; isAdmin: boolean };
+    user: { sub: string; email: string; isAdmin: boolean };
   }
 }

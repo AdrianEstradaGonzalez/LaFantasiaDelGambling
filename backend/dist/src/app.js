@@ -6,6 +6,7 @@ import rateLimit from "@fastify/rate-limit";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import { authRoutes } from "./routes/auth.routes.js";
+import { adminRoutes } from "./routes/admin.routes.js";
 import { env } from "./config/env.js";
 import { AppError } from "./utils/errors.js";
 import { ZodError } from "zod";
@@ -104,6 +105,7 @@ export async function buildApp() {
         timestamp: new Date().toISOString()
     }));
     await app.register(authRoutes, { prefix: "/auth" });
+    await app.register(adminRoutes, { prefix: "/admin" });
     await app.register(leagueRoutes, { prefix: "/leagues" });
     await app.register(squadRoutes, { prefix: "/squads" });
     await app.register(playerRoutes, { prefix: "/players" });

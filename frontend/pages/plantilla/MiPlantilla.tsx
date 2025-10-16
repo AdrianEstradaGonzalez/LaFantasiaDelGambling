@@ -464,13 +464,14 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     }).start();
   };
 
-  // FunciÃ³n para abrir modal de estadÃ­sticas
+  // Función para abrir modal de estadísticas
   const openStatsModal = (player: any, role: string) => {
     // Navegar a la pantalla de detalles del jugador
     navigation.navigate('PlayerDetail', {
       player: { ...player, role },
       ligaId,
-      ligaName
+      ligaName,
+      currentFormation: selectedFormation.id // Pasar la formación actual
     });
   };
 

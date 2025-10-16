@@ -14,7 +14,7 @@ export async function register({ email, password, name }) {
         throw new Error("email_in_use");
     const hash = await argon2.hash(password);
     const user = await UserRepo.create({ email, password: hash, name });
-    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email) };
+    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email, user.isAdmin || false) };
 }
 export async function login({ email, password }) {
     const user = await UserRepo.findByEmail(email);
@@ -23,7 +23,7 @@ export async function login({ email, password }) {
     const ok = await argon2.verify(user.password, password);
     if (!ok)
         throw new Error("invalid_credentials");
-    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email) };
+    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email, user.isAdmin || false) };
 }
 export async function me(userId) {
     const u = await UserRepo.findById(userId);
@@ -48,14 +48,14 @@ export async function refresh(refreshToken) {
         const user = await UserRepo.findById(payload.sub);
         if (!user)
             return null;
-        return { accessToken: signAccess(user.id, user.email) };
+        return { accessToken: signAccess(user.id, user.email, user.isAdmin || false) };
     }
     catch {
         return null;
     }
 }
-export async function issueTokens(userId, email) {
-    return { accessToken: signAccess(userId, email), refreshToken: signRefresh(userId) };
+export async function issueTokens(userId, email, isAdmin) {
+    return { accessToken: signAccess(userId, email, isAdmin || false), refreshToken: signRefresh(userId) };
 }
 // Reset por código
 export async function requestResetCode(email) {
@@ -102,5 +102,5 @@ export async function setNewPassword(resetToken, newPassword) {
         ResetRepo.use(rec.id, prisma),
         ResetRepo.invalidateOthers(rec.email, rec.id, prisma),
     ]);
-    return await issueTokens(user.id, user.email);
+    return await issueTokens(user.id, user.email, user.isAdmin || false);
 }

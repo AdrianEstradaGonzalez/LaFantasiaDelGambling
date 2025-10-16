@@ -18,7 +18,9 @@ import {
   CheckCircleIcon, 
   AlertIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  UsersIcon,
+  TrophyIcon
 } from '../../components/VectorIcons';
 import { Typography } from '../../styles/DesignSystem';
 
@@ -154,6 +156,86 @@ const AdminPanel: React.FC = () => {
         style={{ flex: 1, marginTop: 100 }}
         contentContainerStyle={{ padding: 20 }}
       >
+        {/* Gestión de Usuarios */}
+        <TouchableOpacity
+          onPress={() => (navigation as any).navigate('GestionUsuarios')}
+          style={{
+            backgroundColor: '#1e293b',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: '#334155',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <View style={{ marginRight: 12 }}>
+              <UsersIcon size={32} color="#0892D0" />
+            </View>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 'bold',
+                flex: 1,
+              }}
+            >
+              Gestión de Usuarios
+            </Text>
+            <ChevronRightIcon size={24} color="#0ea5e9" />
+          </View>
+
+          <Text
+            style={{
+              color: '#94a3b8',
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            Ver y eliminar usuarios del sistema.
+          </Text>
+        </TouchableOpacity>
+
+        {/* Gestión de Ligas */}
+        <TouchableOpacity
+          onPress={() => (navigation as any).navigate('GestionLigas')}
+          style={{
+            backgroundColor: '#1e293b',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: '#334155',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <View style={{ marginRight: 12 }}>
+              <TrophyIcon size={32} color="#0892D0" />
+            </View>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 'bold',
+                flex: 1,
+              }}
+            >
+              Gestión de Ligas
+            </Text>
+            <ChevronRightIcon size={24} color="#0ea5e9" />
+          </View>
+
+          <Text
+            style={{
+              color: '#94a3b8',
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            Ver y eliminar ligas del sistema.
+          </Text>
+        </TouchableOpacity>
+
         {/* Gestión de Jugadores */}
         <TouchableOpacity
           onPress={() => (navigation as any).navigate('GestionJugadores')}

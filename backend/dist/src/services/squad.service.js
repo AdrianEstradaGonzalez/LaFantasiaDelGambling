@@ -252,13 +252,13 @@ export class SquadService {
                     players: true
                 }
             });
-            // Si no existe plantilla, crearla con formación por defecto
+            // Si no existe plantilla, crearla con formación recibida o por defecto
             if (!squad) {
                 squad = await prisma.squad.create({
                     data: {
                         userId,
                         leagueId: ligaId,
-                        formation: '4-4-2',
+                        formation: playerData.currentFormation || '4-4-2', // Usar formación recibida si existe
                         isActive: true
                     },
                     include: {
