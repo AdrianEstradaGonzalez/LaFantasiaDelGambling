@@ -922,3 +922,29 @@ export const ErrorCircleIcon = ({ size = 48, color = '#ef4444' }: IconProps) => 
     />
   </Svg>
 );
+
+// Icono de flecha izquierda (ChevronLeft) - Para botones de volver
+export const ChevronLeftIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M15 18l-6-6 6-6"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de flecha derecha (ChevronRight)
+export const ChevronRightIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M9 18l6-6-6-6"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);

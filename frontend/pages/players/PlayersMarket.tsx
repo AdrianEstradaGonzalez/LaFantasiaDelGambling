@@ -14,11 +14,9 @@ import { LoginService } from '../../services/LoginService';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { Buffer } from 'buffer';
 import { useFocusEffect } from '@react-navigation/native';
+import { ChevronLeftIcon } from '../../components/VectorIcons';
 
-// Icono de flecha para volver
-const backIcon = require('../../assets/iconos/backIcon.png');
-
-// FunciÃ³n para decodificar JWT
+// Función para decodificar JWT
 function decodeJwt(token: string): any {
   try {
     const payload = token.split('.')[1];
@@ -214,11 +212,7 @@ export const PlayersMarket = ({ navigation, route }: {
   const [posFilter, setPosFilter] = useState<PositionFilterEs>('Todos');
   const [teamFilter, setTeamFilter] = useState<number | 'all'>('all');
   const [query, setQuery] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [editedPrices, setEditedPrices] = useState<{ [key: number]: number }>({});
-  const [editedPositions, setEditedPositions] = useState<{ [key: number]: CanonicalPos }>({});
   const [isSaving, setIsSaving] = useState(false);
-  const [focusedPriceId, setFocusedPriceId] = useState<number | null>(null);
   const [budget, setBudget] = useState<number>(0);
   const [squadPlayerIds, setSquadPlayerIds] = useState<Set<number>>(new Set());
 
@@ -231,19 +225,6 @@ export const PlayersMarket = ({ navigation, route }: {
   const targetPosition = route.params?.targetPosition; // PosiciÃ³n especÃ­fica donde fichar
   const currentFormation = route.params?.currentFormation; // FormaciÃ³n actual (aunque no estÃ© guardada)
   const returnTo = route.params?.returnTo; // Pantalla a la que volver
-
-  // Verificar si el usuario es admin
-  useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const adminStatus = await LoginService.isAdmin();
-        setIsAdmin(adminStatus);
-      } catch (error) {
-        console.error('Error verificando admin:', error);
-      }
-    };
-    checkAdmin();
-  }, []);
 
   // Cargar jugadores y equipos desde el backend
   const loadPlayers = useCallback(async () => {
@@ -384,75 +365,9 @@ export const PlayersMarket = ({ navigation, route }: {
     return list;
   }, [players, posFilter, teamFilter, query, selectMode, filterByRole]);
 
-  // Guardar precios editados
-  const handleSavePrices = async () => {
-    const hasPriceChanges = Object.keys(editedPrices).length > 0;
-    const hasPositionChanges = Object.keys(editedPositions).length > 0;
-
-    if (!hasPriceChanges && !hasPositionChanges) {
-      CustomAlertManager.alert(
-        'Sin cambios',
-        'No hay modificaciones para guardar',
-        [{ text: 'OK', onPress: () => {}, style: 'default' }],
-        { icon: 'information', iconColor: '#0892D0' }
-      );
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-      
-      // Actualizar precios
-      if (hasPriceChanges) {
-        const priceUpdates = Object.entries(editedPrices).map(([id, price]) => ({
-          id: parseInt(id),
-          price
-        }));
-        await PlayerService.updateMultiplePrices(priceUpdates);
-      }
-
-      // Actualizar posiciones
-      if (hasPositionChanges) {
-        const positionUpdates = Object.entries(editedPositions).map(([id, position]) => 
-          PlayerService.updatePlayerPosition(parseInt(id), position)
-        );
-        await Promise.all(positionUpdates);
-      }
-      
-      // Recargar jugadores
-      await loadPlayers();
-      
-      // Limpiar cambios
-      setEditedPrices({});
-      setEditedPositions({});
-      
-      const changesCount = (hasPriceChanges ? Object.keys(editedPrices).length : 0) + 
-                          (hasPositionChanges ? Object.keys(editedPositions).length : 0);
-      CustomAlertManager.alert(
-        'Éxito',
-        `${changesCount} cambio(s) guardado(s) correctamente`,
-        [{ text: 'OK', onPress: () => {}, style: 'default' }],
-        { icon: 'check-circle', iconColor: '#10b981' }
-      );
-    } catch (error) {
-      console.error('Error guardando cambios:', error);
-      CustomAlertManager.alert(
-        'Error',
-        'No se pudieron guardar los cambios',
-        [{ text: 'OK', onPress: () => {}, style: 'default' }],
-        { icon: 'alert-circle', iconColor: '#ef4444' }
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Verificar si hay cambios pendientes
-  const hasChanges = Object.keys(editedPrices).length > 0 || Object.keys(editedPositions).length > 0;
-
-  // Manejar compra de jugador (modo normal, NO admin)
+  // Manejar compra de jugador (modo normal)
   const handleBuyPlayer = async (player: PlayerWithPrice) => {
-    if (!ligaId || isAdmin) return;
+    if (!ligaId) return;
 
     try {
       setIsSaving(true);
@@ -571,7 +486,7 @@ export const PlayersMarket = ({ navigation, route }: {
 
   // Manejar venta de jugador fichado
   const handleSellPlayer = async (player: PlayerWithPrice) => {
-    if (!ligaId || isAdmin) return;
+    if (!ligaId) return;
 
     try {
       setIsSaving(true);
@@ -743,7 +658,8 @@ export const PlayersMarket = ({ navigation, route }: {
       ligaId,
       ligaName,
       budget,
-      isAlreadyInSquad
+      isAlreadyInSquad,
+      currentFormation // Pasar la formación actual
     });
   };
 
@@ -752,22 +668,14 @@ export const PlayersMarket = ({ navigation, route }: {
     const cat = normalizePosition(p.position);
     const displayCat: CanonicalPos = cat ?? 'Midfielder';
     
-    // Verificar si el jugador ya estÃ¡ fichado
+    // Verificar si el jugador ya está fichado
     const isAlreadyInSquad = squadPlayerIds.has(p.id);
     
-    // PosiciÃ³n actual (editada o original)
-    const currentPosition = editedPositions[p.id] ?? displayCat;
-    const isPositionEdited = editedPositions[p.id] !== undefined;
-    
-    const badgeColor = posColors[currentPosition];
-    const badgeAbbr = posAbbr[currentPosition];
+    const badgeColor = posColors[displayCat];
+    const badgeAbbr = posAbbr[displayCat];
     const photo = p.photo ?? getAvatarUri(p);
 
-    // Precio actual (editado o original)
-    const currentPrice = editedPrices[p.id] ?? p.price;
-    const isPriceEdited = editedPrices[p.id] !== undefined;
-
-    // En modo selecciÃ³n, envolver en TouchableOpacity
+    // En modo selección, envolver en TouchableOpacity
     const content = (
       <View style={{ flexDirection: 'column', gap: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -780,7 +688,7 @@ export const PlayersMarket = ({ navigation, route }: {
             <Text style={{ color: '#cbd5e1', fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{p.name}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
               <View style={{ 
-                backgroundColor: isPositionEdited ? '#0892D0' : badgeColor, 
+                backgroundColor: badgeColor, 
                 paddingHorizontal: 8, 
                 paddingVertical: 4, 
                 borderRadius: 8 
@@ -797,138 +705,61 @@ export const PlayersMarket = ({ navigation, route }: {
             </View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {/* Precio (editable si es admin y no estÃ¡ en modo selecciÃ³n) */}
-            {isAdmin && !selectMode ? (
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Precio</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TextInput
-                    value={focusedPriceId === p.id ? (editedPrices[p.id]?.toString() || '') : currentPrice.toString()}
-                    onFocus={() => {
-                      setFocusedPriceId(p.id);
-                    }}
-                    onBlur={() => {
-                      setFocusedPriceId(null);
-                      // Si el campo estÃ¡ vacÃ­o al perder el foco, restaurar el precio original
-                      if (!editedPrices[p.id]) {
-                        setEditedPrices(prev => {
-                          const newPrices = { ...prev };
-                          delete newPrices[p.id];
-                          return newPrices;
-                        });
-                      }
-                    }}
-                    onChangeText={(text) => {
-                      if (text === '') {
-                        // Permitir campo vacÃ­o mientras se escribe
-                        setEditedPrices(prev => {
-                          const newPrices = { ...prev };
-                          delete newPrices[p.id];
-                          return newPrices;
-                        });
-                        return;
-                      }
-                      const numValue = parseInt(text);
-                      if (!isNaN(numValue) && numValue >= 1 && numValue <= 250) {
-                        setEditedPrices(prev => ({ ...prev, [p.id]: numValue }));
-                      }
-                    }}
-                    keyboardType="numeric"
-                    style={{
-                      backgroundColor: isPriceEdited ? '#0892D0' : '#1a2332',
-                      borderWidth: 1,
-                      borderColor: isPriceEdited ? '#0892D0' : '#334155',
-                      color: '#fff',
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 8,
-                      fontSize: 16,
-                      fontWeight: '700',
-                      textAlign: 'center',
-                      width: 60,
-                      marginRight: 4
-                    }}
-                  />
-                  <Text style={{ color: '#cbd5e1', fontSize: 16, fontWeight: '700' }}>M</Text>
-                </View>
-              </View>
-            ) : (
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Precio</Text>
-                <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{currentPrice}M</Text>
-              </View>
-            )}
+            {/* Precio */}
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={{ color: '#94a3b8', fontSize: 12 }}>Precio</Text>
+              <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{p.price}M</Text>
+            </View>
             
             {/* Botones de acción según estado */}
-            {!isAdmin && (
-              isAlreadyInSquad ? (
-                // Botón de vender para jugadores fichados
-                <TouchableOpacity
-                  onPress={() => handleSellPlayer(p)}
-                  disabled={isSaving}
-                  style={{ 
-                    backgroundColor: '#ef4444', 
-                    paddingHorizontal: 12, 
-                    paddingVertical: 8, 
-                    borderRadius: 8,
-                    shadowColor: '#ef4444',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4,
-                    elevation: 4,
-                    opacity: isSaving ? 0.6 : 1
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>VENDER</Text>
-                </TouchableOpacity>
-              ) : (
-                // Botón de fichar para jugadores NO fichados
-                <TouchableOpacity
-                  onPress={() => selectMode ? handleSelectFromPlantilla(p) : handleBuyPlayer(p)}
-                  disabled={isSaving}
-                  style={{ 
-                    backgroundColor: '#10b981', 
-                    paddingHorizontal: 12, 
-                    paddingVertical: 8, 
-                    borderRadius: 8,
-                    shadowColor: '#10b981',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4,
-                    elevation: 4,
-                    opacity: isSaving ? 0.6 : 1
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>FICHAR</Text>
-                </TouchableOpacity>
-              )
+            {isAlreadyInSquad ? (
+              // Botón de vender para jugadores fichados
+              <TouchableOpacity
+                onPress={() => handleSellPlayer(p)}
+                disabled={isSaving}
+                style={{ 
+                  backgroundColor: '#ef4444', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 8, 
+                  borderRadius: 8,
+                  shadowColor: '#ef4444',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 4,
+                  elevation: 4,
+                  opacity: isSaving ? 0.6 : 1
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>VENDER</Text>
+              </TouchableOpacity>
+            ) : (
+              // Botón de fichar para jugadores NO fichados
+              <TouchableOpacity
+                onPress={() => selectMode ? handleSelectFromPlantilla(p) : handleBuyPlayer(p)}
+                disabled={isSaving}
+                style={{ 
+                  backgroundColor: '#10b981', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 8, 
+                  borderRadius: 8,
+                  shadowColor: '#10b981',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 4,
+                  elevation: 4,
+                  opacity: isSaving ? 0.6 : 1
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>FICHAR</Text>
+              </TouchableOpacity>
             )}
           </View>
         </View>
-
-        {/* Dropdown de posición editable (solo admin y no en modo selección) */}
-        {isAdmin && !selectMode && (
-          <View style={{ marginTop: 4 }}>
-            <Dropdown
-              label="Posición"
-              value={currentPosition}
-              onValueChange={(value: CanonicalPos) => {
-                setEditedPositions(prev => ({ ...prev, [p.id]: value }));
-              }}
-              items={[
-                { label: 'Portero (GK)', value: 'Goalkeeper' },
-                { label: 'Defensa (DEF)', value: 'Defender' },
-                { label: 'Centrocampista (CEN)', value: 'Midfielder' },
-                { label: 'Delantero (DEL)', value: 'Attacker' },
-              ]}
-            />
-          </View>
-        )}
       </View>
     );
 
-    // Si NO es admin, permitir comprar/vender (tanto en modo normal como selectMode)
-    if (!isAdmin && ligaId) {
+    // Permitir comprar/vender (tanto en modo normal como selectMode)
+    if (ligaId) {
       if (isAlreadyInSquad) {
         // Jugador ya fichado: mostrar como card clickeable para ver estadísticas
         return (
@@ -1007,13 +838,13 @@ export const PlayersMarket = ({ navigation, route }: {
               paddingHorizontal: 16,
             }}
           >
-            {/* BotÃ³n volver */}
+            {/* Botón volver */}
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={{ padding: 4 }}
               activeOpacity={0.8}
             >
-              <Image source={backIcon} style={{ width: 28, height: 28, tintColor: '#fff' }} resizeMode="contain" />
+              <ChevronLeftIcon size={28} color="#0892D0" />
             </TouchableOpacity>
 
             {/* TÃ­tulo centrado */}
@@ -1033,30 +864,7 @@ export const PlayersMarket = ({ navigation, route }: {
               </Text>
             </Text>
 
-            {/* BotÃ³n guardar (solo admin con cambios) */}
-            {isAdmin && hasChanges ? (
-              <TouchableOpacity
-                onPress={handleSavePrices}
-                disabled={isSaving}
-                style={{
-                  backgroundColor: '#0892D0',
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 8,
-                  minWidth: 80,
-                  alignItems: 'center'
-                }}
-                activeOpacity={0.8}
-              >
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Guardar</Text>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <View style={{ width: 28 }} />
-            )}
+            <View style={{ width: 28 }} />
           </View>
 
           <FlatList
@@ -1070,8 +878,8 @@ export const PlayersMarket = ({ navigation, route }: {
                   <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800' }}>
                     {selectMode ? 'Seleccionar Jugador' : 'Mercado de Jugadores'}
                   </Text>
-                  {/* Mostrar presupuesto si NO es admin y tenemos ligaId */}
-                  {!isAdmin && ligaId && (
+                  {/* Mostrar presupuesto si tenemos ligaId */}
+                  {ligaId && (
                     <View 
                       key={`budget-${budget}`}
                       style={{ 

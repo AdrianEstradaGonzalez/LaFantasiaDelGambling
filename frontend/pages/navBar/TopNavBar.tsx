@@ -1,12 +1,10 @@
 import React from 'react';
-import { View, TouchableOpacity, Image, Text } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
 import { Typography } from '../../styles/DesignSystem';
-
-// 🔙 Icono de flecha (puedes cambiar la ruta si usas otro)
-const backIcon = require('../../assets/iconos/backIcon.png');
+import { ChevronLeftIcon } from '../../components/VectorIcons';
 
 interface TopNavBarProps {
   title?: string;
@@ -53,7 +51,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
         }}
         activeOpacity={0.8}
       >
-        <Image source={backIcon} style={{ width: 28, height: 28, tintColor: '#fff' }} resizeMode="contain" />
+        <ChevronLeftIcon size={28} color="#0892D0" />
       </TouchableOpacity>
 
       {/* Título personalizado o título de liga */}

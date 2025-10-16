@@ -10,10 +10,20 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { JornadaService } from '../../services/JornadaService';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CustomAlertManager } from '../../components/CustomAlert';
+import { 
+  JerseyIcon, 
+  CalendarIcon, 
+  CheckCircleIcon, 
+  AlertIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
+} from '../../components/VectorIcons';
+import { Typography } from '../../styles/DesignSystem';
 
 const AdminPanel: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const [jornada, setJornada] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
@@ -92,42 +102,98 @@ const AdminPanel: React.FC = () => {
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
-      {/* Header */}
+      {/* TopNavBar estilo LigaTopNavBar */}
       <View
         style={{
-          backgroundColor: '#1e293b',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#181818',
+          borderBottomWidth: 0.5,
+          borderBottomColor: '#333',
+          paddingVertical: 10,
+          zIndex: 10,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 16,
           paddingTop: 50,
-          paddingBottom: 20,
-          paddingHorizontal: 20,
-          borderBottomWidth: 1,
-          borderBottomColor: '#334155',
         }}
       >
+        {/* Botón de volver */}
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{ marginBottom: 16 }}
+          style={{ width: 40, alignItems: 'flex-start' }}
         >
-          <Text style={{ color: '#0ea5e9', fontSize: 16 }}>← Volver</Text>
+          <ChevronLeftIcon size={28} color="#0892D0" />
         </TouchableOpacity>
+
+        {/* Título centrado */}
         <Text
           style={{
             color: '#fff',
-            fontSize: 28,
-            fontWeight: 'bold',
-            marginBottom: 8,
+            fontSize: Typography.sizes['2xl'],
+            fontWeight: '700',
+            textAlign: 'center',
+            flex: 1,
           }}
+          numberOfLines={1}
         >
-          🔧 Panel de Administración
+          GESTIÓN{' '}
+          <Text style={{ color: '#0892D0' }}>
+            DREAMLEAGUE
+          </Text>
         </Text>
-        <Text style={{ color: '#94a3b8', fontSize: 14 }}>
-          Gestiona el sistema y ejecuta cambios de jornada
-        </Text>
+
+        {/* Espacio a la derecha para balance visual */}
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
-        style={{ flex: 1 }}
+        style={{ flex: 1, marginTop: 100 }}
         contentContainerStyle={{ padding: 20 }}
       >
+        {/* Gestión de Jugadores */}
+        <TouchableOpacity
+          onPress={() => (navigation as any).navigate('GestionJugadores')}
+          style={{
+            backgroundColor: '#1e293b',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: '#334155',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <View style={{ marginRight: 12 }}>
+              <JerseyIcon size={32} color="#0892D0" />
+            </View>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 'bold',
+                flex: 1,
+              }}
+            >
+              Gestión de Jugadores
+            </Text>
+            <ChevronRightIcon size={24} color="#0ea5e9" />
+          </View>
+
+          <Text
+            style={{
+              color: '#94a3b8',
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            Edita precios y posiciones de todos los jugadores de La Liga.
+          </Text>
+        </TouchableOpacity>
+
         {/* Cambio de Jornada */}
         <View
           style={{
@@ -140,7 +206,9 @@ const AdminPanel: React.FC = () => {
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ fontSize: 32, marginRight: 12 }}>🏆</Text>
+            <View style={{ marginRight: 12 }}>
+              <CalendarIcon size={32} color="#0892D0" />
+            </View>
             <Text
               style={{
                 color: '#fff',
@@ -277,7 +345,7 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                🚀 Ejecutar Cambio de Jornada
+                Ejecutar Cambio de Jornada
               </Text>
             )}
           </TouchableOpacity>
@@ -295,7 +363,9 @@ const AdminPanel: React.FC = () => {
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 32, marginRight: 12 }}>✅</Text>
+              <View style={{ marginRight: 12 }}>
+                <CheckCircleIcon size={32} color="#10b981" />
+              </View>
               <Text
                 style={{
                   color: '#fff',
@@ -369,7 +439,9 @@ const AdminPanel: React.FC = () => {
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-            <Text style={{ fontSize: 20, marginRight: 12 }}>⚠️</Text>
+            <View style={{ marginRight: 12, marginTop: 2 }}>
+              <AlertIcon size={20} color="#fbbf24" />
+            </View>
             <View style={{ flex: 1 }}>
               <Text
                 style={{

@@ -7,9 +7,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-
-// Icono de flecha para volver
-const backIcon = require('../../assets/iconos/backIcon.png');
+import { ChevronLeftIcon } from '../../components/VectorIcons';
 
 type CanonicalPos = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker';
 
@@ -51,7 +49,7 @@ interface MatchdayPoints {
 }
 
 export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route }) => {
-  const { player, ligaId, ligaName, budget: initialBudget, isAlreadyInSquad } = route.params || {};
+  const { player, ligaId, ligaName, budget: initialBudget, isAlreadyInSquad, currentFormation } = route.params || {};
   
   if (!player) {
     return (
@@ -239,7 +237,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         playerId: player.id,
         playerName: player.name,
         role,
-        pricePaid: player.price
+        pricePaid: player.price,
+        currentFormation // Enviar la formación actual si está disponible
       });
 
       if (!result.success) {
@@ -253,9 +252,17 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       }
 
       setPlayerInSquad(true);
-      if (budget !== undefined) {
-        setBudget(budget - player.price);
+      // Actualizar presupuesto con el valor devuelto por el servicio
+      if (result.budget !== undefined) {
+        setBudget(result.budget);
       }
+
+      CustomAlertManager.alert(
+        'Fichaje exitoso',
+        `${player.name} ha sido fichado correctamente`,
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'check-circle', iconColor: '#10b981' }
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error al fichar jugador';
       CustomAlertManager.alert(
@@ -386,7 +393,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
               style={{ padding: 4 }}
               activeOpacity={0.8}
             >
-              <Image source={backIcon} style={{ width: 28, height: 28, tintColor: '#fff' }} resizeMode="contain" />
+              <ChevronLeftIcon size={28} color="#0892D0" />
             </TouchableOpacity>
 
             <Text
