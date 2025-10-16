@@ -9,6 +9,7 @@ import {
   Platform,
   TextInput as RNTextInput,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -63,9 +64,10 @@ const Login: React.FC<Props> = ({ navigation }) => {
     <View style={LoginStyles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
       
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={LoginStyles.scrollContent}
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
         <View style={LoginStyles.headerSection}>
@@ -236,7 +238,7 @@ const Login: React.FC<Props> = ({ navigation }) => {
             <Text style={LoginStyles.footerLink}>Regístrate gratis</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </ScrollView>
     </View>
   );
 };

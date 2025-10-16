@@ -260,20 +260,18 @@ export const Home = ({ navigation, route }: HomeProps) => {
           activeOpacity={0.7}
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
+            top: 20, // Subido de 50 a 40
+            left: 10,
             zIndex: 100,
             width: 48,
             height: 48,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'transparent',
-            padding: 0,
-            margin: 0,
-            borderRadius: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            borderRadius: 24,
           }}
         >
-          <MenuIcon size={32} color="#ffffff" />
+          <MenuIcon size={28} color="#ffffff" />
         </TouchableOpacity>
 
         <ScrollView
