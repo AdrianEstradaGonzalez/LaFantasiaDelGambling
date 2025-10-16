@@ -1275,8 +1275,8 @@ export default class FootballService {
   // Si matchday es un número, obtiene estadísticas solo de esa jornada específica
   static async getPlayerStatistics(playerId: number, matchday?: number | null): Promise<{
     games: { appearances: number; lineups: number; minutes: number; position: string };
-    goals: { total: number; assists: number };
-    passes: { total: number; accuracy: string };
+    goals: { total: number; assists: number; conceded: number };
+    passes: { total: number; key: number; accuracy: string };
     shots: { total: number; on: number };
     dribbles: { attempts: number; success: number };
     tackles: { total: number; blocks: number; interceptions: number };
@@ -1335,8 +1335,8 @@ export default class FootballService {
           // No jugó en esa jornada
           return {
             games: { appearances: 0, lineups: 0, minutes: 0, position: '' },
-            goals: { total: 0, assists: 0 },
-            passes: { total: 0, accuracy: '0%' },
+            goals: { total: 0, assists: 0, conceded: 0 },
+            passes: { total: 0, key: 0, accuracy: '0%' },
             shots: { total: 0, on: 0 },
             dribbles: { attempts: 0, success: 0 },
             tackles: { total: 0, blocks: 0, interceptions: 0 },
@@ -1374,8 +1374,8 @@ export default class FootballService {
           // Jugador no participó en el partido
           return {
             games: { appearances: 0, lineups: 0, minutes: 0, position: '' },
-            goals: { total: 0, assists: 0 },
-            passes: { total: 0, accuracy: '0%' },
+            goals: { total: 0, assists: 0, conceded: 0 },
+            passes: { total: 0, key: 0, accuracy: '0%' },
             shots: { total: 0, on: 0 },
             dribbles: { attempts: 0, success: 0 },
             tackles: { total: 0, blocks: 0, interceptions: 0 },
@@ -1387,6 +1387,12 @@ export default class FootballService {
           };
         }
 
+        // Calcular goles encajados por el equipo del jugador
+        const isHomeTeam = teamFixture.teams?.home?.id === playerTeamId;
+        const goalsAgainst = isHomeTeam 
+          ? teamFixture.goals?.away || 0 
+          : teamFixture.goals?.home || 0;
+
         // Retornar estadísticas del partido específico
         return {
           games: {
@@ -1397,10 +1403,12 @@ export default class FootballService {
           },
           goals: {
             total: playerStats.goals?.total || 0,
-            assists: playerStats.goals?.assists || 0
+            assists: playerStats.goals?.assists || 0,
+            conceded: goalsAgainst
           },
           passes: {
             total: playerStats.passes?.total || 0,
+            key: playerStats.passes?.key || 0,
             accuracy: playerStats.passes?.accuracy || '0%'
           },
           shots: {
@@ -1471,10 +1479,12 @@ export default class FootballService {
           },
           goals: {
             total: stats.goals?.total || 0,
-            assists: stats.goals?.assists || 0
+            assists: stats.goals?.assists || 0,
+            conceded: stats.goals?.conceded || 0
           },
           passes: {
             total: stats.passes?.total || 0,
+            key: stats.passes?.key || 0,
             accuracy: stats.passes?.accuracy || '0%'
           },
           shots: {

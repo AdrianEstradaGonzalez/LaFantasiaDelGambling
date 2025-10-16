@@ -8,6 +8,7 @@ import { CustomAlertManager } from '../../components/CustomAlert';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { ChevronLeftIcon } from '../../components/VectorIcons';
+import Svg, { Path } from 'react-native-svg';
 
 // Función para normalizar texto (eliminar acentos y convertir a minúsculas)
 function normalizeText(text: string): string {
@@ -73,6 +74,139 @@ const getAvatarUri = (p: PlayerWithPrice) => {
   const bg = '334155';
   const color = 'ffffff';
   return `https://ui-avatars.com/api/?name=${initials}&background=${bg}&color=${color}&size=128&bold=true`;
+};
+
+// Iconos de ordenamiento por precio
+const SortAscIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    {/* Símbolo de dinero */}
+    <Path d="M12 2C10.35 2 9 3.35 9 5c0 1.65 1.35 3 3 3s3-1.35 3-3c0-1.65-1.35-3-3-3zm0 10c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z" fill="#fff"/>
+    <Path d="M12 8v4m0 4v0" stroke="#fff" strokeWidth={2.5} strokeLinecap="round"/>
+    {/* Flecha hacia arriba */}
+    <Path d="M18 9l2-2m0 0l2 2m-2-2v10" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const SortDescIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    {/* Símbolo de dinero */}
+    <Path d="M12 2C10.35 2 9 3.35 9 5c0 1.65 1.35 3 3 3s3-1.35 3-3c0-1.65-1.35-3-3-3zm0 10c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z" fill="#fff"/>
+    <Path d="M12 8v4m0 4v0" stroke="#fff" strokeWidth={2.5} strokeLinecap="round"/>
+    {/* Flecha hacia abajo */}
+    <Path d="M18 5v10m0 0l-2 2m2-2l2 2" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const SortNeutralIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    {/* Símbolo de dinero sin flecha */}
+    <Path d="M12 2C10.35 2 9 3.35 9 5c0 1.65 1.35 3 3 3s3-1.35 3-3c0-1.65-1.35-3-3-3zm0 10c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z" fill="#fff"/>
+    <Path d="M12 8v4m0 4v0" stroke="#fff" strokeWidth={2.5} strokeLinecap="round"/>
+    {/* Líneas horizontales indicando sin orden */}
+    <Path d="M18 8h4M18 12h4M18 16h4" stroke="#fff" strokeWidth={2} strokeLinecap="round"/>
+  </Svg>
+);
+
+// Dropdown para filtros generales
+const FilterDropdown = ({ 
+  label, 
+  value, 
+  onValueChange, 
+  items 
+}: { 
+  label: string; 
+  value: any; 
+  onValueChange: (value: any) => void; 
+  items: { label: string; value: any }[] 
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel = items.find(item => item.value === value)?.label || label;
+
+  return (
+    <View style={{ flex: 1 }}>
+      <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 6, fontWeight: '600' }}>{label}</Text>
+      <TouchableOpacity
+        onPress={() => setIsOpen(true)}
+        style={{
+          backgroundColor: '#1a2332',
+          borderWidth: 1,
+          borderColor: '#334155',
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
+        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600', flex: 1 }} numberOfLines={1} ellipsizeMode="tail">
+          {selectedLabel}
+        </Text>
+        <Text style={{ color: '#64748b', fontSize: 18 }}>▼</Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={isOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsOpen(false)}
+      >
+        <TouchableOpacity 
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+          activeOpacity={1}
+          onPress={() => setIsOpen(false)}
+        >
+          <View style={{
+            backgroundColor: '#1a2332',
+            borderRadius: 12,
+            width: '80%',
+            maxHeight: '70%',
+            borderWidth: 1,
+            borderColor: '#334155',
+          }}>
+            <View style={{
+              paddingVertical: 16,
+              paddingHorizontal: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: '#334155'
+            }}>
+              <Text style={{ color: '#cbd5e1', fontSize: 16, fontWeight: '700' }}>{label}</Text>
+            </View>
+            <ScrollView style={{ maxHeight: 400 }}>
+              {items.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => {
+                    onValueChange(item.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    borderBottomWidth: index < items.length - 1 ? 1 : 0,
+                    borderBottomColor: '#334155',
+                    backgroundColor: item.value === value ? '#0892D0' : 'transparent'
+                  }}
+                >
+                  <Text style={{ 
+                    color: item.value === value ? '#fff' : '#cbd5e1',
+                    fontWeight: item.value === value ? '700' : '400'
+                  }}>
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
 };
 
 // Componente Dropdown para seleccionar posición
@@ -155,6 +289,7 @@ export const GestionJugadores = ({ navigation, route }: {
   const [editedPositions, setEditedPositions] = useState<{ [key: number]: CanonicalPos }>({});
   const [isSaving, setIsSaving] = useState(false);
   const [focusedPriceId, setFocusedPriceId] = useState<number | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
 
   // Cargar jugadores y equipos desde el backend
   const loadPlayers = useCallback(async () => {
@@ -206,8 +341,17 @@ export const GestionJugadores = ({ navigation, route }: {
       list = list.filter(p => p.teamId === teamFilter);
     }
     
+    // Ordenamiento por precio
+    if (sortOrder) {
+      list.sort((a, b) => {
+        const priceA = editedPrices[a.id] ?? a.price;
+        const priceB = editedPrices[b.id] ?? b.price;
+        return sortOrder === 'asc' ? priceA - priceB : priceB - priceA;
+      });
+    }
+    
     return list;
-  }, [players, posFilter, teamFilter, query]);
+  }, [players, posFilter, teamFilter, query, sortOrder, editedPrices]);
 
   // Guardar precios y posiciones editados
   const handleSavePrices = async () => {
@@ -222,6 +366,20 @@ export const GestionJugadores = ({ navigation, route }: {
         { icon: 'information', iconColor: '#0892D0' }
       );
       return;
+    }
+
+    // Validar que todos los precios sean válidos (mayores a 0)
+    if (hasPriceChanges) {
+      const invalidPrices = Object.entries(editedPrices).filter(([_, price]) => price <= 0 || price > 250);
+      if (invalidPrices.length > 0) {
+        CustomAlertManager.alert(
+          'Precios inválidos',
+          'Todos los precios deben estar entre 1 y 250 millones',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
+        return;
+      }
     }
 
     try {
@@ -316,64 +474,57 @@ export const GestionJugadores = ({ navigation, route }: {
           }}
         />
 
-        {/* Filtro de posición */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-          {positionsEs.map((pos) => {
-            const isActive = pos === posFilter;
-            return (
-              <TouchableOpacity
-                key={pos}
-                onPress={() => setPosFilter(pos)}
-                style={{
-                  backgroundColor: isActive ? '#0892D0' : '#1a2332',
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  marginRight: 8,
-                  borderWidth: 1,
-                  borderColor: isActive ? '#0892D0' : '#334155'
-                }}
-              >
-                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>{pos}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+        {/* Filtros en fila: Posición y Equipo */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+          {/* Filtro de posición - Dropdown */}
+          <FilterDropdown
+            label="POSICIÓN"
+            value={posFilter}
+            onValueChange={setPosFilter}
+            items={positionsEs.map(p => ({ label: p, value: p }))}
+          />
 
-        {/* Filtro de equipo */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <TouchableOpacity
-            onPress={() => setTeamFilter('all')}
-            style={{
-              backgroundColor: teamFilter === 'all' ? '#0892D0' : '#1a2332',
-              paddingHorizontal: 16,
-              paddingVertical: 8,
-              borderRadius: 20,
-              marginRight: 8,
-              borderWidth: 1,
-              borderColor: teamFilter === 'all' ? '#0892D0' : '#334155'
-            }}
-          >
-            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Todos</Text>
-          </TouchableOpacity>
-          {teams.map((team) => (
-            <TouchableOpacity
-              key={team.id}
-              onPress={() => setTeamFilter(team.id)}
-              style={{
-                backgroundColor: teamFilter === team.id ? '#0892D0' : '#1a2332',
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 20,
-                marginRight: 8,
-                borderWidth: 1,
-                borderColor: teamFilter === team.id ? '#0892D0' : '#334155'
-              }}
-            >
-              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>{team.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+          {/* Filtro de equipo - Dropdown */}
+          <FilterDropdown
+            label="EQUIPO"
+            value={teamFilter}
+            onValueChange={setTeamFilter}
+            items={[
+              { label: 'Todos', value: 'all' },
+              ...teams
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map(t => ({ label: t.name, value: t.id }))
+            ]}
+          />
+        </View>
+
+        {/* Botón de ordenamiento por precio */}
+        <TouchableOpacity
+          onPress={() => {
+            if (sortOrder === null) setSortOrder('desc');
+            else if (sortOrder === 'desc') setSortOrder('asc');
+            else setSortOrder(null);
+          }}
+          style={{
+            backgroundColor: '#1a2332',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: '#334155',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8
+          }}
+        >
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>
+            Ordenar por precio
+          </Text>
+          {sortOrder === null && <SortNeutralIcon />}
+          {sortOrder === 'asc' && <SortAscIcon />}
+          {sortOrder === 'desc' && <SortDescIcon />}
+        </TouchableOpacity>
       </View>
 
       {/* Lista de jugadores */}
@@ -424,13 +575,18 @@ export const GestionJugadores = ({ navigation, route }: {
                   <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Precio</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TextInput
-                      value={focusedPriceId === p.id ? (editedPrices[p.id]?.toString() || '') : currentPrice.toString()}
+                      value={currentPrice.toString()}
                       onFocus={() => {
                         setFocusedPriceId(p.id);
+                        // Inicializar con el precio actual si no hay cambios
+                        if (editedPrices[p.id] === undefined) {
+                          setEditedPrices(prev => ({ ...prev, [p.id]: p.price }));
+                        }
                       }}
                       onBlur={() => {
                         setFocusedPriceId(null);
-                        if (!editedPrices[p.id]) {
+                        // Si el precio editado es igual al original, eliminarlo de los cambios
+                        if (editedPrices[p.id] === p.price) {
                           setEditedPrices(prev => {
                             const newPrices = { ...prev };
                             delete newPrices[p.id];
@@ -439,20 +595,19 @@ export const GestionJugadores = ({ navigation, route }: {
                         }
                       }}
                       onChangeText={(text) => {
+                        // Permitir campo vacío temporalmente mientras se escribe
                         if (text === '') {
-                          setEditedPrices(prev => {
-                            const newPrices = { ...prev };
-                            delete newPrices[p.id];
-                            return newPrices;
-                          });
+                          setEditedPrices(prev => ({ ...prev, [p.id]: 0 }));
                           return;
                         }
                         const numValue = parseInt(text);
-                        if (!isNaN(numValue) && numValue >= 1 && numValue <= 250) {
+                        if (!isNaN(numValue) && numValue >= 0 && numValue <= 999) {
                           setEditedPrices(prev => ({ ...prev, [p.id]: numValue }));
                         }
                       }}
                       keyboardType="numeric"
+                      maxLength={3}
+                      selectTextOnFocus={true}
                       style={{
                         backgroundColor: isPriceEdited ? '#0892D0' : '#1a2332',
                         borderWidth: 1,

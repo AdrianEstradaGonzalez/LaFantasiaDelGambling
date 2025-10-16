@@ -90,6 +90,7 @@ model SquadPlayer {
   role       String
   createdAt  DateTime @default(now())
   pricePaid  Int      @default(1)
+  isCaptain  Boolean  @default(false)
   squad      Squad    @relation(fields: [squadId], references: [id], onDelete: Cascade)
 
   @@unique([squadId, position])

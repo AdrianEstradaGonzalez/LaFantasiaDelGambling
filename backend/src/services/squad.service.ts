@@ -6,6 +6,7 @@ export interface CreateSquadDto {
   userId: string;
   ligaId: string;
   formation: string;
+  captainPosition?: string;
   players: {
     position: string;
     playerId: number;
@@ -16,6 +17,7 @@ export interface CreateSquadDto {
 
 export interface UpdateSquadDto {
   formation?: string;
+  captainPosition?: string;
   players?: {
     position: string;
     playerId: number;
@@ -90,7 +92,24 @@ export class SquadService {
         }
       });
 
-      return squad;
+      // Si se especificó un capitán, establecerlo
+      if (data.captainPosition) {
+        const captainPlayer = squad.players.find(p => p.position === data.captainPosition);
+        if (captainPlayer) {
+          await prisma.squadPlayer.update({
+            where: { id: captainPlayer.id },
+            data: { isCaptain: true }
+          });
+        }
+      }
+
+      // Obtener plantilla actualizada con el capitán
+      const updatedSquad = await prisma.squad.findUnique({
+        where: { id: squad.id },
+        include: { players: true }
+      });
+
+      return updatedSquad;
     } catch (error) {
       console.error('Error al crear plantilla:', error);
       throw error;
@@ -177,6 +196,37 @@ export class SquadService {
         }
       });
 
+      // Si se especificó un capitán, actualizar
+      if (data.captainPosition !== undefined) {
+        // Quitar capitán a todos
+        await prisma.squadPlayer.updateMany({
+          where: {
+            squadId: updatedSquad.id,
+            isCaptain: true
+          },
+          data: {
+            isCaptain: false
+          }
+        });
+
+        // Establecer nuevo capitán si se proporcionó una posición
+        if (data.captainPosition) {
+          const captainPlayer = updatedSquad.players.find(p => p.position === data.captainPosition);
+          if (captainPlayer) {
+            await prisma.squadPlayer.update({
+              where: { id: captainPlayer.id },
+              data: { isCaptain: true }
+            });
+          }
+        }
+      }
+
+      // Obtener plantilla actualizada con el capitán
+      const finalSquad = await prisma.squad.findUnique({
+        where: { id: updatedSquad.id },
+        include: { players: true }
+      });
+
       // Obtener el presupuesto actualizado
       const membership = await prisma.leagueMember.findUnique({
         where: {
@@ -188,7 +238,7 @@ export class SquadService {
       });
 
       return {
-        squad: updatedSquad,
+        squad: finalSquad,
         budget: membership?.budget || 0,
         refundedAmount: budgetRefund
       };
@@ -473,6 +523,84 @@ export class SquadService {
       };
     } catch (error) {
       console.error('Error al eliminar jugador:', error);
+      throw error;
+    }
+  }
+
+  // Establecer capitán de la plantilla
+  static async setCaptain(userId: string, ligaId: string, position: string) {
+    try {
+      // Obtener plantilla
+      const squad = await prisma.squad.findUnique({
+        where: {
+          userId_leagueId: {
+            userId,
+            leagueId: ligaId
+          }
+        },
+        include: {
+          players: true
+        }
+      });
+
+      if (!squad) {
+        throw new Error('No tienes una plantilla en esta liga');
+      }
+
+      // Verificar que existe un jugador en la posición especificada
+      const captainPlayer = await prisma.squadPlayer.findUnique({
+        where: {
+          squadId_position: {
+            squadId: squad.id,
+            position
+          }
+        }
+      });
+
+      if (!captainPlayer) {
+        throw new Error('No hay ningún jugador en esa posición');
+      }
+
+      // Quitar capitán a todos los jugadores de la plantilla
+      await prisma.squadPlayer.updateMany({
+        where: {
+          squadId: squad.id,
+          isCaptain: true
+        },
+        data: {
+          isCaptain: false
+        }
+      });
+
+      // Establecer nuevo capitán
+      await prisma.squadPlayer.update({
+        where: {
+          id: captainPlayer.id
+        },
+        data: {
+          isCaptain: true
+        }
+      });
+
+      // Obtener plantilla actualizada
+      const updatedSquad = await prisma.squad.findUnique({
+        where: {
+          userId_leagueId: {
+            userId,
+            leagueId: ligaId
+          }
+        },
+        include: {
+          players: true
+        }
+      });
+
+      return {
+        success: true,
+        squad: updatedSquad
+      };
+    } catch (error) {
+      console.error('Error al establecer capitán:', error);
       throw error;
     }
   }

@@ -110,11 +110,11 @@ export class SquadController {
   }
 
   // POST /api/squads/:ligaId/save - Guardar o actualizar plantilla (método unificado)
-  static async saveSquad(req: FastifyRequest<{ Params: { ligaId: string }; Body: { formation: string; players: any[] } }>, reply: FastifyReply) {
+  static async saveSquad(req: FastifyRequest<{ Params: { ligaId: string }; Body: { formation: string; captainPosition?: string; players: any[] } }>, reply: FastifyReply) {
     try {
       const { ligaId } = req.params;
       const userId = (req.user as any)?.sub || (req.user as any)?.id;
-      const { formation, players } = req.body;
+      const { formation, captainPosition, players } = req.body;
       
       if (!userId) {
         throw new AppError(401, 'UNAUTHORIZED', 'Usuario no autenticado');
@@ -132,7 +132,8 @@ export class SquadController {
         // Actualizar plantilla existente
         squad = await SquadService.updateSquad(userId, ligaId, {
           formation,
-          players
+          players,
+          captainPosition
         });
       } else {
         // Crear nueva plantilla
@@ -140,7 +141,8 @@ export class SquadController {
           userId,
           ligaId,
           formation,
-          players
+          players,
+          captainPosition
         });
       }
 
@@ -236,6 +238,38 @@ export class SquadController {
         reply.status(error.statusCode).send({ message: error.message });
       } else {
         console.error('Error en removePlayerFromSquad:', error);
+        const message = error instanceof Error ? error.message : 'Error interno del servidor';
+        reply.status(500).send({ message });
+      }
+    }
+  }
+
+  // POST /api/squads/:ligaId/captain - Establecer capitán de la plantilla
+  static async setCaptain(req: FastifyRequest<{ 
+    Params: { ligaId: string }; 
+    Body: { position: string } 
+  }>, reply: FastifyReply) {
+    try {
+      const { ligaId } = req.params;
+      const { position } = req.body;
+      const userId = (req.user as any)?.sub || (req.user as any)?.id;
+      
+      if (!userId) {
+        throw new AppError(401, 'UNAUTHORIZED', 'Usuario no autenticado');
+      }
+
+      if (!position) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'Se requiere la posición del jugador');
+      }
+
+      const result = await SquadService.setCaptain(userId, ligaId, position);
+
+      reply.send(result);
+    } catch (error) {
+      if (error instanceof AppError) {
+        reply.status(error.statusCode).send({ message: error.message });
+      } else {
+        console.error('Error en setCaptain:', error);
         const message = error instanceof Error ? error.message : 'Error interno del servidor';
         reply.status(500).send({ message });
       }

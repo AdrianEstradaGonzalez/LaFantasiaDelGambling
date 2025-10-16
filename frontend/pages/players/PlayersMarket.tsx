@@ -15,6 +15,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { Buffer } from 'buffer';
 import { useFocusEffect } from '@react-navigation/native';
 import { ChevronLeftIcon } from '../../components/VectorIcons';
+import Svg, { Path } from 'react-native-svg';
 
 // Función para decodificar JWT
 function decodeJwt(token: string): any {
@@ -99,6 +100,37 @@ const getAvatarUri = (p: PlayerWithPrice) => {
   const color = 'ffffff';
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${bg}&color=${color}&size=128&length=2`;
 };
+
+// Iconos de ordenamiento por precio
+const SortAscIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    {/* Símbolo de dinero */}
+    <Path d="M12 2C10.35 2 9 3.35 9 5c0 1.65 1.35 3 3 3s3-1.35 3-3c0-1.65-1.35-3-3-3zm0 10c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z" fill="#10b981"/>
+    <Path d="M12 8v4m0 4v0" stroke="#10b981" strokeWidth={2.5} strokeLinecap="round"/>
+    {/* Flecha hacia arriba */}
+    <Path d="M18 9l2-2m0 0l2 2m-2-2v10" stroke="#10b981" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const SortDescIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    {/* Símbolo de dinero */}
+    <Path d="M12 2C10.35 2 9 3.35 9 5c0 1.65 1.35 3 3 3s3-1.35 3-3c0-1.65-1.35-3-3-3zm0 10c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z" fill="#10b981"/>
+    <Path d="M12 8v4m0 4v0" stroke="#10b981" strokeWidth={2.5} strokeLinecap="round"/>
+    {/* Flecha hacia abajo */}
+    <Path d="M18 5v10m0 0l-2 2m2-2l2 2" stroke="#10b981" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"/>
+  </Svg>
+);
+
+const SortNeutralIcon = () => (
+  <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+    {/* Símbolo de dinero sin flecha */}
+    <Path d="M12 2C10.35 2 9 3.35 9 5c0 1.65 1.35 3 3 3s3-1.35 3-3c0-1.65-1.35-3-3-3zm0 10c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z" fill="#64748b"/>
+    <Path d="M12 8v4m0 4v0" stroke="#64748b" strokeWidth={2.5} strokeLinecap="round"/>
+    {/* Líneas horizontales indicando sin orden */}
+    <Path d="M18 8h4M18 12h4M18 16h4" stroke="#64748b" strokeWidth={2} strokeLinecap="round"/>
+  </Svg>
+);
 
 // Dropdown component con Modal
 const Dropdown = ({ 
@@ -215,6 +247,7 @@ export const PlayersMarket = ({ navigation, route }: {
   const [isSaving, setIsSaving] = useState(false);
   const [budget, setBudget] = useState<number>(0);
   const [squadPlayerIds, setSquadPlayerIds] = useState<Set<number>>(new Set());
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
 
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
@@ -323,7 +356,7 @@ export const PlayersMarket = ({ navigation, route }: {
   const filtered = useMemo(() => {
     let list = players;
     
-    // Filtro por rol si estamos en modo selecciÃ³n
+    // Filtro por rol si estamos en modo selección
     if (selectMode && filterByRole) {
       const roleMapping: Record<string, CanonicalPos> = {
         'POR': 'Goalkeeper',
@@ -340,7 +373,7 @@ export const PlayersMarket = ({ navigation, route }: {
       }
     }
     
-    // Filtro por posiciÃ³n del dropdown (solo si no estÃ¡ en modo selecciÃ³n con rol fijo)
+    // Filtro por posición del dropdown (solo si no está en modo selección con rol fijo)
     if (!selectMode || !filterByRole) {
       const canonical = canonicalFromEs(posFilter);
       if (canonical) {
@@ -351,7 +384,7 @@ export const PlayersMarket = ({ navigation, route }: {
       }
     }
     
-    // Filtro por bÃºsqueda de nombre (insensible a mayÃºsculas y acentos)
+    // Filtro por búsqueda de nombre (insensible a mayúsculas y acentos)
     if (query.trim()) {
       const normalizedQuery = normalizeText(query.trim());
       list = list.filter(p => normalizeText(p.name).includes(normalizedQuery));
@@ -362,8 +395,15 @@ export const PlayersMarket = ({ navigation, route }: {
       list = list.filter(p => p.teamId === teamFilter);
     }
     
+    // Ordenamiento por precio
+    if (sortOrder) {
+      list = [...list].sort((a, b) => {
+        return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+      });
+    }
+    
     return list;
-  }, [players, posFilter, teamFilter, query, selectMode, filterByRole]);
+  }, [players, posFilter, teamFilter, query, selectMode, filterByRole, sortOrder]);
 
   // Manejar compra de jugador (modo normal)
   const handleBuyPlayer = async (player: PlayerWithPrice) => {
@@ -949,6 +989,39 @@ export const PlayersMarket = ({ navigation, route }: {
                       />
                     </View>
                   </View>
+                  
+                  {/* Botón de ordenación por precio */}
+                  {!selectMode && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSortOrder(prev => {
+                          if (prev === null) return 'desc';
+                          if (prev === 'desc') return 'asc';
+                          return null;
+                        });
+                      }}
+                      style={{
+                        backgroundColor: '#1a2332',
+                        borderWidth: 1,
+                        borderColor: '#334155',
+                        paddingHorizontal: 14,
+                        paddingVertical: 12,
+                        borderRadius: 10,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginBottom: 12,
+                        gap: 10
+                      }}
+                    >
+                      <Text style={{ color: sortOrder ? '#10b981' : '#fff', fontSize: 14, fontWeight: '600' }}>
+                        Ordenar por precio
+                      </Text>
+                      {sortOrder === null && <SortNeutralIcon />}
+                      {sortOrder === 'asc' && <SortAscIcon />}
+                      {sortOrder === 'desc' && <SortDescIcon />}
+                    </TouchableOpacity>
+                  )}
                   
                   <View style={{ marginBottom: 12 }}>
                     <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Buscar jugador</Text>

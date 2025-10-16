@@ -27,6 +27,11 @@ async function squadRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.auth]
   }, SquadController.saveSquad);
 
+  // POST /api/squads/:ligaId/captain - Establecer capitán de la plantilla
+  fastify.post('/:ligaId/captain', {
+    preHandler: [fastify.auth]
+  }, SquadController.setCaptain);
+
   // POST /api/squads - Crear nueva plantilla
   fastify.post('/', {
     preHandler: [fastify.auth]

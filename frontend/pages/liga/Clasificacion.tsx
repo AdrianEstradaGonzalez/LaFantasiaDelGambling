@@ -82,7 +82,7 @@ export const Clasificacion = () => {
             nombre: u.user?.name || 'Jugador desconocido',
             puntos: u.points ?? 0,
             posicion: index + 1,
-            presupuesto: u.initialBudget ?? 500,
+            presupuesto: u.initialBudget ?? 500, // Presupuesto inicial total disponible
           }));
 
         setJugadores(dataOrdenada);

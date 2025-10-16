@@ -21,11 +21,13 @@ export interface SquadPlayer {
   position: string;
   role: string;
   pricePaid: number;
+  isCaptain: boolean;
   createdAt: string;
 }
 
 export interface SaveSquadRequest {
   formation: string;
+  captainPosition?: string; // Posición del capitán
   players: {
     position: string;
     playerId: number;
@@ -216,6 +218,35 @@ export class SquadService {
       return await response.json();
     } catch (error) {
       console.error('Error en removePlayerFromSquad:', error);
+      throw error;
+    }
+  }
+
+  // Establecer capitán de la plantilla
+  static async setCaptain(ligaId: string, position: string): Promise<{ success: boolean; squad: Squad }> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/captain`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ position }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al establecer el capitán');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error en setCaptain:', error);
       throw error;
     }
   }

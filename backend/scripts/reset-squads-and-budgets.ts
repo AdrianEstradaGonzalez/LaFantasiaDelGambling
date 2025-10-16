@@ -28,18 +28,24 @@ async function resetSquadsAndBudgets() {
       console.log(`✅ Eliminadas ${deletedSquads.count} plantillas de todas las ligas`);
     }
 
-    // 2. Resetear presupuestos de fichajes a 500M
+    // 2. Resetear presupuestos de fichajes a 500M (budget e initialBudget)
     if (leagueId) {
       // Resetear solo una liga específica
       const result = await prisma.leagueMember.updateMany({
         where: { leagueId },
-        data: { budget: 500 },
+        data: { 
+          budget: 500,
+          initialBudget: 500 
+        },
       });
       console.log(`✅ Presupuestos reseteados a 500M para ${result.count} miembros de la liga ${leagueId}`);
     } else {
       // Resetear todas las ligas
       const result = await prisma.leagueMember.updateMany({
-        data: { budget: 500 },
+        data: { 
+          budget: 500,
+          initialBudget: 500 
+        },
       });
       console.log(`✅ Presupuestos reseteados a 500M para ${result.count} miembros en todas las ligas`);
     }
@@ -54,15 +60,15 @@ async function resetSquadsAndBudgets() {
     });
 
     console.log('\n📊 Estado actual de presupuestos de fichajes:');
-    console.log('─'.repeat(80));
+    console.log('─'.repeat(100));
     members.forEach((member: any) => {
       console.log(
         `Liga: ${member.league.name.padEnd(20)} | ` +
         `Usuario: ${(member.user.name || member.user.email).padEnd(25)} | ` +
-        `Presupuesto: ${member.budget}M`
+        `Budget: ${member.budget}M | Initial: ${member.initialBudget}M`
       );
     });
-    console.log('─'.repeat(80));
+    console.log('─'.repeat(100));
 
     // 4. Verificar que no hay plantillas
     const remainingSquads = await prisma.squad.count({

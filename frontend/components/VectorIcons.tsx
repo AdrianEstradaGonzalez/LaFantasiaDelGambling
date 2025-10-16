@@ -1,12 +1,40 @@
 import React from 'react';
 import { View } from 'react-native';
-import Svg, { Path, Circle, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Polygon } from 'react-native-svg';
 
 interface IconProps {
   size?: number;
   color?: string;
   isActive?: boolean;
 }
+
+export const CaptainIcon = ({ size = 24, color = '#ffd700' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    {/* Brazalete de capitán con forma de "C" */}
+    <Path
+      d="M12 4C7.58 4 4 7.58 4 12s3.58 8 8 8c1.5 0 2.9-.4 4.1-1.1"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      fill="none"
+    />
+    <Path
+      d="M8 12c0-2.2 1.8-4 4-4s4 1.8 4 4c0 .7-.2 1.4-.5 2"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      fill="none"
+    />
+    {/* Letra "C" destacada */}
+    <Path
+      d="M14 12c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      fill="none"
+    />
+  </Svg>
+);
 
 export const HomeIcon = ({ size = 24, color = '#ffffff', isActive = false }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

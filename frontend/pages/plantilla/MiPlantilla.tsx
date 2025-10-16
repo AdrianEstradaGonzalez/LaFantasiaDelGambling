@@ -8,7 +8,7 @@ import { SquadService } from '../../services/SquadService';
 import { PlayerService } from '../../services/PlayerService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { TacticsIcon, ChartBarIcon, DeleteIcon } from '../../components/VectorIcons';
+import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 
 type Formation = {
@@ -263,6 +263,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   
   const [selectedFormation, setSelectedFormation] = useState<Formation>(formations[0]);
   const [selectedPlayers, setSelectedPlayers] = useState<Record<string, any>>({});
+  const [captainPosition, setCaptainPosition] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isChangingFormation, setIsChangingFormation] = useState(false);
@@ -301,7 +302,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       if (params?.selectedPlayer && params?.targetPosition) {
         setSelectedPlayers(prev => ({ 
           ...prev, 
-          [params.targetPosition]: params.selectedPlayer 
+          [params.targetPosition]: {
+            ...params.selectedPlayer,
+            isCaptain: false // Inicializar como no capitán
+          }
         }));
         // Limpiar los parÃ¡metros
         navigation.setParams({ selectedPlayer: undefined, targetPosition: undefined });
@@ -550,6 +554,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           // Cargar jugadores existentes con datos completos
           const allPlayers = await PlayerService.getAllPlayers(); // Cambio: ahora desde la BD
           const playersMap: Record<string, any> = {};
+          let captainPos: string | null = null;
           
           existingSquad.players.forEach(squadPlayer => {
             // Buscar el jugador completo en la lista
@@ -558,20 +563,31 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               // Agregar el pricePaid del squadPlayer al jugador completo
               playersMap[squadPlayer.position] = {
                 ...fullPlayer,
-                pricePaid: squadPlayer.pricePaid // IMPORTANTE: Preservar el precio pagado
+                pricePaid: squadPlayer.pricePaid, // IMPORTANTE: Preservar el precio pagado
+                isCaptain: squadPlayer.isCaptain // IMPORTANTE: Preservar el estado de capitán
               };
             } else {
               // Fallback si no se encuentra el jugador
               playersMap[squadPlayer.position] = {
                 id: squadPlayer.playerId,
                 name: squadPlayer.playerName,
-                pricePaid: squadPlayer.pricePaid
+                pricePaid: squadPlayer.pricePaid,
+                isCaptain: squadPlayer.isCaptain
               };
+            }
+            
+            // Detectar el capitán
+            if (squadPlayer.isCaptain) {
+              captainPos = squadPlayer.position;
             }
           });
           setSelectedPlayers(playersMap);
           setOriginalPlayers(playersMap); // Guardar jugadores originales
+          setCaptainPosition(captainPos); // Establecer capitán
           console.log('Jugadores originales cargados:', Object.keys(playersMap).length, 'jugadores');
+          if (captainPos) {
+            console.log('Capitán detectado en posición:', captainPos);
+          }
         }
       } catch (error) {
         console.error('Error al cargar plantilla existente:', error);
@@ -638,6 +654,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       // Actualizar el presupuesto local
       setBudget(result.budget);
       
+      // Si el jugador eliminado era el capitán, quitar el capitán
+      if (captainPosition === positionId) {
+        setCaptainPosition(null);
+      }
+      
       // Eliminar el jugador del estado local
       setSelectedPlayers(prev => {
         const newPlayers = { ...prev };
@@ -653,6 +674,61 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         [{ text: 'OK', onPress: () => {}, style: 'default' }],
         { icon: 'alert-circle', iconColor: '#ef4444' }
       );
+    }
+  };
+
+  const toggleCaptain = async (positionId: string) => {
+    if (!ligaId) return;
+    
+    // Si el jugador ya es capitán, quitarlo
+    if (captainPosition === positionId) {
+      setCaptainPosition(null);
+      // Actualizar el estado local para quitar isCaptain
+      setSelectedPlayers(prev => ({
+        ...prev,
+        [positionId]: { ...prev[positionId], isCaptain: false }
+      }));
+      return;
+    }
+    
+    // Establecer nuevo capitán
+    setCaptainPosition(positionId);
+    
+    // Actualizar el estado local
+    setSelectedPlayers(prev => {
+      const updated = { ...prev };
+      // Quitar isCaptain del capitán anterior
+      Object.keys(updated).forEach(pos => {
+        if (updated[pos]) {
+          updated[pos] = { ...updated[pos], isCaptain: pos === positionId };
+        }
+      });
+      return updated;
+    });
+    
+    // Guardar inmediatamente en el backend
+    try {
+      await SquadService.setCaptain(ligaId, positionId);
+      console.log('Capitán establecido en posición:', positionId);
+    } catch (error) {
+      console.error('Error al establecer capitán:', error);
+      CustomAlertManager.alert(
+        'Error',
+        'No se pudo establecer el capitán',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+      // Revertir el cambio local si falla
+      setCaptainPosition(captainPosition);
+      setSelectedPlayers(prev => {
+        const reverted = { ...prev };
+        Object.keys(reverted).forEach(pos => {
+          if (reverted[pos]) {
+            reverted[pos] = { ...reverted[pos], isCaptain: pos === captainPosition };
+          }
+        });
+        return reverted;
+      });
     }
   };
 
@@ -674,6 +750,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     try {
       const squadData = {
         formation: selectedFormation.id,
+        captainPosition: captainPosition || undefined, // Incluir posición del capitán
         players: playersList.map(([position, player]) => ({
           position,
           playerId: player.id,
@@ -843,8 +920,16 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               try {
                 const playersList = Object.entries(adaptedPlayers).filter(([_, player]) => player !== null);
                 
+                // Verificar si el capitán sigue en la nueva formación
+                let newCaptainPos = captainPosition;
+                if (captainPosition && !adaptedPlayers[captainPosition]) {
+                  newCaptainPos = null;
+                  setCaptainPosition(null);
+                }
+                
                 const squadData = {
                   formation: formation.id,
+                  captainPosition: newCaptainPos || undefined,
                   players: playersList.map(([position, player]) => ({
                     position,
                     playerId: player.id,
@@ -942,6 +1027,43 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Consejo para nombrar capitán - Solo en modo Alineación y cuando NO hay capitán */}
+        {activeTab === 'alineacion' && !captainPosition && (
+          <View style={{
+            backgroundColor: 'rgba(255, 215, 0, 0.15)',
+            borderLeftWidth: 4,
+            borderLeftColor: '#ffd700',
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+            marginBottom: 12,
+            borderRadius: 8,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            borderWidth: 1,
+            borderColor: 'rgba(255, 215, 0, 0.3)'
+          }}>
+            <View style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: '#ffd700',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <CaptainIcon size={20} color="#000" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700', marginBottom: 2 }}>
+                Selecciona tu Capitán
+              </Text>
+              <Text style={{ color: '#e5e7eb', fontSize: 11, fontWeight: '500' }}>
+                Mantén presionado un jugador para nombrarlo capitán. Puntuará el doble.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Campo de FÃºtbol con swipe */}
         <View
@@ -1060,11 +1182,14 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           {activeTab === 'alineacion' && selectedFormation.positions.map(position => {
             const player = selectedPlayers[position.id];
             const photoUri = player?.photo || (player ? getAvatarUri(player) : undefined);
+            const isCaptain = captainPosition === position.id;
             
             return (
               <TouchableOpacity
                 key={position.id}
                 onPress={() => selectPlayer(position.id)}
+                onLongPress={() => player && toggleCaptain(position.id)}
+                delayLongPress={500}
                 style={{
                   position: 'absolute',
                   left: `${position.x}%`,
@@ -1083,29 +1208,56 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         width: 70,
                         height: 70,
                         borderRadius: 35,
-                        borderWidth: 2,
-                        borderColor: '#fff',
+                        borderWidth: isCaptain ? 3 : 2,
+                        borderColor: isCaptain ? '#ffd700' : '#fff',
                         backgroundColor: '#0b1220',
-                        shadowColor: '#000',
+                        shadowColor: isCaptain ? '#ffd700' : '#000',
                         shadowOffset: { width: 0, height: 3 },
-                        shadowOpacity: 0.5,
+                        shadowOpacity: isCaptain ? 0.8 : 0.5,
                         shadowRadius: 6,
                         elevation: 6,
                         overflow: 'visible',
                         position: 'relative'
                       }}
                     >
-                      <View style={{ overflow: 'hidden', borderRadius: 33, width: 66, height: 66 }}>
+                      <View style={{ overflow: 'hidden', borderRadius: 33, width: isCaptain ? 64 : 66, height: isCaptain ? 64 : 66 }}>
                         <Image
                           source={{ uri: photoUri }}
                           style={{
-                            width: 66,
-                            height: 66,
+                            width: isCaptain ? 64 : 66,
+                            height: isCaptain ? 64 : 66,
                             borderRadius: 33
                           }}
                           resizeMode="cover"
                         />
                       </View>
+                      
+                      {/* Brazalete de capitán en esquina superior izquierda */}
+                      {isCaptain && (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            top: -4,
+                            left: -4,
+                            width: 28,
+                            height: 28,
+                            borderRadius: 14,
+                            backgroundColor: '#ffd700',
+                            borderWidth: 2,
+                            borderColor: '#fff',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            shadowColor: '#ffd700',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.8,
+                            shadowRadius: 4,
+                            elevation: 6
+                          }}
+                        >
+                          <CaptainIcon size={18} color="#000" />
+                        </View>
+                      )}
+                      
                       {/* Escudo del equipo en esquina superior derecha */}
                       {player.teamCrest && (
                         <View
@@ -1212,9 +1364,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         height: 70,
                         borderRadius: 35,
                         borderWidth: 2,
-                        borderColor: '#0892D0',
+                        borderColor: player.isCaptain ? '#ffd700' : '#0892D0',
                         backgroundColor: '#0b1220',
-                        shadowColor: '#0892D0',
+                        shadowColor: player.isCaptain ? '#ffd700' : '#0892D0',
                         shadowOffset: { width: 0, height: 3 },
                         shadowOpacity: 0.6,
                         shadowRadius: 6,
@@ -1234,7 +1386,34 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                           resizeMode="cover"
                         />
                       </View>
-                      {/* Badge de puntuaciÃ³n */}
+                      
+                      {/* Badge de capitán - top left */}
+                      {player.isCaptain && (
+                        <View
+                          style={{
+                            position: 'absolute',
+                            top: -8,
+                            left: -8,
+                            width: 28,
+                            height: 28,
+                            borderRadius: 14,
+                            backgroundColor: '#ffd700',
+                            borderWidth: 2,
+                            borderColor: '#fff',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            shadowColor: '#000',
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.4,
+                            shadowRadius: 4,
+                            elevation: 6
+                          }}
+                        >
+                          <CaptainIcon size={16} color="#000" />
+                        </View>
+                      )}
+                      
+                      {/* Badge de puntuación - top right */}
                       <View
                         style={{
                           position: 'absolute',
@@ -1311,6 +1490,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         {/* Lista de jugadores seleccionados */}
         <View style={{ backgroundColor: '#1a2332', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#334155' }}>
           <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>Plantilla Actual</Text>
+          
           {Object.keys(selectedPlayers).length === 0 ? (
             <Text style={{ color: '#94a3b8', textAlign: 'center', marginVertical: 20 }}>
               Toca las posiciones en el campo para seleccionar jugadores
@@ -1362,6 +1542,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               };
               
               const photoUri = player.photo || getAvatarUriWithInitials(player.name);
+              const isCaptain = captainPosition === positionId;
               
               return (
                 <View key={positionId} style={{
@@ -1369,7 +1550,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   alignItems: 'center',
                   paddingVertical: 8,
                   borderBottomWidth: 1,
-                  borderBottomColor: '#334155'
+                  borderBottomColor: '#334155',
+                  backgroundColor: isCaptain ? 'rgba(255, 215, 0, 0.1)' : 'transparent'
                 }}>
                   <View style={{
                     width: 24,
@@ -1386,22 +1568,55 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   </View>
                   
                   {/* Foto del jugador */}
-                  <Image
-                    source={{ uri: photoUri }}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: 16,
-                      marginRight: 8,
-                      borderWidth: 1,
-                      borderColor: '#334155'
-                    }}
-                    resizeMode="cover"
-                  />
+                  <View style={{ position: 'relative', marginRight: 8 }}>
+                    <Image
+                      source={{ uri: photoUri }}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        borderWidth: isCaptain ? 2 : 1,
+                        borderColor: isCaptain ? '#ffd700' : '#334155'
+                      }}
+                      resizeMode="cover"
+                    />
+                    {/* Brazalete de capitán mini */}
+                    {isCaptain && (
+                      <View
+                        style={{
+                          position: 'absolute',
+                          top: -4,
+                          right: -4,
+                          width: 16,
+                          height: 16,
+                          borderRadius: 8,
+                          backgroundColor: '#ffd700',
+                          borderWidth: 1,
+                          borderColor: '#fff',
+                          justifyContent: 'center',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <CaptainIcon size={10} color="#000" />
+                      </View>
+                    )}
+                  </View>
                   
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text style={{ color: '#cbd5e1', fontWeight: '600' }}>{player.name}</Text>
+                      <Text style={{ color: isCaptain ? '#ffd700' : '#cbd5e1', fontWeight: isCaptain ? '700' : '600' }}>
+                        {player.name}
+                      </Text>
+                      {isCaptain && (
+                        <View style={{
+                          backgroundColor: '#ffd700',
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 6
+                        }}>
+                          <Text style={{ color: '#000', fontSize: 10, fontWeight: 'bold' }}>CAPITÁN</Text>
+                        </View>
+                      )}
                       {player.price && (
                         <View style={{
                           backgroundColor: '#10b981',

@@ -82,51 +82,89 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     let points = 0;
     const minutes = stats.games?.minutes || 0;
 
-    // BASE GENERAL (para todos)
+    // BASE GENERAL - Minutos jugados
     if (minutes > 0 && minutes < 45) points += 1;
     if (minutes >= 45) points += 2;
-    
-    points += (stats.goals?.assists || 0) * 3;
-    points -= (stats.cards?.yellow || 0) * 1;
-    points -= (stats.cards?.red || 0) * 3;
-    points -= (stats.penalty?.committed || 0) * 2;
-    points += (stats.penalty?.scored || 0) * 3;
-    points -= (stats.penalty?.missed || 0) * 2;
 
-    // PORTERO
+    // ESTADÍSTICAS ESPECÍFICAS POR POSICIÓN
     if (role === 'Goalkeeper') {
-      if (minutes >= 60 && (stats.goalkeeper?.cleanSheets || 0) > 0) points += 5;
+      // Goles marcados
+      points += (stats.goals?.total || 0) * 10;
+      // Asistencias
+      points += (stats.goals?.assists || 0) * 3;
+      // Goles encajados = 0 (bonus por no encajar)
+      if ((stats.goalkeeper?.conceded || 0) === 0) points += 5;
+      // Paradas
+      points += (stats.goalkeeper?.saves || 0);
+      // Goles encajados
       points -= (stats.goalkeeper?.conceded || 0) * 2;
-      points += (stats.goalkeeper?.saves || 0) * 1;
+      // Penaltis parados
       points += (stats.penalty?.saved || 0) * 5;
     }
 
-    // DEFENSA
     if (role === 'Defender') {
-      if (minutes >= 60 && (stats.goals?.conceded || 0) === 0) points += 5;
+      // Goles marcados
       points += (stats.goals?.total || 0) * 6;
-      points += Math.floor((stats.fouls?.drawn || 0) / 3) * 1;
-      points += Math.floor((stats.tackles?.interceptions || 0) / 3) * 1;
-      points += (stats.shots?.on || 0) * 1;
+      // Asistencias
+      points += (stats.goals?.assists || 0) * 3;
+      // Goles encajados = 0 (sin portería a cero)
+      if ((stats.goals?.conceded || 0) === 0) points += 4;
+      // Tiros a puerta
+      points += (stats.shots?.on || 0);
+      // Goles encajados
+      points -= (stats.goals?.conceded || 0);
+      // Duelos ganados (cada 2)
+      points += Math.floor((stats.duels?.won || 0) / 2);
     }
 
-    // CENTROCAMPISTA
     if (role === 'Midfielder') {
+      // Goles marcados
       points += (stats.goals?.total || 0) * 5;
-      points += (stats.passes?.key || 0) * 1;
-      points += Math.floor((stats.fouls?.drawn || 0) / 3) * 1;
-      points += Math.floor((stats.tackles?.interceptions || 0) / 3) * 1;
-      points += (stats.shots?.on || 0) * 1;
+      // Asistencias
+      points += (stats.goals?.assists || 0) * 3;
+      // Goles encajados = 0 (sin portería a cero)
+      if ((stats.goals?.conceded || 0) === 0) points += 1;
+      // Tiros a puerta
+      points += (stats.shots?.on || 0);
+      // Goles encajados (cada 2)
+      points -= Math.floor((stats.goals?.conceded || 0) / 2);
+      // Pases clave (cada 2)
+      points += Math.floor((stats.passes?.key || 0) / 2);
+      // Regates exitosos (cada 2)
+      points += Math.floor((stats.dribbles?.success || 0) / 2);
+      // Faltas recibidas (cada 3)
+      points += Math.floor((stats.fouls?.drawn || 0) / 3);
     }
 
-    // DELANTERO
     if (role === 'Attacker') {
+      // Goles marcados
       points += (stats.goals?.total || 0) * 4;
-      points += (stats.passes?.key || 0) * 1;
-      points += Math.floor((stats.fouls?.drawn || 0) / 3) * 1;
-      points += Math.floor((stats.dribbles?.success || 0) / 2) * 1;
-      points += (stats.shots?.on || 0) * 1;
+      // Asistencias
+      points += (stats.goals?.assists || 0) * 3;
+      // Tiros a puerta
+      points += (stats.shots?.on || 0);
+      // Pases clave (cada 2)
+      points += Math.floor((stats.passes?.key || 0) / 2);
+      // Regates exitosos (cada 2)
+      points += Math.floor((stats.dribbles?.success || 0) / 2);
+      // Faltas recibidas (cada 3)
+      points += Math.floor((stats.fouls?.drawn || 0) / 3);
     }
+
+    // BASE GENERAL - Penaltis (para todas las posiciones)
+    points += (stats.penalty?.won || 0) * 2;
+    points -= (stats.penalty?.committed || 0) * 2;
+    points -= (stats.penalty?.missed || 0) * 2;
+    
+    // BASE GENERAL - Tarjetas (para todas las posiciones)
+    points -= (stats.cards?.yellow || 0);
+    points -= (stats.cards?.red || 0) * 3;
+
+    // BASE GENERAL - Valoración del partido (para todas las posiciones)
+    const rating = stats.rating ? parseFloat(stats.rating) : 0;
+    if (rating > 8) points += 3;
+    else if (rating >= 6.5 && rating <= 8) points += 2;
+    else if (rating >= 5) points += 1;
 
     return points;
   };
@@ -708,6 +746,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   </View>
                 </View>
 
+                {/* BASE GENERAL - Todas las posiciones */}
                 <StatRow
                   cantidad={selectedData.stats.games?.minutes || 0}
                   estadistica="Minutos jugados"
@@ -716,10 +755,173 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                     (selectedData.stats.games?.minutes || 0) >= 45 ? 2 : 0
                   }
                 />
+
+                {/* PORTERO - Estadísticas específicas */}
+                {position === 'Goalkeeper' && (
+                  <>
+                    <StatRow
+                      cantidad={selectedData.stats.goals?.total || 0}
+                      estadistica="Goles marcados"
+                      puntos={(selectedData.stats.goals?.total || 0) * 10}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.goals?.assists || 0}
+                      estadistica="Asistencias"
+                      puntos={(selectedData.stats.goals?.assists || 0) * 3}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.goalkeeper?.saves || 0}
+                      estadistica="Paradas"
+                      puntos={selectedData.stats.goalkeeper?.saves || 0}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.goalkeeper?.conceded || 0}
+                      estadistica="Goles encajados"
+                      puntos={
+                        (selectedData.stats.goalkeeper?.conceded || 0) === 0 
+                          ? 5  // Bonus por no encajar goles
+                          : (selectedData.stats.goalkeeper?.conceded || 0) * -2  // Penalización por goles encajados
+                      }
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.penalty?.saved || 0}
+                      estadistica="Penaltis parados"
+                      puntos={(selectedData.stats.penalty?.saved || 0) * 5}
+                    />
+                  </>
+                )}
+
+                {/* DEFENSA - Estadísticas específicas */}
+                {position === 'Defender' && (
+                  <>
+                    <StatRow
+                      cantidad={selectedData.stats.goals?.total || 0}
+                      estadistica="Goles marcados"
+                      puntos={(selectedData.stats.goals?.total || 0) * 6}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.goals?.assists || 0}
+                      estadistica="Asistencias"
+                      puntos={(selectedData.stats.goals?.assists || 0) * 3}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.shots?.on || 0}
+                      estadistica="Tiros a puerta"
+                      puntos={selectedData.stats.shots?.on || 0}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.goals?.conceded || 0}
+                      estadistica="Goles encajados"
+                      puntos={
+                        (selectedData.stats.goals?.conceded || 0) === 0 
+                          ? 4  // Bonus por no encajar goles
+                          : (selectedData.stats.goals?.conceded || 0) * -1  // Penalización por goles encajados
+                      }
+                    />
+                    <StatRow
+                      cantidad={Math.floor((selectedData.stats.duels?.won || 0) / 2)}
+                      estadistica="Duelos ganados"
+                      puntos={Math.floor((selectedData.stats.duels?.won || 0) / 2)}
+                    />
+                  </>
+                )}
+
+                {/* CENTROCAMPISTA - Estadísticas específicas */}
+                {position === 'Midfielder' && (
+                  <>
+                    <StatRow
+                      cantidad={selectedData.stats.goals?.total || 0}
+                      estadistica="Goles marcados"
+                      puntos={(selectedData.stats.goals?.total || 0) * 5}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.goals?.assists || 0}
+                      estadistica="Asistencias"
+                      puntos={(selectedData.stats.goals?.assists || 0) * 3}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.shots?.on || 0}
+                      estadistica="Tiros a puerta"
+                      puntos={selectedData.stats.shots?.on || 0}
+                    />
+                    <StatRow
+                      cantidad={Math.floor((selectedData.stats.goals?.conceded || 0) / 2)}
+                      estadistica="Goles encajados"
+                      puntos={
+                        (selectedData.stats.goals?.conceded || 0) === 0 
+                          ? 1  // Bonus por no encajar goles
+                          : Math.floor((selectedData.stats.goals?.conceded || 0) / 2) * -1  // Penalización por goles encajados
+                      }
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.passes?.key || 0}
+                      estadistica="Pases clave"
+                      puntos={Math.floor((selectedData.stats.passes?.key || 0) / 2)}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.dribbles?.success || 0}
+                      estadistica="Regates exitosos"
+                      puntos={Math.floor((selectedData.stats.dribbles?.success || 0) / 2)}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.fouls?.drawn || 0}
+                      estadistica="Faltas recibidas"
+                      puntos={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
+                    />
+                  </>
+                )}
+
+                {/* DELANTERO - Estadísticas específicas */}
+                {position === 'Attacker' && (
+                  <>
+                    <StatRow
+                      cantidad={selectedData.stats.goals?.total || 0}
+                      estadistica="Goles marcados"
+                      puntos={(selectedData.stats.goals?.total || 0) * 4}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.goals?.assists || 0}
+                      estadistica="Asistencias"
+                      puntos={(selectedData.stats.goals?.assists || 0) * 3}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.shots?.on || 0}
+                      estadistica="Tiros a puerta"
+                      puntos={selectedData.stats.shots?.on || 0}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.passes?.key || 0}
+                      estadistica="Pases clave"
+                      puntos={Math.floor((selectedData.stats.passes?.key || 0) / 2)}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.dribbles?.success || 0}
+                      estadistica="Regates exitosos"
+                      puntos={Math.floor((selectedData.stats.dribbles?.success || 0) / 2)}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats.fouls?.drawn || 0}
+                      estadistica="Faltas recibidas"
+                      puntos={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
+                    />
+                  </>
+                )}
+
+                {/* BASE GENERAL - Penaltis y tarjetas (para todas las posiciones) */}
                 <StatRow
-                  cantidad={selectedData.stats.goals?.assists || 0}
-                  estadistica="Asistencias"
-                  puntos={(selectedData.stats.goals?.assists || 0) * 3}
+                  cantidad={selectedData.stats.penalty?.won || 0}
+                  estadistica="Penaltis recibidos"
+                  puntos={(selectedData.stats.penalty?.won || 0) * 2}
+                />
+                <StatRow
+                  cantidad={selectedData.stats.penalty?.committed || 0}
+                  estadistica="Penaltis cometidos"
+                  puntos={(selectedData.stats.penalty?.committed || 0) * -2}
+                />
+                <StatRow
+                  cantidad={selectedData.stats.penalty?.missed || 0}
+                  estadistica="Penaltis fallados"
+                  puntos={(selectedData.stats.penalty?.missed || 0) * -2}
                 />
                 <StatRow
                   cantidad={selectedData.stats.cards?.yellow || 0}
@@ -732,135 +934,16 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   puntos={(selectedData.stats.cards?.red || 0) * -3}
                 />
                 <StatRow
-                  cantidad={selectedData.stats.penalty?.committed || 0}
-                  estadistica="Penaltis cometidos"
-                  puntos={(selectedData.stats.penalty?.committed || 0) * -2}
+                  cantidad={selectedData.stats.rating ? parseFloat(selectedData.stats.rating).toFixed(1) : '-'}
+                  estadistica="Valoración del partido"
+                  puntos={(() => {
+                    const rating = selectedData.stats.rating ? parseFloat(selectedData.stats.rating) : 0;
+                    if (rating > 8) return 3;
+                    if (rating >= 6.5 && rating <= 8) return 2;
+                    if (rating >= 5) return 1;
+                    return 0;
+                  })()}
                 />
-                <StatRow
-                  cantidad={selectedData.stats.penalty?.scored || 0}
-                  estadistica="Penaltis marcados"
-                  puntos={(selectedData.stats.penalty?.scored || 0) * 3}
-                />
-                <StatRow
-                  cantidad={selectedData.stats.penalty?.missed || 0}
-                  estadistica="Penaltis fallados"
-                  puntos={(selectedData.stats.penalty?.missed || 0) * -2}
-                />
-
-                {position === 'Goalkeeper' && (
-                  <>
-                    <StatRow
-                      cantidad={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 'SÍ' : 'NO'}
-                      estadistica="Portería a cero"
-                      puntos={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goalkeeper?.cleanSheets || 0) > 0 ? 5 : 0}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.goalkeeper?.conceded || 0}
-                      estadistica="Goles encajados"
-                      puntos={(selectedData.stats.goalkeeper?.conceded || 0) * -2}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.goalkeeper?.saves || 0}
-                      estadistica="Paradas"
-                      puntos={selectedData.stats.goalkeeper?.saves || 0}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.penalty?.saved || 0}
-                      estadistica="Penaltis parados"
-                      puntos={(selectedData.stats.penalty?.saved || 0) * 5}
-                    />
-                  </>
-                )}
-
-                {position === 'Defender' && (
-                  <>
-                    <StatRow
-                      cantidad={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goals?.conceded || 0) === 0 ? 'SÍ' : 'NO'}
-                      estadistica="Portería a cero"
-                      puntos={(selectedData.stats.games?.minutes || 0) >= 60 && (selectedData.stats.goals?.conceded || 0) === 0 ? 5 : 0}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.goals?.total || 0}
-                      estadistica="Goles marcados"
-                      puntos={(selectedData.stats.goals?.total || 0) * 6}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.fouls?.drawn || 0}
-                      estadistica="Faltas recibidas"
-                      puntos={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.tackles?.interceptions || 0}
-                      estadistica="Intercepciones"
-                      puntos={Math.floor((selectedData.stats.tackles?.interceptions || 0) / 3)}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.shots?.on || 0}
-                      estadistica="Tiros a puerta"
-                      puntos={selectedData.stats.shots?.on || 0}
-                    />
-                  </>
-                )}
-
-                {position === 'Midfielder' && (
-                  <>
-                    <StatRow
-                      cantidad={selectedData.stats.goals?.total || 0}
-                      estadistica="Goles marcados"
-                      puntos={(selectedData.stats.goals?.total || 0) * 5}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.passes?.key || 0}
-                      estadistica="Pases clave"
-                      puntos={selectedData.stats.passes?.key || 0}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.fouls?.drawn || 0}
-                      estadistica="Faltas recibidas"
-                      puntos={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.tackles?.interceptions || 0}
-                      estadistica="Intercepciones"
-                      puntos={Math.floor((selectedData.stats.tackles?.interceptions || 0) / 3)}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.shots?.on || 0}
-                      estadistica="Tiros a puerta"
-                      puntos={selectedData.stats.shots?.on || 0}
-                    />
-                  </>
-                )}
-
-                {position === 'Attacker' && (
-                  <>
-                    <StatRow
-                      cantidad={selectedData.stats.goals?.total || 0}
-                      estadistica="Goles marcados"
-                      puntos={(selectedData.stats.goals?.total || 0) * 4}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.passes?.key || 0}
-                      estadistica="Pases clave"
-                      puntos={selectedData.stats.passes?.key || 0}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.fouls?.drawn || 0}
-                      estadistica="Faltas recibidas"
-                      puntos={Math.floor((selectedData.stats.fouls?.drawn || 0) / 3)}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.dribbles?.success || 0}
-                      estadistica="Regates"
-                      puntos={Math.floor((selectedData.stats.dribbles?.success || 0) / 2)}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats.shots?.on || 0}
-                      estadistica="Tiros a puerta"
-                      puntos={selectedData.stats.shots?.on || 0}
-                    />
-                  </>
-                )}
               </ScrollView>
             </View>
           )}
