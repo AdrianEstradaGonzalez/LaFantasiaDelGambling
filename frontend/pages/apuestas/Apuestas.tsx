@@ -6,7 +6,7 @@ import { BetService, BettingBudget, Bet as UserBet } from '../../services/BetSer
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon } from '../../components/VectorIcons';
+import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon } from '../../components/VectorIcons';
 
 type Bet = {
   matchId: number;
@@ -279,6 +279,10 @@ export const Apuestas: React.FC = () => {
     return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType);
   };
 
+  function setIsDrawerOpen(arg0: boolean): void {
+    throw new Error('Function not implemented.');
+  }
+
   return (
     <>
       {loading ? (
@@ -286,6 +290,27 @@ export const Apuestas: React.FC = () => {
       ) : (
         <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
           {/* Top Header Bar - Estilo idéntico a LigaTopNavBar */}
+          {/* Icono Drawer arriba absoluto */}
+                  <TouchableOpacity
+                    onPress={() => setIsDrawerOpen(true)}
+                    activeOpacity={0.7}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      zIndex: 100,
+                      width: 48,
+                      height: 48,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: 'transparent',
+                      padding: 0,
+                      margin: 0,
+                      borderRadius: 0,
+                    }}
+                  >
+                    <MenuIcon size={32} color="#ffffff" />
+                  </TouchableOpacity>
           {ligaName && (
             <View style={{
               backgroundColor: '#181818',

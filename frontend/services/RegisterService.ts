@@ -58,6 +58,12 @@ export const RegisterService = {
       await EncryptedStorage.setItem('isAdmin', String(isAdmin));
       console.log('✅ isAdmin guardado:', isAdmin);
 
+      // Guardar sesión completa con información del usuario
+      if (result.user) {
+        await EncryptedStorage.setItem('session', JSON.stringify({ user: result.user }));
+        console.log('✅ Sesión guardada con nombre:', result.user.name);
+      }
+
       // 🔍 Verificar que se guardaron correctamente
       const savedAccessToken = await EncryptedStorage.getItem('accessToken');
       const savedUserId = await EncryptedStorage.getItem('userId');

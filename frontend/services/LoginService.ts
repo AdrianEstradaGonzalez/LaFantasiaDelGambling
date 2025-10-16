@@ -41,18 +41,23 @@ export class LoginService {
     // userId desde backend o, si no, desde el JWT (id/sub)
     const payload = decodeJwt(accessToken);
     const userId = user?.id ?? json?.userId ?? payload?.id ?? payload?.sub;
-    const isAdmin = user?.isAdmin ?? false;
+    const isAdmin = user?.isAdmin ?? payload?.isAdmin ?? false;
 
     // Guardar de forma robusta
     await EncryptedStorage.setItem('accessToken', String(accessToken));
     if (refreshToken) await EncryptedStorage.setItem('refreshToken', String(refreshToken));
     if (userId) await EncryptedStorage.setItem('userId', String(userId));
     await EncryptedStorage.setItem('isAdmin', String(isAdmin));
+    
+    // Guardar sesión completa con información del usuario
+    if (user) {
+      await EncryptedStorage.setItem('session', JSON.stringify({ user }));
+    }
 
     // 🔎 Verificación y trazas útiles
     const savedAccess = await EncryptedStorage.getItem('accessToken');
     const savedUserId = await EncryptedStorage.getItem('userId');
-    console.log('LoginService: accessToken(saved)=', !!savedAccess, 'userId(saved)=', savedUserId, 'isAdmin=', isAdmin);
+    console.log('LoginService: accessToken(saved)=', !!savedAccess, 'userId(saved)=', savedUserId, 'isAdmin=', isAdmin, 'userName=', user?.name);
 
     return { accessToken, refreshToken, userId, payload };
   }

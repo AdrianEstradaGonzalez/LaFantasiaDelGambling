@@ -46,6 +46,7 @@ export const AppNavigator = () => {
     // Prefetch equipos y jugadores al iniciar la app para minimizar peticiones posteriores
     FootballService.prefetchAllData().catch(() => {});
   }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator

@@ -7,6 +7,8 @@ import {
   Dimensions,
   ActivityIndicator,
   Image,
+  Modal,
+  Animated,
 } from 'react-native';
 import { HomeStyles as styles } from '../../styles/HomeStyles';
 import LinearGradient from 'react-native-linear-gradient';
@@ -15,12 +17,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase, RouteProp } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import LoadingScreen from '../../components/LoadingScreen';
-
-// 🧩 Importa la barra de navegación
-import BottomNavBar from '../navBar/BottomNavBar';
 import { LigaService } from '../../services/LigaService';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { LoginService } from '../../services/LoginService';
+import { MenuIcon } from '../../components/VectorIcons';
+import { DrawerMenu } from '../../components/DrawerMenu';
 
 type Liga = { id: string; nombre: string };
 const { height } = Dimensions.get('window');
@@ -38,10 +39,28 @@ export const Home = ({ navigation, route }: HomeProps) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingPartidos, setLoadingPartidos] = useState<boolean>(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   const scrollRef = useRef<ScrollView>(null);
   const jornadasScrollRef = useRef<ScrollView>(null);
+  const slideAnim = useRef(new Animated.Value(-300)).current; // Empieza fuera de la pantalla a la izquierda
 
+  // Animar apertura/cierre del drawer
+  useEffect(() => {
+    if (isDrawerOpen) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: -300,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isDrawerOpen, slideAnim]);
 
   // Función para cargar ligas (separada para reutilizar)
   const fetchLigasUsuario = useCallback(async () => {
@@ -234,31 +253,44 @@ export const Home = ({ navigation, route }: HomeProps) => {
         <LoadingScreen />
       )}
       {!loading && !loadingPartidos && (
-      <ScrollView
-        ref={scrollRef}
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: 200 }}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Mis Ligas</Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+      <>
+        {/* Icono Drawer arriba absoluto */}
+        <TouchableOpacity
+          onPress={() => setIsDrawerOpen(true)}
+          activeOpacity={0.7}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            zIndex: 100,
+            width: 48,
+            height: 48,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'transparent',
+            padding: 0,
+            margin: 0,
+            borderRadius: 0,
+          }}
+        >
+          <MenuIcon size={32} color="#ffffff" />
+        </TouchableOpacity>
+
+        <ScrollView
+          ref={scrollRef}
+          style={styles.container}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
+          {/* Header con título y botón, en una línea más abajo */}
+          <View style={[styles.header, { marginTop: 10 }]}> 
+            <Text style={[styles.headerTitle, { flex: 1 }]}>Mis Ligas</Text>
             <TouchableOpacity
               style={styles.createButton}
               onPress={() => navigation.navigate('CrearLiga')}
             >
               <Text style={styles.createButtonText}>Crear Liga</Text>
             </TouchableOpacity>
-            {isAdmin && (
-              <TouchableOpacity
-                style={[styles.createButton, { backgroundColor: '#dc2626' }]}
-                onPress={() => navigation.navigate('AdminPanel')}
-              >
-                <Text style={styles.createButtonText}>Admin</Text>
-              </TouchableOpacity>
-            )}
           </View>
-        </View>
 
         {/* Ligas */}
         <View style={styles.ligasList}>
@@ -400,10 +432,44 @@ export const Home = ({ navigation, route }: HomeProps) => {
           }
         </View>
       </ScrollView>
-      )}
 
-      {/* Barra de navegación fija */}
-      <BottomNavBar />
+      {/* Drawer Modal */}
+      <Modal
+        visible={isDrawerOpen}
+        animationType="none"
+        transparent={true}
+        onRequestClose={() => setIsDrawerOpen(false)}
+      >
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          {/* Drawer content con animación */}
+          <Animated.View 
+            style={{ 
+              width: '75%', 
+              maxWidth: 300,
+              transform: [{ translateX: slideAnim }]
+            }}
+          >
+            <DrawerMenu 
+              navigation={{
+                ...navigation,
+                closeDrawer: () => setIsDrawerOpen(false),
+                reset: (state: any) => {
+                  navigation.reset(state);
+                  setIsDrawerOpen(false);
+                },
+              }} 
+            />
+          </Animated.View>
+          {/* Overlay to close drawer */}
+          <TouchableOpacity
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+            activeOpacity={1}
+            onPress={() => setIsDrawerOpen(false)}
+          />
+        </View>
+      </Modal>
+      </>
+      )}
     </LinearGradient>
   );
 };
