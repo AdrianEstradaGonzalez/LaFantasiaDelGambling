@@ -8,18 +8,19 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  isAdmin   Boolean  @default(false)
-  resetCodes PasswordResetCode[]
+  id          String              @id @default(cuid())
+  email       String              @unique
+  password    String
+  name        String?
+  isAdmin     Boolean             @default(false)
+  leaguesLed  League[]            @relation("LeagueLeader")
+  memberships LeagueMember[]
+  resetCodes  PasswordResetCode[]
+  squads      Squad[]
 
-  leaguesLed   League[]       @relation("LeagueLeader")
-  memberships  LeagueMember[]
-  squads       Squad[]
   @@map("user")
 }
+
 model PasswordResetCode {
   id        String   @id @default(cuid())
   userId    String?
@@ -30,87 +31,84 @@ model PasswordResetCode {
   used      Boolean  @default(false)
   attempts  Int      @default(0)
   createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([email, expiresAt, used])
 }
 
 model League {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  code      String   @unique
-  leaderId  String
-  leader    User     @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
-  members   LeagueMember[]
-  squads    Squad[]
-  createdAt DateTime @default(now())
+  id         String         @id @default(cuid())
+  name       String         @unique
+  leaderId   String
+  createdAt  DateTime       @default(now())
+  code       String         @unique
+  leader     User           @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members    LeagueMember[]
+  squads     Squad[]
+  bet_option bet_option[]
 }
 
 model LeagueMember {
   leagueId      String
   userId        String
   points        Int      @default(0)
-  budget        Int      @default(500) // Presupuesto actual en millones
-  initialBudget Int      @default(500) // Presupuesto inicial de la jornada (público)
-  bettingBudget Int      @default(250) // Presupuesto para apuestas en millones
   joinedAt      DateTime @default(now())
-
-  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bets   Bet[]
+  budget        Int      @default(500)
+  initialBudget Int      @default(500)
+  bettingBudget Int      @default(250)
+  league        League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bets          Bet[]
 
   @@id([leagueId, userId])
   @@index([userId])
 }
 
 model Squad {
-  id           String   @id @default(cuid())
-  userId       String
-  leagueId     String
-  name         String   @default("Mi Plantilla")
-  formation    String   // "4-4-2", "4-3-3", etc.
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        String        @id @default(cuid())
+  userId    String
+  leagueId  String
+  name      String        @default("Mi Plantilla")
+  formation String
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  league    League        @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  players   SquadPlayer[]
 
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  league       League         @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  players      SquadPlayer[]
-
-  @@unique([userId, leagueId]) // Un usuario solo puede tener una plantilla activa por liga
+  @@unique([userId, leagueId])
   @@index([userId, leagueId])
 }
 
 model SquadPlayer {
   id         String   @id @default(cuid())
   squadId    String
-  playerId   Int      // ID del jugador de LaLiga API
+  playerId   Int
   playerName String
-  position   String   // "gk", "def1", "mid2", "att1", etc.
-  role       String   // "GK", "DEF", "MID", "ATT"
-  pricePaid  Int      @default(1) // Precio pagado en el momento de la compra (en millones)
+  position   String
+  role       String
   createdAt  DateTime @default(now())
+  pricePaid  Int      @default(1)
+  squad      Squad    @relation(fields: [squadId], references: [id], onDelete: Cascade)
 
-  squad      Squad  @relation(fields: [squadId], references: [id], onDelete: Cascade)
-
-  @@unique([squadId, position]) // Una posición solo puede tener un jugador
+  @@unique([squadId, position])
   @@index([squadId])
 }
 
 model Player {
-  id           Int      @id // ID del jugador de la API de LaLiga
-  name         String
-  position     String   // "Goalkeeper", "Defender", "Midfielder", "Attacker"
-  teamId       Int
-  teamName     String
-  teamCrest    String?
-  nationality  String?
-  shirtNumber  Int?
-  photo        String?
-  price        Int      // Precio en millones (1-250)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          Int      @id
+  name        String
+  position    String
+  teamId      Int
+  teamName    String
+  teamCrest   String?
+  nationality String?
+  shirtNumber Int?
+  photo       String?
+  price       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([teamId])
   @@index([position])
@@ -119,23 +117,39 @@ model Player {
 }
 
 model Bet {
-  id            String   @id @default(cuid())
-  leagueId      String
-  userId        String
-  jornada       Int
-  matchId       Int
-  betType       String   // "Resultado", "Goles totales", etc.
-  betLabel      String   // "Ganará Real Madrid", "Más de 2.5 goles", etc.
-  odd           Float    // Cuota de la apuesta
-  amount        Int      // Cantidad apostada en millones
-  potentialWin  Int      // Ganancia potencial = amount * odd
-  status        String   @default("pending") // "pending", "won", "lost"
-  createdAt     DateTime @default(now())
-
-  leagueMember  LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
+  id           String       @id @default(cuid())
+  leagueId     String
+  userId       String
+  jornada      Int
+  matchId      Int
+  betType      String
+  betLabel     String
+  odd          Float
+  amount       Int
+  potentialWin Int
+  status       String       @default("pending")
+  createdAt    DateTime     @default(now())
+  leagueMember LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
 
   @@index([leagueId, userId])
   @@index([jornada])
   @@index([status])
   @@map("bet")
+}
+
+model bet_option {
+  id        String   @id
+  leagueId  String
+  jornada   Int
+  matchId   Int
+  homeTeam  String
+  awayTeam  String
+  betType   String
+  betLabel  String
+  odd       Float
+  createdAt DateTime @default(now())
+  League    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId, jornada])
+  @@index([matchId])
 }
