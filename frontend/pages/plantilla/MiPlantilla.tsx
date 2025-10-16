@@ -600,22 +600,67 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     loadExistingSquad();
   }, [ligaId]);
 
-  // Recargar presupuesto cuando la pantalla obtiene el foco
+  // Recargar plantilla y presupuesto cuando la pantalla obtiene el foco
   useFocusEffect(
     useCallback(() => {
-      const reloadBudget = async () => {
-        if (ligaId) {
-          try {
-            const budgetData = await SquadService.getUserBudget(ligaId);
-            setBudget(budgetData);
-            console.log('Presupuesto recargado:', budgetData);
-          } catch (error) {
-            console.error('Error recargando presupuesto:', error);
+      const reloadSquadAndBudget = async () => {
+        if (!ligaId) return;
+        
+        try {
+          const [existingSquad, budgetData] = await Promise.all([
+            SquadService.getUserSquad(ligaId),
+            SquadService.getUserBudget(ligaId)
+          ]);
+          
+          setBudget(budgetData);
+          console.log('Presupuesto recargado:', budgetData);
+          
+          if (existingSquad) {
+            // Cargar formación existente
+            const formation = formations.find(f => f.id === existingSquad.formation);
+            if (formation) {
+              setSelectedFormation(formation);
+              setOriginalFormation(formation);
+            }
+
+            // Cargar jugadores existentes con datos completos
+            const allPlayers = await PlayerService.getAllPlayers();
+            const playersMap: Record<string, any> = {};
+            let captainPos: string | null = null;
+            
+            existingSquad.players.forEach(squadPlayer => {
+              const fullPlayer = allPlayers.find(p => p.id === squadPlayer.playerId);
+              if (fullPlayer) {
+                playersMap[squadPlayer.position] = {
+                  ...fullPlayer,
+                  pricePaid: squadPlayer.pricePaid,
+                  isCaptain: squadPlayer.isCaptain
+                };
+              } else {
+                playersMap[squadPlayer.position] = {
+                  id: squadPlayer.playerId,
+                  name: squadPlayer.playerName,
+                  pricePaid: squadPlayer.pricePaid,
+                  isCaptain: squadPlayer.isCaptain
+                };
+              }
+              
+              if (squadPlayer.isCaptain) {
+                captainPos = squadPlayer.position;
+              }
+            });
+            
+            setSelectedPlayers(playersMap);
+            setOriginalPlayers(playersMap);
+            setCaptainPosition(captainPos);
+            console.log('Plantilla recargada:', Object.keys(playersMap).length, 'jugadores');
           }
+        } catch (error) {
+          console.error('Error recargando plantilla:', error);
         }
       };
       
-      reloadBudget();
+      reloadSquadAndBudget();
     }, [ligaId])
   );
 
