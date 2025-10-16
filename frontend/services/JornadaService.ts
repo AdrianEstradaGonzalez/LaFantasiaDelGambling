@@ -34,7 +34,8 @@ export class JornadaService {
    */
   static async resetAllLeagues(jornada: number): Promise<JornadaResetResult> {
     try {
-      const token = await EncryptedStorage.getItem('token');
+      const token = await EncryptedStorage.getItem('accessToken');
+      console.log('🔑 JornadaService.resetAllLeagues - Token encontrado:', !!token);
       
       const response = await axios.post(
         `${API_URL}/jornada/reset-all`,
@@ -59,7 +60,7 @@ export class JornadaService {
    */
   static async resetLeague(leagueId: string, jornada: number): Promise<JornadaEvaluationResult> {
     try {
-      const token = await EncryptedStorage.getItem('token');
+      const token = await EncryptedStorage.getItem('accessToken');
       
       const response = await axios.post(
         `${API_URL}/jornada/reset/${leagueId}`,
@@ -84,7 +85,7 @@ export class JornadaService {
    */
   static async evaluateLeague(leagueId: string, jornada: number): Promise<JornadaEvaluationResult> {
     try {
-      const token = await EncryptedStorage.getItem('token');
+      const token = await EncryptedStorage.getItem('accessToken');
       
       const response = await axios.post(
         `${API_URL}/jornada/evaluate/${leagueId}`,
