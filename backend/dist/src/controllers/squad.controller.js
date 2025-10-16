@@ -1,5 +1,5 @@
-import { SquadService } from '../services/squad.service';
-import { AppError } from '../utils/errors';
+import { SquadService } from '../services/squad.service.js';
+import { AppError } from '../utils/errors.js';
 export class SquadController {
     // GET /api/squads/:ligaId - Obtener plantilla del usuario para una liga
     static async getUserSquad(req, reply) {

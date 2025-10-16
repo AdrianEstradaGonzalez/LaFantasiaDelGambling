@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { PlayerController } from '../controllers/player.controller';
+import { PlayerController } from '../controllers/player.controller.js';
 
 export default async function playerRoutes(app: FastifyInstance) {
   /**

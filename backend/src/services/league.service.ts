@@ -1,5 +1,5 @@
-import { LeagueRepo } from "../repositories/league.repo";
-import { LeagueMemberRepo } from "../repositories/leagueMember";
+import { LeagueRepo } from "../repositories/league.repo.js";
+import { LeagueMemberRepo } from "../repositories/leagueMember.js";
 
 // Generar código único de 8 caracteres (letras mayúsculas y números)
 const generateUniqueCode = (): string => {

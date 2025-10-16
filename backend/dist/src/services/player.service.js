@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { PlayerRepository } from '../repositories/player.repo';
+import { PlayerRepository } from '../repositories/player.repo.js';
 const API_BASE = 'https://v3.football.api-sports.io';
 const LA_LIGA_LEAGUE_ID = 140;
 const SEASON_DEFAULT = 2025;

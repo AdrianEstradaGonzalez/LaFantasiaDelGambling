@@ -1,4 +1,4 @@
-import { JornadaService } from '../services/jornada.service';
+import { JornadaService } from '../services/jornada.service.js';
 export class JornadaController {
     /**
      * POST /api/jornada/reset/:leagueId

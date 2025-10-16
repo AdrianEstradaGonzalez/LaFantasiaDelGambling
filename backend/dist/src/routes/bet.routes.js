@@ -1,4 +1,4 @@
-import { BetController } from '../controllers/bet.controller';
+import { BetController } from '../controllers/bet.controller.js';
 export default async function betRoutes(fastify) {
     // Obtener presupuesto de apuestas
     fastify.get('/budget/:leagueId', {

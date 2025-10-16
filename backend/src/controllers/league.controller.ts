@@ -1,10 +1,10 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { LeagueService } from "../services/league.service";
+import { LeagueService } from "../services/league.service.js";
 import {
   createLeagueBody, deleteLeagueParams,
   addMemberParams, addMemberBody, removeMemberParams
-} from "../schemas/league.schema";
-import { AppError } from "../utils/errors";
+} from "../schemas/league.schema.js";
+import { AppError } from "../utils/errors.js";
 
 export const LeagueController = {
   create: async (req: FastifyRequest, reply: FastifyReply) => {

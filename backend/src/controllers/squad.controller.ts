@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { SquadService } from '../services/squad.service';
-import { AppError } from '../utils/errors';
+import { SquadService } from '../services/squad.service.js';
+import { AppError } from '../utils/errors.js';
 
 export class SquadController {
   

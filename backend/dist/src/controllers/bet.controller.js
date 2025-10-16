@@ -1,4 +1,4 @@
-import { BetService } from '../services/bet.service';
+import { BetService } from '../services/bet.service.js';
 export class BetController {
     /**
      * GET /api/bets/budget/:leagueId

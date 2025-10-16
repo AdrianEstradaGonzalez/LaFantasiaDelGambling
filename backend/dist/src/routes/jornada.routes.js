@@ -1,4 +1,4 @@
-import { JornadaController } from '../controllers/jornada.controller';
+import { JornadaController } from '../controllers/jornada.controller.js';
 export default async function jornadaRoutes(fastify) {
     // Resetear jornada para una liga específica
     fastify.post('/reset/:leagueId', {

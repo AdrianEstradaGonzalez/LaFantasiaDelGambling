@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { BetService } from '../services/bet.service';
+import { BetService } from '../services/bet.service.js';
 
 export class BetController {
   /**

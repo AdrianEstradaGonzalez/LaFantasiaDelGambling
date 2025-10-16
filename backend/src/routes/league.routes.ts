@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from "fastify";
-import { LeagueController } from "../controllers/league.controller";
+import { LeagueController } from "../controllers/league.controller.js";
 
 const leagueRoutes: FastifyPluginAsync = async (app) => {
   // proteger todas con JWT

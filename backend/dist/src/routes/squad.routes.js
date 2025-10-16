@@ -1,4 +1,4 @@
-import { SquadController } from '../controllers/squad.controller';
+import { SquadController } from '../controllers/squad.controller.js';
 async function squadRoutes(fastify) {
     // GET /api/squads/:ligaId - Obtener plantilla del usuario para una liga
     fastify.get('/:ligaId', {

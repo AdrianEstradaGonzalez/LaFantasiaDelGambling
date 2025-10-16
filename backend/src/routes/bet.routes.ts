@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { BetController } from '../controllers/bet.controller';
+import { BetController } from '../controllers/bet.controller.js';
 
 export default async function betRoutes(fastify: FastifyInstance) {
   // Obtener presupuesto de apuestas

@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PlayerService } from '../services/player.service';
+import { PlayerService } from '../services/player.service.js';
 
 export class PlayerController {
   /**

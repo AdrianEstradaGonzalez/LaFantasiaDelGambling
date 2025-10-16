@@ -1,4 +1,4 @@
-import { LeagueController } from "../controllers/league.controller";
+import { LeagueController } from "../controllers/league.controller.js";
 const leagueRoutes = async (app) => {
     // proteger todas con JWT
     app.addHook("preHandler", app.auth);

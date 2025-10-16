@@ -1,4 +1,4 @@
-import { PlayerController } from '../controllers/player.controller';
+import { PlayerController } from '../controllers/player.controller.js';
 export default async function playerRoutes(app) {
     /**
      * @route POST /api/players/sync

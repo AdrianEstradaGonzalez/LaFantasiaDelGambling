@@ -1,4 +1,4 @@
-import { PlayerService } from '../services/player.service';
+import { PlayerService } from '../services/player.service.js';
 export class PlayerController {
     /**
      * Sincronizar jugadores desde la API
