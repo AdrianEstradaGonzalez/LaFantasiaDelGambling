@@ -9,11 +9,11 @@ import { authRoutes } from "./routes/auth.routes.js";
 import { env } from "./config/env.js";
 import { AppError } from "./utils/errors.js";
 import { ZodError } from "zod";
-import leagueRoutes from "./routes/league.routes";
-import squadRoutes from "./routes/squad.routes";
-import playerRoutes from "./routes/player.routes";
-import betRoutes from "./routes/bet.routes";
-import jornadaRoutes from "./routes/jornada.routes";
+import leagueRoutes from "./routes/league.routes.js";
+import squadRoutes from "./routes/squad.routes.js";
+import playerRoutes from "./routes/player.routes.js";
+import betRoutes from "./routes/bet.routes.js";
+import jornadaRoutes from "./routes/jornada.routes.js";
 export async function buildApp() {
     const app = Fastify({
         logger: {
