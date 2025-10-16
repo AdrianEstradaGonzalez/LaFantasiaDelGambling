@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { ClasificacionStyles as styles } from '../../styles/ClasificacionStyles';
 import LinearGradient from 'react-native-linear-gradient';
 import { RouteProp, useRoute } from '@react-navigation/native';
@@ -10,6 +10,7 @@ import LigaNavBar from '../navBar/LigaNavBar';
 import LigaTopNavBar from '../navBar/LigaTopNavBar';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LoadingScreen from '../../components/LoadingScreen';
+import FootballService from '../../services/FutbolService';
 
 type UsuarioClasificacion = {
   id: string;
@@ -32,6 +33,9 @@ export const Clasificacion = () => {
   const [codigoLiga, setCodigoLiga] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [selectedJornada, setSelectedJornada] = useState<number | 'Total'>('Total');
+  const [availableJornadas, setAvailableJornadas] = useState<number[]>([]);
+  const [showJornadaPicker, setShowJornadaPicker] = useState(false);
 
   useEffect(() => {
     const fetchClasificacion = async () => {
@@ -44,9 +48,33 @@ export const Clasificacion = () => {
           setCurrentUserId(userId);
         }
 
+        // Obtener jornadas disponibles
+        const matchdays = await FootballService.getAvailableMatchdays();
+        setAvailableJornadas(matchdays);
+        
+        // Determinar jornada por defecto: jornada actual o Total
+        try {
+          const { jornada: currentMatchday } = await FootballService.getMatchesForCurrentAndAdvance();
+          // Por defecto mostrar Total, salvo que estemos en jornada en curso
+          if (currentMatchday && matchdays.includes(currentMatchday)) {
+            // Si la jornada actual está disponible, mantener Total como default
+            if (selectedJornada === currentMatchday) {
+              // Solo cambiar si ya estábamos en esa jornada
+            } else if (typeof selectedJornada !== 'number') {
+              // Primera carga: mantener Total
+              setSelectedJornada('Total');
+            }
+          }
+        } catch (error) {
+          console.log('No se pudo obtener la jornada actual, usando Total');
+          setSelectedJornada('Total');
+        }
+
         const response = await LigaService.listarMiembros(ligaId);
         console.log('🔍 Clasificacion - Response completa:', JSON.stringify(response, null, 2));
 
+        // Por ahora, siempre mostramos puntos totales
+        // TODO: Implementar puntos por jornada cuando el backend lo soporte
         const dataOrdenada = response
           .sort((a: any, b: any) => b.points - a.points)
           .map((u: any, index: number) => ({
@@ -54,7 +82,7 @@ export const Clasificacion = () => {
             nombre: u.user?.name || 'Jugador desconocido',
             puntos: u.points ?? 0,
             posicion: index + 1,
-            presupuesto: u.initialBudget ?? 500, // Presupuesto inicial de la jornada
+            presupuesto: u.initialBudget ?? 500,
           }));
 
         setJugadores(dataOrdenada);
@@ -100,6 +128,97 @@ export const Clasificacion = () => {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{'LIGA BETTASY ' + ligaNombre}</Text>
+          </View>
+
+          {/* Selector de Jornada */}
+          <View style={{ 
+            backgroundColor: '#181818ff', 
+            paddingVertical: 12,
+            paddingHorizontal: 16,
+            borderBottomWidth: 1, 
+            borderBottomColor: '#334155' 
+          }}>
+            <TouchableOpacity
+              onPress={() => setShowJornadaPicker(!showJornadaPicker)}
+              style={{
+                backgroundColor: '#1e293b',
+                borderRadius: 12,
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: '#334155'
+              }}
+            >
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
+                {selectedJornada === 'Total' ? 'TOTAL' : `JORNADA ${selectedJornada}`}
+              </Text>
+              <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '900' }}>
+                {showJornadaPicker ? '▲' : '▼'}
+              </Text>
+            </TouchableOpacity>
+
+            {showJornadaPicker && (
+              <View style={{
+                backgroundColor: '#1e293b',
+                borderRadius: 12,
+                marginTop: 8,
+                maxHeight: 300,
+                borderWidth: 2,
+                borderColor: '#334155'
+              }}>
+                <ScrollView>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedJornada('Total');
+                      setShowJornadaPicker(false);
+                    }}
+                    style={{
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      backgroundColor: selectedJornada === 'Total' ? '#0892D020' : 'transparent',
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#334155'
+                    }}
+                  >
+                    <Text style={{ 
+                      color: selectedJornada === 'Total' ? '#0892D0' : '#fff', 
+                      fontSize: 15, 
+                      fontWeight: selectedJornada === 'Total' ? '800' : '600' 
+                    }}>
+                      TOTAL
+                    </Text>
+                  </TouchableOpacity>
+
+                  {[...availableJornadas].sort((a, b) => b - a).map((jornada) => (
+                    <TouchableOpacity
+                      key={jornada}
+                      onPress={() => {
+                        setSelectedJornada(jornada);
+                        setShowJornadaPicker(false);
+                      }}
+                      style={{
+                        paddingVertical: 14,
+                        paddingHorizontal: 16,
+                        backgroundColor: selectedJornada === jornada ? '#0892D020' : 'transparent',
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#334155'
+                      }}
+                    >
+                      <Text style={{ 
+                        color: selectedJornada === jornada ? '#0892D0' : '#fff', 
+                        fontSize: 15, 
+                        fontWeight: selectedJornada === jornada ? '800' : '600' 
+                      }}>
+                        JORNADA {jornada}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </View>
 
           {/* Contenido */}

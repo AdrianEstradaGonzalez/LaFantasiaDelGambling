@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
 import { SquadService } from '../../services/SquadService';
 import LoadingScreen from '../../components/LoadingScreen';
+import { CustomAlertManager } from '../../components/CustomAlert';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 
@@ -224,9 +225,11 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       const squadPosition = availablePositions.find(pos => !occupiedPositions.has(pos));
 
       if (!squadPosition) {
-        Alert.alert(
+        CustomAlertManager.alert(
           'Sin espacio', 
-          `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.`
+          `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.`,
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#f59e0b' }
         );
         return;
       }
@@ -240,7 +243,12 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       });
 
       if (!result.success) {
-        Alert.alert('Error', result.message || 'No se puede añadir más jugadores de esta posición');
+        CustomAlertManager.alert(
+          'Error', 
+          result.message || 'No se puede añadir más jugadores de esta posición',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
         return;
       }
 
@@ -250,7 +258,12 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error al fichar jugador';
-      Alert.alert('Error', message);
+      CustomAlertManager.alert(
+        'Error', 
+        message,
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     } finally {
       setIsBuying(false);
     }
@@ -277,7 +290,12 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error al vender jugador';
-      Alert.alert('Error', message);
+      CustomAlertManager.alert(
+        'Error', 
+        message,
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     } finally {
       setIsBuying(false);
     }

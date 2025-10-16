@@ -807,3 +807,118 @@ export const MinutesIcon = ({ size = 16, color = '#ffffff' }: IconProps) => (
     />
   </Svg>
 );
+
+// ===== ICONOS PARA ALERTAS PERSONALIZADAS =====
+
+// Icono de alerta/advertencia (triángulo con exclamación)
+export const AlertIcon = ({ size = 48, color = '#f59e0b' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M12 9v4M12 17h.01"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de alerta circular (círculo con exclamación)
+export const AlertCircleIcon = ({ size = 48, color = '#ef4444' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M12 8v4M12 16h.01"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de información (i en círculo)
+export const InformationIcon = ({ size = 48, color = '#0892D0' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M12 16v-4M12 8h.01"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de éxito ampliado (check en círculo)
+export const CheckCircleLargeIcon = ({ size = 48, color = '#10b981' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M9 12l2 2 4-4"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de error ampliado (X en círculo)
+export const ErrorCircleIcon = ({ size = 48, color = '#ef4444' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M15 9l-6 6M9 9l6 6"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);

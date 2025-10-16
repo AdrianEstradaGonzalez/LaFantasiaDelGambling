@@ -5,12 +5,12 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { JornadaService } from '../../services/JornadaService';
 import { useNavigation } from '@react-navigation/native';
+import { CustomAlertManager } from '../../components/CustomAlert';
 
 const AdminPanel: React.FC = () => {
   const navigation = useNavigation();
@@ -22,11 +22,16 @@ const AdminPanel: React.FC = () => {
     const jornadaNum = parseInt(jornada);
 
     if (!jornada || isNaN(jornadaNum) || jornadaNum < 1) {
-      Alert.alert('Error', 'Por favor ingresa un número de jornada válido (mayor a 0)');
+      CustomAlertManager.alert(
+        'Error',
+        'Por favor ingresa un número de jornada válido (mayor a 0)',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
       return;
     }
 
-    Alert.alert(
+    CustomAlertManager.alert(
       '⚠️ Confirmar Cambio de Jornada',
       `¿Estás seguro de que quieres cambiar a la jornada ${jornadaNum}?\n\n` +
       `Esto hará lo siguiente:\n` +
@@ -40,6 +45,7 @@ const AdminPanel: React.FC = () => {
         {
           text: 'Cancelar',
           style: 'cancel',
+          onPress: () => {}
         },
         {
           text: 'Confirmar',
@@ -53,25 +59,29 @@ const AdminPanel: React.FC = () => {
 
               setLastResult(result);
 
-              Alert.alert(
+              CustomAlertManager.alert(
                 '✅ Jornada Cambiada',
                 `Jornada ${jornadaNum} procesada exitosamente\n\n` +
                 `📊 Ligas procesadas: ${result.data.leaguesProcessed}\n` +
                 `🎯 Apuestas evaluadas: ${result.data.totalEvaluations}\n\n` +
                 `Los presupuestos de todos los usuarios han sido actualizados.`,
-                [{ text: 'OK' }]
+                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                { icon: 'check-circle', iconColor: '#10b981' }
               );
             } catch (error: any) {
-              Alert.alert(
+              CustomAlertManager.alert(
                 '❌ Error',
-                error.message || 'No se pudo completar el cambio de jornada'
+                error.message || 'No se pudo completar el cambio de jornada',
+                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                { icon: 'alert-circle', iconColor: '#ef4444' }
               );
             } finally {
               setIsProcessing(false);
             }
           },
         },
-      ]
+      ],
+      { icon: 'alert', iconColor: '#f59e0b' }
     );
   };
 

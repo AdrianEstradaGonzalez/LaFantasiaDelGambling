@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Share,
   ScrollView,
-  Alert,
   Image,
 } from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
@@ -16,6 +15,7 @@ import { Colors, Typography, Spacing } from '../../styles/DesignSystem';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../router/AppNavigator'; // 👈 importa tu RootStackParamList
+import { CustomAlertManager } from '../../components/CustomAlert';
 
 // ✅ Usa RouteProp con tu lista de rutas y el nombre exacto de esta pantalla
 type InvitarRouteProp = RouteProp<RootStackParamList, 'InvitarAmigos'>;
@@ -39,7 +39,12 @@ export const InvitarAmigos: React.FC = () => {
       await Share.share({ message });
     } catch (error) {
       console.error('Error al compartir:', error);
-      Alert.alert('Error', 'No se pudo compartir el código.');
+      CustomAlertManager.alert(
+        'Error',
+        'No se pudo compartir el código.',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     }
   };
 

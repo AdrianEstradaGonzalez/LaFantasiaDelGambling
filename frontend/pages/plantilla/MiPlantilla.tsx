@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Animated, PanResponder, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Animated, PanResponder, ActivityIndicator } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import { PlayerService } from '../../services/PlayerService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
 import { TacticsIcon, ChartBarIcon, DeleteIcon } from '../../components/VectorIcons';
+import { CustomAlertManager } from '../../components/CustomAlert';
 
 type Formation = {
   id: string;
@@ -621,7 +622,12 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
   const removePlayer = async (positionId: string) => {
     if (!ligaId) {
-      Alert.alert('Error', 'No se puede eliminar el jugador sin una liga');
+      CustomAlertManager.alert(
+        'Error',
+        'No se puede eliminar el jugador sin una liga',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
       return;
     }
 
@@ -641,13 +647,23 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       
     } catch (error: any) {
       console.error('Error al vender jugador:', error);
-      Alert.alert('Error', error.message || 'No se pudo vender el jugador');
+      CustomAlertManager.alert(
+        'Error',
+        error.message || 'No se pudo vender el jugador',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     }
   };
 
   const saveSquad = async () => {
     if (!ligaId) {
-      Alert.alert('Error', 'No se puede guardar la plantilla sin seleccionar una liga');
+      CustomAlertManager.alert(
+        'Error',
+        'No se puede guardar la plantilla sin seleccionar una liga',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
       return;
     }
 
@@ -685,7 +701,12 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       
     } catch (error) {
       console.error('Error al guardar plantilla:', error);
-      Alert.alert('Error', 'No se pudo guardar la plantilla');
+      CustomAlertManager.alert(
+        'Error',
+        'No se pudo guardar la plantilla',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     } finally {
       setIsSaving(false);
     }
@@ -849,7 +870,12 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 
               } catch (error) {
                 console.error('Error al guardar formación:', error);
-                Alert.alert('Error', 'No se pudo guardar la formación');
+                CustomAlertManager.alert(
+                  'Error',
+                  'No se pudo guardar la formación',
+                  [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                  { icon: 'alert-circle', iconColor: '#ef4444' }
+                );
               } finally {
                 // Desactivar estado de carga
                 setIsChangingFormation(false);

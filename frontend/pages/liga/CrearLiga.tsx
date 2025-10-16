@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { CrearLigaStyles as styles } from '../../styles/CrearLigaStyles';
@@ -14,6 +13,7 @@ import type { ParamListBase } from '@react-navigation/native';
 import BottomNavBar from '../navBar/BottomNavBar';
 import { LigaService } from '../../services/LigaService';
 import TopNavBar from '../navBar/TopNavBar';
+import { CustomAlertManager } from '../../components/CustomAlert';
 
 type CrearLigaProps = {
   navigation: NativeStackNavigationProp<ParamListBase>;
@@ -27,7 +27,12 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
 
   const handleCrearLiga = async () => {
     if (!nombreLiga.trim()) {
-      Alert.alert('Error', 'Por favor, introduce un nombre para la liga.');
+      CustomAlertManager.alert(
+        'Error',
+        'Por favor, introduce un nombre para la liga.',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
       return;
     }
 
@@ -43,7 +48,12 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         ligaId: nuevaLiga.id
       });
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo crear la liga');
+      CustomAlertManager.alert(
+        'Error',
+        error.message || 'No se pudo crear la liga',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     } finally {
       setLoadingCrear(false);
     }
@@ -52,7 +62,12 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   // 🏷 Unirse a una liga existente
   const handleUnirseLiga = async () => {
     if (!codigoLiga.trim()) {
-      Alert.alert('Error', 'Introduce un código válido para unirte.');
+      CustomAlertManager.alert(
+        'Error',
+        'Introduce un código válido para unirte.',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
       return;
     }
 
@@ -67,7 +82,12 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         ligaName: ligaResponse.league.name
       });
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'No se pudo unir a la liga');
+      CustomAlertManager.alert(
+        'Error',
+        error.message || 'No se pudo unir a la liga',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     } finally {
       setLoadingUnirse(false);
     }

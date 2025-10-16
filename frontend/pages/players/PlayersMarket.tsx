@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, Alert, FlatList, Modal } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, FlatList, Modal } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { PlayerService, PlayerWithPrice } from '../../services/PlayerService';
 import { SquadService } from '../../services/SquadService';
@@ -7,6 +7,7 @@ import FootballService, { TeamMinimal } from '../../services/FutbolService';
 import LoadingScreen from '../../components/LoadingScreen';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LigaTopNavBar from '../navBar/LigaTopNavBar';
+import { CustomAlertManager } from '../../components/CustomAlert';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { LoginService } from '../../services/LoginService';
@@ -275,7 +276,12 @@ export const PlayersMarket = ({ navigation, route }: {
       }
 
     } catch (error) {
-      Alert.alert('Error', 'No se pudieron cargar los jugadores');
+      CustomAlertManager.alert(
+        'Error',
+        'No se pudieron cargar los jugadores',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
       console.error(error);
     } finally {
       setLoading(false);
@@ -384,7 +390,12 @@ export const PlayersMarket = ({ navigation, route }: {
     const hasPositionChanges = Object.keys(editedPositions).length > 0;
 
     if (!hasPriceChanges && !hasPositionChanges) {
-      Alert.alert('Sin cambios', 'No hay modificaciones para guardar');
+      CustomAlertManager.alert(
+        'Sin cambios',
+        'No hay modificaciones para guardar',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'information', iconColor: '#0892D0' }
+      );
       return;
     }
 
@@ -417,10 +428,20 @@ export const PlayersMarket = ({ navigation, route }: {
       
       const changesCount = (hasPriceChanges ? Object.keys(editedPrices).length : 0) + 
                           (hasPositionChanges ? Object.keys(editedPositions).length : 0);
-      Alert.alert('Éxito', `${changesCount} cambio(s) guardado(s) correctamente`);
+      CustomAlertManager.alert(
+        'Éxito',
+        `${changesCount} cambio(s) guardado(s) correctamente`,
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'check-circle', iconColor: '#10b981' }
+      );
     } catch (error) {
       console.error('Error guardando cambios:', error);
-      Alert.alert('Error', 'No se pudieron guardar los cambios');
+      CustomAlertManager.alert(
+        'Error',
+        'No se pudieron guardar los cambios',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     } finally {
       setIsSaving(false);
     }
@@ -438,13 +459,23 @@ export const PlayersMarket = ({ navigation, route }: {
       
       // Verificar presupuesto
       if (budget < player.price) {
-        Alert.alert('Presupuesto insuficiente', `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`);
+        CustomAlertManager.alert(
+          'Presupuesto insuficiente',
+          `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`,
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert', iconColor: '#f59e0b' }
+        );
         return;
       }
 
       const position = normalizePosition(player.position);
       if (!position) {
-        Alert.alert('Error', 'PosiciÃ³n del jugador no vÃ¡lida');
+        CustomAlertManager.alert(
+          'Error',
+          'Posición del jugador no válida',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
         return;
       }
 
@@ -481,7 +512,12 @@ export const PlayersMarket = ({ navigation, route }: {
       let squadPosition = availablePositions.find(pos => !occupiedPositions.has(pos));
 
       if (!squadPosition) {
-        Alert.alert('Sin espacio', `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.\n\nVende un jugador primero o cambia tu formación.`);
+        CustomAlertManager.alert(
+          'Sin espacio',
+          `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.\n\nVende un jugador primero o cambia tu formación.`,
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert', iconColor: '#f59e0b' }
+        );
         return;
       }
 
@@ -496,7 +532,12 @@ export const PlayersMarket = ({ navigation, route }: {
 
       // Verificar si la validación pasó
       if (!result.success) {
-        Alert.alert('Límite de formación', result.message || 'No se puede añadir más jugadores de esta posición');
+        CustomAlertManager.alert(
+          'Límite de formación',
+          result.message || 'No se puede añadir más jugadores de esta posición',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert', iconColor: '#f59e0b' }
+        );
         return;
       }
 
@@ -516,8 +557,13 @@ export const PlayersMarket = ({ navigation, route }: {
         });
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo aÃ±adir el jugador';
-      Alert.alert('Error', message);
+      const message = error instanceof Error ? error.message : 'No se pudo añadir el jugador';
+      CustomAlertManager.alert(
+        'Error',
+        message,
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     } finally {
       setIsSaving(false);
     }
@@ -530,16 +576,26 @@ export const PlayersMarket = ({ navigation, route }: {
     try {
       setIsSaving(true);
       
-      // Encontrar en quÃ© posiciÃ³n estÃ¡ el jugador
+      // Encontrar en qué posición está el jugador
       const squad = await SquadService.getUserSquad(ligaId);
       if (!squad) {
-        Alert.alert('Error', 'No tienes plantilla');
+        CustomAlertManager.alert(
+          'Error',
+          'No tienes plantilla',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
         return;
       }
 
       const playerInSquad = squad.players.find(p => p.playerId === player.id);
       if (!playerInSquad) {
-        Alert.alert('Error', 'El jugador no está en tu plantilla');
+        CustomAlertManager.alert(
+          'Error',
+          'El jugador no está en tu plantilla',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
         return;
       }
 
@@ -557,7 +613,12 @@ export const PlayersMarket = ({ navigation, route }: {
       
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo vender el jugador';
-      Alert.alert('Error', message);
+      CustomAlertManager.alert(
+        'Error',
+        message,
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     } finally {
       setIsSaving(false);
     }
@@ -591,13 +652,23 @@ export const PlayersMarket = ({ navigation, route }: {
         const message = existingPlayerInPosition 
           ? `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M\nValor de mercado del jugador a sustituir: ${existingPlayerMarketPrice}M\nTotal disponible: ${availableBudget}M`
           : `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`;
-        Alert.alert('Presupuesto insuficiente', message);
+        CustomAlertManager.alert(
+          'Presupuesto insuficiente',
+          message,
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert', iconColor: '#f59e0b' }
+        );
         return;
       }
 
       const position = normalizePosition(player.position);
       if (!position) {
-        Alert.alert('Error', 'Posición del jugador no válida');
+        CustomAlertManager.alert(
+          'Error',
+          'Posición del jugador no válida',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
         return;
       }
 
@@ -622,7 +693,12 @@ export const PlayersMarket = ({ navigation, route }: {
 
       // Verificar si la validación pasó
       if (!result.success) {
-        Alert.alert('Límite de formación', result.message || 'No se puede añadir más jugadores de esta posición');
+        CustomAlertManager.alert(
+          'Límite de formación',
+          result.message || 'No se puede añadir más jugadores de esta posición',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'alert', iconColor: '#f59e0b' }
+        );
         return;
       }
 
@@ -645,8 +721,13 @@ export const PlayersMarket = ({ navigation, route }: {
       }
       
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'No se pudo aÃ±adir el jugador';
-      Alert.alert('Error', message);
+      const message = error instanceof Error ? error.message : 'No se pudo añadir el jugador';
+      CustomAlertManager.alert(
+        'Error',
+        message,
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
     } finally {
       setIsSaving(false);
     }
