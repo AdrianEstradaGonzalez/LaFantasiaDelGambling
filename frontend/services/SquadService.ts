@@ -80,6 +80,38 @@ export class SquadService {
     }
   }
 
+  // Obtener plantilla de otro usuario (solo lectura)
+  static async getSquadByUser(ligaId: string, userId: string): Promise<Squad | null> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/user/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al obtener la plantilla del usuario');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error en getSquadByUser:', error);
+      throw error;
+    }
+  }
+
   // Guardar o actualizar plantilla (método unificado)
   static async saveSquad(ligaId: string, squadData: SaveSquadRequest): Promise<{ squad: Squad; budget?: number; refundedAmount?: number }> {
     try {

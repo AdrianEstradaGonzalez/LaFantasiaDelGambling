@@ -17,6 +17,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ChevronLeftIcon, MenuIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import Svg, { Path } from 'react-native-svg';
+import { JornadaService } from '../../services/JornadaService';
 
 // Función para decodificar JWT
 function decodeJwt(token: string): any {
@@ -246,6 +247,7 @@ export const PlayersMarket = ({ navigation, route }: {
   const [teamFilter, setTeamFilter] = useState<number | 'all'>('all');
   const [query, setQuery] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
   const [budget, setBudget] = useState<number>(0);
   const [squadPlayerIds, setSquadPlayerIds] = useState<Set<number>>(new Set());
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -267,6 +269,15 @@ export const PlayersMarket = ({ navigation, route }: {
   // Cargar jugadores y equipos desde el backend
   const loadPlayers = useCallback(async () => {
     try {
+      // Cargar estado de jornada si hay ligaId
+      if (ligaId) {
+        try {
+          const status = await JornadaService.getJornadaStatus(ligaId);
+          setJornadaStatus((status.status as 'open' | 'closed'));
+        } catch (e) {
+          console.warn('No se pudo obtener estado de jornada:', e);
+        }
+      }
       setLoading(true);
       const playersData = await PlayerService.getAllPlayers();
       const teamsData = await FootballService.getLaLigaTeamsCached();
@@ -798,18 +809,18 @@ export const PlayersMarket = ({ navigation, route }: {
               // Botón de fichar para jugadores NO fichados
               <TouchableOpacity
                 onPress={() => selectMode ? handleSelectFromPlantilla(p) : handleBuyPlayer(p)}
-                disabled={isSaving}
+                disabled={isSaving || jornadaStatus === 'closed'}
                 style={{ 
-                  backgroundColor: '#10b981', 
+                  backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#10b981', 
                   paddingHorizontal: 12, 
                   paddingVertical: 8, 
                   borderRadius: 8,
-                  shadowColor: '#10b981',
+                  shadowColor: jornadaStatus === 'closed' ? '#64748b' : '#10b981',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.3,
                   shadowRadius: 4,
                   elevation: 4,
-                  opacity: isSaving ? 0.6 : 1
+                  opacity: isSaving || jornadaStatus === 'closed' ? 0.6 : 1
                 }}
               >
                 <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>FICHAR</Text>

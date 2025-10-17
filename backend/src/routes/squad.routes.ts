@@ -2,6 +2,12 @@ import { FastifyInstance } from 'fastify';
 import { SquadController } from '../controllers/squad.controller.js';
 
 async function squadRoutes(fastify: FastifyInstance) {
+  // GET /api/squads/:ligaId/user/:userId - Obtener plantilla de un usuario específico en una liga
+  // Importante: debe ir antes de la ruta genérica '/:ligaId' para evitar colisiones
+  fastify.get('/:ligaId/user/:userId', {
+    preHandler: [fastify.auth]
+  }, SquadController.getSquadByUser);
+
   // GET /api/squads/:ligaId - Obtener plantilla del usuario para una liga
   fastify.get('/:ligaId', {
     preHandler: [fastify.auth]

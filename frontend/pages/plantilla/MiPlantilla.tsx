@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useRoute, useFocusEffect } from '@react-navigation/native';
 import FootballService, { Player } from '../../services/FutbolService';
 import { SquadService } from '../../services/SquadService';
+import { JornadaService } from '../../services/JornadaService';
 import { PlayerService } from '../../services/PlayerService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
@@ -277,6 +278,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   
   // Estados para las pestaÃ±as (AlineaciÃ³n / PuntuaciÃ³n)
   const [activeTab, setActiveTab] = useState<'alineacion' | 'puntuacion'>('alineacion');
+  const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
   const slideAnim = useRef(new Animated.Value(0)).current;
   
   const [currentMatchday, setCurrentMatchday] = useState<number>(9); // Jornada actual
@@ -298,6 +300,28 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     };
     fetchCurrentMatchday();
   }, []);
+
+  // Obtener estado de jornada para bloquear Alineación si está 'closed'
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (ligaId) {
+          const status = await JornadaService.getJornadaStatus(ligaId);
+          if (mounted) {
+            const s = (status.status as 'open' | 'closed');
+            setJornadaStatus(s);
+            if (s === 'closed') {
+              setActiveTab('puntuacion');
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('No se pudo obtener estado de jornada:', e);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [ligaId]);
   
   // Animación del drawer
   useEffect(() => {
@@ -478,6 +502,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
   // FunciÃ³n para cambiar de pestaÃ±a con animaciÃ³n
   const switchTab = (tab: 'alineacion' | 'puntuacion') => {
+    // Bloquear la pestaña Alineación si la jornada está cerrada (bloqueada)
+    if (jornadaStatus === 'closed' && tab === 'alineacion') {
+      return;
+    }
     setActiveTab(tab);
     Animated.spring(slideAnim, {
       toValue: tab === 'alineacion' ? 0 : 1,
@@ -1055,37 +1083,39 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
         {/* PestaÃ±as: AlineaciÃ³n / PuntuaciÃ³n */}
         <View style={{ flexDirection: 'row', marginBottom: 16, backgroundColor: '#1a2332', borderRadius: 12, padding: 4 }}>
-          <TouchableOpacity
-            onPress={() => switchTab('alineacion')}
-            style={{
-              flex: 1,
-              paddingVertical: 10,
-              borderRadius: 8,
-              backgroundColor: activeTab === 'alineacion' ? '#0892D0' : 'transparent',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-            }}
-          >
-            <TacticsIcon 
-              size={20} 
-              color={activeTab === 'alineacion' ? '#fff' : '#94a3b8'}
-              isActive={false}
-            />
-            <Text style={{
-              color: activeTab === 'alineacion' ? '#fff' : '#94a3b8',
-              fontWeight: '700',
-              textAlign: 'center',
-              fontSize: 14,
-            }}>
-              Alineación
-            </Text>
-          </TouchableOpacity>
+          {jornadaStatus === 'open' && (
+            <TouchableOpacity
+              onPress={() => switchTab('alineacion')}
+              style={{
+                flex: 1,
+                paddingVertical: 10,
+                borderRadius: 8,
+                backgroundColor: activeTab === 'alineacion' ? '#0892D0' : 'transparent',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+            >
+              <TacticsIcon 
+                size={20} 
+                color={activeTab === 'alineacion' ? '#fff' : '#94a3b8'}
+                isActive={false}
+              />
+              <Text style={{
+                color: activeTab === 'alineacion' ? '#fff' : '#94a3b8',
+                fontWeight: '700',
+                textAlign: 'center',
+                fontSize: 14,
+              }}>
+                Alineación
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={() => switchTab('puntuacion')}
             style={{
-              flex: 1,
+              flex: jornadaStatus === 'open' ? 1 : 1,
               paddingVertical: 10,
               borderRadius: 8,
               backgroundColor: activeTab === 'puntuacion' ? '#0892D0' : 'transparent',
@@ -1112,7 +1142,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         </View>
 
         {/* Consejo para nombrar capitán - Solo en modo Alineación y cuando NO hay capitán */}
-        {activeTab === 'alineacion' && !captainPosition && (
+        {jornadaStatus === 'open' && activeTab === 'alineacion' && !captainPosition && (
           <View style={{
             backgroundColor: 'rgba(255, 215, 0, 0.15)',
             borderLeftWidth: 4,
@@ -1262,7 +1292,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           }} />
 
           {/* Posiciones de jugadores - MODO ALINEACIÃ“N */}
-          {activeTab === 'alineacion' && selectedFormation.positions.map(position => {
+          {jornadaStatus === 'open' && activeTab === 'alineacion' && selectedFormation.positions.map(position => {
             const player = selectedPlayers[position.id];
             const photoUri = player?.photo || (player ? getAvatarUri(player) : undefined);
             const isCaptain = captainPosition === position.id;

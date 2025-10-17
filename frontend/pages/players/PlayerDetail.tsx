@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
 import { SquadService } from '../../services/SquadService';
+import { JornadaService } from '../../services/JornadaService';
 import LoadingScreen from '../../components/LoadingScreen';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -221,10 +222,28 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     }
   }, [matchdayPoints]);
 
+  const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (ligaId) {
+          const status = await JornadaService.getJornadaStatus(ligaId);
+          if (mounted) setJornadaStatus((status.status as 'open' | 'closed'));
+        }
+      } catch (e) {
+        console.warn('No se pudo obtener estado de jornada:', e);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [ligaId]);
+
   // Función para fichar jugador
   const handleBuyPlayer = async () => {
     if (!ligaId) return;
     if (playerInSquad) return;
+    if (jornadaStatus === 'closed') return; // bloqueado
     if (budget !== undefined && player.price > budget) return;
 
     try {
@@ -456,19 +475,17 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
           <ScrollView style={{ flex: 1, paddingTop: 60 }} contentContainerStyle={{ paddingBottom: 40 }}>
           <View style={{ 
             backgroundColor: '#0f172a', 
-            padding: 20,
-            borderBottomWidth: 1,
             borderBottomColor: '#334155'
           }}>
             <View style={{ flexDirection: 'row', gap: 16, marginBottom: 16 }}>
               <Image
                 source={{ uri: player.photo }}
-                style={{ 
-                  width: 100, 
-                  height: 100, 
+                style={{
+                  width: 100,
+                  height: 100,
                   borderRadius: 12,
                   borderWidth: 3,
-                  borderColor: posColor,
+                  borderColor: '#0892D0',
                   backgroundColor: '#0b1220'
                 }}
                 resizeMode="cover"
@@ -579,21 +596,21 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   ) : (
                     <TouchableOpacity
                       onPress={handleBuyPlayer}
-                      disabled={isBuying || player.price > budget}
+                      disabled={isBuying || player.price > budget || jornadaStatus === 'closed'}
                       style={{ 
                         flex: 1,
-                        backgroundColor: player.price > budget ? '#64748b' : '#10b981',
+                        backgroundColor: (player.price > budget || jornadaStatus === 'closed') ? '#64748b' : '#10b981',
                         borderRadius: 12,
                         paddingVertical: 10,
                         paddingHorizontal: 12,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        shadowColor: player.price > budget ? '#64748b' : '#10b981',
+                        shadowColor: (player.price > budget || jornadaStatus === 'closed') ? '#64748b' : '#10b981',
                         shadowOffset: { width: 0, height: 2 },
                         shadowOpacity: 0.3,
                         shadowRadius: 4,
                         elevation: 4,
-                        opacity: isBuying || player.price > budget ? 0.6 : 1
+                        opacity: isBuying || player.price > budget || jornadaStatus === 'closed' ? 0.6 : 1
                       }}
                       activeOpacity={0.7}
                     >

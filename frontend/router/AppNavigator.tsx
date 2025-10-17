@@ -12,6 +12,7 @@ import PlayersList from '../pages/players/PlayersList';
 import PlayersMarket from '../pages/players/PlayersMarket';
 import PlayerDetail from '../pages/players/PlayerDetail';
 import MiPlantilla from '../pages/plantilla/MiPlantilla';
+import VerPlantillaUsuario from '../pages/plantilla/VerPlantillaUsuario';
 import FootballService from '../services/FutbolService';
 import { InvitarAmigos } from '../pages/liga/InvitarAmigos';
 import Apuestas from '../pages/apuestas/Apuestas';
@@ -31,6 +32,7 @@ export type RootStackParamList = {
   PlayerDetail: { player: any; ligaId?: string; ligaName?: string };
   MiPlantilla: undefined;
   Equipo: { ligaId: string, ligaName: string};
+  VerPlantillaUsuario: { ligaId: string; ligaName: string; userId: string; userName: string; jornada?: number };
   InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string };
   Apuestas: { ligaId?: string; ligaName?: string } | undefined;
   AdminPanel: undefined;
@@ -85,6 +87,9 @@ export const AppNavigator = () => {
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="Equipo" component={MiPlantilla} options={{
+          animation: 'slide_from_right',
+        }} />
+        <Stack.Screen name="VerPlantillaUsuario" component={VerPlantillaUsuario} options={{
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="InvitarAmigos" component={InvitarAmigos} options={{

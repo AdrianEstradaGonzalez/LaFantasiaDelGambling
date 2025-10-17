@@ -258,8 +258,19 @@ export const Clasificacion = () => {
               ? styles.posBadgeThird
               : undefined;
             
+            const handleOpenUserLineup = () => {
+              // Navegar a ver la plantilla de este usuario
+              navigation.navigate('VerPlantillaUsuario', {
+                ligaId,
+                ligaName,
+                userId: jugador.id,
+                userName: jugador.nombre,
+                jornada: selectedJornada === 'Total' ? undefined : selectedJornada,
+              } as any);
+            };
+
             return (
-              <View 
+              <TouchableOpacity 
                 key={jugador.id} 
                 style={[
                   styles.userBox,
@@ -275,6 +286,8 @@ export const Clasificacion = () => {
                     transform: [{ scale: 1.02 }]
                   }
                 ]}
+                activeOpacity={0.85}
+                onPress={handleOpenUserLineup}
               >
                 {/* Badge "TÚ" para el usuario actual */}
                 {isCurrentUser && (
@@ -402,7 +415,7 @@ export const Clasificacion = () => {
                     </View>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </ScrollView>
