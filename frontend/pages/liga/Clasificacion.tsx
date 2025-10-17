@@ -107,7 +107,7 @@ export const Clasificacion = () => {
             nombre: u.user?.name || 'Jugador desconocido',
             puntos: u.points ?? 0,
             posicion: index + 1,
-            presupuesto: u.budget ?? 500, // Presupuesto actual disponible
+            presupuesto: u.initialBudget ?? 500, // Presupuesto inicial de la jornada (no muestra gastos en tiempo real)
           }));
 
         setJugadores(dataOrdenada);
