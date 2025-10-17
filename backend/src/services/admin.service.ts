@@ -37,9 +37,37 @@ export class AdminService {
     const API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';
     const SEASON = 2025;
 
-    // Buscar la última jornada con partidos terminados
-    let lastJornada = 38;
-    for (let j = 38; j >= 1; j--) {
+    // Buscar la última jornada real puntuada (la mayor con partidos terminados)
+    // 1. Consultar todas las jornadas posibles y buscar la mayor con partidos finalizados
+    let lastJornada = 1;
+    let maxJornada = 1;
+    // Buscar el número máximo de jornada disponible en la API
+    try {
+      const { data } = await axios.get(`${API_BASE}/fixtures/rounds`, {
+        headers: {
+          'x-rapidapi-key': API_KEY,
+          'x-rapidapi-host': 'v3.football.api-sports.io',
+        },
+        params: {
+          league: 140,
+          season: SEASON,
+        },
+      });
+      // Rondas tipo 'Regular Season - 8', 'Regular Season - 9', ...
+      const rounds = data?.response || [];
+      const jornadas = rounds
+        .map((r: string) => {
+          const m = r.match(/Regular Season - (\d+)/);
+          return m ? parseInt(m[1]) : null;
+        })
+        .filter((n: number | null) => n !== null) as number[];
+      if (jornadas.length > 0) {
+        maxJornada = Math.max(...jornadas);
+      }
+    } catch {}
+
+    // Buscar desde la jornada más alta hacia atrás la que tenga partidos terminados
+    for (let j = maxJornada; j >= 1; j--) {
       try {
         const { data } = await axios.get(`${API_BASE}/fixtures`, {
           headers: {
@@ -136,6 +164,11 @@ export class AdminService {
         } as any,
       });
       updated++;
+      // Imprimir el primer jugador actualizado por consola
+      if (updated === 1) {
+        const dbPlayer = await prisma.player.findUnique({ where: { id: player.id } });
+        console.log('Ejemplo de jugador actualizado:', dbPlayer);
+      }
     }
     return { updatedPlayers: updated, lastJornada };
   }
