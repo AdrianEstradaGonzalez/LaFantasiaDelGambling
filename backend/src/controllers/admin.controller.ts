@@ -4,109 +4,87 @@ import { AppError } from '../utils/errors.js';
 const adminService = new AdminService();
 
 export class AdminController {
-  // Get all users
+  // --- Obtener todos los usuarios ---
   async getAllUsers(req: any, res: any) {
     try {
       const users = await adminService.getAllUsers();
       res.send(users);
     } catch (error) {
-      if (error instanceof AppError) {
-        return res.code(error.statusCode).send({
-          code: error.code,
-          message: error.message,
-        });
-      }
-      console.error('Error in getAllUsers:', error);
-      res.code(500).send({
-        code: 'INTERNAL_ERROR',
-        message: 'Error interno del servidor',
-      });
+      this.handleError(res, error, 'Error obteniendo usuarios');
     }
   }
 
-  // Actualizar puntuaciones de última jornada de todos los jugadores
+  // --- Actualizar puntuaciones de la última jornada ---
   async updatePlayerScores(req: any, res: any) {
     try {
-      const result = await adminService.updateAllPlayersLastJornadaPoints();
-      res.send({ success: true, ...result });
-    } catch (error) {
-      if (error instanceof AppError) {
-        return res.code(error.statusCode).send({
-          code: error.code,
-          message: error.message,
+      const { jornada } = req.body;
+
+      if (!jornada || typeof jornada !== 'number') {
+        return res.code(400).send({
+          code: 'BAD_REQUEST',
+          message: 'Debes enviar un número de jornada válido en el body',
         });
       }
-      console.error('Error in updatePlayerScores:', error);
-      res.code(500).send({
-        code: 'INTERNAL_ERROR',
-        message: 'Error actualizando puntuaciones de jugadores',
+
+      await adminService.updateAllPlayersLastJornadaPoints(jornada);
+
+      res.send({
+        success: true,
+        message: `Puntuaciones actualizadas para la jornada ${jornada}`,
       });
+    } catch (error) {
+      this.handleError(res, error, 'Error actualizando puntuaciones de jugadores');
     }
   }
 
-  // Delete a user
+  // --- Eliminar un usuario ---
   async deleteUser(req: any, res: any) {
     try {
       const { userId } = req.params;
-      const requestingUserId = req.user.sub;
+      const requestingUserId = req.user?.sub;
 
       const result = await adminService.deleteUser(userId, requestingUserId);
       res.send(result);
     } catch (error) {
-      if (error instanceof AppError) {
-        return res.code(error.statusCode).send({
-          code: error.code,
-          message: error.message,
-        });
-      }
-      console.error('Error in deleteUser:', error);
-      res.code(500).send({
-        code: 'INTERNAL_ERROR',
-        message: 'Error interno del servidor',
-      });
+      this.handleError(res, error, 'Error eliminando usuario');
     }
   }
 
-  // Get all leagues
+  // --- Obtener todas las ligas ---
   async getAllLeagues(req: any, res: any) {
     try {
       const leagues = await adminService.getAllLeagues();
       res.send(leagues);
     } catch (error) {
-      if (error instanceof AppError) {
-        return res.code(error.statusCode).send({
-          code: error.code,
-          message: error.message,
-        });
-      }
-      console.error('Error in getAllLeagues:', error);
-      res.code(500).send({
-        code: 'INTERNAL_ERROR',
-        message: 'Error interno del servidor',
-      });
+      this.handleError(res, error, 'Error obteniendo ligas');
     }
   }
 
-  // Delete a league
+  // --- Eliminar una liga ---
   async deleteLeague(req: any, res: any) {
     try {
       const { leagueId } = req.params;
-
       const result = await adminService.deleteLeague(leagueId);
       res.send(result);
     } catch (error) {
-      if (error instanceof AppError) {
-        return res.code(error.statusCode).send({
-          code: error.code,
-          message: error.message,
-        });
-      }
-      console.error('Error in deleteLeague:', error);
-      res.code(500).send({
-        code: 'INTERNAL_ERROR',
-        message: 'Error interno del servidor',
+      this.handleError(res, error, 'Error eliminando liga');
+    }
+  }
+
+  // --- Manejador común de errores ---
+  private handleError(res: any, error: any, defaultMsg: string) {
+    if (error instanceof AppError) {
+      return res.code(error.statusCode).send({
+        code: error.code,
+        message: error.message,
       });
     }
+
+    console.error(defaultMsg + ':', error);
+    res.code(500).send({
+      code: 'INTERNAL_ERROR',
+      message: defaultMsg,
+    });
   }
 }
 
