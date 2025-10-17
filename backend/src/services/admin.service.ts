@@ -4,6 +4,73 @@ import { AppError } from '../utils/errors.js';
 
 const prisma = new PrismaClient();
 
+function calculatePlayerPointsBackend(stats: any, role: string): number {
+  if (!stats) return 0;
+
+  let points = 0;
+  const minutes = stats.games?.minutes || 0;
+
+  // BASE GENERAL
+  if (minutes > 0 && minutes < 45) points += 1;
+  if (minutes >= 45) points += 2;
+
+  if (role === 'Goalkeeper') {
+    points += (stats.goals?.total || 0) * 10;
+    points += (stats.goals?.assists || 0) * 3;
+    if ((stats.goalkeeper?.conceded || 0) === 0) points += 5;
+    points += (stats.goalkeeper?.saves || 0);
+    points -= (stats.goalkeeper?.conceded || 0) * 2;
+    points += (stats.penalty?.saved || 0) * 5;
+  }
+
+  if (role === 'Defender') {
+    points += (stats.goals?.total || 0) * 6;
+    points += (stats.goals?.assists || 0) * 3;
+    if ((stats.goals?.conceded || 0) === 0) points += 4;
+    points += (stats.shots?.on || 0);
+    points -= (stats.goals?.conceded || 0);
+    points += Math.floor((stats.duels?.won || 0) / 2);
+  }
+
+  if (role === 'Midfielder') {
+    points += (stats.goals?.total || 0) * 5;
+    points += (stats.goals?.assists || 0) * 3;
+    if ((stats.goals?.conceded || 0) === 0) points += 1;
+    points += (stats.shots?.on || 0);
+    points -= Math.floor((stats.goals?.conceded || 0) / 2);
+    points += Math.floor((stats.passes?.key || 0) / 2);
+    points += Math.floor((stats.dribbles?.success || 0) / 2);
+    points += Math.floor((stats.fouls?.drawn || 0) / 3);
+  }
+
+  if (role === 'Attacker') {
+    points += (stats.goals?.total || 0) * 4;
+    points += (stats.goals?.assists || 0) * 3;
+    points += (stats.shots?.on || 0);
+    points += Math.floor((stats.passes?.key || 0) / 2);
+    points += Math.floor((stats.dribbles?.success || 0) / 2);
+    points += Math.floor((stats.fouls?.drawn || 0) / 3);
+  }
+
+  // BASE GENERAL - Penaltis
+  points += (stats.penalty?.won || 0) * 2;
+  points -= (stats.penalty?.committed || 0) * 2;
+  points -= (stats.penalty?.missed || 0) * 2;
+
+  // BASE GENERAL - Tarjetas
+  points -= (stats.cards?.yellow || 0);
+  points -= (stats.cards?.red || 0) * 3;
+
+  // BASE GENERAL - Rating
+  const rating = stats.rating ? parseFloat(stats.rating) : 0;
+  if (rating > 8) points += 3;
+  else if (rating >= 6.5 && rating <= 8) points += 2;
+  else if (rating >= 5) points += 1;
+
+  return points;
+}
+
+
 export class AdminService {
   // Get all users
   async getAllUsers() {
@@ -13,7 +80,6 @@ export class AdminService {
           id: true,
           name: true,
           email: true,
-          isAdmin: true,
         },
         orderBy: {
           email: 'asc',
@@ -28,176 +94,118 @@ export class AdminService {
   }
 
   // Actualizar lastJornadaPoints y lastJornadaNumber de todos los jugadores
-  async updateAllPlayersLastJornadaPoints() {
-    // Obtener la última jornada completada (la mayor con partidos terminados)
-    // Usar la lógica de PlayerDetail: para cada jugador, calcular sus puntos de la última jornada real
-    // (Aquí simplificamos: para cada jugador, buscar la última jornada con stats y calcular puntos)
-    // Usar los imports ya existentes arriba
-    const API_BASE = 'https://v3.football.api-sports.io';
-    const API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';
-    const SEASON = 2025;
+async updateAllPlayersLastJornadaPoints() {
+  const API_BASE = 'https://v3.football.api-sports.io';
+  const API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';
+  const SEASON = 2025;
 
-    // Buscar la última jornada real puntuada (la mayor con partidos terminados)
-    // 1. Consultar todas las jornadas posibles y buscar la mayor con partidos finalizados
-    let lastJornada = 1;
-    let maxJornada = 1;
-    // Buscar el número máximo de jornada disponible en la API
-    try {
-      const { data } = await axios.get(`${API_BASE}/fixtures/rounds`, {
+  // --- 1️⃣ Buscar la última jornada completada ---
+  let lastJornada = 1;
+  try {
+    const { data } = await axios.get(`${API_BASE}/fixtures/rounds`, {
+      headers: {
+        'x-rapidapi-key': API_KEY,
+        'x-rapidapi-host': 'v3.football.api-sports.io',
+      },
+      params: { league: 140, season: SEASON },
+    });
+    const jornadas = (data?.response || [])
+      .map((r: string) => {
+        const m = r.match(/Regular Season - (\d+)/);
+        return m ? parseInt(m[1]) : null;
+      })
+      .filter(Boolean) as number[];
+
+    for (let j = Math.max(...jornadas); j >= 1; j--) {
+      const { data: fx } = await axios.get(`${API_BASE}/fixtures`, {
         headers: {
           'x-rapidapi-key': API_KEY,
           'x-rapidapi-host': 'v3.football.api-sports.io',
         },
-        params: {
-          league: 140,
-          season: SEASON,
-        },
+        params: { league: 140, season: SEASON, round: `Regular Season - ${j}` },
       });
-      const rounds = data?.response || [];
-      console.log('[ADMIN] Rondas encontradas:', rounds);
-      const jornadas = rounds
-        .map((r: string) => {
-          const m = r.match(/Regular Season - (\d+)/);
-          return m ? parseInt(m[1]) : null;
-        })
-        .filter((n: number | null) => n !== null) as number[];
-      console.log('[ADMIN] Jornadas numéricas extraídas:', jornadas);
-      if (jornadas.length > 0) {
-        maxJornada = Math.max(...jornadas);
-        console.log('[ADMIN] Jornada máxima detectada:', maxJornada);
+      const fixtures = fx?.response || [];
+      const finished = fixtures.filter((f: any) =>
+        ['FT', 'AET', 'PEN'].includes(f.fixture?.status?.short)
+      );
+      if (finished.length > 0) {
+        lastJornada = j;
+        break;
       }
+    }
+  } catch (e) {
+    console.log('[ADMIN] Error detectando última jornada:', e);
+  }
+
+  // --- 2️⃣ Obtener todos los jugadores ---
+  const players = await prisma.player.findMany();
+  console.log(`[ADMIN] Total jugadores encontrados: ${players.length}`);
+
+  let updated = 0;
+
+  // --- 3️⃣ Para cada jugador, calcular puntos usando la MISMA lógica del front ---
+  for (const player of players) {
+    const teamId = player.teamId;
+    const role = player.position; // o el campo que uses ('Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker')
+
+    if (!teamId) continue;
+
+    // Buscar el fixture de su equipo en la jornada
+    let fixtureId = null;
+    try {
+      const { data } = await axios.get(`${API_BASE}/fixtures`, {
+        headers: {
+          'x-rapidapi-key': API_KEY,
+          'x-rapidapi-host': 'v3.football.api-sports.io',
+        },
+        params: { league: 140, season: SEASON, round: `Regular Season - ${lastJornada}` },
+      });
+      const fixtures = data?.response || [];
+      const fixture = fixtures.find(
+        (f: any) => f.teams?.home?.id === teamId || f.teams?.away?.id === teamId
+      );
+      if (fixture) fixtureId = fixture.fixture.id;
     } catch (e) {
-      console.log('[ADMIN] Error obteniendo rondas:', e);
+      console.log(`[ADMIN] Error buscando fixture de ${player.name}:`, e);
     }
 
-    // Buscar desde la jornada más alta hacia atrás la que tenga partidos terminados
-    for (let j = maxJornada; j >= 1; j--) {
-      try {
-        const { data } = await axios.get(`${API_BASE}/fixtures`, {
-          headers: {
-            'x-rapidapi-key': API_KEY,
-            'x-rapidapi-host': 'v3.football.api-sports.io',
-          },
-          params: {
-            league: 140,
-            season: SEASON,
-            round: `Regular Season - ${j}`,
-          },
-        });
-        const fixtures = data?.response || [];
-        console.log(`[ADMIN] Jornada ${j}: ${fixtures.length} partidos encontrados.`);
-        const finishedFixtures = fixtures.filter((f: any) => ['FT','AET','PEN'].includes(f.fixture?.status?.short));
-        console.log(`[ADMIN] Jornada ${j}: ${finishedFixtures.length} partidos terminados.`);
-        if (finishedFixtures.length > 0) {
-          lastJornada = j;
-          console.log(`[ADMIN] Última jornada real puntuada detectada: ${lastJornada}`);
+    if (!fixtureId) continue;
+
+    // Buscar stats del jugador
+    let playerStats: any = null;
+    try {
+      const { data } = await axios.get(`${API_BASE}/fixtures/players`, {
+        headers: {
+          'x-rapidapi-key': API_KEY,
+          'x-rapidapi-host': 'v3.football.api-sports.io',
+        },
+        params: { fixture: fixtureId },
+      });
+      const teamsData = data?.response || [];
+      for (const teamData of teamsData) {
+        const found = (teamData.players || []).find((p: any) => p.player?.id === player.id);
+        if (found?.statistics?.[0]) {
+          playerStats = found.statistics[0];
           break;
         }
-      } catch (e) {
-        console.log(`[ADMIN] Error consultando fixtures de jornada ${j}:`, e);
       }
+    } catch (e) {
+      console.log(`[ADMIN] Error obteniendo stats de ${player.name}:`, e);
     }
 
-    // Obtener todos los jugadores
-  const players = await prisma.player.findMany();
-  console.log(`[ADMIN] Total jugadores encontrados en BD: ${players.length}`);
-  let updated = 0;
-  for (const player of players) {
-      // Buscar el equipo del jugador
-      let teamId = player.teamId;
-      if (!teamId) {
-        console.log(`[ADMIN] Jugador sin teamId:`, player);
-        continue;
-      }
+    const points = calculatePlayerPointsBackend(playerStats, role);
 
-      // Buscar el fixture de su equipo en la última jornada
-      let fixtureId = null;
-      try {
-        const { data } = await axios.get(`${API_BASE}/fixtures`, {
-          headers: {
-            'x-rapidapi-key': API_KEY,
-            'x-rapidapi-host': 'v3.football.api-sports.io',
-          },
-          params: {
-            league: 140,
-            season: SEASON,
-            round: `Regular Season - ${lastJornada}`,
-          },
-        });
-        const fixtures = data?.response || [];
-        const fixture = fixtures.find((f: any) => f.teams?.home?.id === teamId || f.teams?.away?.id === teamId);
-        if (fixture) fixtureId = fixture.fixture.id;
-  console.log(`[ADMIN] Jugador ${player.id} (${player.name}): fixtureId encontrado:`, fixtureId);
-      } catch (e) {
-        console.log(`[ADMIN] Error buscando fixture para jugador ${player.id}:`, e);
-      }
-      if (!fixtureId) {
-  console.log(`[ADMIN] Jugador ${player.id} (${player.name}): sin fixture en jornada ${lastJornada}`);
-        continue;
-      }
+    await prisma.player.update({
+      where: { id: player.id },
+      data: { lastJornadaPoints: points, lastJornadaNumber: lastJornada },
+    });
 
-      // Buscar stats del jugador en ese fixture
-      let playerStats = null;
-      try {
-        const { data } = await axios.get(`${API_BASE}/fixtures/players`, {
-          headers: {
-            'x-rapidapi-key': API_KEY,
-            'x-rapidapi-host': 'v3.football.api-sports.io',
-          },
-          params: { fixture: fixtureId },
-        });
-        const teamsData = data?.response || [];
-        for (const teamData of teamsData) {
-          const found = (teamData.players || []).find((p: any) => p.player?.id === player.id);
-          if (found?.statistics?.[0]) {
-            playerStats = found.statistics[0];
-            console.log(`[ADMIN] Jugador ${player.id} (${player.name}): stats encontradas.`);
-            break;
-          }
-        }
-      } catch (e) {
-        console.log(`[ADMIN] Error buscando stats para jugador ${player.id}:`, e);
-      }
+    updated++;
+  }
 
-      // Calcular puntos (misma lógica que PlayerDetail)
-      let points = 0;
-      if (playerStats && playerStats.games) {
-        const minutes = playerStats.games?.minutes || 0;
-        if (minutes > 0 && minutes < 45) points += 1;
-        else if (minutes >= 45) points += 2;
-        const goals = playerStats.goals || {};
-        const cards = playerStats.cards || {};
-        const penalty = playerStats.penalty || {};
-        points += (goals.assists || 0) * 3;
-        points -= (cards.yellow || 0) * 1;
-        points -= (cards.red || 0) * 3;
-        points += (penalty.won || 0) * 2;
-        points -= (penalty.committed || 0) * 2;
-        points += (penalty.scored || 0) * 3;
-        points -= (penalty.missed || 0) * 2;
-        // Puedes añadir más reglas aquí si tu lógica de PlayerDetail es más compleja
-  console.log(`[ADMIN] Jugador ${player.id} (${player.name}): puntos calculados: ${points}`);
-      } else {
-  console.log(`[ADMIN] Jugador ${player.id} (${player.name}): sin stats en fixture.`);
-      }
-
-      await prisma.player.update({
-        where: { id: player.id },
-        data: {
-          lastJornadaPoints: points,
-          lastJornadaNumber: lastJornada,
-        } as any,
-      });
-      updated++;
-      // Imprimir el primer jugador actualizado por consola
-      if (updated === 1) {
-        const dbPlayer = await prisma.player.findUnique({ where: { id: player.id } });
-        console.log('[ADMIN] Ejemplo de jugador actualizado:', dbPlayer);
-      }
-    }
   console.log(`[ADMIN] Total jugadores actualizados: ${updated}`);
   return { updatedPlayers: updated, lastJornada };
-  }
+}
 
   // Delete a user
   async deleteUser(userId: string, requestingUserId: string) {
@@ -209,11 +217,6 @@ export class AdminService {
 
       if (!user) {
         throw new AppError(404, 'NOT_FOUND', 'Usuario no encontrado');
-      }
-
-      // Prevent deleting admin users
-      if (user.isAdmin) {
-        throw new AppError(403, 'FORBIDDEN', 'No se puede eliminar un usuario administrador');
       }
 
       // Prevent self-deletion
@@ -243,7 +246,6 @@ export class AdminService {
         select: {
           id: true,
           name: true,
-          code: true,
           leaderId: true,
           createdAt: true,
           _count: {
