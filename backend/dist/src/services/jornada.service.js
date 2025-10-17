@@ -559,6 +559,179 @@ export class JornadaService {
             throw error;
         }
     }
+    /**
+     * Abrir jornada (era "Cerrar") - Bloquea apuestas y modificaciones de plantilla
+     * Usa la jornada actual de la liga
+     */
+    static async openJornada(leagueId) {
+        try {
+            // Obtener liga con su jornada actual
+            const league = await prisma.league.findUnique({
+                where: { id: leagueId }
+            });
+            if (!league) {
+                throw new Error('Liga no encontrada');
+            }
+            const jornada = league.currentJornada;
+            console.log(`🔒 Abriendo jornada ${jornada} para liga ${leagueId}...`);
+            // Actualizar estado de la jornada a "closed" (bloqueado)
+            await prisma.league.update({
+                where: { id: leagueId },
+                data: {
+                    jornadaStatus: 'closed'
+                }
+            });
+            console.log(`✅ Jornada ${jornada} abierta (bloqueada) para liga "${league.name}"`);
+            return {
+                success: true,
+                message: `Jornada ${jornada} abierta (bloqueada) exitosamente`,
+                leagueName: league.name,
+                jornada
+            };
+        }
+        catch (error) {
+            console.error('❌ Error abriendo jornada:', error);
+            throw error;
+        }
+    }
+    /**
+     * Cerrar jornada (era "Abrir") - Permite apuestas y modificaciones de plantilla
+     * Usa la jornada actual de la liga
+     */
+    static async closeJornada(leagueId) {
+        try {
+            // Obtener liga con su jornada actual
+            const league = await prisma.league.findUnique({
+                where: { id: leagueId }
+            });
+            if (!league) {
+                throw new Error('Liga no encontrada');
+            }
+            const jornada = league.currentJornada;
+            console.log(`✅ Cerrando jornada ${jornada} para liga ${leagueId}...`);
+            // Actualizar estado de la jornada a "open" (abierto)
+            await prisma.league.update({
+                where: { id: leagueId },
+                data: {
+                    jornadaStatus: 'open'
+                }
+            });
+            console.log(`✅ Jornada ${jornada} cerrada (abierta) para liga "${league.name}"`);
+            return {
+                success: true,
+                message: `Jornada ${jornada} cerrada (abierta) exitosamente`,
+                leagueName: league.name,
+                jornada
+            };
+        }
+        catch (error) {
+            console.error('❌ Error cerrando jornada:', error);
+            throw error;
+        }
+    }
+    /**
+     * Obtener estado de la jornada actual
+     */
+    static async getJornadaStatus(leagueId) {
+        try {
+            const league = await prisma.league.findUnique({
+                where: { id: leagueId },
+                select: {
+                    name: true,
+                    currentJornada: true,
+                    jornadaStatus: true
+                }
+            });
+            if (!league) {
+                throw new Error('Liga no encontrada');
+            }
+            return {
+                currentJornada: league.currentJornada,
+                status: league.jornadaStatus,
+                leagueName: league.name
+            };
+        }
+        catch (error) {
+            console.error('❌ Error obteniendo estado de jornada:', error);
+            throw error;
+        }
+    }
+    /**
+     * Abrir jornada para TODAS las ligas (bloquea cambios)
+     */
+    static async openAllJornadas() {
+        try {
+            console.log('🌍 Abriendo jornada para TODAS las ligas...');
+            const leagues = await prisma.league.findMany();
+            const processedLeagues = [];
+            for (const league of leagues) {
+                const jornada = league.currentJornada;
+                console.log(`  🔓 Abriendo jornada ${jornada} para liga "${league.name}"...`);
+                // Actualizar estado de la jornada a "closed" (cerrado/bloqueado)
+                await prisma.league.update({
+                    where: { id: league.id },
+                    data: {
+                        jornadaStatus: 'closed'
+                    }
+                });
+                processedLeagues.push({
+                    id: league.id,
+                    name: league.name,
+                    jornada
+                });
+                console.log(`  ✅ Jornada ${jornada} abierta (bloqueada) para liga "${league.name}"`);
+            }
+            console.log(`\n✨ ${leagues.length} ligas actualizadas exitosamente\n`);
+            return {
+                success: true,
+                message: `Jornada abierta (bloqueada) para ${leagues.length} ligas`,
+                leaguesProcessed: leagues.length,
+                leagues: processedLeagues
+            };
+        }
+        catch (error) {
+            console.error('❌ Error abriendo jornadas:', error);
+            throw error;
+        }
+    }
+    /**
+     * Cerrar jornada para TODAS las ligas (permite cambios)
+     */
+    static async closeAllJornadas() {
+        try {
+            console.log('🌍 Cerrando jornada para TODAS las ligas...');
+            const leagues = await prisma.league.findMany();
+            const processedLeagues = [];
+            for (const league of leagues) {
+                const jornada = league.currentJornada;
+                console.log(`  🔒 Cerrando jornada ${jornada} para liga "${league.name}"...`);
+                // Actualizar estado de la jornada a "open" (abierto/desbloqueado)
+                await prisma.league.update({
+                    where: { id: league.id },
+                    data: {
+                        jornadaStatus: 'open'
+                    }
+                });
+                processedLeagues.push({
+                    id: league.id,
+                    name: league.name,
+                    jornada
+                });
+                console.log(`  ✅ Jornada ${jornada} cerrada (abierta) para liga "${league.name}"`);
+            }
+            console.log(`\n✨ ${leagues.length} ligas actualizadas exitosamente\n`);
+            return {
+                success: true,
+                message: `Jornada cerrada (abierta) para ${leagues.length} ligas`,
+                leaguesProcessed: leagues.length,
+                leagues: processedLeagues
+            };
+        }
+        catch (error) {
+            console.error('❌ Error cerrando jornadas:', error);
+            throw error;
+        }
+    }
 }
 JornadaService.API_BASE = 'https://v3.football.api-sports.io';
 JornadaService.API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';

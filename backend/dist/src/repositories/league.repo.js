@@ -1,14 +1,22 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 export const LeagueRepo = {
-    create: (name, leaderId, code) => prisma.league.create({
-        data: {
-            name,
-            code,
-            leaderId,
-            members: { create: { userId: leaderId, points: 0 } },
-        },
-    }),
+    create: async (name, leaderId, code) => {
+        // Obtener la jornada actual de la primera liga existente
+        const firstLeague = await prisma.league.findFirst({
+            select: { currentJornada: true }
+        });
+        const currentJornada = firstLeague?.currentJornada || 9; // Fallback a jornada 9
+        return prisma.league.create({
+            data: {
+                name,
+                code,
+                leaderId,
+                currentJornada,
+                members: { create: { userId: leaderId, points: 0 } },
+            },
+        });
+    },
     deleteIfLeader: (leagueId, leaderId) => prisma.league.deleteMany({ where: { id: leagueId, leaderId } }),
     getById: (leagueId) => prisma.league.findUnique({
         where: { id: leagueId },

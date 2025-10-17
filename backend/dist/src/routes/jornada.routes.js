@@ -12,4 +12,24 @@ export default async function jornadaRoutes(fastify) {
     fastify.post('/evaluate/:leagueId', {
         preHandler: [fastify.auth],
     }, JornadaController.evaluateJornada);
+    // Cerrar jornada
+    fastify.post('/close/:leagueId', {
+        preHandler: [fastify.auth],
+    }, JornadaController.closeJornada);
+    // Abrir jornada
+    fastify.post('/open/:leagueId', {
+        preHandler: [fastify.auth],
+    }, JornadaController.openJornada);
+    // Obtener estado de jornada
+    fastify.get('/status/:leagueId', {
+        preHandler: [fastify.auth],
+    }, JornadaController.getJornadaStatus);
+    // Abrir jornada para TODAS las ligas
+    fastify.post('/open-all', {
+        preHandler: [fastify.auth],
+    }, JornadaController.openAllJornadas);
+    // Cerrar jornada para TODAS las ligas
+    fastify.post('/close-all', {
+        preHandler: [fastify.auth],
+    }, JornadaController.closeAllJornadas);
 }

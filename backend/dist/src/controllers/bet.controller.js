@@ -1,4 +1,5 @@
 import { BetService } from '../services/bet.service.js';
+import { AppError } from '../utils/errors.js';
 export class BetController {
     /**
      * GET /api/bets/budget/:leagueId
@@ -15,6 +16,30 @@ export class BetController {
             return reply.status(200).send(budget);
         }
         catch (error) {
+            if (error instanceof AppError) {
+                return reply.status(error.statusCode).send({ error: error.message });
+            }
+            return reply.status(400).send({ error: error.message });
+        }
+    }
+    /**
+     * GET /api/bets/all/:leagueId
+     * Obtener todas las apuestas de la liga (jornada actual) con nombre y cantidad
+     */
+    static async getLeagueBets(request, reply) {
+        try {
+            const userId = request.user?.sub || request.user?.id;
+            if (!userId) {
+                return reply.status(401).send({ error: 'No autenticado' });
+            }
+            const { leagueId } = request.params;
+            const bets = await BetService.getLeagueBets(leagueId, userId);
+            return reply.status(200).send(bets);
+        }
+        catch (error) {
+            if (error instanceof AppError) {
+                return reply.status(error.statusCode).send({ error: error.message });
+            }
             return reply.status(400).send({ error: error.message });
         }
     }
@@ -42,6 +67,9 @@ export class BetController {
             return reply.status(201).send(bet);
         }
         catch (error) {
+            if (error instanceof AppError) {
+                return reply.status(error.statusCode).send({ error: error.message });
+            }
             return reply.status(400).send({ error: error.message });
         }
     }
@@ -60,6 +88,9 @@ export class BetController {
             return reply.status(200).send(bets);
         }
         catch (error) {
+            if (error instanceof AppError) {
+                return reply.status(error.statusCode).send({ error: error.message });
+            }
             return reply.status(400).send({ error: error.message });
         }
     }
@@ -78,6 +109,9 @@ export class BetController {
             return reply.status(200).send(result);
         }
         catch (error) {
+            if (error instanceof AppError) {
+                return reply.status(error.statusCode).send({ error: error.message });
+            }
             return reply.status(400).send({ error: error.message });
         }
     }
@@ -122,6 +156,9 @@ export class BetController {
             });
         }
         catch (error) {
+            if (error instanceof AppError) {
+                return reply.status(error.statusCode).send({ error: error.message });
+            }
             return reply.status(400).send({ error: error.message });
         }
     }

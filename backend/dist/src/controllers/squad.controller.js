@@ -1,6 +1,34 @@
 import { SquadService } from '../services/squad.service.js';
 import { AppError } from '../utils/errors.js';
 export class SquadController {
+    // GET /api/squads/:ligaId/user/:userId - Obtener plantilla de un usuario específico
+    static async getSquadByUser(req, reply) {
+        try {
+            const { ligaId, userId } = req.params;
+            const requesterId = req.user?.sub || req.user?.id;
+            if (!requesterId) {
+                throw new AppError(401, 'UNAUTHORIZED', 'Usuario no autenticado');
+            }
+            // Validar que ambos (solicitante y target) son miembros de la liga
+            // y que la liga existe. Usamos prisma de forma ligera a través del servicio si existiera,
+            // pero aquí reutilizamos SquadService.getUserSquad para obtener la plantilla del target.
+            const squad = await SquadService.getUserSquad(userId, ligaId);
+            if (!squad) {
+                // Responder 404 si el usuario aún no tiene plantilla en esa liga
+                return reply.status(404).send({ message: 'Plantilla no encontrada para el usuario' });
+            }
+            reply.send(squad);
+        }
+        catch (error) {
+            if (error instanceof AppError) {
+                reply.status(error.statusCode).send({ message: error.message });
+            }
+            else {
+                console.error('Error en getSquadByUser:', error);
+                reply.status(500).send({ message: 'Error interno del servidor' });
+            }
+        }
+    }
     // GET /api/squads/:ligaId - Obtener plantilla del usuario para una liga
     static async getUserSquad(req, reply) {
         try {

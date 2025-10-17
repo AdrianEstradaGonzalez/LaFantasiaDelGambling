@@ -89,4 +89,79 @@ export class JornadaController {
             return reply.status(500).send({ error: error.message || 'Error al evaluar jornada' });
         }
     }
+    /**
+     * POST /api/jornada/open/:leagueId
+     * Abrir jornada (antes "Cerrar") - Bloquea apuestas y modificaciones
+     * No requiere jornada, usa la actual de la liga
+     */
+    static async openJornada(request, reply) {
+        try {
+            const { leagueId } = request.params;
+            const result = await JornadaService.openJornada(leagueId);
+            return reply.status(200).send(result);
+        }
+        catch (error) {
+            console.error('Error en openJornada:', error);
+            return reply.status(500).send({ error: error.message || 'Error al abrir jornada' });
+        }
+    }
+    /**
+     * POST /api/jornada/close/:leagueId
+     * Cerrar jornada (antes "Abrir") - Permite apuestas y modificaciones
+     * No requiere jornada, usa la actual de la liga
+     */
+    static async closeJornada(request, reply) {
+        try {
+            const { leagueId } = request.params;
+            const result = await JornadaService.closeJornada(leagueId);
+            return reply.status(200).send(result);
+        }
+        catch (error) {
+            console.error('Error en closeJornada:', error);
+            return reply.status(500).send({ error: error.message || 'Error al cerrar jornada' });
+        }
+    }
+    /**
+     * GET /api/jornada/status/:leagueId
+     * Obtener estado actual de la jornada
+     */
+    static async getJornadaStatus(request, reply) {
+        try {
+            const { leagueId } = request.params;
+            const result = await JornadaService.getJornadaStatus(leagueId);
+            return reply.status(200).send(result);
+        }
+        catch (error) {
+            console.error('Error en getJornadaStatus:', error);
+            return reply.status(500).send({ error: error.message || 'Error al obtener estado de jornada' });
+        }
+    }
+    /**
+     * POST /api/jornada/open-all
+     * Abrir jornada para TODAS las ligas (bloquea cambios)
+     */
+    static async openAllJornadas(request, reply) {
+        try {
+            const result = await JornadaService.openAllJornadas();
+            return reply.status(200).send(result);
+        }
+        catch (error) {
+            console.error('Error en openAllJornadas:', error);
+            return reply.status(500).send({ error: error.message || 'Error al abrir jornadas' });
+        }
+    }
+    /**
+     * POST /api/jornada/close-all
+     * Cerrar jornada para TODAS las ligas (permite cambios)
+     */
+    static async closeAllJornadas(request, reply) {
+        try {
+            const result = await JornadaService.closeAllJornadas();
+            return reply.status(200).send(result);
+        }
+        catch (error) {
+            console.error('Error en closeAllJornadas:', error);
+            return reply.status(500).send({ error: error.message || 'Error al cerrar jornadas' });
+        }
+    }
 }

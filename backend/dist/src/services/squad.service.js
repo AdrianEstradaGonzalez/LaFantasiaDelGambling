@@ -1,6 +1,20 @@
 import { PrismaClient } from '@prisma/client';
+import { AppError } from '../utils/errors.js';
 const prisma = new PrismaClient();
 export class SquadService {
+    // Verifica si la liga permite cambios (jornada no bloqueada)
+    static async assertChangesAllowed(ligaId) {
+        const league = await prisma.league.findUnique({
+            where: { id: ligaId },
+            select: { jornadaStatus: true, name: true }
+        });
+        if (!league) {
+            throw new AppError(404, 'NOT_FOUND', 'Liga no encontrada');
+        }
+        if (league.jornadaStatus === 'closed') {
+            throw new AppError(403, 'JORNADA_BLOQUEADA', 'La jornada está abierta (bloqueada). No se permiten modificaciones de plantillas ni fichajes en este momento.');
+        }
+    }
     // Obtener plantilla del usuario para una liga específica
     static async getUserSquad(userId, ligaId) {
         try {
@@ -25,6 +39,8 @@ export class SquadService {
     // Crear nueva plantilla
     static async createSquad(data) {
         try {
+            // Bloquear si la jornada está abierta (bloqueada)
+            await this.assertChangesAllowed(data.ligaId);
             // Verificar que el usuario es miembro de la liga
             const membership = await prisma.leagueMember.findUnique({
                 where: {
@@ -76,6 +92,8 @@ export class SquadService {
     // Actualizar plantilla existente (ahora SÍ actualiza presupuesto al cambiar formación)
     static async updateSquad(userId, ligaId, data) {
         try {
+            // Bloquear si la jornada está abierta (bloqueada)
+            await this.assertChangesAllowed(ligaId);
             // Verificar que la plantilla existe y pertenece al usuario
             const existingSquad = await prisma.squad.findUnique({
                 where: {
@@ -195,6 +213,8 @@ export class SquadService {
     // Eliminar plantilla
     static async deleteSquad(userId, ligaId) {
         try {
+            // Bloquear si la jornada está abierta (bloqueada)
+            await this.assertChangesAllowed(ligaId);
             const squad = await prisma.squad.findUnique({
                 where: {
                     userId_leagueId: {
@@ -240,6 +260,8 @@ export class SquadService {
     // Añadir jugador a una posición específica (AHORA SÍ actualiza presupuesto)
     static async addPlayerToSquad(userId, ligaId, playerData) {
         try {
+            // Bloquear si la jornada está abierta (bloqueada)
+            await this.assertChangesAllowed(ligaId);
             // Obtener plantilla
             let squad = await prisma.squad.findUnique({
                 where: {
@@ -382,6 +404,8 @@ export class SquadService {
     // Eliminar/vender jugador de una posición (AHORA SÍ actualiza presupuesto)
     static async removePlayerFromSquad(userId, ligaId, position) {
         try {
+            // Bloquear si la jornada está abierta (bloqueada)
+            await this.assertChangesAllowed(ligaId);
             // Obtener plantilla
             const squad = await prisma.squad.findUnique({
                 where: {
@@ -446,6 +470,8 @@ export class SquadService {
     // Establecer capitán de la plantilla
     static async setCaptain(userId, ligaId, position) {
         try {
+            // Bloquear si la jornada está abierta (bloqueada)
+            await this.assertChangesAllowed(ligaId);
             // Obtener plantilla
             const squad = await prisma.squad.findUnique({
                 where: {
