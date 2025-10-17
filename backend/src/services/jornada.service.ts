@@ -399,7 +399,35 @@ export class JornadaService {
           console.log(`         Posición: ${squadPlayer.position}`);
           console.log(`         Jornada a buscar: ${jornada}`);
           
-          // Obtener partidos de la jornada donde jugó este jugador
+          // Primero obtener información del jugador para saber su equipo
+          const playerInfoResponse = await axios.get(`${this.API_BASE}/players`, {
+            headers: {
+              'x-rapidapi-key': this.API_KEY,
+              'x-rapidapi-host': 'v3.football.api-sports.io',
+            },
+            params: { 
+              id: squadPlayer.playerId, 
+              season: 2024,
+              league: 140
+            },
+          });
+
+          const playerInfo = playerInfoResponse.data?.response?.[0];
+          if (!playerInfo) {
+            console.log(`         ⚠️ No se encontró información del jugador ${squadPlayer.playerName}`);
+            continue;
+          }
+
+          const playerTeamId = playerInfo.statistics?.[0]?.team?.id;
+          const playerTeamName = playerInfo.statistics?.[0]?.team?.name;
+          if (!playerTeamId) {
+            console.log(`         ⚠️ No se encontró el equipo del jugador ${squadPlayer.playerName}`);
+            continue;
+          }
+
+          console.log(`         🏟️ Equipo del jugador: ${playerTeamName} (ID: ${playerTeamId})`);
+          
+          // Obtener partidos de la jornada
           const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
             headers: {
               'x-rapidapi-key': this.API_KEY,
@@ -415,51 +443,58 @@ export class JornadaService {
           const fixtures = data?.response || [];
           console.log(`         📅 Encontrados ${fixtures.length} partidos en jornada ${jornada}`);
           
+          // Buscar el partido específico donde jugó su equipo
+          const teamFixture = fixtures.find((f: any) => 
+            f.teams?.home?.id === playerTeamId || f.teams?.away?.id === playerTeamId
+          );
+
+          if (!teamFixture) {
+            console.log(`         ⚠️ ${playerTeamName} no jugó en la jornada ${jornada}`);
+            continue;
+          }
+
+          console.log(`         🔎 Partido encontrado: ${teamFixture.teams?.home?.name} vs ${teamFixture.teams?.away?.name} (ID: ${teamFixture.fixture.id})`);
+          console.log(`         📊 Estado del partido: ${teamFixture.fixture?.status?.short}`);
+          
           let playerPoints = 0;
           let foundPlayer = false;
 
-          // Buscar el partido del equipo del jugador
-          for (const fixture of fixtures) {
-            console.log(`         🔎 Buscando en partido: ${fixture.teams?.home?.name} vs ${fixture.teams?.away?.name} (ID: ${fixture.fixture.id})`);
-            
-            // Obtener estadísticas del jugador en este partido
-            const statsResponse = await axios.get(`${this.API_BASE}/fixtures/players`, {
-              headers: {
-                'x-rapidapi-key': this.API_KEY,
-                'x-rapidapi-host': 'v3.football.api-sports.io',
-              },
-              params: { fixture: fixture.fixture.id },
-            });
+          // Obtener estadísticas del jugador en ese partido específico
+          const statsResponse = await axios.get(`${this.API_BASE}/fixtures/players`, {
+            headers: {
+              'x-rapidapi-key': this.API_KEY,
+              'x-rapidapi-host': 'v3.football.api-sports.io',
+            },
+            params: { fixture: teamFixture.fixture.id },
+          });
 
-            const teamsData = statsResponse.data?.response || [];
-            let playerStats = null;
+          const teamsData = statsResponse.data?.response || [];
+          console.log(`         📋 Equipos con estadísticas en el partido: ${teamsData.length}`);
+          let playerStats = null;
 
-            // Buscar las estadísticas del jugador
-            for (const teamData of teamsData) {
-              const players = teamData.players || [];
-              const found = players.find((p: any) => p.player?.id === squadPlayer.playerId);
-              if (found) {
-                playerStats = found.statistics?.[0];
-                foundPlayer = true;
-                console.log(`         ✅ ¡Jugador encontrado en ${teamData.team?.name}!`);
-                break;
-              }
-            }
-
-            if (playerStats) {
-              console.log(`         📊 Estadísticas encontradas, calculando puntos...`);
-              // Calcular puntos según el rol del jugador
-              const pointsFromThisMatch = this.calculatePlayerPoints(playerStats, squadPlayer.role);
-              playerPoints += pointsFromThisMatch;
-              console.log(`         ⚽ ${squadPlayer.playerName}: ${pointsFromThisMatch} puntos en este partido`);
-              break; // Solo contar el primer partido encontrado
+          // Buscar las estadísticas del jugador
+          for (const teamData of teamsData) {
+            const players = teamData.players || [];
+            console.log(`         🔍 Buscando en equipo: ${teamData.team?.name} (${players.length} jugadores)`);
+            const found = players.find((p: any) => p.player?.id === squadPlayer.playerId);
+            if (found) {
+              playerStats = found.statistics?.[0];
+              foundPlayer = true;
+              console.log(`         ✅ ¡Jugador encontrado en ${teamData.team?.name}!`);
+              console.log(`         📈 Minutos jugados: ${playerStats?.games?.minutes || 0}`);
+              break;
             }
           }
 
-          if (!foundPlayer) {
-            console.log(`         ⚠️ ${squadPlayer.playerName}: NO se encontró en ningún partido de la jornada ${jornada}`);
-          } else if (playerPoints === 0) {
-            console.log(`         ⚠️ ${squadPlayer.playerName}: Encontrado pero 0 puntos`);
+          if (playerStats) {
+            console.log(`         📊 Estadísticas encontradas, calculando puntos...`);
+            // Calcular puntos según el rol del jugador
+            const pointsFromThisMatch = this.calculatePlayerPoints(playerStats, squadPlayer.role);
+            playerPoints += pointsFromThisMatch;
+            console.log(`         ⚽ ${squadPlayer.playerName}: ${pointsFromThisMatch} puntos en este partido`);
+          } else if (!foundPlayer) {
+            console.log(`         ⚠️ ${squadPlayer.playerName}: NO se encontró en las estadísticas del partido`);
+            console.log(`         💡 Posible causa: No jugó, lesionado, o no convocado`);
           }
 
           totalPoints += playerPoints;
@@ -467,7 +502,7 @@ export class JornadaService {
           console.log(`         ====================================\n`);
 
           // Pequeña pausa para rate limit
-          await new Promise((r) => setTimeout(r, 100));
+          await new Promise((r) => setTimeout(r, 150));
         } catch (error) {
           console.error(`      ❌ Error obteniendo estadísticas del jugador ${squadPlayer.playerName}:`, error);
         }
