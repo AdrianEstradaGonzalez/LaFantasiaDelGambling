@@ -53,18 +53,22 @@ export class AdminService {
           season: SEASON,
         },
       });
-      // Rondas tipo 'Regular Season - 8', 'Regular Season - 9', ...
       const rounds = data?.response || [];
+      console.log('[ADMIN] Rondas encontradas:', rounds);
       const jornadas = rounds
         .map((r: string) => {
           const m = r.match(/Regular Season - (\d+)/);
           return m ? parseInt(m[1]) : null;
         })
         .filter((n: number | null) => n !== null) as number[];
+      console.log('[ADMIN] Jornadas numéricas extraídas:', jornadas);
       if (jornadas.length > 0) {
         maxJornada = Math.max(...jornadas);
+        console.log('[ADMIN] Jornada máxima detectada:', maxJornada);
       }
-    } catch {}
+    } catch (e) {
+      console.log('[ADMIN] Error obteniendo rondas:', e);
+    }
 
     // Buscar desde la jornada más alta hacia atrás la que tenga partidos terminados
     for (let j = maxJornada; j >= 1; j--) {
@@ -81,21 +85,30 @@ export class AdminService {
           },
         });
         const fixtures = data?.response || [];
-        const hasFinished = fixtures.some((f: any) => ['FT','AET','PEN'].includes(f.fixture?.status?.short));
-        if (hasFinished) {
+        console.log(`[ADMIN] Jornada ${j}: ${fixtures.length} partidos encontrados.`);
+        const finishedFixtures = fixtures.filter((f: any) => ['FT','AET','PEN'].includes(f.fixture?.status?.short));
+        console.log(`[ADMIN] Jornada ${j}: ${finishedFixtures.length} partidos terminados.`);
+        if (finishedFixtures.length > 0) {
           lastJornada = j;
+          console.log(`[ADMIN] Última jornada real puntuada detectada: ${lastJornada}`);
           break;
         }
-      } catch {}
+      } catch (e) {
+        console.log(`[ADMIN] Error consultando fixtures de jornada ${j}:`, e);
+      }
     }
 
     // Obtener todos los jugadores
-    const players = await prisma.player.findMany();
-    let updated = 0;
-    for (const player of players) {
+  const players = await prisma.player.findMany();
+  console.log(`[ADMIN] Total jugadores encontrados en BD: ${players.length}`);
+  let updated = 0;
+  for (const player of players) {
       // Buscar el equipo del jugador
       let teamId = player.teamId;
-      if (!teamId) continue;
+      if (!teamId) {
+        console.log(`[ADMIN] Jugador sin teamId:`, player);
+        continue;
+      }
 
       // Buscar el fixture de su equipo en la última jornada
       let fixtureId = null;
@@ -114,8 +127,14 @@ export class AdminService {
         const fixtures = data?.response || [];
         const fixture = fixtures.find((f: any) => f.teams?.home?.id === teamId || f.teams?.away?.id === teamId);
         if (fixture) fixtureId = fixture.fixture.id;
-      } catch {}
-      if (!fixtureId) continue;
+  console.log(`[ADMIN] Jugador ${player.id} (${player.name}): fixtureId encontrado:`, fixtureId);
+      } catch (e) {
+        console.log(`[ADMIN] Error buscando fixture para jugador ${player.id}:`, e);
+      }
+      if (!fixtureId) {
+  console.log(`[ADMIN] Jugador ${player.id} (${player.name}): sin fixture en jornada ${lastJornada}`);
+        continue;
+      }
 
       // Buscar stats del jugador en ese fixture
       let playerStats = null;
@@ -132,10 +151,13 @@ export class AdminService {
           const found = (teamData.players || []).find((p: any) => p.player?.id === player.id);
           if (found?.statistics?.[0]) {
             playerStats = found.statistics[0];
+            console.log(`[ADMIN] Jugador ${player.id} (${player.name}): stats encontradas.`);
             break;
           }
         }
-      } catch {}
+      } catch (e) {
+        console.log(`[ADMIN] Error buscando stats para jugador ${player.id}:`, e);
+      }
 
       // Calcular puntos (misma lógica que PlayerDetail)
       let points = 0;
@@ -154,6 +176,9 @@ export class AdminService {
         points += (penalty.scored || 0) * 3;
         points -= (penalty.missed || 0) * 2;
         // Puedes añadir más reglas aquí si tu lógica de PlayerDetail es más compleja
+  console.log(`[ADMIN] Jugador ${player.id} (${player.name}): puntos calculados: ${points}`);
+      } else {
+  console.log(`[ADMIN] Jugador ${player.id} (${player.name}): sin stats en fixture.`);
       }
 
       await prisma.player.update({
@@ -167,10 +192,11 @@ export class AdminService {
       // Imprimir el primer jugador actualizado por consola
       if (updated === 1) {
         const dbPlayer = await prisma.player.findUnique({ where: { id: player.id } });
-        console.log('Ejemplo de jugador actualizado:', dbPlayer);
+        console.log('[ADMIN] Ejemplo de jugador actualizado:', dbPlayer);
       }
     }
-    return { updatedPlayers: updated, lastJornada };
+  console.log(`[ADMIN] Total jugadores actualizados: ${updated}`);
+  return { updatedPlayers: updated, lastJornada };
   }
 
   // Delete a user
