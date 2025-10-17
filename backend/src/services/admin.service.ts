@@ -96,14 +96,21 @@ export class AdminService {
     }
   }
 
-// Actualizar lastJornadaPoints y lastJornadaNumber de todos los jugadores
+// Actualizar lastJornadaPoints y lastJornadaNumber de todos los jugadores usando lógica exacta del frontend y jornada.service
 async updateAllPlayersLastJornadaPoints(jornada: number) {
-  console.log(`[ADMIN] Actualizando puntos jornada ${jornada}`);
+  console.log(`[ADMIN] Actualizando puntos jornada ${jornada} (usando lógica frontend/jornada.service)`);
+
+  // Importar helpers de jornada.service
+  const { JornadaService } = await import('./jornada.service.js');
+
+  // Detectar la última jornada con partidos terminados
+  const lastCompletedJornada = await JornadaService.findLastCompletedJornada(jornada);
+  console.log(`[ADMIN] Última jornada completada detectada: ${lastCompletedJornada}`);
 
   const players = await prisma.player.findMany();
   console.log(`[ADMIN] Total jugadores encontrados: ${players.length}`);
 
-  // API-Football config
+  // API config
   const api = axios.create({
     baseURL: "https://v3.football.api-sports.io",
     headers: {
@@ -112,43 +119,95 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
     },
   });
 
+  // Role mapping (frontend logic)
+  const normalizePosition = (pos?: string): string | undefined => {
+    if (!pos) return undefined;
+    const p = pos.trim().toLowerCase();
+    if (p === 'goalkeeper' || p.includes('goal') || p.includes('keeper')) return 'Goalkeeper';
+    if (p === 'defender' || p.includes('defen') || p.includes('back')) return 'Defender';
+    if (p === 'midfielder' || p.includes('midfield') || p.includes('midf') || p === 'mid') return 'Midfielder';
+    if (p === 'attacker' || p.includes('attack') || p.includes('forward') || p.includes('striker') || p.includes('wing')) return 'Attacker';
+    return undefined;
+  };
+
+  let updatedCount = 0;
   for (const player of players) {
     try {
-      // ⚠️ Evitar rate-limit (esperar entre llamadas)
       await new Promise((r) => setTimeout(r, 1200)); // 1.2 segundos entre requests
 
-      // Buscar estadísticas del jugador
-      const res = await api.get("/players", {
+      // Buscar equipo del jugador
+      let playerTeamId: number | undefined = player.teamId as unknown as number;
+      if (!playerTeamId) {
+        // Fallback: buscar por API
+        const infoRes = await api.get("/players", {
+          params: {
+            id: player.id,
+            season: 2025,
+            league: 140,
+          },
+        });
+        const info = infoRes.data?.response?.[0]?.statistics?.[0];
+        if (info?.team?.id) playerTeamId = info.team.id;
+      }
+      if (!playerTeamId) {
+        console.log(`[WARN] No se pudo determinar el equipo para ${player.name}`);
+        continue;
+      }
+
+      // Buscar partidos de la jornada
+      const fixturesRes = await api.get("/fixtures", {
         params: {
-          id: player.id,
+          league: 140,
           season: 2025,
-          league: 140, // La Liga (puedes parametrizarlo)
+          round: `Regular Season - ${lastCompletedJornada}`,
         },
       });
-
-      if (res.status === 429) {
-        console.warn(`[RATE LIMIT] Esperando 60 segundos...`);
-        await new Promise((r) => setTimeout(r, 60000));
+      const fixtures = fixturesRes.data?.response || [];
+      const teamFixture = fixtures.find((f: any) =>
+        f.teams?.home?.id === playerTeamId || f.teams?.away?.id === playerTeamId
+      );
+      if (!teamFixture) {
+        console.log(`[WARN] ${player.name} (${playerTeamId}) no tiene partido en jornada ${lastCompletedJornada}`);
+        continue;
+      }
+      const fixtureId = teamFixture.fixture?.id;
+      if (!fixtureId) {
+        console.log(`[WARN] Sin fixtureId para partido de ${player.name}`);
         continue;
       }
 
-      const stats = res.data?.response?.[0]?.statistics?.[0];
-      if (!stats) {
-        console.log(`[WARN] No hay stats para ${player.name}`);
+      // Buscar estadísticas del partido
+      const statsRes = await api.get("/fixtures/players", {
+        params: { fixture: fixtureId },
+      });
+      const teamsData = statsRes.data?.response || [];
+      let playerStats: any = null;
+      for (const teamData of teamsData) {
+        const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
+        const found = playersArr.find((p: any) => p?.player?.id === player.id);
+        if (found?.statistics?.[0]) {
+          playerStats = found.statistics[0];
+          break;
+        }
+      }
+      if (!playerStats) {
+        console.log(`[WARN] No stats para ${player.name} en jornada ${lastCompletedJornada}`);
         continue;
       }
 
-      const points = calculatePlayerPoints(stats, player.position);
+      // Calcular puntos usando lógica frontend
+      const role = normalizePosition(player.position);
+      const points = calculatePlayerPoints(playerStats, role ?? "Unknown");
 
-      await prisma.player.update({
+  await prisma.player.update({
         where: { id: player.id },
         data: {
           lastJornadaPoints: points,
-          lastJornadaNumber: jornada,
+          lastJornadaNumber: lastCompletedJornada,
         },
       });
-
-      console.log(`[OK] ${player.name}: ${points} pts`);
+      updatedCount++;
+      console.log(`[OK] ${player.name}: ${points} pts (jornada ${lastCompletedJornada})`);
     } catch (err: any) {
       if (err.response?.status === 429) {
         console.error(`[API] Rate limit alcanzado. Pausando...`);
@@ -159,7 +218,7 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
     }
   }
 
-  console.log(`[ADMIN] Actualización completada ✅`);
+  console.log(`[ADMIN] Actualización completada ✅ (${updatedCount} jugadores actualizados para jornada ${lastCompletedJornada})`);
 }
 
   // Delete a user

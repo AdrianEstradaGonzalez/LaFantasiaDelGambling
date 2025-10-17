@@ -53,7 +53,7 @@ const AdminPanel: React.FC = () => {
               const token = await EncryptedStorage.getItem('accessToken');
               const response = await axios.post(
                 `${ApiConfig.BASE_URL}/admin/update-player-scores`,
-                {},
+                { jornada: 8 }, // 👈 aquí agregas la jornada actual
                 {
                   headers: {
                     Authorization: `Bearer ${token}`,

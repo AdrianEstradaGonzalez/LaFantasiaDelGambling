@@ -301,7 +301,7 @@ export class JornadaService {
   /**
    * Buscar la última jornada con partidos terminados (con estadísticas disponibles)
    */
-  private static async findLastCompletedJornada(targetJornada: number): Promise<number> {
+  public static async findLastCompletedJornada(targetJornada: number): Promise<number> {
     try {
       console.log(`🔍 Buscando última jornada con estadísticas disponibles (objetivo: ${targetJornada})...`);
       
