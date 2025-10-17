@@ -177,12 +177,12 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
   if (loading) return <LoadingScreen />;
 
   return (
-    <LinearGradient colors={["#0f172a", "#0f172a"]} style={{ flex: 1 }}>
+    <LinearGradient colors={["#181818ff", "#181818ff"]} style={{ flex: 1 }}>
       {/* Header */}
       <View
         style={{
           position: 'absolute', top: 0, left: 0, right: 0,
-          backgroundColor: '#0f172a', borderBottomWidth: 0.5, borderBottomColor: '#333',
+          backgroundColor: '#181818', borderBottomWidth: 0.5, borderBottomColor: '#333',
           paddingVertical: 10, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16,
         }}
       >
@@ -195,32 +195,23 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView style={{ flex: 1, paddingTop: 60 }} contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={{ backgroundColor: '#0f172a', borderBottomColor: '#334155' }}>
-          {/* Campo de fútbol (mismo estilo que MiPlantilla) */}
+      <View style={{ flex: 1, paddingTop: 60 }}>
+        {/* Campo de fútbol a pantalla completa */}
+        <View style={{ flex: 1, padding: 16 }}>
           <View style={{
-            backgroundColor: '#0a1628',
+            flex: 1,
+            backgroundColor: '#0f0f0f',
             borderRadius: 16,
-            borderWidth: 1,
-            borderColor: '#334155',
+            borderWidth: 3,
+            borderColor: '#fff',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
             overflow: 'hidden',
-            padding: 14,
+            position: 'relative'
           }}>
-            <View style={{
-              backgroundColor: '#0f0f0f',
-              borderRadius: 16,
-              height: 500,
-              position: 'relative',
-              marginBottom: 0,
-              borderWidth: 3,
-              borderColor: '#fff',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.3,
-              shadowRadius: 8,
-              elevation: 8,
-              overflow: 'hidden'
-            }}>
               {/* Línea central */}
               <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, backgroundColor: '#fff', opacity: 0.9 }} />
               {/* Círculo central */}
@@ -281,10 +272,9 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                   </View>
                 );
               })}
-            </View>
           </View>
         </View>
-      </ScrollView>
+      </View>
     </LinearGradient>
   );
 };
