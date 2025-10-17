@@ -267,7 +267,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
             height: 48,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.3)',
+            backgroundColor: '#181818ff',
             borderRadius: 24,
           }}
         >

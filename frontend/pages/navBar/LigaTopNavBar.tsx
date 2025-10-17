@@ -41,6 +41,7 @@ const LigaTopNavBar: React.FC<Props> = ({ nombreLiga, onInvitePress, onMenuPress
             <TouchableOpacity
                 onPress={onMenuPress}
                 activeOpacity={0.8}
+                style={{ backgroundColor: 'transparent' }}
             >
                 <MenuIcon size={24} color="#ffffff" />
             </TouchableOpacity>
