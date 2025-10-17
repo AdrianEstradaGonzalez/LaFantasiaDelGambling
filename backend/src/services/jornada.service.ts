@@ -298,11 +298,69 @@ export class JornadaService {
   }
 
   /**
-   * Calcular puntos de la plantilla de un usuario en una jornada
+   * Buscar la última jornada con partidos terminados (con estadísticas disponibles)
    */
-  private static async calculateSquadPoints(userId: string, leagueId: string, jornada: number): Promise<number> {
+  private static async findLastCompletedJornada(targetJornada: number): Promise<number> {
     try {
-      console.log(`    🔍 Buscando plantilla para userId=${userId}, leagueId=${leagueId}, jornada=${jornada}`);
+      console.log(`🔍 Buscando última jornada con estadísticas disponibles (objetivo: ${targetJornada})...`);
+      
+      // Intentar desde la jornada objetivo hacia atrás hasta encontrar una con partidos terminados
+      for (let j = targetJornada; j >= 1; j--) {
+        try {
+          const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
+            headers: {
+              'x-rapidapi-key': this.API_KEY,
+              'x-rapidapi-host': 'v3.football.api-sports.io',
+            },
+            params: {
+              league: 140,
+              season: 2024,
+              round: `Regular Season - ${j}`,
+            },
+            timeout: 10000,
+          });
+
+          const fixtures = data?.response || [];
+          
+          if (fixtures.length > 0) {
+            // Verificar si al menos un partido está terminado
+            const hasFinishedMatches = fixtures.some((f: any) => 
+              ['FT', 'AET', 'PEN'].includes(f.fixture?.status?.short)
+            );
+            
+            if (hasFinishedMatches) {
+              console.log(`✅ Jornada ${j} tiene partidos terminados. Usando esta jornada para calcular puntos.`);
+              return j;
+            } else {
+              console.log(`⚠️ Jornada ${j} encontrada pero sin partidos terminados. Continuando búsqueda...`);
+            }
+          }
+          
+          // Pausa para evitar rate limiting
+          await new Promise(r => setTimeout(r, 200));
+        } catch (error) {
+          console.log(`⚠️ Error consultando jornada ${j}, continuando búsqueda...`);
+        }
+      }
+      
+      // Si no encuentra ninguna jornada con estadísticas, usar la objetivo
+      console.log(`⚠️ No se encontraron jornadas con estadísticas. Usando jornada objetivo ${targetJornada}.`);
+      return targetJornada;
+    } catch (error) {
+      console.error(`❌ Error buscando última jornada completada:`, error);
+      return targetJornada; // Fallback a jornada objetivo
+    }
+  }
+
+  /**
+   * Calcular puntos de la plantilla de un usuario en una jornada
+   * Busca automáticamente la última jornada con estadísticas disponibles
+   */
+  private static async calculateSquadPoints(userId: string, leagueId: string, jornadaObjetivo: number): Promise<number> {
+    try {
+      // Buscar la última jornada con estadísticas disponibles
+      const jornada = await this.findLastCompletedJornada(jornadaObjetivo);
+      console.log(`    🔍 Calculando puntos para userId=${userId}, leagueId=${leagueId}, jornadaObjetivo=${jornadaObjetivo}, jornadaUsada=${jornada}`);
       
       // Obtener la plantilla del usuario
       const squad = await prisma.squad.findUnique({

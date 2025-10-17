@@ -254,11 +254,63 @@ export class JornadaService {
         return balances;
     }
     /**
-     * Calcular puntos de la plantilla de un usuario en una jornada
+     * Buscar la última jornada con partidos terminados (con estadísticas disponibles)
      */
-    static async calculateSquadPoints(userId, leagueId, jornada) {
+    static async findLastCompletedJornada(targetJornada) {
         try {
-            console.log(`    🔍 Buscando plantilla para userId=${userId}, leagueId=${leagueId}, jornada=${jornada}`);
+            console.log(`🔍 Buscando última jornada con estadísticas disponibles (objetivo: ${targetJornada})...`);
+            // Intentar desde la jornada objetivo hacia atrás hasta encontrar una con partidos terminados
+            for (let j = targetJornada; j >= 1; j--) {
+                try {
+                    const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
+                        headers: {
+                            'x-rapidapi-key': this.API_KEY,
+                            'x-rapidapi-host': 'v3.football.api-sports.io',
+                        },
+                        params: {
+                            league: 140,
+                            season: 2024,
+                            round: `Regular Season - ${j}`,
+                        },
+                        timeout: 10000,
+                    });
+                    const fixtures = data?.response || [];
+                    if (fixtures.length > 0) {
+                        // Verificar si al menos un partido está terminado
+                        const hasFinishedMatches = fixtures.some((f) => ['FT', 'AET', 'PEN'].includes(f.fixture?.status?.short));
+                        if (hasFinishedMatches) {
+                            console.log(`✅ Jornada ${j} tiene partidos terminados. Usando esta jornada para calcular puntos.`);
+                            return j;
+                        }
+                        else {
+                            console.log(`⚠️ Jornada ${j} encontrada pero sin partidos terminados. Continuando búsqueda...`);
+                        }
+                    }
+                    // Pausa para evitar rate limiting
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                catch (error) {
+                    console.log(`⚠️ Error consultando jornada ${j}, continuando búsqueda...`);
+                }
+            }
+            // Si no encuentra ninguna jornada con estadísticas, usar la objetivo
+            console.log(`⚠️ No se encontraron jornadas con estadísticas. Usando jornada objetivo ${targetJornada}.`);
+            return targetJornada;
+        }
+        catch (error) {
+            console.error(`❌ Error buscando última jornada completada:`, error);
+            return targetJornada; // Fallback a jornada objetivo
+        }
+    }
+    /**
+     * Calcular puntos de la plantilla de un usuario en una jornada
+     * Busca automáticamente la última jornada con estadísticas disponibles
+     */
+    static async calculateSquadPoints(userId, leagueId, jornadaObjetivo) {
+        try {
+            // Buscar la última jornada con estadísticas disponibles
+            const jornada = await this.findLastCompletedJornada(jornadaObjetivo);
+            console.log(`    🔍 Calculando puntos para userId=${userId}, leagueId=${leagueId}, jornadaObjetivo=${jornadaObjetivo}, jornadaUsada=${jornada}`);
             // Obtener la plantilla del usuario
             const squad = await prisma.squad.findUnique({
                 where: {
@@ -608,20 +660,133 @@ export class JornadaService {
                 throw new Error('Liga no encontrada');
             }
             const jornada = league.currentJornada;
-            console.log(`✅ Cerrando jornada ${jornada} para liga ${leagueId}...`);
-            // Actualizar estado de la jornada a "open" (abierto)
+            console.log(`\n🔒 CERRANDO JORNADA ${jornada} para liga "${league.name}" (${leagueId})...\n`);
+            // 1. Evaluar apuestas de la jornada actual
+            console.log(`📊 1. Evaluando apuestas de jornada ${jornada}...`);
+            const evaluations = await this.evaluateJornadaBets(jornada, leagueId);
+            console.log(`✅ ${evaluations.length} apuestas evaluadas\n`);
+            // 2. Calcular balances por usuario (apuestas)
+            console.log(`💰 2. Calculando balances de apuestas...`);
+            const balances = await this.calculateUserBalances(leagueId, evaluations);
+            console.log(`✅ Balances calculados para ${balances.size} usuarios\n`);
+            // 3. Calcular puntos de plantilla para cada usuario
+            console.log(`⚽ 3. Calculando puntos de plantilla...`);
+            const allMembers = await prisma.leagueMember.findMany({
+                where: { leagueId },
+                include: { user: true },
+            });
+            for (const member of allMembers) {
+                const squadPoints = await this.calculateSquadPoints(member.userId, leagueId, jornada);
+                // Actualizar o crear balance del usuario
+                if (!balances.has(member.userId)) {
+                    balances.set(member.userId, {
+                        userId: member.userId,
+                        totalProfit: 0,
+                        wonBets: 0,
+                        lostBets: 0,
+                        squadPoints: 0,
+                    });
+                }
+                const userBalance = balances.get(member.userId);
+                userBalance.squadPoints = squadPoints;
+            }
+            console.log(`✅ Puntos de plantilla calculados\n`);
+            // 4. Actualizar presupuestos y puntos de los miembros
+            console.log(`💵 4. Actualizando presupuestos...`);
+            let updatedMembers = 0;
+            for (const [userId, balance] of balances) {
+                const member = await prisma.leagueMember.findUnique({
+                    where: { leagueId_userId: { leagueId, userId } },
+                    include: { user: true },
+                });
+                if (member) {
+                    // Calcular nuevo presupuesto: 500 (base) + puntos plantilla + resultado apuestas
+                    const budgetFromBets = balance.totalProfit;
+                    const budgetFromSquad = balance.squadPoints; // 1M por punto
+                    const newBudget = 500 + budgetFromSquad + budgetFromBets;
+                    // Actualizar puntos totales
+                    const newTotalPoints = member.points + balance.squadPoints;
+                    await prisma.leagueMember.update({
+                        where: { leagueId_userId: { leagueId, userId } },
+                        data: {
+                            budget: newBudget,
+                            bettingBudget: 250, // Siempre resetear a 250
+                            points: newTotalPoints,
+                            // initialBudget NO se toca, siempre es 500
+                        },
+                    });
+                    console.log(`  👤 Usuario ${member.user.name}:\n` +
+                        `     Presupuesto anterior: ${member.budget}M\n` +
+                        `     Base: 500M\n` +
+                        `     Apuestas: ${balance.wonBets}W/${balance.lostBets}L = ${budgetFromBets >= 0 ? '+' : ''}${budgetFromBets}M\n` +
+                        `     Plantilla: ${balance.squadPoints} puntos = +${budgetFromSquad}M\n` +
+                        `     Nuevo presupuesto: ${newBudget}M\n` +
+                        `     Puntos totales: ${member.points} → ${newTotalPoints}`);
+                    updatedMembers++;
+                }
+            }
+            console.log(`✅ ${updatedMembers} miembros actualizados\n`);
+            // 5. Vaciar TODAS las plantillas de la liga
+            console.log(`🗑️  5. Vaciando plantillas...`);
+            const allSquads = await prisma.squad.findMany({
+                where: { leagueId },
+            });
+            let clearedSquads = 0;
+            for (const squad of allSquads) {
+                const deletedPlayers = await prisma.squadPlayer.deleteMany({
+                    where: { squadId: squad.id },
+                });
+                if (deletedPlayers.count > 0) {
+                    clearedSquads++;
+                }
+            }
+            console.log(`✅ ${clearedSquads} plantillas vaciadas\n`);
+            // 6. Eliminar opciones de apuestas de la jornada actual
+            console.log(`🗑️  6. Eliminando opciones de apuestas antiguas...`);
+            const deletedBetOptions = await prisma.bet_option.deleteMany({
+                where: {
+                    leagueId,
+                    jornada,
+                },
+            });
+            console.log(`✅ ${deletedBetOptions.count} opciones de apuestas eliminadas\n`);
+            // 7. Eliminar apuestas evaluadas
+            console.log(`🗑️  7. Eliminando apuestas evaluadas...`);
+            const deletedBets = await prisma.bet.deleteMany({
+                where: {
+                    leagueId,
+                    jornada,
+                    status: { in: ['won', 'lost'] },
+                },
+            });
+            console.log(`✅ ${deletedBets.count} apuestas eliminadas\n`);
+            // 8. Avanzar jornada y cambiar estado
+            console.log(`⏭️  8. Avanzando jornada...`);
+            const nextJornada = jornada + 1;
             await prisma.league.update({
                 where: { id: leagueId },
                 data: {
-                    jornadaStatus: 'open'
-                }
+                    currentJornada: nextJornada,
+                    jornadaStatus: 'open',
+                },
             });
-            console.log(`✅ Jornada ${jornada} cerrada (abierta) para liga "${league.name}"`);
+            console.log(`✅ Liga avanzada a jornada ${nextJornada} con estado "open"\n`);
+            console.log(`\n🎉 JORNADA ${jornada} CERRADA EXITOSAMENTE\n`);
+            console.log(`📊 Resumen:`);
+            console.log(`   - ${evaluations.length} apuestas evaluadas`);
+            console.log(`   - ${updatedMembers} miembros actualizados`);
+            console.log(`   - ${clearedSquads} plantillas vaciadas`);
+            console.log(`   - ${deletedBetOptions.count} opciones de apuestas eliminadas`);
+            console.log(`   - Jornada actual: ${nextJornada}\n`);
             return {
                 success: true,
-                message: `Jornada ${jornada} cerrada (abierta) exitosamente`,
+                message: `Jornada ${jornada} cerrada exitosamente. Nueva jornada: ${nextJornada}`,
                 leagueName: league.name,
-                jornada
+                jornada: nextJornada,
+                evaluations,
+                updatedMembers,
+                clearedSquads,
+                deletedBetOptions: deletedBetOptions.count,
             };
         }
         catch (error) {
@@ -695,36 +860,57 @@ export class JornadaService {
         }
     }
     /**
-     * Cerrar jornada para TODAS las ligas (permite cambios)
+     * Cerrar jornada para TODAS las ligas (proceso completo)
      */
     static async closeAllJornadas() {
         try {
-            console.log('🌍 Cerrando jornada para TODAS las ligas...');
+            console.log('\n🌍 CERRANDO JORNADA PARA TODAS LAS LIGAS...\n');
             const leagues = await prisma.league.findMany();
             const processedLeagues = [];
+            let totalEvaluations = 0;
+            let totalUpdatedMembers = 0;
+            let totalClearedSquads = 0;
             for (const league of leagues) {
-                const jornada = league.currentJornada;
-                console.log(`  🔒 Cerrando jornada ${jornada} para liga "${league.name}"...`);
-                // Actualizar estado de la jornada a "open" (abierto/desbloqueado)
-                await prisma.league.update({
-                    where: { id: league.id },
-                    data: {
-                        jornadaStatus: 'open'
-                    }
-                });
-                processedLeagues.push({
-                    id: league.id,
-                    name: league.name,
-                    jornada
-                });
-                console.log(`  ✅ Jornada ${jornada} cerrada (abierta) para liga "${league.name}"`);
+                console.log(`\n${'='.repeat(60)}`);
+                console.log(`� Procesando liga: ${league.name}`);
+                console.log(`${'='.repeat(60)}\n`);
+                try {
+                    const result = await this.closeJornada(league.id);
+                    processedLeagues.push({
+                        id: league.id,
+                        name: league.name,
+                        oldJornada: league.currentJornada,
+                        newJornada: result.jornada,
+                        evaluations: result.evaluations.length,
+                        updatedMembers: result.updatedMembers,
+                        clearedSquads: result.clearedSquads,
+                    });
+                    totalEvaluations += result.evaluations.length;
+                    totalUpdatedMembers += result.updatedMembers;
+                    totalClearedSquads += result.clearedSquads;
+                    console.log(`✅ Liga "${league.name}" procesada exitosamente\n`);
+                }
+                catch (error) {
+                    console.error(`❌ Error procesando liga "${league.name}":`, error);
+                    // Continuar con la siguiente liga
+                }
             }
-            console.log(`\n✨ ${leagues.length} ligas actualizadas exitosamente\n`);
+            console.log(`\n${'='.repeat(60)}`);
+            console.log(`🎉 PROCESO COMPLETADO`);
+            console.log(`${'='.repeat(60)}\n`);
+            console.log(`📊 Resumen Global:`);
+            console.log(`   - Ligas procesadas: ${processedLeagues.length}/${leagues.length}`);
+            console.log(`   - Total apuestas evaluadas: ${totalEvaluations}`);
+            console.log(`   - Total miembros actualizados: ${totalUpdatedMembers}`);
+            console.log(`   - Total plantillas vaciadas: ${totalClearedSquads}\n`);
             return {
                 success: true,
-                message: `Jornada cerrada (abierta) para ${leagues.length} ligas`,
-                leaguesProcessed: leagues.length,
-                leagues: processedLeagues
+                message: `Jornada cerrada para ${processedLeagues.length} ligas`,
+                leaguesProcessed: processedLeagues.length,
+                totalEvaluations,
+                totalUpdatedMembers,
+                totalClearedSquads,
+                leagues: processedLeagues,
             };
         }
         catch (error) {

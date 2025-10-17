@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import { JornadaService } from '../../services/JornadaService';
+import { LigaService } from '../../services/LigaService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CustomAlertManager } from '../../components/CustomAlert';
@@ -31,9 +33,52 @@ const AdminPanel: React.FC = () => {
   const [isClosingJornada, setIsClosingJornada] = useState(false);
   const [isOpeningJornada, setIsOpeningJornada] = useState(false);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed' | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
-  // No necesitamos cargar el estado inicial, se actualiza con las acciones
-  // Los botones estarán habilitados hasta que se realice una acción
+  // Cargar estado inicial al montar el componente
+  useEffect(() => {
+    const loadJornadaStatus = async () => {
+      try {
+        setIsLoadingStatus(true);
+        console.log('📊 AdminPanel - Cargando estado de jornada...');
+        
+        // Obtener userId
+        const userId = await EncryptedStorage.getItem('userId');
+        if (!userId) {
+          console.log('⚠️ AdminPanel - No hay userId disponible');
+          setJornadaStatus(null);
+          return;
+        }
+        
+        // Obtener las ligas del usuario para saber cuál consultar
+        const ligas = await LigaService.obtenerLigasPorUsuario(userId);
+        console.log('📊 AdminPanel - Ligas obtenidas:', ligas.length);
+        
+        if (ligas.length > 0) {
+          // Consultar el estado de la primera liga (asumimos que todas están sincronizadas)
+          const primeraLiga = ligas[0];
+          console.log('📊 AdminPanel - Consultando estado de liga:', primeraLiga.name);
+          
+          const status = await JornadaService.getJornadaStatus(primeraLiga.id);
+          console.log('📊 AdminPanel - Estado obtenido:', status.status);
+          
+          setJornadaStatus(status.status as 'open' | 'closed');
+        } else {
+          console.log('⚠️ AdminPanel - No hay ligas disponibles');
+          setJornadaStatus('open'); // Default a open si no hay ligas
+        }
+      } catch (error) {
+        console.error('❌ AdminPanel - Error cargando estado:', error);
+        // En caso de error, dejar ambos botones habilitados
+        setJornadaStatus(null);
+      } finally {
+        setIsLoadingStatus(false);
+        console.log('✅ AdminPanel - Estado de jornada cargado');
+      }
+    };
+
+    loadJornadaStatus();
+  }, []);
 
   const handleCerrarJornada = async () => {
     CustomAlertManager.alert(
@@ -132,8 +177,8 @@ const AdminPanel: React.FC = () => {
               
               const result = await JornadaService.openAllJornadas();
               
-              // Actualizar el estado de la jornada
-              setJornadaStatus('open');
+              // Actualizar el estado de la jornada a 'closed' (bloqueada)
+              setJornadaStatus('closed');
               
               CustomAlertManager.alert(
                 '✅ Jornada Abierta',
@@ -383,15 +428,15 @@ const AdminPanel: React.FC = () => {
 
           <TouchableOpacity
             onPress={handleCerrarJornada}
-            disabled={isClosingJornada || jornadaStatus === 'closed'}
+            disabled={isClosingJornada || isLoadingStatus || jornadaStatus === 'open'}
             style={{
-              backgroundColor: isClosingJornada || jornadaStatus === 'closed' ? '#334155' : '#ef4444',
+              backgroundColor: isClosingJornada || isLoadingStatus || jornadaStatus === 'open' ? '#334155' : '#ef4444',
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: 'center',
               shadowColor: '#ef4444',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: isClosingJornada || jornadaStatus === 'closed' ? 0 : 0.3,
+              shadowOpacity: isClosingJornada || isLoadingStatus || jornadaStatus === 'open' ? 0 : 0.3,
               shadowRadius: 8,
               elevation: isClosingJornada || jornadaStatus === 'closed' ? 0 : 4,
               opacity: jornadaStatus === 'closed' ? 0.5 : 1,
@@ -419,7 +464,7 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                {jornadaStatus === 'closed' ? 'Jornada ya cerrada' : 'Cerrar Jornada'}
+                {isLoadingStatus ? 'Cargando...' : jornadaStatus === 'open' ? 'Jornada ya desbloqueada' : 'Cerrar Jornada (Desbloquear)'}
               </Text>
             )}
           </TouchableOpacity>
@@ -465,18 +510,18 @@ const AdminPanel: React.FC = () => {
 
           <TouchableOpacity
             onPress={handleAbrirJornada}
-            disabled={isOpeningJornada || jornadaStatus === 'open'}
+            disabled={isOpeningJornada || isLoadingStatus || jornadaStatus === 'closed'}
             style={{
-              backgroundColor: isOpeningJornada || jornadaStatus === 'open' ? '#334155' : '#10b981',
+              backgroundColor: isOpeningJornada || isLoadingStatus || jornadaStatus === 'closed' ? '#334155' : '#10b981',
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: 'center',
               shadowColor: '#10b981',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: isOpeningJornada || jornadaStatus === 'open' ? 0 : 0.3,
+              shadowOpacity: isOpeningJornada || isLoadingStatus || jornadaStatus === 'closed' ? 0 : 0.3,
               shadowRadius: 8,
-              elevation: isOpeningJornada || jornadaStatus === 'open' ? 0 : 4,
-              opacity: jornadaStatus === 'open' ? 0.5 : 1,
+              elevation: isOpeningJornada || isLoadingStatus || jornadaStatus === 'closed' ? 0 : 4,
+              opacity: isLoadingStatus || jornadaStatus === 'closed' ? 0.5 : 1,
             }}
           >
             {isOpeningJornada ? (
@@ -501,7 +546,7 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                {jornadaStatus === 'open' ? 'Jornada ya abierta' : 'Abrir Jornada'}
+                {isLoadingStatus ? 'Cargando...' : jornadaStatus === 'closed' ? 'Jornada ya bloqueada' : 'Abrir Jornada (Bloquear)'}
               </Text>
             )}
           </TouchableOpacity>
