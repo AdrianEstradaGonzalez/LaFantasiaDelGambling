@@ -399,7 +399,9 @@ export class JornadaService {
           console.log(`         Posición: ${squadPlayer.position}`);
           console.log(`         Jornada a buscar: ${jornada}`);
           
-          // Primero obtener información del jugador para saber su equipo
+          let playerPoints = 0;
+          
+          // PASO 1: Obtener información del jugador para saber su equipo
           const playerInfoResponse = await axios.get(`${this.API_BASE}/players`, {
             headers: {
               'x-rapidapi-key': this.API_KEY,
@@ -414,52 +416,50 @@ export class JornadaService {
 
           const playerInfo = playerInfoResponse.data?.response?.[0];
           if (!playerInfo) {
-            console.log(`         ⚠️ No se encontró información del jugador ${squadPlayer.playerName}`);
+            console.log(`         ⚠️ No se encontró información del jugador en La Liga 2024`);
             continue;
           }
 
           const playerTeamId = playerInfo.statistics?.[0]?.team?.id;
           const playerTeamName = playerInfo.statistics?.[0]?.team?.name;
           if (!playerTeamId) {
-            console.log(`         ⚠️ No se encontró el equipo del jugador ${squadPlayer.playerName}`);
+            console.log(`         ⚠️ No se pudo determinar el equipo del jugador`);
             continue;
           }
 
-          console.log(`         🏟️ Equipo del jugador: ${playerTeamName} (ID: ${playerTeamId})`);
+          console.log(`         🏟️ Equipo: ${playerTeamName} (ID: ${playerTeamId})`);
           
-          // Obtener partidos de la jornada
-          const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
+          // PASO 2: Obtener partidos de la jornada
+          const fixturesResponse = await axios.get(`${this.API_BASE}/fixtures`, {
             headers: {
               'x-rapidapi-key': this.API_KEY,
               'x-rapidapi-host': 'v3.football.api-sports.io',
             },
             params: {
-              league: 140, // La Liga
+              league: 140,
               season: 2024,
               round: `Regular Season - ${jornada}`,
             },
           });
 
-          const fixtures = data?.response || [];
-          console.log(`         📅 Encontrados ${fixtures.length} partidos en jornada ${jornada}`);
+          const fixtures = fixturesResponse.data?.response || [];
+          console.log(`         📅 ${fixtures.length} partidos en jornada ${jornada}`);
           
-          // Buscar el partido específico donde jugó su equipo
+          // PASO 3: Buscar el partido donde jugó su equipo
           const teamFixture = fixtures.find((f: any) => 
             f.teams?.home?.id === playerTeamId || f.teams?.away?.id === playerTeamId
           );
 
           if (!teamFixture) {
-            console.log(`         ⚠️ ${playerTeamName} no jugó en la jornada ${jornada}`);
+            console.log(`         ⚠️ ${playerTeamName} no tiene partido en jornada ${jornada}`);
             continue;
           }
 
-          console.log(`         🔎 Partido encontrado: ${teamFixture.teams?.home?.name} vs ${teamFixture.teams?.away?.name} (ID: ${teamFixture.fixture.id})`);
-          console.log(`         📊 Estado del partido: ${teamFixture.fixture?.status?.short}`);
+          const isHomeTeam = teamFixture.teams?.home?.id === playerTeamId;
+          console.log(`         🔎 Partido: ${teamFixture.teams?.home?.name} vs ${teamFixture.teams?.away?.name}`);
+          console.log(`         📊 Estado: ${teamFixture.fixture?.status?.short} | Fixture ID: ${teamFixture.fixture.id}`);
           
-          let playerPoints = 0;
-          let foundPlayer = false;
-
-          // Obtener estadísticas del jugador en ese partido específico
+          // PASO 4: Obtener estadísticas del partido
           const statsResponse = await axios.get(`${this.API_BASE}/fixtures/players`, {
             headers: {
               'x-rapidapi-key': this.API_KEY,
@@ -469,42 +469,41 @@ export class JornadaService {
           });
 
           const teamsData = statsResponse.data?.response || [];
-          console.log(`         📋 Equipos con estadísticas en el partido: ${teamsData.length}`);
-          let playerStats = null;
+          if (teamsData.length === 0) {
+            console.log(`         ⚠️ Sin estadísticas disponibles para este partido`);
+            continue;
+          }
 
-          // Buscar las estadísticas del jugador
+          // PASO 5: Buscar las estadísticas del jugador
+          let playerStats = null;
           for (const teamData of teamsData) {
             const players = teamData.players || [];
-            console.log(`         🔍 Buscando en equipo: ${teamData.team?.name} (${players.length} jugadores)`);
             const found = players.find((p: any) => p.player?.id === squadPlayer.playerId);
             if (found) {
               playerStats = found.statistics?.[0];
-              foundPlayer = true;
-              console.log(`         ✅ ¡Jugador encontrado en ${teamData.team?.name}!`);
-              console.log(`         📈 Minutos jugados: ${playerStats?.games?.minutes || 0}`);
+              console.log(`         ✅ ¡Encontrado en ${teamData.team?.name}!`);
+              console.log(`         ⏱️ Minutos: ${playerStats?.games?.minutes || 0}`);
               break;
             }
           }
 
-          if (playerStats) {
-            console.log(`         📊 Estadísticas encontradas, calculando puntos...`);
-            // Calcular puntos según el rol del jugador
-            const pointsFromThisMatch = this.calculatePlayerPoints(playerStats, squadPlayer.role);
-            playerPoints += pointsFromThisMatch;
-            console.log(`         ⚽ ${squadPlayer.playerName}: ${pointsFromThisMatch} puntos en este partido`);
-          } else if (!foundPlayer) {
-            console.log(`         ⚠️ ${squadPlayer.playerName}: NO se encontró en las estadísticas del partido`);
-            console.log(`         💡 Posible causa: No jugó, lesionado, o no convocado`);
+          if (!playerStats) {
+            console.log(`         ⚠️ No participó en el partido (no convocado/lesionado/suplente sin jugar)`);
+            continue;
           }
 
+          // PASO 6: Calcular puntos
+          playerPoints = this.calculatePlayerPoints(playerStats, squadPlayer.role);
+          console.log(`         ⚽ PUNTOS: ${playerPoints}`);
+          
           totalPoints += playerPoints;
-          console.log(`         💰 Puntos acumulados hasta ahora: ${totalPoints}`);
+          console.log(`         💰 Total acumulado: ${totalPoints}`);
           console.log(`         ====================================\n`);
 
-          // Pequeña pausa para rate limit
+          // Pequeña pausa para evitar rate limit
           await new Promise((r) => setTimeout(r, 150));
-        } catch (error) {
-          console.error(`      ❌ Error obteniendo estadísticas del jugador ${squadPlayer.playerName}:`, error);
+        } catch (error: any) {
+          console.error(`      ❌ Error con ${squadPlayer.playerName}:`, error.message);
         }
       }
 

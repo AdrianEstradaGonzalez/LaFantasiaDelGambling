@@ -107,7 +107,7 @@ export const Clasificacion = () => {
             nombre: u.user?.name || 'Jugador desconocido',
             puntos: u.points ?? 0,
             posicion: index + 1,
-            presupuesto: u.initialBudget ?? 500, // Presupuesto inicial total disponible
+            presupuesto: u.budget ?? 500, // Presupuesto actual disponible
           }));
 
         setJugadores(dataOrdenada);
@@ -280,8 +280,17 @@ export const Clasificacion = () => {
               : undefined;
             
             const handleOpenUserLineup = () => {
+              // Si es el usuario actual, ir a "Mi Plantilla"
+              if (isCurrentUser) {
+                navigation.navigate('Equipo', {
+                  ligaId,
+                  ligaName,
+                } as any);
+                return;
+              }
+              
               // Solo permitir ver plantillas de otros usuarios cuando la jornada está cerrada
-              if (!isCurrentUser && jornadaStatus === 'open') {
+              if (jornadaStatus === 'open') {
                 CustomAlertManager.alert(
                   'Jornada abierta',
                   'No puedes ver las plantillas de otros jugadores mientras la jornada está abierta.',
