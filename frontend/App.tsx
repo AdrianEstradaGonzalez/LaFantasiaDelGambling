@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AppNavigator } from './router/AppNavigator';
 import { CustomAlertProvider } from './components/CustomAlert';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const Stack = createNativeStackNavigator();
 
@@ -11,9 +12,11 @@ const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <CustomAlertProvider>
-      <AppNavigator />
-    </CustomAlertProvider>
+    <SafeAreaProvider>
+      <CustomAlertProvider>
+        <AppNavigator />
+      </CustomAlertProvider>
+    </SafeAreaProvider>
   );
 };
 

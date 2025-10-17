@@ -743,20 +743,27 @@ export default class FootballService {
             console.log(`✅ Opciones encontradas en BD, recuperando...`);
             const dbOptions = await BetOptionService.getBetOptions(ligaId, nextJ);
             
-            // Transformar de BetOption[] a formato esperado
-            const bets = dbOptions.map((opt: BetOption) => ({
-              matchId: opt.matchId,
-              jornada: opt.jornada,
-              local: opt.homeTeam || opt.local || '',
-              visitante: opt.awayTeam || opt.visitante || '',
-              localCrest: opt.localCrest,
-              visitanteCrest: opt.visitanteCrest,
-              fecha: opt.fecha,
-              hora: opt.hora,
-              type: opt.betType || opt.type || '',
-              label: opt.betLabel || opt.label || '',
-              odd: opt.odd,
-            }));
+            // Enriquecer desde cache de partidos para completar crest/fecha/hora
+            const matchIndex = new Map<number, Partido>();
+            for (const m of jornadaMatches) matchIndex.set(m.id, m);
+            
+            // Transformar de BetOption[] a formato esperado, rellenando faltantes
+            const bets = dbOptions.map((opt: BetOption) => {
+              const match = matchIndex.get(opt.matchId);
+              return {
+                matchId: opt.matchId,
+                jornada: opt.jornada,
+                local: opt.homeTeam || opt.local || match?.local || '',
+                visitante: opt.awayTeam || opt.visitante || match?.visitante || '',
+                localCrest: opt.localCrest ?? match?.localCrest,
+                visitanteCrest: opt.visitanteCrest ?? match?.visitanteCrest,
+                fecha: opt.fecha ?? match?.fecha,
+                hora: opt.hora ?? match?.hora,
+                type: opt.betType || opt.type || '',
+                label: opt.betLabel || opt.label || '',
+                odd: opt.odd,
+              };
+            });
             
             console.log(`✅ ${bets.length} opciones cargadas desde BD`);
             return bets;

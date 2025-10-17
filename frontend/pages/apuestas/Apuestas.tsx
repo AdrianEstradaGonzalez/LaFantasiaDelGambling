@@ -59,6 +59,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [leagueBets, setLeagueBets] = useState<UserBet[]>([]);
   const [jornadaStatus, setJornadaStatus] = useState<string | null>(null); // 'open' | 'closed'
   const [amountInputs, setAmountInputs] = useState<Record<string, string>>({});
+  const [editingBets, setEditingBets] = useState<Record<string, boolean>>({});
   
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -159,8 +160,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   };
 
   const setAmountForKey = (key: string, value: string) => {
-    // Solo números y punto
-    const sanitized = value.replace(/[^0-9.]/g, '');
+    // Solo números y punto, y máximo 50
+    let sanitized = value.replace(/[^0-9.]/g, '');
+    let num = parseFloat(sanitized);
+    if (!isNaN(num) && num > 50) {
+      sanitized = '50';
+    }
     setAmountInputs((prev) => ({ ...prev, [key]: sanitized }));
   };
 
@@ -170,6 +175,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     const amount = parseFloat(raw);
     if (!raw || isNaN(amount) || amount <= 0) {
       showError('Introduce una cantidad válida');
+      return;
+    }
+    if (amount > 50) {
+      showError('El máximo por apuesta es 50M');
       return;
     }
     try {
@@ -199,6 +208,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     const amount = parseFloat(raw);
     if (!raw || isNaN(amount) || amount <= 0) {
       showError('Introduce una cantidad válida');
+      return;
+    }
+    if (amount > 50) {
+      showError('El máximo por apuesta es 50M');
       return;
     }
     try {
@@ -830,51 +843,82 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             {/* Controles de edición si jornada abierta */}
                             {isJornadaOpen ? (
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <TextInput
-                                  value={amountInputs[betKey] ?? String(userBet.amount)}
-                                  onChangeText={(t) => setAmountForKey(betKey, t)}
-                                  keyboardType="decimal-pad"
-                                  placeholder="Cantidad"
-                                  placeholderTextColor="#64748b"
-                                  style={{
-                                    flex: 1,
-                                    backgroundColor: '#0b1220',
-                                    borderWidth: 1,
-                                    borderColor: '#334155',
-                                    color: '#e5e7eb',
-                                    paddingHorizontal: 10,
-                                    paddingVertical: 8,
-                                    borderRadius: 8,
-                                    marginRight: 8,
-                                  }}
-                                />
-                                <TouchableOpacity
-                                  onPress={() => handleUpdateBet(betKey, userBet.id)}
-                                  disabled={savingBet === betKey}
-                                  style={{
-                                    backgroundColor: '#2563eb',
-                                    paddingHorizontal: 12,
-                                    paddingVertical: 10,
-                                    borderRadius: 8,
-                                    opacity: savingBet === betKey ? 0.6 : 1,
-                                    marginRight: 8,
-                                  }}
-                                >
-                                  <Text style={{ color: '#fff', fontWeight: '700' }}>Actualizar</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  onPress={() => handleDeleteBet(betKey, userBet.id)}
-                                  disabled={savingBet === betKey}
-                                  style={{
-                                    backgroundColor: '#7f1d1d',
-                                    paddingHorizontal: 12,
-                                    paddingVertical: 10,
-                                    borderRadius: 8,
-                                    opacity: savingBet === betKey ? 0.6 : 1,
-                                  }}
-                                >
-                                  <Text style={{ color: '#fecaca', fontWeight: '700' }}>Eliminar</Text>
-                                </TouchableOpacity>
+                                {/* Two simple buttons: Edit and Delete. Edit toggles an inline editable input. */}
+                                {!editingBets[betKey] ? (
+                                  <>
+                                    <TouchableOpacity
+                                      onPress={() => setEditingBets((p) => ({ ...p, [betKey]: true }))}
+                                      style={{
+                                        backgroundColor: '#2563eb',
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 10,
+                                        borderRadius: 8,
+                                        marginRight: 8,
+                                      }}
+                                    >
+                                      <Text style={{ color: '#fff', fontWeight: '700' }}>Editar</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                      onPress={() => handleDeleteBet(betKey, userBet.id)}
+                                      disabled={savingBet === betKey}
+                                      style={{
+                                        backgroundColor: '#7f1d1d',
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 10,
+                                        borderRadius: 8,
+                                      }}
+                                    >
+                                      <Text style={{ color: '#fecaca', fontWeight: '700' }}>Eliminar</Text>
+                                    </TouchableOpacity>
+                                  </>
+                                ) : (
+                                  <>
+                                    <TextInput
+                                      value={amountInputs[betKey] ?? String(userBet.amount)}
+                                      onChangeText={(t) => setAmountForKey(betKey, t)}
+                                      keyboardType="decimal-pad"
+                                      placeholder="Cantidad"
+                                      placeholderTextColor="#64748b"
+                                      style={{
+                                        flex: 1,
+                                        backgroundColor: '#0b1220',
+                                        borderWidth: 1,
+                                        borderColor: '#334155',
+                                        color: '#e5e7eb',
+                                        paddingHorizontal: 10,
+                                        paddingVertical: 8,
+                                        borderRadius: 8,
+                                        marginRight: 8,
+                                      }}
+                                    />
+                                    <TouchableOpacity
+                                      onPress={async () => {
+                                        await handleUpdateBet(betKey, userBet.id);
+                                      }}
+                                      disabled={savingBet === betKey}
+                                      style={{
+                                        backgroundColor: '#16a34a',
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 10,
+                                        borderRadius: 8,
+                                        marginRight: 8,
+                                      }}
+                                    >
+                                      <Text style={{ color: '#ecfdf5', fontWeight: '800' }}>Guardar</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                      onPress={() => setEditingBets((p) => ({ ...p, [betKey]: false }))}
+                                      style={{
+                                        backgroundColor: '#374151',
+                                        paddingHorizontal: 12,
+                                        paddingVertical: 10,
+                                        borderRadius: 8,
+                                      }}
+                                    >
+                                      <Text style={{ color: '#fff', fontWeight: '700' }}>Cancelar</Text>
+                                    </TouchableOpacity>
+                                  </>
+                                )}
                               </View>
                             ) : null}
                           </View>

@@ -154,9 +154,13 @@ export class BetService {
       throw new Error('No eres miembro de esta liga');
     }
 
+
     // Validar monto
     if (amount <= 0) {
       throw new Error('El monto debe ser mayor a 0');
+    }
+    if (amount > 50) {
+      throw new Error('El monto máximo por apuesta es 50M');
     }
 
     // Verificar presupuesto disponible
@@ -262,6 +266,9 @@ export class BetService {
 
     if (newAmount <= 0) {
       throw new Error('El monto debe ser mayor a 0');
+    }
+    if (newAmount > 50) {
+      throw new Error('El monto máximo por apuesta es 50M');
     }
 
     // Verificar presupuesto (excluyendo el monto actual de esta apuesta)

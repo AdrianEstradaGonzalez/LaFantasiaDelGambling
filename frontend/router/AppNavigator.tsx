@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -46,14 +47,38 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const AppNavigator = () => {
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
   useEffect(() => {
     // Prefetch equipos y jugadores al iniciar la app para minimizar peticiones posteriores
     FootballService.prefetchAllData().catch(() => {});
   }, []);
 
+  useEffect(() => {
+    // Decide initial route based on saved session/token
+    (async () => {
+      try {
+        const token = await EncryptedStorage.getItem('accessToken');
+        const session = await EncryptedStorage.getItem('session');
+        if (token || session) {
+          setInitialRoute('Home');
+        } else {
+          setInitialRoute('Login');
+        }
+      } catch (e) {
+        setInitialRoute('Login');
+      }
+    })();
+  }, []);
+
+  if (initialRoute === null) {
+    // still determining initial route
+    return null;
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName={initialRoute}
         screenOptions={{
           headerShown: false, // oculta el header por defecto
         }}

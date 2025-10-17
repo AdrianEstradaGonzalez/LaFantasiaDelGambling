@@ -4,10 +4,12 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
 import { HomeIcon, LogoutIcon } from '../../components/VectorIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const BottomNavBar: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
   
   // Determinar qué página está activa
   const currentRoute = route.name;
@@ -37,7 +39,12 @@ const BottomNavBar: React.FC = () => {
   ];
 
   return (
-    <View style={styles.navBar}>
+    <View style={[
+      styles.navBar,
+      {
+        paddingBottom: Math.max(insets.bottom, 10),
+      }
+    ]}>
       {/* Espaciador izquierdo para centrar */}
       <View style={{ flex: 1 }} />
       
