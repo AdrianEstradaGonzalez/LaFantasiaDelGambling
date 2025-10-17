@@ -37,15 +37,17 @@ model PasswordResetCode {
 }
 
 model League {
-  id         String         @id @default(cuid())
-  name       String         @unique
-  leaderId   String
-  createdAt  DateTime       @default(now())
-  code       String         @unique
-  leader     User           @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
-  members    LeagueMember[]
-  squads     Squad[]
-  bet_option bet_option[]
+  id              String         @id @default(cuid())
+  name            String         @unique
+  leaderId        String
+  createdAt       DateTime       @default(now())
+  code            String         @unique
+  currentJornada  Int            @default(1)
+  jornadaStatus   String         @default("open") // "open" o "closed"
+  leader          User           @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members         LeagueMember[]
+  squads          Squad[]
+  bet_option      bet_option[]
 }
 
 model LeagueMember {

@@ -1075,8 +1075,8 @@ export const PlayersMarket = ({ navigation, route }: {
             showsVerticalScrollIndicator={true}
           />
 
-          {/* Barra de navegaciÃ³n - solo en modo normal */}
-          {!selectMode && <LigaNavBar ligaId={ligaId} ligaName={ligaName} />}
+          {/* Barra de navegación */}
+          <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
 
           {/* Drawer Modal */}
           <Modal

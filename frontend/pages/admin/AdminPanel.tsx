@@ -20,38 +20,79 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   UsersIcon,
-  TrophyIcon
+  TrophyIcon,
+  LockIcon,
+  CheckIcon
 } from '../../components/VectorIcons';
 import { Typography } from '../../styles/DesignSystem';
 
 const AdminPanel: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
-  const [jornada, setJornada] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [lastResult, setLastResult] = useState<any>(null);
+  const [isClosingJornada, setIsClosingJornada] = useState(false);
+  const [isOpeningJornada, setIsOpeningJornada] = useState(false);
 
-  const handleResetAllLeagues = async () => {
-    const jornadaNum = parseInt(jornada);
-
-    if (!jornada || isNaN(jornadaNum) || jornadaNum < 1) {
-      CustomAlertManager.alert(
-        'Error',
-        'Por favor ingresa un número de jornada válido (mayor a 0)',
-        [{ text: 'OK', onPress: () => {}, style: 'default' }],
-        { icon: 'alert-circle', iconColor: '#ef4444' }
-      );
-      return;
-    }
-
+  const handleCerrarJornada = async () => {
     CustomAlertManager.alert(
-      '⚠️ Confirmar Cambio de Jornada',
-      `¿Estás seguro de que quieres cambiar a la jornada ${jornadaNum}?\n\n` +
+      '🔒 Cerrar Jornada',
+      `¿Estás seguro de que quieres cerrar la jornada actual para TODAS las ligas?\n\n` +
       `Esto hará lo siguiente:\n` +
-      `✅ Evaluará todas las apuestas pendientes\n` +
-      `✅ Calculará ganancias/pérdidas\n` +
-      `✅ Reseteará presupuestos:\n` +
-      `   • Fichajes: 500M + balance de apuestas\n` +
-      `   • Apuestas: 250M\n\n` +
+      `✅ Permitirá modificar plantillas\n` +
+      `✅ Habilitará fichajes y ventas\n` +
+      `✅ Permitirá modificar apuestas\n\n` +
+      `Los usuarios de TODAS las ligas podrán prepararse para la próxima jornada.`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+          onPress: () => {}
+        },
+        {
+          text: 'Cerrar Jornada',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsClosingJornada(true);
+              
+              const result = await JornadaService.closeAllJornadas();
+              
+              CustomAlertManager.alert(
+                '✅ Jornada Cerrada',
+                `La jornada ha sido cerrada exitosamente.\n\n` +
+                `📊 Ligas procesadas: ${result.leaguesProcessed}\n\n` +
+                `Los usuarios de todas las ligas ya pueden:\n` +
+                `• Modificar sus plantillas\n` +
+                `• Hacer fichajes o ventas\n` +
+                `• Realizar y modificar apuestas`,
+                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                { icon: 'check-circle', iconColor: '#10b981' }
+              );
+            } catch (error: any) {
+              CustomAlertManager.alert(
+                '❌ Error',
+                error.message || 'No se pudo cerrar la jornada',
+                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                { icon: 'alert-circle', iconColor: '#ef4444' }
+              );
+            } finally {
+              setIsClosingJornada(false);
+            }
+          },
+        },
+      ],
+      { icon: 'alert', iconColor: '#f59e0b' }
+    );
+  };
+
+  const handleAbrirJornada = async () => {
+    CustomAlertManager.alert(
+      '🔓 Abrir Jornada',
+      `¿Estás seguro de que quieres abrir la jornada actual para TODAS las ligas?\n\n` +
+      `Esto hará lo siguiente:\n` +
+      `🔒 Bloqueará las alineaciones actuales\n` +
+      `🚫 Impedirá cambios en plantillas\n` +
+      `🚫 Bloqueará fichajes y ventas\n` +
+      `🚫 Bloqueará modificación de apuestas\n` +
+      `📊 Comenzará el seguimiento en tiempo real\n\n` +
       `Esta acción afectará a TODAS las ligas.`,
       [
         {
@@ -60,40 +101,40 @@ const AdminPanel: React.FC = () => {
           onPress: () => {}
         },
         {
-          text: 'Confirmar',
-          style: 'destructive',
+          text: 'Abrir Jornada',
+          style: 'default',
           onPress: async () => {
             try {
-              setIsProcessing(true);
-              setLastResult(null);
-
-              const result = await JornadaService.resetAllLeagues(jornadaNum);
-
-              setLastResult(result);
-
+              setIsOpeningJornada(true);
+              
+              const result = await JornadaService.openAllJornadas();
+              
               CustomAlertManager.alert(
-                '✅ Jornada Cambiada',
-                `Jornada ${jornadaNum} procesada exitosamente\n\n` +
-                `📊 Ligas procesadas: ${result.data.leaguesProcessed}\n` +
-                `🎯 Apuestas evaluadas: ${result.data.totalEvaluations}\n\n` +
-                `Los presupuestos de todos los usuarios han sido actualizados.`,
+                '✅ Jornada Abierta',
+                `La jornada ha sido abierta exitosamente.\n\n` +
+                `📊 Ligas procesadas: ${result.leaguesProcessed}\n\n` +
+                `Los usuarios de todas las ligas ya NO pueden:\n` +
+                `• Modificar sus plantillas\n` +
+                `• Hacer fichajes y ventas\n` +
+                `• Realizar y modificar apuestas\n\n` +
+                `El seguimiento en tiempo real está activo.`,
                 [{ text: 'OK', onPress: () => {}, style: 'default' }],
                 { icon: 'check-circle', iconColor: '#10b981' }
               );
             } catch (error: any) {
               CustomAlertManager.alert(
                 '❌ Error',
-                error.message || 'No se pudo completar el cambio de jornada',
+                error.message || 'No se pudo abrir la jornada',
                 [{ text: 'OK', onPress: () => {}, style: 'default' }],
                 { icon: 'alert-circle', iconColor: '#ef4444' }
               );
             } finally {
-              setIsProcessing(false);
+              setIsOpeningJornada(false);
             }
           },
         },
       ],
-      { icon: 'alert', iconColor: '#f59e0b' }
+      { icon: 'information', iconColor: '#0892D0' }
     );
   };
 
@@ -276,7 +317,7 @@ const AdminPanel: React.FC = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Cambio de Jornada */}
+        {/* Cerrar Jornada */}
         <View
           style={{
             backgroundColor: '#1e293b',
@@ -289,7 +330,7 @@ const AdminPanel: React.FC = () => {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
             <View style={{ marginRight: 12 }}>
-              <CalendarIcon size={32} color="#0892D0" />
+              <LockIcon size={32} color="#ef4444" />
             </View>
             <Text
               style={{
@@ -299,7 +340,7 @@ const AdminPanel: React.FC = () => {
                 flex: 1,
               }}
             >
-              Cambiar Jornada
+              Cerrar Jornada
             </Text>
           </View>
 
@@ -311,101 +352,25 @@ const AdminPanel: React.FC = () => {
               lineHeight: 20,
             }}
           >
-            Ejecuta el cambio de jornada para todas las ligas. Esto evaluará
-            todas las apuestas, calculará balances y reseteará los presupuestos.
+            Cierra la jornada actual para TODAS las ligas. Permitirá que los usuarios realicen apuestas y modifiquen sus plantillas para prepararse para la próxima jornada.
           </Text>
 
-          {/* Input de Jornada */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: '#94a3b8', marginBottom: 8, fontSize: 14 }}>
-              Número de Jornada
-            </Text>
-            <TextInput
-              value={jornada}
-              onChangeText={setJornada}
-              keyboardType="number-pad"
-              placeholder="Ej: 11"
-              placeholderTextColor="#64748b"
-              style={{
-                backgroundColor: '#0f172a',
-                borderWidth: 1,
-                borderColor: '#334155',
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                color: '#fff',
-                fontSize: 16,
-              }}
-            />
-          </View>
-
-          {/* Información del proceso */}
-          <View
-            style={{
-              backgroundColor: '#0f172a',
-              borderRadius: 12,
-              padding: 16,
-              marginBottom: 20,
-              borderLeftWidth: 4,
-              borderLeftColor: '#0ea5e9',
-            }}
-          >
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 14,
-                fontWeight: '600',
-                marginBottom: 12,
-              }}
-            >
-              📋 Proceso que se ejecutará:
-            </Text>
-            <View style={{ gap: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <Text style={{ color: '#10b981', marginRight: 8 }}>✓</Text>
-                <Text style={{ color: '#cbd5e1', fontSize: 13, flex: 1 }}>
-                  Evaluar todas las apuestas pendientes
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <Text style={{ color: '#10b981', marginRight: 8 }}>✓</Text>
-                <Text style={{ color: '#cbd5e1', fontSize: 13, flex: 1 }}>
-                  Calcular ganancias/pérdidas por usuario
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <Text style={{ color: '#10b981', marginRight: 8 }}>✓</Text>
-                <Text style={{ color: '#cbd5e1', fontSize: 13, flex: 1 }}>
-                  Resetear presupuesto de fichajes a 500M + balance
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                <Text style={{ color: '#10b981', marginRight: 8 }}>✓</Text>
-                <Text style={{ color: '#cbd5e1', fontSize: 13, flex: 1 }}>
-                  Resetear presupuesto de apuestas a 250M
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Botón de Ejecutar */}
           <TouchableOpacity
-            onPress={handleResetAllLeagues}
-            disabled={isProcessing || !jornada}
+            onPress={handleCerrarJornada}
+            disabled={isClosingJornada}
             style={{
-              backgroundColor:
-                isProcessing || !jornada ? '#334155' : '#0ea5e9',
+              backgroundColor: isClosingJornada ? '#334155' : '#ef4444',
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: 'center',
-              shadowColor: '#0ea5e9',
+              shadowColor: '#ef4444',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: isProcessing || !jornada ? 0 : 0.3,
+              shadowOpacity: isClosingJornada ? 0 : 0.3,
               shadowRadius: 8,
-              elevation: isProcessing || !jornada ? 0 : 4,
+              elevation: isClosingJornada ? 0 : 4,
             }}
           >
-            {isProcessing ? (
+            {isClosingJornada ? (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <ActivityIndicator color="#fff" size="small" />
                 <Text
@@ -416,7 +381,7 @@ const AdminPanel: React.FC = () => {
                     marginLeft: 12,
                   }}
                 >
-                  Procesando...
+                  Cerrando...
                 </Text>
               </View>
             ) : (
@@ -427,87 +392,92 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                Ejecutar Cambio de Jornada
+                🔒 Cerrar Jornada
               </Text>
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Último Resultado */}
-        {lastResult && (
-          <View
+        {/* Abrir Jornada */}
+        <View
+          style={{
+            backgroundColor: '#1e293b',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: '#334155',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <View style={{ marginRight: 12 }}>
+              <CheckIcon size={32} color="#10b981" />
+            </View>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 'bold',
+                flex: 1,
+              }}
+            >
+              Abrir Jornada
+            </Text>
+          </View>
+
+          <Text
             style={{
-              backgroundColor: '#1e293b',
-              borderRadius: 16,
-              padding: 20,
-              borderWidth: 1,
-              borderColor: '#10b981',
+              color: '#94a3b8',
+              fontSize: 14,
+              marginBottom: 20,
+              lineHeight: 20,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-              <View style={{ marginRight: 12 }}>
-                <CheckCircleIcon size={32} color="#10b981" />
+            Abre la jornada para TODAS las ligas. Bloqueará las plantillas y apuestas actuales para comenzar el seguimiento en tiempo real de la jornada.
+          </Text>
+
+          <TouchableOpacity
+            onPress={handleAbrirJornada}
+            disabled={isOpeningJornada}
+            style={{
+              backgroundColor: isOpeningJornada ? '#334155' : '#10b981',
+              paddingVertical: 16,
+              borderRadius: 12,
+              alignItems: 'center',
+              shadowColor: '#10b981',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: isOpeningJornada ? 0 : 0.3,
+              shadowRadius: 8,
+              elevation: isOpeningJornada ? 0 : 4,
+            }}
+          >
+            {isOpeningJornada ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    marginLeft: 12,
+                  }}
+                >
+                  Abriendo...
+                </Text>
               </View>
+            ) : (
               <Text
                 style={{
                   color: '#fff',
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: 'bold',
-                  flex: 1,
                 }}
               >
-                Último Resultado
+                ✅ Abrir Jornada
               </Text>
-            </View>
-
-            <View style={{ gap: 12 }}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  paddingVertical: 8,
-                  borderBottomWidth: 1,
-                  borderBottomColor: '#334155',
-                }}
-              >
-                <Text style={{ color: '#94a3b8', fontSize: 14 }}>
-                  📋 Ligas procesadas
-                </Text>
-                <Text style={{ color: '#10b981', fontSize: 16, fontWeight: 'bold' }}>
-                  {lastResult.data.leaguesProcessed}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  paddingVertical: 8,
-                }}
-              >
-                <Text style={{ color: '#94a3b8', fontSize: 14 }}>
-                  🎯 Apuestas evaluadas
-                </Text>
-                <Text style={{ color: '#10b981', fontSize: 16, fontWeight: 'bold' }}>
-                  {lastResult.data.totalEvaluations}
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={{
-                backgroundColor: '#0f172a',
-                borderRadius: 8,
-                padding: 12,
-                marginTop: 16,
-              }}
-            >
-              <Text style={{ color: '#10b981', fontSize: 13 }}>
-                {lastResult.message}
-              </Text>
-            </View>
-          </View>
-        )}
+            )}
+          </TouchableOpacity>
+        </View>
 
         {/* Advertencia */}
         <View
