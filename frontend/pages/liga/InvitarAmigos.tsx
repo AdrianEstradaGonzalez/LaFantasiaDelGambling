@@ -14,7 +14,7 @@ import TopNavBar from '../navBar/TopNavBar';
 import { Colors, Typography, Spacing } from '../../styles/DesignSystem';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, RouteProp } from '@react-navigation/native';
-import type { RootStackParamList } from '../../router/AppNavigator'; // 👈 importa tu RootStackParamList
+import type { RootStackParamList } from '../../router/AppNavigator';
 import { CustomAlertManager } from '../../components/CustomAlert';
 
 // ✅ Usa RouteProp con tu lista de rutas y el nombre exacto de esta pantalla
@@ -101,7 +101,7 @@ export const InvitarAmigos: React.FC = () => {
                 source={require('../../assets/iconos/portapapeles.png')}
                 style={{ width: 24, height: 24, marginRight: 8, tintColor: Colors.text.inverse }}
               />
-              <Text style={styles.primaryButtonText}>
+              <Text style={[styles.primaryButtonText, { textAlign: 'center' }]}>
                 {copied ? 'Copiado' : 'Copiar código'}
               </Text>
             </TouchableOpacity>
@@ -115,7 +115,7 @@ export const InvitarAmigos: React.FC = () => {
                 source={require('../../assets/iconos/compartir.png')}
                 style={{ width: 18, height: 18, marginRight: 6, tintColor: Colors.text.secondary }}
               />
-              <Text style={styles.secondaryButtonText}>Compartir</Text>
+              <Text style={[styles.secondaryButtonText, { fontSize: 13 }]}>Compartir</Text>
             </TouchableOpacity>
           </View>
         </View>

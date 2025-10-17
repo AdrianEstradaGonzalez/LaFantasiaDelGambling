@@ -100,7 +100,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       end={{ x: 0, y: 1 }}
       style={{ flex: 1 }}
     >
-       <TopNavBar backTo="Home" />
+      <TopNavBar backTo="Home" />
       <ScrollView contentContainerStyle={styles.container}>
        
         {/* Crear liga privada */}

@@ -950,7 +950,7 @@ export const PlayersMarket = ({ navigation, route }: {
               <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800' }}>
-                    {selectMode ? 'Seleccionar Jugador' : 'Mercado de Jugadores'}
+                    {selectMode ? 'Elegir Jugador' : 'Mercado'}
                   </Text>
                   {/* Mostrar presupuesto si tenemos ligaId */}
                   {ligaId && (

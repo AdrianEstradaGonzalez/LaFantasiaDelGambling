@@ -73,17 +73,19 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
         </Text>
       )}
 
-      {/* Botón de menú en la derecha */}
-      <TouchableOpacity
-        onPress={onMenuPress}
-        style={{
-          padding: 4,
-          zIndex: 20,
-        }}
-        activeOpacity={0.8}
-      >
-        <MenuIcon size={24} color="#ffffff" />
-      </TouchableOpacity>
+      {/* Botón de menú en la derecha - solo se muestra si se pasa onMenuPress */}
+      {onMenuPress && (
+        <TouchableOpacity
+          onPress={onMenuPress}
+          style={{
+            padding: 4,
+            zIndex: 20,
+          }}
+          activeOpacity={0.8}
+        >
+          <MenuIcon size={24} color="#ffffff" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
