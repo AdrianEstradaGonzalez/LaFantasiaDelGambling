@@ -52,11 +52,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [userBets, setUserBets] = useState<UserBet[]>([]);
   const [jornada, setJornada] = useState<number | null>(null);
   const [budget, setBudget] = useState<BettingBudget>({ total: 250, used: 0, available: 250 });
-  const [betAmounts, setBetAmounts] = useState<Record<string, string>>({});
-  const [editingBet, setEditingBet] = useState<string | null>(null);
   const [savingBet, setSavingBet] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [leagueBets, setLeagueBets] = useState<UserBet[]>([]);
   
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -71,10 +70,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         // Obtener presupuesto y apuestas del usuario si hay ligaId
         let budgetData = { total: 250, used: 0, available: 250 };
         let userBetsData: UserBet[] = [];
+        let leagueBetsData: UserBet[] = [];
         if (ligaId) {
           try {
             budgetData = await BetService.getBettingBudget(ligaId);
             userBetsData = await BetService.getUserBets(ligaId);
+            leagueBetsData = await BetService.getLeagueBets(ligaId);
           } catch (err) {
             console.warn('Error getting budget/bets:', err);
           }
@@ -105,6 +106,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           const groupedArray = Object.values(grouped);
           setGroupedBets(groupedArray);
           setUserBets(userBetsData);
+          setLeagueBets(leagueBetsData);
           setBudget(budgetData);
           if (apuestas.length > 0) {
             setJornada(apuestas[0].jornada);
@@ -125,16 +127,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return () => { mounted = false; };
   }, [ligaId, ligaName]);
 
-  const handleBetAmountChange = (key: string, value: string) => {
-    // Solo permitir números
-    if (value === '' || /^\d+$/.test(value)) {
-      // Limitar a máximo 50M
-      const numValue = parseInt(value, 10);
-      if (value === '' || numValue <= 50) {
-        setBetAmounts(prev => ({ ...prev, [key]: value }));
-      }
-    }
-  };
+  // Todas las acciones de crear/editar/eliminar apuestas se han deshabilitado (bloqueo de jornada)
 
   const showSuccess = (message: string) => {
     setSuccessMessage(message);
@@ -146,136 +139,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     setTimeout(() => setErrorMessage(null), 3000);
   };
 
-  const handlePlaceBet = async (matchId: number, betType: string, betLabel: string, odd: number, key: string) => {
-    if (!ligaId) {
-      showError('No hay liga seleccionada');
-      return;
-    }
+  // Se eliminan manejadores de crear/editar/eliminar apuestas para vista de solo lectura
 
-    const amountStr = betAmounts[key] || '0';
-    const amount = parseInt(amountStr, 10);
+  // Edición de apuestas deshabilitada
 
-    if (amount <= 0) {
-      showError('Debes ingresar una cantidad mayor a 0');
-      return;
-    }
+  // Eliminación de apuestas deshabilitada
 
-    if (amount > 50) {
-      showError('El máximo por apuesta es 50M');
-      return;
-    }
-
-    if (amount > budget.available) {
-      showError(`Presupuesto insuficiente. Disponible: ${budget.available}M`);
-      return;
-    }
-
-    // Verificar si ya existe una apuesta en este grupo (matchId + betType)
-    const existingBetInGroup = userBets.find(
-      (bet) => bet.matchId === matchId && bet.betType === betType
-    );
-
-    if (existingBetInGroup) {
-      showError('Ya tienes una apuesta en este grupo. Debes eliminarla primero para apostar a otra opción.');
-      return;
-    }
-
-    try {
-      setSavingBet(key);
-      await BetService.placeBet({
-        leagueId: ligaId,
-        matchId,
-        betType,
-        betLabel,
-        odd,
-        amount,
-      });
-
-      // Recargar presupuesto y apuestas
-      const [newBudget, newUserBets] = await Promise.all([
-        BetService.getBettingBudget(ligaId),
-        BetService.getUserBets(ligaId),
-      ]);
-      setBudget(newBudget);
-      setUserBets(newUserBets);
-
-      // Limpiar input
-      setBetAmounts(prev => {
-        const newAmounts = { ...prev };
-        delete newAmounts[key];
-        return newAmounts;
-      });
-
-      showSuccess('Apuesta realizada correctamente');
-    } catch (error: any) {
-      showError(error.message || 'Error al realizar la apuesta');
-    } finally {
-      setSavingBet(null);
-    }
-  };
-
-  const handleUpdateBet = async (betId: string, newAmount: number) => {
-    if (!ligaId) return;
-
-    if (newAmount > 50) {
-      showError('El máximo por apuesta es 50M');
-      return;
-    }
-
-    try {
-      setSavingBet(betId);
-      await BetService.updateBetAmount(ligaId, betId, newAmount);
-
-      // Recargar presupuesto y apuestas
-      const [newBudget, newUserBets] = await Promise.all([
-        BetService.getBettingBudget(ligaId),
-        BetService.getUserBets(ligaId),
-      ]);
-      setBudget(newBudget);
-      setUserBets(newUserBets);
-      setEditingBet(null);
-      setBetAmounts(prev => {
-        const newAmounts = { ...prev };
-        delete newAmounts[`edit-${betId}`];
-        return newAmounts;
-      });
-
-      showSuccess('Apuesta actualizada correctamente');
-    } catch (error: any) {
-      showError(error.message || 'Error al actualizar la apuesta');
-    } finally {
-      setSavingBet(null);
-    }
-  };
-
-  const handleDeleteBet = async (betId: string) => {
-    if (!ligaId) return;
-
-    try {
-      setSavingBet(betId);
-      await BetService.deleteBet(ligaId, betId);
-
-      // Recargar presupuesto y apuestas
-      const [newBudget, newUserBets] = await Promise.all([
-        BetService.getBettingBudget(ligaId),
-        BetService.getUserBets(ligaId),
-      ]);
-      setBudget(newBudget);
-      setUserBets(newUserBets);
-
-      showSuccess('Apuesta eliminada correctamente');
-    } catch (error: any) {
-      showError(error.message || 'Error al eliminar la apuesta');
-    } finally {
-      setSavingBet(null);
-    }
-  };
-
-  const calculatePotentialWin = (amount: string, odd: number): number => {
-    const num = parseInt(amount, 10);
-    if (isNaN(num) || num <= 0) return 0;
-    return Math.round(num * odd);
-  };
+  // Cálculos de ganancias potenciales no son necesarios en modo lectura
 
   // Función auxiliar para verificar si una opción tiene apuesta del usuario
   const getUserBetForOption = (matchId: number, betType: string, betLabel: string): UserBet | undefined => {
@@ -510,20 +380,15 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     {b.type}
                   </Text>
 
-                  {/* TODAS las opciones */}
+                  {/* TODAS las opciones - Solo lectura */}
                   {b.options.map((option, optionIndex) => {
                     const betKey = `${b.matchId}-${b.type}-${optionIndex}`;
-                    const amount = betAmounts[betKey] || '';
-                    const potentialWin = calculatePotentialWin(amount, option.odd);
+                    // Modo lectura: no inputs ni botones
                     
                     // Verificar si el usuario ya apostó en esta opción
                     const userBet = getUserBetForOption(b.matchId, b.type, option.label);
-                    const isEditing = editingBet === userBet?.id;
-                    const editAmount = betAmounts[`edit-${userBet?.id}`] || '';
-                    
-                    // Verificar si hay alguna apuesta en este grupo
                     const groupHasBet = hasAnyBetInGroup(b.matchId, b.type);
-                    const isBlocked = groupHasBet && !userBet; // Bloqueada si hay apuesta pero no es esta opción
+                    const isBlocked = groupHasBet && !userBet;
                     
                     return (
                       <View 
@@ -574,7 +439,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           </View>
                         </View>
 
-                        {/* Si el usuario ya apostó - Mostrar info de apuesta */}
+                        {/* Si el usuario ya apostó - Mostrar info de apuesta (solo lectura) */}
                         {userBet && ligaId && (
                           <View style={{
                             backgroundColor: '#1e293b',
@@ -582,8 +447,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             padding: 12,
                             marginBottom: 8,
                           }}>
-                            {!isEditing ? (
-                              <>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                                   <View>
                                     <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Apostado</Text>
@@ -598,244 +461,57 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     </Text>
                                   </View>
                                 </View>
-                                
-                                {/* Botones de editar/eliminar */}
-                                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-                                  <TouchableOpacity
-                                    onPress={() => {
-                                      setEditingBet(userBet.id);
-                                      setBetAmounts(prev => ({ ...prev, [`edit-${userBet.id}`]: userBet.amount.toString() }));
-                                    }}
-                                    style={{
-                                      flex: 1,
-                                      backgroundColor: '#0f766e',
-                                      borderRadius: 6,
-                                      paddingVertical: 10,
-                                      flexDirection: 'row',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      gap: 6,
-                                      borderWidth: 1,
-                                      borderColor: '#14b8a6',
-                                    }}
-                                  >
-                                    <EditIcon size={16} color="#fff" />
-                                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>
-                                      Editar
-                                    </Text>
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    onPress={() => handleDeleteBet(userBet.id)}
-                                    disabled={savingBet === userBet.id}
-                                    style={{
-                                      flex: 1,
-                                      backgroundColor: savingBet === userBet.id ? '#64748b' : '#ef4444',
-                                      borderRadius: 6,
-                                      paddingVertical: 10,
-                                      flexDirection: 'row',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      gap: 6,
-                                    }}
-                                  >
-                                    {savingBet === userBet.id ? (
-                                      <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                      <>
-                                        <DeleteIcon size={16} color="#fff" />
-                                        <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>
-                                          Eliminar
-                                        </Text>
-                                      </>
-                                    )}
-                                  </TouchableOpacity>
-                                </View>
-                              </>
-                            ) : (
-                              <>
-                                {/* Modo edición */}
-                                <Text style={{ color: '#93c5fd', fontSize: 12, marginBottom: 8, fontWeight: '600' }}>
-                                  EDITAR APUESTA
-                                </Text>
-                                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                                  <View style={{ flex: 1 }}>
-                                    <TextInput
-                                      style={{
-                                        backgroundColor: '#0f172a',
-                                        borderWidth: 1,
-                                        borderColor: '#334155',
-                                        borderRadius: 8,
-                                        paddingHorizontal: 12,
-                                        paddingVertical: 10,
-                                        color: '#fff',
-                                        fontSize: 16,
-                                        fontWeight: '600',
-                                      }}
-                                      placeholder="Nueva cantidad (máx 50M)"
-                                      placeholderTextColor="#64748b"
-                                      value={editAmount}
-                                      onChangeText={(value) => {
-                                        if (value === '' || /^\d+$/.test(value)) {
-                                          const numValue = parseInt(value, 10);
-                                          if (value === '' || numValue <= 50) {
-                                            setBetAmounts(prev => ({ ...prev, [`edit-${userBet.id}`]: value }));
-                                          }
-                                        }
-                                      }}
-                                      keyboardType="numeric"
-                                      editable={savingBet !== userBet.id}
-                                    />
-                                  </View>
-                                  <TouchableOpacity
-                                    onPress={() => {
-                                      const newAmount = parseInt(editAmount, 10);
-                                      if (newAmount > 0 && newAmount <= 50) {
-                                        handleUpdateBet(userBet.id, newAmount);
-                                      } else if (newAmount > 50) {
-                                        showError('El máximo por apuesta es 50M');
-                                      } else {
-                                        showError('Debes ingresar una cantidad mayor a 0');
-                                      }
-                                    }}
-                                    disabled={savingBet === userBet.id || !editAmount || parseInt(editAmount) <= 0 || parseInt(editAmount) > 50}
-                                    style={{
-                                      backgroundColor: savingBet === userBet.id ? '#64748b' : '#0f766e',
-                                      borderRadius: 8,
-                                      paddingHorizontal: 16,
-                                      paddingVertical: 10,
-                                      opacity: (!editAmount || parseInt(editAmount) <= 0 || parseInt(editAmount) > 50) ? 0.5 : 1,
-                                      justifyContent: 'center',
-                                      alignItems: 'center',
-                                      borderWidth: 1,
-                                      borderColor: savingBet === userBet.id ? '#64748b' : '#14b8a6',
-                                    }}
-                                  >
-                                    {savingBet === userBet.id ? (
-                                      <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                      <CheckIcon size={22} color="#fff" />
-                                    )}
-                                  </TouchableOpacity>
-                                </View>
-                                <TouchableOpacity
-                                  onPress={() => {
-                                    setEditingBet(null);
-                                    setBetAmounts(prev => {
-                                      const newAmounts = { ...prev };
-                                      delete newAmounts[`edit-${userBet.id}`];
-                                      return newAmounts;
-                                    });
-                                  }}
-                                  style={{
-                                    backgroundColor: '#334155',
-                                    borderRadius: 6,
-                                    paddingVertical: 6,
-                                    alignItems: 'center',
-                                  }}
-                                >
-                                  <Text style={{ color: '#94a3b8', fontWeight: '600', fontSize: 12 }}>
-                                    Cancelar
-                                  </Text>
-                                </TouchableOpacity>
-                                {editAmount && parseInt(editAmount) > 0 && (
-                                  <View style={{ marginTop: 8, alignItems: 'center' }}>
-                                    <Text style={{ color: '#94a3b8', fontSize: 11 }}>
-                                      Nueva ganancia potencial:{' '}
-                                      <Text style={{ color: '#10b981', fontWeight: '700' }}>
-                                        +{calculatePotentialWin(editAmount, option.odd)}M
-                                      </Text>
-                                    </Text>
-                                  </View>
-                                )}
-                              </>
-                            )}
+                            {/* Sin botones de editar/eliminar ni inputs */}
                           </View>
                         )}
 
-                        {/* Input y botón de apostar (solo si NO hay apuesta y hay ligaId) */}
-                        {!userBet && ligaId && (
-                          <>
-                            {isBlocked ? (
-                              <View style={{
-                                backgroundColor: '#1e293b',
-                                borderRadius: 8,
-                                padding: 12,
-                                alignItems: 'center',
-                              }}>
-                                <Text style={{ color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
-                                  No puedes apostar aquí. Solo se permite una opción por grupo.
-                                </Text>
-                              </View>
-                            ) : (
-                              <>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                  <View style={{ flex: 1 }}>
-                                    <TextInput
-                                      style={{
-                                        backgroundColor: '#1a2332',
-                                        borderWidth: 1,
-                                        borderColor: '#334155',
-                                        borderRadius: 8,
-                                        paddingHorizontal: 12,
-                                        paddingVertical: 10,
-                                        color: '#fff',
-                                        fontSize: 16,
-                                        fontWeight: '600',
-                                      }}
-                                      placeholder="Cantidad (máx 50M)"
-                                      placeholderTextColor="#64748b"
-                                      value={amount}
-                                      onChangeText={(value) => handleBetAmountChange(betKey, value)}
-                                      keyboardType="numeric"
-                                      editable={savingBet !== betKey}
-                                    />
-                                  </View>
-                                  <TouchableOpacity
-                                    onPress={() => handlePlaceBet(b.matchId, b.type, option.label, option.odd, betKey)}
-                                    disabled={savingBet === betKey || !amount || parseInt(amount) <= 0}
-                                    style={{
-                                      backgroundColor: savingBet === betKey ? '#64748b' : '#0f766e',
-                                      borderRadius: 8,
-                                      paddingHorizontal: 20,
-                                      paddingVertical: 10,
-                                      opacity: (!amount || parseInt(amount) <= 0) ? 0.5 : 1,
-                                      minWidth: 100,
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      borderWidth: 1,
-                                      borderColor: savingBet === betKey ? '#64748b' : '#14b8a6',
-                                    }}
-                                  >
-                                    {savingBet === betKey ? (
-                                      <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>
-                                        Apostar
-                                      </Text>
-                                    )}
-                                  </TouchableOpacity>
-                                </View>
-
-                                {/* Ganancia potencial */}
-                                {potentialWin > 0 && (
-                                  <View style={{ marginTop: 8, alignItems: 'flex-end' }}>
-                                    <Text style={{ color: '#94a3b8', fontSize: 12 }}>
-                                      Ganancia potencial:{' '}
-                                      <Text style={{ color: '#10b981', fontWeight: '700' }}>
-                                        +{potentialWin}M
-                                      </Text>
-                                    </Text>
-                                  </View>
-                                )}
-                              </>
-                            )}
-                          </>
-                        )}
+                        {/* Sin input de cantidad ni botón de apostar en modo lectura */}
                       </View>
                     );
                   })}
                 </View>
               ))
+            )}
+
+            {/* Apuestas de todos los participantes de la liga (jornada actual) */}
+            {ligaId && (
+              <View style={{ marginTop: 16 }}>
+                <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '800', marginBottom: 8 }}>
+                  Apuestas de la liga
+                </Text>
+                {leagueBets.length === 0 ? (
+                  <Text style={{ color: '#94a3b8' }}>Nadie ha apostado aún.</Text>
+                ) : (
+                  leagueBets.map((bet) => (
+                    <View
+                      key={bet.id}
+                      style={{
+                        backgroundColor: '#0f172a',
+                        borderWidth: 1,
+                        borderColor: '#334155',
+                        borderRadius: 10,
+                        padding: 12,
+                        marginBottom: 8,
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ color: '#e5e7eb', fontWeight: '700' }}>
+                          {bet.userName || 'Jugador'}
+                        </Text>
+                        <Text style={{ color: '#22c55e', fontWeight: '800' }}>
+                          {bet.amount}M
+                        </Text>
+                      </View>
+                      <Text style={{ color: '#93c5fd', marginTop: 4, fontSize: 12 }}>
+                        {bet.betType}
+                      </Text>
+                      <Text style={{ color: '#94a3b8', marginTop: 2 }}>
+                        {bet.betLabel} · cuota {bet.odd.toFixed(2)}
+                      </Text>
+                    </View>
+                  ))
+                )}
+              </View>
             )}
           </ScrollView>
           <LigaNavBar ligaId={ligaId} ligaName={ligaName} />

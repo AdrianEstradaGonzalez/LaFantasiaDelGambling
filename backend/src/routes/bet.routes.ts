@@ -7,6 +7,11 @@ export default async function betRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.auth],
   }, BetController.getBettingBudget);
 
+  // Obtener todas las apuestas de la liga (jornada actual) - debe ir ANTES de '/:leagueId' para evitar colisiones
+  fastify.get('/all/:leagueId', {
+    preHandler: [fastify.auth],
+  }, BetController.getLeagueBets);
+
   // Obtener apuestas del usuario
   fastify.get('/:leagueId', {
     preHandler: [fastify.auth],

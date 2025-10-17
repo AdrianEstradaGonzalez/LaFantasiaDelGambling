@@ -14,6 +14,7 @@ export interface Bet {
   id: string;
   leagueId: string;
   userId: string;
+  userName?: string;
   jornada: number;
   matchId: number;
   betType: string;
@@ -43,6 +44,26 @@ export class BetService {
     } catch (error: any) {
       console.error('Error getting betting budget:', error?.response?.data || error.message);
       throw new Error(error?.response?.data?.error || 'Error al obtener presupuesto');
+    }
+  }
+
+  /**
+   * Obtener todas las apuestas de la liga para la jornada actual
+   */
+  static async getLeagueBets(leagueId: string): Promise<Bet[]> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/bets/all/${leagueId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error getting league bets:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al obtener apuestas de la liga');
     }
   }
 

@@ -59,6 +59,74 @@ export class BetService {
   }
 
   /**
+   * Obtener todas las apuestas de una liga para la jornada actual (con nombre de usuario)
+   */
+  static async getLeagueBets(leagueId: string, requesterUserId: string): Promise<Array<{
+    id: string;
+    leagueId: string;
+    userId: string;
+    userName: string;
+    jornada: number;
+    matchId: number;
+    betType: string;
+    betLabel: string;
+    odd: number;
+    amount: number;
+    potentialWin: number;
+    status: string;
+    createdAt: Date;
+  }>> {
+    // Verificar que el solicitante sea miembro de la liga
+    const member = await prisma.leagueMember.findUnique({
+      where: { leagueId_userId: { leagueId, userId: requesterUserId } },
+      select: { userId: true }
+    });
+
+    if (!member) {
+      throw new AppError(403, 'FORBIDDEN', 'No eres miembro de esta liga');
+    }
+
+    // Obtener jornada actual de la liga
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      select: { currentJornada: true }
+    });
+
+    if (!league) {
+      throw new AppError(404, 'NOT_FOUND', 'Liga no encontrada');
+    }
+
+    const bets = await prisma.bet.findMany({
+      where: {
+        leagueId,
+        jornada: league.currentJornada,
+      },
+      include: {
+        leagueMember: {
+          include: { user: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return bets.map(b => ({
+      id: b.id,
+      leagueId: b.leagueId,
+      userId: b.userId,
+      userName: b.leagueMember?.user?.name || 'Jugador',
+      jornada: b.jornada,
+      matchId: b.matchId,
+      betType: b.betType,
+      betLabel: b.betLabel,
+      odd: b.odd,
+      amount: b.amount,
+      potentialWin: b.potentialWin,
+      status: b.status,
+      createdAt: b.createdAt,
+    }));
+  }
+
+  /**
    * Crear una nueva apuesta
    */
   static async placeBet(params: {
