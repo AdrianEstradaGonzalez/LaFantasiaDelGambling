@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import axios from 'axios';
 import { AppError } from '../utils/errors.js';
 
 const prisma = new PrismaClient();
@@ -31,9 +32,7 @@ export class AdminService {
     // Obtener la última jornada completada (la mayor con partidos terminados)
     // Usar la lógica de PlayerDetail: para cada jugador, calcular sus puntos de la última jornada real
     // (Aquí simplificamos: para cada jugador, buscar la última jornada con stats y calcular puntos)
-    const { PrismaClient } = require('@prisma/client');
-    const prisma = new PrismaClient();
-    const axios = require('axios');
+    // Usar los imports ya existentes arriba
     const API_BASE = 'https://v3.football.api-sports.io';
     const API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';
     const SEASON = 2025;
@@ -134,7 +133,7 @@ export class AdminService {
         data: {
           lastJornadaPoints: points,
           lastJornadaNumber: lastJornada,
-        },
+        } as any,
       });
       updated++;
     }
