@@ -16,6 +16,7 @@ import VerPlantillaUsuario from '../pages/plantilla/VerPlantillaUsuario';
 import FootballService from '../services/FutbolService';
 import { InvitarAmigos } from '../pages/liga/InvitarAmigos';
 import Apuestas from '../pages/apuestas/Apuestas';
+import HistorialApuestas from '../pages/apuestas/HistorialApuestas';
 import AdminPanel from '../pages/admin/AdminPanel';
 import { GestionJugadores } from '../pages/admin/GestionJugadores';
 import GestionUsuarios from '../pages/admin/GestionUsuarios';
@@ -35,6 +36,7 @@ export type RootStackParamList = {
   VerPlantillaUsuario: { ligaId: string; ligaName: string; userId: string; userName: string; jornada?: number };
   InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string };
   Apuestas: { ligaId?: string; ligaName?: string } | undefined;
+  HistorialApuestas: { ligaId?: string; ligaName?: string } | undefined;
   AdminPanel: undefined;
   GestionJugadores: undefined;
   GestionUsuarios: undefined;
@@ -96,6 +98,9 @@ export const AppNavigator = () => {
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="Apuestas" component={Apuestas as any} options={{
+          animation: 'slide_from_right',
+        }} />
+        <Stack.Screen name="HistorialApuestas" component={HistorialApuestas as any} options={{
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="AdminPanel" component={AdminPanel} options={{

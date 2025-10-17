@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,10 @@ const AdminPanel: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const [isClosingJornada, setIsClosingJornada] = useState(false);
   const [isOpeningJornada, setIsOpeningJornada] = useState(false);
+  const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed' | null>(null);
+
+  // No necesitamos cargar el estado inicial, se actualiza con las acciones
+  // Los botones estarán habilitados hasta que se realice una acción
 
   const handleCerrarJornada = async () => {
     CustomAlertManager.alert(
@@ -54,6 +58,9 @@ const AdminPanel: React.FC = () => {
               setIsClosingJornada(true);
               
               const result = await JornadaService.closeAllJornadas();
+              
+              // Actualizar el estado de la jornada
+              setJornadaStatus('closed');
               
               CustomAlertManager.alert(
                 '✅ Jornada Cerrada',
@@ -108,6 +115,9 @@ const AdminPanel: React.FC = () => {
               setIsOpeningJornada(true);
               
               const result = await JornadaService.openAllJornadas();
+              
+              // Actualizar el estado de la jornada
+              setJornadaStatus('open');
               
               CustomAlertManager.alert(
                 '✅ Jornada Abierta',
@@ -357,17 +367,18 @@ const AdminPanel: React.FC = () => {
 
           <TouchableOpacity
             onPress={handleCerrarJornada}
-            disabled={isClosingJornada}
+            disabled={isClosingJornada || jornadaStatus === 'closed'}
             style={{
-              backgroundColor: isClosingJornada ? '#334155' : '#ef4444',
+              backgroundColor: isClosingJornada || jornadaStatus === 'closed' ? '#334155' : '#ef4444',
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: 'center',
               shadowColor: '#ef4444',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: isClosingJornada ? 0 : 0.3,
+              shadowOpacity: isClosingJornada || jornadaStatus === 'closed' ? 0 : 0.3,
               shadowRadius: 8,
-              elevation: isClosingJornada ? 0 : 4,
+              elevation: isClosingJornada || jornadaStatus === 'closed' ? 0 : 4,
+              opacity: jornadaStatus === 'closed' ? 0.5 : 1,
             }}
           >
             {isClosingJornada ? (
@@ -392,7 +403,7 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                Cerrar Jornada
+                {jornadaStatus === 'closed' ? 'Jornada ya cerrada' : 'Cerrar Jornada'}
               </Text>
             )}
           </TouchableOpacity>
@@ -438,17 +449,18 @@ const AdminPanel: React.FC = () => {
 
           <TouchableOpacity
             onPress={handleAbrirJornada}
-            disabled={isOpeningJornada}
+            disabled={isOpeningJornada || jornadaStatus === 'open'}
             style={{
-              backgroundColor: isOpeningJornada ? '#334155' : '#10b981',
+              backgroundColor: isOpeningJornada || jornadaStatus === 'open' ? '#334155' : '#10b981',
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: 'center',
               shadowColor: '#10b981',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: isOpeningJornada ? 0 : 0.3,
+              shadowOpacity: isOpeningJornada || jornadaStatus === 'open' ? 0 : 0.3,
               shadowRadius: 8,
-              elevation: isOpeningJornada ? 0 : 4,
+              elevation: isOpeningJornada || jornadaStatus === 'open' ? 0 : 4,
+              opacity: jornadaStatus === 'open' ? 0.5 : 1,
             }}
           >
             {isOpeningJornada ? (
@@ -473,7 +485,7 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                Abrir Jornada
+                {jornadaStatus === 'open' ? 'Jornada ya abierta' : 'Abrir Jornada'}
               </Text>
             )}
           </TouchableOpacity>

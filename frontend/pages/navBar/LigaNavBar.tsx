@@ -3,7 +3,7 @@ import { View, TouchableOpacity, Text, Pressable } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
-import { HomeIcon, LeaderboardIcon, JerseyIcon, TrendingIcon, DiceIcon } from '../../components/VectorIcons';
+import { HomeIcon, LeaderboardIcon, JerseyIcon, TrendingIcon, DiceIcon, ClockIcon } from '../../components/VectorIcons';
 
 type LigaNavBarProps = {
   ligaId?: string;
@@ -21,6 +21,7 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
   const handleEquipo = () => navigation.navigate('Equipo', { ligaId, ligaName });
   const handleJugadores = () => navigation.navigate('PlayersMarket', { ligaId, ligaName });
   const handleApuestas = () => navigation.navigate('Apuestas', { ligaId, ligaName });
+  const handleHistorialApuestas = () => navigation.navigate('HistorialApuestas', { ligaId, ligaName });
   const handleHome = () => navigation.navigate('Home');
 
   // Configuración de botones con iconos SVG más representativos
@@ -54,6 +55,12 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
       label: 'Apuestas',
       onPress: handleApuestas,
       isActive: currentRoute === 'Apuestas'
+    },
+    {
+      icon: ClockIcon,
+      label: 'Historial',
+      onPress: handleHistorialApuestas,
+      isActive: currentRoute === 'HistorialApuestas'
     }
   ];
 

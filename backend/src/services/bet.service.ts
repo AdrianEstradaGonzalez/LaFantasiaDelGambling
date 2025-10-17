@@ -38,7 +38,7 @@ export class BetService {
     }
 
     // Obtener apuestas pendientes de esta jornada
-    const currentJornada = await this.getCurrentJornada();
+    const currentJornada = await this.getCurrentJornada(leagueId);
     const pendingBets = await prisma.bet.findMany({
       where: {
         leagueId,
@@ -166,7 +166,7 @@ export class BetService {
     }
 
     // Crear la apuesta
-    const currentJornada = await this.getCurrentJornada();
+    const currentJornada = await this.getCurrentJornada(leagueId);
     const potentialWin = Math.round(amount * odd);
 
     const bet = await prisma.bet.create({
@@ -191,7 +191,7 @@ export class BetService {
    * Obtener apuestas de un usuario en una liga para la jornada actual
    */
   static async getUserBets(userId: string, leagueId: string) {
-    const currentJornada = await this.getCurrentJornada();
+    const currentJornada = await this.getCurrentJornada(leagueId);
     
     const bets = await prisma.bet.findMany({
       where: {
@@ -288,9 +288,23 @@ export class BetService {
   /**
    * Obtener jornada actual (simplificado - en producción vendría de la API)
    */
-  private static async getCurrentJornada(): Promise<number> {
-    // TODO: Obtener de la API de LaLiga o configuración
-    return 10; // Por ahora retorna jornada 10
+  private static async getCurrentJornada(leagueId?: string): Promise<number> {
+    if (leagueId) {
+      const league = await prisma.league.findUnique({
+        where: { id: leagueId },
+        select: { currentJornada: true }
+      });
+      if (league) {
+        return league.currentJornada;
+      }
+    }
+
+    // Si no hay leagueId, buscar la primera liga disponible
+    const firstLeague = await prisma.league.findFirst({
+      select: { currentJornada: true }
+    });
+
+    return firstLeague?.currentJornada || 10; // Fallback a jornada 10
   }
 
   /**

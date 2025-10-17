@@ -347,6 +347,141 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               <Text style={{ color: '#94a3b8', marginBottom: 16 }}>Jornada {jornada}</Text>
             )}
 
+            {/* Historial de apuestas cuando la jornada está cerrada */}
+            {jornadaStatus === 'closed' && ligaId && leagueBets.length > 0 && (
+              <View style={{
+                backgroundColor: '#1a2332',
+                borderWidth: 2,
+                borderColor: '#ef4444',
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 20,
+              }}>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 12,
+                  paddingBottom: 12,
+                  borderBottomWidth: 1,
+                  borderBottomColor: '#334155',
+                }}>
+                  <View style={{
+                    backgroundColor: '#7f1d1d',
+                    borderRadius: 8,
+                    padding: 8,
+                    marginRight: 12,
+                  }}>
+                    <Text style={{ fontSize: 24 }}>📊</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#fca5a5', fontSize: 18, fontWeight: '800' }}>
+                      HISTORIAL DE APUESTAS
+                    </Text>
+                    <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
+                      Jornada cerrada - {leagueBets.length} apuesta{leagueBets.length !== 1 ? 's' : ''} realizadas
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Agrupar apuestas por partido */}
+                {(() => {
+                  // Agrupar por matchId
+                  const betsByMatch: Record<number, UserBet[]> = {};
+                  leagueBets.forEach((bet) => {
+                    if (!betsByMatch[bet.matchId]) {
+                      betsByMatch[bet.matchId] = [];
+                    }
+                    betsByMatch[bet.matchId].push(bet);
+                  });
+
+                  return Object.entries(betsByMatch).map(([matchIdStr, bets]) => {
+                    const matchId = parseInt(matchIdStr);
+                    // Encontrar info del partido
+                    const matchInfo = groupedBets.find((gb) => gb.matchId === matchId);
+                    
+                    return (
+                      <View key={matchId} style={{
+                        backgroundColor: '#0f172a',
+                        borderRadius: 8,
+                        padding: 12,
+                        marginBottom: 12,
+                      }}>
+                        {/* Equipos del partido */}
+                        {matchInfo && (
+                          <View style={{ marginBottom: 10 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                              {matchInfo.localCrest && (
+                                <Image 
+                                  source={{ uri: matchInfo.localCrest }} 
+                                  style={{ width: 20, height: 20, marginRight: 8 }} 
+                                  resizeMode="contain" 
+                                />
+                              )}
+                              <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 14 }}>
+                                {matchInfo.local}
+                              </Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                              {matchInfo.visitanteCrest && (
+                                <Image 
+                                  source={{ uri: matchInfo.visitanteCrest }} 
+                                  style={{ width: 20, height: 20, marginRight: 8 }} 
+                                  resizeMode="contain" 
+                                />
+                              )}
+                              <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 14 }}>
+                                {matchInfo.visitante}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+
+                        <View style={{ height: 1, backgroundColor: '#334155', marginVertical: 8 }} />
+
+                        {/* Lista de apuestas */}
+                        {bets.map((bet, idx) => (
+                          <View 
+                            key={bet.id} 
+                            style={{
+                              backgroundColor: '#1e293b',
+                              borderRadius: 6,
+                              padding: 10,
+                              marginBottom: idx < bets.length - 1 ? 8 : 0,
+                              borderLeftWidth: 3,
+                              borderLeftColor: '#3b82f6',
+                            }}
+                          >
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                              <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 13 }}>
+                                {bet.userName || 'Jugador'}
+                              </Text>
+                              <Text style={{ color: '#22c55e', fontWeight: '800', fontSize: 14 }}>
+                                {bet.amount}M
+                              </Text>
+                            </View>
+                            <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
+                              {bet.betType}
+                            </Text>
+                            <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
+                              {bet.betLabel}
+                            </Text>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                              <Text style={{ color: '#64748b', fontSize: 11 }}>
+                                Cuota: {bet.odd.toFixed(2)}
+                              </Text>
+                              <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
+                                Ganancia potencial: +{bet.potentialWin}M
+                              </Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    );
+                  });
+                })()}
+              </View>
+            )}
+
             {/* Mensajes de éxito/error */}
             {successMessage && (
               <View style={{
@@ -410,13 +545,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   <Text style={{ color: '#94a3b8', fontSize: 14, fontWeight: '600' }}>Disponible:</Text>
                   <Text style={{ color: '#22c55e', fontSize: 16, fontWeight: '800' }}>{budget.available}M</Text>
                 </View>
-                {jornadaStatus && (
-                  <View style={{ marginTop: 10, padding: 8, borderRadius: 8, backgroundColor: jornadaStatus === 'open' ? '#052e16' : '#3f1d1d', borderWidth: 1, borderColor: jornadaStatus === 'open' ? '#16a34a' : '#ef4444' }}>
-                    <Text style={{ color: jornadaStatus === 'open' ? '#86efac' : '#fecaca', fontWeight: '700' }}>
-                      {jornadaStatus === 'open' ? 'JORNADA ABIERTA PARA CAMBIOS' : 'JORNADA CERRADA PARA CAMBIOS'}
-                    </Text>
-                  </View>
-                )}
               </View>
             )}
 
