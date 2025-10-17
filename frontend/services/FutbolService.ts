@@ -4,6 +4,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { LigaService } from './LigaService';
 import { ApuestasEvaluator } from './ApuestasEvaluator';
 import { PresupuestoService } from './PresupuestoService';
+import { BetOptionService, BetOption } from './BetOptionService';
 
 // API-FOOTBALL (API-Sports v3)
 const API_BASE = "https://v3.football.api-sports.io";
@@ -729,29 +730,66 @@ export default class FootballService {
 
       const ligaId = options?.ligaId;
       const ligaName = options?.ligaName ?? 'Liga';
-      // Agregar v4 para nueva estructura con validación de mínimos
+      
+      // Si hay ligaId, usar base de datos para consistencia entre jugadores
+      if (ligaId) {
+        console.log(`🔍 Verificando opciones de apuestas en BD para liga ${ligaId}, jornada ${nextJ}`);
+        
+        try {
+          // Verificar si ya existen opciones en la base de datos
+          const optionsExist = await BetOptionService.checkOptionsExist(ligaId, nextJ);
+          
+          if (optionsExist) {
+            console.log(`✅ Opciones encontradas en BD, recuperando...`);
+            const dbOptions = await BetOptionService.getBetOptions(ligaId, nextJ);
+            
+            // Transformar de BetOption[] a formato esperado
+            const bets = dbOptions.map((opt: BetOption) => ({
+              matchId: opt.matchId,
+              jornada: opt.jornada,
+              local: opt.homeTeam || opt.local || '',
+              visitante: opt.awayTeam || opt.visitante || '',
+              localCrest: opt.localCrest,
+              visitanteCrest: opt.visitanteCrest,
+              fecha: opt.fecha,
+              hora: opt.hora,
+              type: opt.betType || opt.type || '',
+              label: opt.betLabel || opt.label || '',
+              odd: opt.odd,
+            }));
+            
+            console.log(`✅ ${bets.length} opciones cargadas desde BD`);
+            return bets;
+          } else {
+            console.log(`⚠️ No hay opciones en BD, generando nuevas...`);
+          }
+        } catch (error) {
+          console.error('❌ Error consultando BD, generando opciones localmente:', error);
+        }
+      }
+      
+      // Si no hay ligaId o no hay opciones en BD, generar y guardar
       const storeKey = ligaId ? `apuestas_jornada_${nextJ}_liga_${ligaId}_v4` : `apuestas_jornada_${nextJ}_v4`;
       
-      // Revisar si ya tenemos apuestas persistidas para esta jornada
-      try {
-        const stored = await EncryptedStorage.getItem(storeKey);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Validar que el caché cumple con los mínimos requeridos
-            const golesCount = parsed.filter(b => b.type === 'Goles totales').length;
-            const cornersCount = parsed.filter(b => b.type === 'Córners').length;
-            const tarjetasCount = parsed.filter(b => b.type === 'Tarjetas').length;
-            
-            if (golesCount >= 2 && cornersCount >= 2 && tarjetasCount >= 2) {
-              console.log(`✅ Caché válido: ${golesCount} goles, ${cornersCount} córners, ${tarjetasCount} tarjetas`);
-              return parsed;
-            } else {
-              console.log(`⚠️ Caché inválido: ${golesCount} goles, ${cornersCount} córners, ${tarjetasCount} tarjetas. Regenerando...`);
+      // Para ligas sin DB, revisar caché local
+      if (!ligaId) {
+        try {
+          const stored = await EncryptedStorage.getItem(storeKey);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const golesCount = parsed.filter(b => b.type === 'Goles totales').length;
+              const cornersCount = parsed.filter(b => b.type === 'Córners').length;
+              const tarjetasCount = parsed.filter(b => b.type === 'Tarjetas').length;
+              
+              if (golesCount >= 2 && cornersCount >= 2 && tarjetasCount >= 2) {
+                console.log(`✅ Caché local válido: ${golesCount} goles, ${cornersCount} córners, ${tarjetasCount} tarjetas`);
+                return parsed;
+              }
             }
           }
-        }
-      } catch {}
+        } catch {}
+      }
 
     const bets: Array<{
       matchId: number;
@@ -1305,10 +1343,37 @@ export default class FootballService {
       console.log(`   - Tarjetas: ${bets.filter(b => b.type === 'Tarjetas').length}`);
       console.log(`   - Total: ${bets.length} apuestas`);
 
-      // Persistir apuestas para esta jornada (sin TTL) para que no cambien con reload
-      try {
-        await EncryptedStorage.setItem(storeKey, JSON.stringify(bets));
-      } catch {}
+      // Persistir apuestas
+      if (ligaId) {
+        // Si hay ligaId, guardar en base de datos para compartir entre jugadores
+        try {
+          console.log(`💾 Guardando ${bets.length} opciones en BD para liga ${ligaId}, jornada ${nextJ}`);
+          
+          // Transformar al formato que espera el backend
+          const betOptionsToSave = bets.map(bet => ({
+            matchId: bet.matchId,
+            homeTeam: bet.local,
+            awayTeam: bet.visitante,
+            betType: bet.type,
+            betLabel: bet.label,
+            odd: bet.odd,
+          }));
+          
+          await BetOptionService.saveBetOptions(ligaId, nextJ, betOptionsToSave);
+          console.log(`✅ Opciones guardadas exitosamente en BD`);
+        } catch (error) {
+          console.error('❌ Error guardando en BD:', error);
+          // Fallback a caché local si falla DB
+          try {
+            await EncryptedStorage.setItem(storeKey, JSON.stringify(bets));
+          } catch {}
+        }
+      } else {
+        // Sin ligaId, usar caché local
+        try {
+          await EncryptedStorage.setItem(storeKey, JSON.stringify(bets));
+        } catch {}
+      }
 
       return bets;
     } catch (error) {
