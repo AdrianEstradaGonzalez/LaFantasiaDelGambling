@@ -67,6 +67,16 @@ export class PlayerRepository {
         });
     }
     /**
+     * Actualizar puntos de la última jornada en caché
+     */
+    static async updateLastJornadaPoints(id, points) {
+        return prisma.player.update({
+            where: { id },
+            // Cast temporal para evitar discrepancias de tipos si el cliente Prisma no se ha refrescado
+            data: { lastJornadaPoints: points },
+        });
+    }
+    /**
      * Obtener jugadores por equipo
      */
     static async getPlayersByTeam(teamId) {

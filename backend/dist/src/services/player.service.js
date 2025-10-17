@@ -256,6 +256,20 @@ export class PlayerService {
         return PlayerRepository.updatePlayerPosition(id, position);
     }
     /**
+     * Actualizar puntos cacheados de la última jornada para un jugador
+     */
+    static async updateLastJornadaPoints(id, points, jornada) {
+        if (!Number.isFinite(points)) {
+            throw new Error('Puntos inválidos');
+        }
+        // Aceptamos rango razonable por seguridad
+        if (points < -1000 || points > 1000) {
+            throw new Error('Puntos fuera de rango');
+        }
+        // Jornada ya no se persiste en BD; permitimos que sea opcional
+        return PlayerRepository.updateLastJornadaPoints(id, Math.trunc(points));
+    }
+    /**
      * Obtener estadísticas
      */
     static async getStats() {

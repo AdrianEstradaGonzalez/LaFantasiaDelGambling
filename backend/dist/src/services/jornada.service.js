@@ -262,19 +262,33 @@ export class JornadaService {
             // Intentar desde la jornada objetivo hacia atrás hasta encontrar una con partidos terminados
             for (let j = targetJornada; j >= 1; j--) {
                 try {
-                    const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
-                        headers: {
-                            'x-rapidapi-key': this.API_KEY,
-                            'x-rapidapi-host': 'v3.football.api-sports.io',
-                        },
-                        params: {
-                            league: 140,
-                            season: 2024,
-                            round: `Regular Season - ${j}`,
-                        },
-                        timeout: 10000,
-                    });
-                    const fixtures = data?.response || [];
+                    // Probar con temporada actual y, si no hay datos, con la anterior
+                    const seasonsToTry = [this.SEASON, this.SEASON - 1];
+                    let fixtures = [];
+                    let usedSeason = null;
+                    for (const season of seasonsToTry) {
+                        const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
+                            headers: {
+                                'x-rapidapi-key': this.API_KEY,
+                                'x-rapidapi-host': 'v3.football.api-sports.io',
+                            },
+                            params: {
+                                league: 140,
+                                season,
+                                round: `Regular Season - ${j}`,
+                            },
+                            timeout: 10000,
+                        });
+                        fixtures = data?.response || [];
+                        if (fixtures.length > 0) {
+                            usedSeason = season;
+                            break;
+                        }
+                        await new Promise(r => setTimeout(r, 150));
+                    }
+                    if (usedSeason) {
+                        console.log(`   🔁 Jornada ${j}: usando season ${usedSeason} (fixtures: ${fixtures.length})`);
+                    }
                     if (fixtures.length > 0) {
                         // Verificar si al menos un partido está terminado
                         const hasFinishedMatches = fixtures.some((f) => ['FT', 'AET', 'PEN'].includes(f.fixture?.status?.short));
@@ -311,6 +325,9 @@ export class JornadaService {
             // Buscar la última jornada con estadísticas disponibles
             const jornada = await this.findLastCompletedJornada(jornadaObjetivo);
             console.log(`    🔍 Calculando puntos para userId=${userId}, leagueId=${leagueId}, jornadaObjetivo=${jornadaObjetivo}, jornadaUsada=${jornada}`);
+            // Obtener jornada actual de la liga para decidir uso de cache
+            const league = await prisma.league.findUnique({ where: { id: leagueId } });
+            const leagueJornada = league?.currentJornada ?? jornada;
             // Obtener la plantilla del usuario
             const squad = await prisma.squad.findUnique({
                 where: {
@@ -335,59 +352,154 @@ export class JornadaService {
             // Obtener estadísticas de cada jugador para la jornada
             for (const squadPlayer of squad.players) {
                 try {
-                    console.log(`      🔍 Buscando estadísticas de ${squadPlayer.playerName} (ID: ${squadPlayer.playerId}) para jornada ${jornada}`);
-                    // Obtener partidos de la jornada donde jugó este jugador
-                    const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
-                        headers: {
-                            'x-rapidapi-key': this.API_KEY,
-                            'x-rapidapi-host': 'v3.football.api-sports.io',
-                        },
-                        params: {
-                            league: 140, // La Liga
-                            season: 2024,
-                            round: `Regular Season - ${jornada}`,
-                        },
-                    });
-                    const fixtures = data?.response || [];
-                    console.log(`      📅 Encontrados ${fixtures.length} partidos en jornada ${jornada}`);
+                    console.log(`\n      🔍 ===== PROCESANDO JUGADOR =====`);
+                    console.log(`         Nombre: ${squadPlayer.playerName}`);
+                    console.log(`         ID: ${squadPlayer.playerId}`);
+                    console.log(`         Rol: ${squadPlayer.role}`);
+                    console.log(`         Posición: ${squadPlayer.position}`);
+                    console.log(`         Jornada a buscar: ${jornada}`);
                     let playerPoints = 0;
-                    // Buscar el partido del equipo del jugador
-                    for (const fixture of fixtures) {
-                        // Obtener estadísticas del jugador en este partido
-                        const statsResponse = await axios.get(`${this.API_BASE}/fixtures/players`, {
+                    // Preferir puntos cacheados si estamos calculando la jornada actual de la liga
+                    const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
+                    if (localPlayer && leagueJornada === jornada) {
+                        playerPoints = localPlayer.lastJornadaPoints ?? 0;
+                        console.log(`         ♻️ Usando cache (liga.jornada=${leagueJornada}): ${playerPoints} puntos`);
+                        totalPoints += playerPoints;
+                        console.log(`         💰 Total acumulado: ${totalPoints}`);
+                        console.log(`         ====================================\n`);
+                        await new Promise((r) => setTimeout(r, 50));
+                        continue;
+                    }
+                    // PASO 1: Obtener información del jugador para saber su equipo
+                    // Preferimos nuestra BD local (más fiable y sin rate-limit)
+                    let playerTeamId;
+                    let playerTeamName;
+                    try {
+                        const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
+                        if (localPlayer?.teamId) {
+                            playerTeamId = localPlayer.teamId;
+                            playerTeamName = localPlayer.teamName || undefined;
+                            console.log(`         🗂️ Equipo (BD local): ${playerTeamName ?? 'desconocido'} (ID: ${playerTeamId})`);
+                        }
+                    }
+                    catch (e) {
+                        console.log(`         ⚠️ No se pudo leer el equipo desde BD local`);
+                    }
+                    // Si no lo tenemos en BD, intentamos API (fallback)
+                    if (!playerTeamId) {
+                        try {
+                            const playerInfoResponse = await axios.get(`${this.API_BASE}/players`, {
+                                headers: {
+                                    'x-rapidapi-key': this.API_KEY,
+                                    'x-rapidapi-host': 'v3.football.api-sports.io',
+                                },
+                                params: {
+                                    id: squadPlayer.playerId,
+                                    season: this.SEASON,
+                                    league: 140
+                                },
+                                timeout: 10000,
+                            });
+                            const playerInfo = playerInfoResponse.data?.response?.[0];
+                            if (playerInfo?.statistics?.[0]?.team?.id) {
+                                playerTeamId = playerInfo.statistics[0].team.id;
+                                playerTeamName = playerInfo.statistics[0].team.name;
+                                console.log(`         🌐 Equipo (API): ${playerTeamName} (ID: ${playerTeamId})`);
+                            }
+                        }
+                        catch (e) {
+                            console.log(`         ⚠️ Error consultando API de jugador: ${e?.message || e}`);
+                        }
+                    }
+                    if (!playerTeamId) {
+                        console.log(`         ❌ No se pudo determinar el equipo del jugador. Saltando.`);
+                        continue;
+                    }
+                    console.log(`         🏟️ Equipo usado: ${playerTeamName ?? 'desconocido'} (ID: ${playerTeamId})`);
+                    // PASO 2: Obtener partidos de la jornada
+                    // Intentar fixtures con season actual y fallback a anterior
+                    let fixtures = [];
+                    let usedSeason = null;
+                    for (const season of [this.SEASON, this.SEASON - 1]) {
+                        const fixturesResponse = await axios.get(`${this.API_BASE}/fixtures`, {
                             headers: {
                                 'x-rapidapi-key': this.API_KEY,
                                 'x-rapidapi-host': 'v3.football.api-sports.io',
                             },
-                            params: { fixture: fixture.fixture.id },
+                            params: {
+                                league: 140,
+                                season,
+                                round: `Regular Season - ${jornada}`,
+                            },
                         });
-                        const teamsData = statsResponse.data?.response || [];
-                        let playerStats = null;
-                        // Buscar las estadísticas del jugador
-                        for (const teamData of teamsData) {
-                            const players = teamData.players || [];
-                            const found = players.find((p) => p.player?.id === squadPlayer.playerId);
-                            if (found) {
-                                playerStats = found.statistics?.[0];
-                                break;
-                            }
+                        fixtures = fixturesResponse.data?.response || [];
+                        if (Array.isArray(fixtures) && fixtures.length > 0) {
+                            usedSeason = season;
+                            break;
                         }
-                        if (playerStats) {
-                            // Calcular puntos según el rol del jugador
-                            playerPoints += this.calculatePlayerPoints(playerStats, squadPlayer.role);
-                            console.log(`      ⚽ ${squadPlayer.playerName}: ${playerPoints} puntos`);
-                            break; // Solo contar el primer partido encontrado
+                        await new Promise(r => setTimeout(r, 120));
+                    }
+                    if (!Array.isArray(fixtures) || fixtures.length === 0) {
+                        console.log(`         ⚠️ No hay fixtures para la jornada ${jornada} (tried seasons: ${this.SEASON}, ${this.SEASON - 1})`);
+                        continue;
+                    }
+                    console.log(`         📅 ${fixtures.length} partidos en jornada ${jornada} (season ${usedSeason ?? this.SEASON})`);
+                    // PASO 3: Buscar el partido donde jugó su equipo
+                    const teamFixture = fixtures.find((f) => f.teams?.home?.id === playerTeamId || f.teams?.away?.id === playerTeamId);
+                    if (!teamFixture) {
+                        console.log(`         ⚠️ ${playerTeamName ?? 'Equipo'} no tiene partido en jornada ${jornada}`);
+                        continue;
+                    }
+                    const isHomeTeam = teamFixture.teams?.home?.id === playerTeamId;
+                    console.log(`         🔎 Partido: ${teamFixture.teams?.home?.name} vs ${teamFixture.teams?.away?.name}`);
+                    console.log(`         📊 Estado: ${teamFixture.fixture?.status?.short} | Fixture ID: ${teamFixture.fixture.id}`);
+                    const statusShort = teamFixture.fixture?.status?.short;
+                    // Opcional: solo contar si el partido al menos ha empezado
+                    if (!statusShort || ['CANC', 'PST', 'TBD', 'NS'].includes(statusShort)) {
+                        console.log(`         ⏭️ Partido no iniciado o inválido para puntos (status: ${statusShort})`);
+                        continue;
+                    }
+                    // PASO 4: Obtener estadísticas del partido
+                    const statsResponse = await axios.get(`${this.API_BASE}/fixtures/players`, {
+                        headers: {
+                            'x-rapidapi-key': this.API_KEY,
+                            'x-rapidapi-host': 'v3.football.api-sports.io',
+                        },
+                        params: { fixture: teamFixture.fixture.id },
+                    });
+                    const teamsData = statsResponse.data?.response || [];
+                    if (!Array.isArray(teamsData) || teamsData.length === 0) {
+                        console.log(`         ⚠️ Sin estadísticas disponibles para este partido`);
+                        continue;
+                    }
+                    // PASO 5: Buscar las estadísticas del jugador
+                    let playerStats = null;
+                    for (const teamData of teamsData) {
+                        const teamName = teamData?.team?.name;
+                        const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
+                        const found = playersArr.find((p) => p?.player?.id === squadPlayer.playerId);
+                        if (found?.statistics?.[0]) {
+                            playerStats = found.statistics[0];
+                            console.log(`         ✅ ¡Encontrado en ${teamName}!`);
+                            console.log(`         ⏱️ Minutos: ${playerStats?.games?.minutes || 0}`);
+                            break;
                         }
                     }
-                    if (playerPoints === 0) {
-                        console.log(`      ⚠️  ${squadPlayer.playerName}: No se encontraron estadísticas o 0 puntos`);
+                    if (!playerStats) {
+                        console.log(`         ⚠️ No participó en el partido (no convocado/lesionado/suplente sin jugar)`);
+                        continue;
                     }
+                    // PASO 6: Calcular puntos
+                    playerPoints = this.calculatePlayerPoints(playerStats, squadPlayer.role);
+                    console.log(`         ⚽ PUNTOS: ${playerPoints}`);
                     totalPoints += playerPoints;
-                    // Pequeña pausa para rate limit
-                    await new Promise((r) => setTimeout(r, 100));
+                    console.log(`         💰 Total acumulado: ${totalPoints}`);
+                    console.log(`         ====================================\n`);
+                    // Pequeña pausa para evitar rate limit
+                    await new Promise((r) => setTimeout(r, 150));
                 }
                 catch (error) {
-                    console.error(`      ❌ Error obteniendo estadísticas del jugador ${squadPlayer.playerName}:`, error);
+                    console.error(`      ❌ Error con ${squadPlayer.playerName}:`, error.message);
                 }
             }
             console.log(`    📊 TOTAL PUNTOS PLANTILLA: ${totalPoints}`);
@@ -402,15 +514,25 @@ export class JornadaService {
      * Calcular puntos de un jugador según DreamLeague
      */
     static calculatePlayerPoints(stats, role) {
-        if (!stats || !stats.games)
+        console.log(`\n🎯 ===== CALCULANDO PUNTOS DE JUGADOR =====`);
+        console.log(`   Rol: ${role}`);
+        console.log(`   Stats recibidas:`, JSON.stringify(stats, null, 2));
+        if (!stats || !stats.games) {
+            console.log(`   ⚠️ Sin stats o games, retornando 0`);
             return 0;
+        }
         let points = 0;
         const minutes = stats.games?.minutes || 0;
+        console.log(`   ⏱️ Minutos jugados: ${minutes}`);
         // BASE GENERAL (para todos)
-        if (minutes > 0 && minutes < 45)
+        if (minutes > 0 && minutes < 45) {
             points += 1;
-        else if (minutes >= 45)
+            console.log(`   ✅ +1 punto por jugar < 45 min`);
+        }
+        else if (minutes >= 45) {
             points += 2;
+            console.log(`   ✅ +2 puntos por jugar >= 45 min`);
+        }
         const goals = stats.goals || {};
         const cards = stats.cards || {};
         const penalty = stats.penalty || {};
@@ -420,57 +542,172 @@ export class JornadaService {
         const tackles = stats.tackles || {};
         const duels = stats.duels || {};
         const fouls = stats.fouls || {};
-        points += (goals.assists || 0) * 3;
-        points -= (cards.yellow || 0) * 1;
-        points -= (cards.red || 0) * 3;
-        points += (penalty.won || 0) * 2;
-        points -= (penalty.committed || 0) * 2;
-        points += (penalty.scored || 0) * 3;
-        points -= (penalty.missed || 0) * 2;
+        console.log(`\n   📊 Estadísticas base:`);
+        console.log(`      - Goles: ${goals.total || 0}`);
+        console.log(`      - Asistencias: ${goals.assists || 0}`);
+        console.log(`      - Tarjetas amarillas: ${cards.yellow || 0}`);
+        console.log(`      - Tarjetas rojas: ${cards.red || 0}`);
+        const assistPoints = (goals.assists || 0) * 3;
+        points += assistPoints;
+        if (assistPoints > 0)
+            console.log(`   ✅ +${assistPoints} puntos por asistencias`);
+        const yellowCardPenalty = (cards.yellow || 0) * 1;
+        points -= yellowCardPenalty;
+        if (yellowCardPenalty > 0)
+            console.log(`   ❌ -${yellowCardPenalty} puntos por tarjetas amarillas`);
+        const redCardPenalty = (cards.red || 0) * 3;
+        points -= redCardPenalty;
+        if (redCardPenalty > 0)
+            console.log(`   ❌ -${redCardPenalty} puntos por tarjetas rojas`);
+        const penaltyWonPoints = (penalty.won || 0) * 2;
+        points += penaltyWonPoints;
+        if (penaltyWonPoints > 0)
+            console.log(`   ✅ +${penaltyWonPoints} puntos por penaltis ganados`);
+        const penaltyCommittedPenalty = (penalty.committed || 0) * 2;
+        points -= penaltyCommittedPenalty;
+        if (penaltyCommittedPenalty > 0)
+            console.log(`   ❌ -${penaltyCommittedPenalty} puntos por penaltis cometidos`);
+        const penaltyScoredPoints = (penalty.scored || 0) * 3;
+        points += penaltyScoredPoints;
+        if (penaltyScoredPoints > 0)
+            console.log(`   ✅ +${penaltyScoredPoints} puntos por penaltis marcados`);
+        const penaltyMissedPenalty = (penalty.missed || 0) * 2;
+        points -= penaltyMissedPenalty;
+        if (penaltyMissedPenalty > 0)
+            console.log(`   ❌ -${penaltyMissedPenalty} puntos por penaltis fallados`);
+        console.log(`\n   🎭 Calculando puntos específicos por posición: ${role}`);
         // ESPECÍFICO POR POSICIÓN
-        if (role === 'GK') {
+        if (role === 'GK' || role === 'POR') {
+            console.log(`   🧤 PORTERO`);
             // Portero
             const conceded = stats.goals?.conceded || 0;
-            if (minutes >= 60 && conceded === 0)
+            console.log(`      - Goles encajados: ${conceded}`);
+            console.log(`      - Paradas: ${stats.goals?.saves || 0}`);
+            if (minutes >= 60 && conceded === 0) {
                 points += 5;
-            points -= conceded * 2;
-            points += (stats.goals?.saves || 0) * 1;
-            points += (penalty.saved || 0) * 5;
-            points += (goals.total || 0) * 10;
-            points += Math.floor((tackles.interceptions || 0) / 5);
+                console.log(`      ✅ +5 puntos por portería a cero (>= 60 min)`);
+            }
+            const concededPenalty = conceded * 2;
+            points -= concededPenalty;
+            if (concededPenalty > 0)
+                console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
+            const savesPoints = (stats.goals?.saves || 0) * 1;
+            points += savesPoints;
+            if (savesPoints > 0)
+                console.log(`      ✅ +${savesPoints} puntos por paradas`);
+            const penaltySavedPoints = (penalty.saved || 0) * 5;
+            points += penaltySavedPoints;
+            if (penaltySavedPoints > 0)
+                console.log(`      ✅ +${penaltySavedPoints} puntos por penaltis parados`);
+            const goalPoints = (goals.total || 0) * 10;
+            points += goalPoints;
+            if (goalPoints > 0)
+                console.log(`      ✅ +${goalPoints} puntos por goles marcados`);
+            const interceptionPoints = Math.floor((tackles.interceptions || 0) / 5);
+            points += interceptionPoints;
+            if (interceptionPoints > 0)
+                console.log(`      ✅ +${interceptionPoints} puntos por intercepciones`);
         }
         else if (role === 'DEF') {
+            console.log(`   🛡️ DEFENSA`);
             // Defensa
             const conceded = stats.goals?.conceded || 0;
-            if (minutes >= 60 && conceded === 0)
+            console.log(`      - Goles encajados: ${conceded}`);
+            console.log(`      - Duelos ganados: ${duels.won || 0}`);
+            if (minutes >= 60 && conceded === 0) {
                 points += 4;
-            points += (goals.total || 0) * 6;
-            points += Math.floor((duels.won || 0) / 2);
-            points += Math.floor((tackles.interceptions || 0) / 5);
-            points -= conceded * 1;
-            points += (shots.on || 0) * 1;
+                console.log(`      ✅ +4 puntos por portería a cero (>= 60 min)`);
+            }
+            const goalPoints = (goals.total || 0) * 6;
+            points += goalPoints;
+            if (goalPoints > 0)
+                console.log(`      ✅ +${goalPoints} puntos por goles marcados`);
+            const duelsPoints = Math.floor((duels.won || 0) / 2);
+            points += duelsPoints;
+            if (duelsPoints > 0)
+                console.log(`      ✅ +${duelsPoints} puntos por duelos ganados`);
+            const interceptionPoints = Math.floor((tackles.interceptions || 0) / 5);
+            points += interceptionPoints;
+            if (interceptionPoints > 0)
+                console.log(`      ✅ +${interceptionPoints} puntos por intercepciones`);
+            const concededPenalty = conceded * 1;
+            points -= concededPenalty;
+            if (concededPenalty > 0)
+                console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
+            const shotsPoints = (shots.on || 0) * 1;
+            points += shotsPoints;
+            if (shotsPoints > 0)
+                console.log(`      ✅ +${shotsPoints} puntos por tiros a puerta`);
         }
-        else if (role === 'MID') {
+        else if (role === 'MID' || role === 'CEN') {
+            console.log(`   ⚙️ CENTROCAMPISTA`);
             // Centrocampista
             const conceded = stats.goals?.conceded || 0;
-            if (minutes >= 60 && conceded === 0)
+            console.log(`      - Goles encajados: ${conceded}`);
+            console.log(`      - Pases clave: ${passes.key || 0}`);
+            console.log(`      - Regates: ${dribbles.success || 0}`);
+            if (minutes >= 60 && conceded === 0) {
                 points += 1;
-            points += (goals.total || 0) * 5;
-            points -= Math.floor(conceded / 2);
-            points += (passes.key || 0) * 1;
-            points += Math.floor((dribbles.success || 0) / 2);
-            points += Math.floor((fouls.drawn || 0) / 3);
-            points += Math.floor((tackles.interceptions || 0) / 3);
-            points += (shots.on || 0) * 1;
+                console.log(`      ✅ +1 punto por portería a cero (>= 60 min)`);
+            }
+            const goalPoints = (goals.total || 0) * 5;
+            points += goalPoints;
+            if (goalPoints > 0)
+                console.log(`      ✅ +${goalPoints} puntos por goles marcados`);
+            const concededPenalty = Math.floor(conceded / 2);
+            points -= concededPenalty;
+            if (concededPenalty > 0)
+                console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
+            const passesPoints = (passes.key || 0) * 1;
+            points += passesPoints;
+            if (passesPoints > 0)
+                console.log(`      ✅ +${passesPoints} puntos por pases clave`);
+            const dribblesPoints = Math.floor((dribbles.success || 0) / 2);
+            points += dribblesPoints;
+            if (dribblesPoints > 0)
+                console.log(`      ✅ +${dribblesPoints} puntos por regates`);
+            const foulsPoints = Math.floor((fouls.drawn || 0) / 3);
+            points += foulsPoints;
+            if (foulsPoints > 0)
+                console.log(`      ✅ +${foulsPoints} puntos por faltas recibidas`);
+            const interceptionPoints = Math.floor((tackles.interceptions || 0) / 3);
+            points += interceptionPoints;
+            if (interceptionPoints > 0)
+                console.log(`      ✅ +${interceptionPoints} puntos por intercepciones`);
+            const shotsPoints = (shots.on || 0) * 1;
+            points += shotsPoints;
+            if (shotsPoints > 0)
+                console.log(`      ✅ +${shotsPoints} puntos por tiros a puerta`);
         }
-        else if (role === 'ATT') {
+        else if (role === 'ATT' || role === 'DEL') {
+            console.log(`   ⚽ DELANTERO`);
             // Delantero
-            points += (goals.total || 0) * 4;
-            points += (passes.key || 0) * 1;
-            points += Math.floor((fouls.drawn || 0) / 3);
-            points += Math.floor((dribbles.success || 0) / 2);
-            points += (shots.on || 0) * 1;
+            console.log(`      - Goles: ${goals.total || 0}`);
+            console.log(`      - Pases clave: ${passes.key || 0}`);
+            console.log(`      - Regates: ${dribbles.success || 0}`);
+            const goalPoints = (goals.total || 0) * 4;
+            points += goalPoints;
+            if (goalPoints > 0)
+                console.log(`      ✅ +${goalPoints} puntos por goles marcados`);
+            const passesPoints = (passes.key || 0) * 1;
+            points += passesPoints;
+            if (passesPoints > 0)
+                console.log(`      ✅ +${passesPoints} puntos por pases clave`);
+            const foulsPoints = Math.floor((fouls.drawn || 0) / 3);
+            points += foulsPoints;
+            if (foulsPoints > 0)
+                console.log(`      ✅ +${foulsPoints} puntos por faltas recibidas`);
+            const dribblesPoints = Math.floor((dribbles.success || 0) / 2);
+            points += dribblesPoints;
+            if (dribblesPoints > 0)
+                console.log(`      ✅ +${dribblesPoints} puntos por regates`);
+            const shotsPoints = (shots.on || 0) * 1;
+            points += shotsPoints;
+            if (shotsPoints > 0)
+                console.log(`      ✅ +${shotsPoints} puntos por tiros a puerta`);
         }
+        console.log(`\n   🏆 TOTAL PUNTOS: ${points}`);
+        console.log(`   ========================================\n`);
         return points;
     }
     /**
@@ -921,3 +1158,4 @@ export class JornadaService {
 }
 JornadaService.API_BASE = 'https://v3.football.api-sports.io';
 JornadaService.API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';
+JornadaService.SEASON = 2025; // Temporada actual de La Liga

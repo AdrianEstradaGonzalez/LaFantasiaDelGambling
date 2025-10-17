@@ -372,6 +372,9 @@ export class JornadaService {
       // Buscar la última jornada con estadísticas disponibles
       const jornada = await this.findLastCompletedJornada(jornadaObjetivo);
       console.log(`    🔍 Calculando puntos para userId=${userId}, leagueId=${leagueId}, jornadaObjetivo=${jornadaObjetivo}, jornadaUsada=${jornada}`);
+      // Obtener jornada actual de la liga para decidir uso de cache
+      const league = await prisma.league.findUnique({ where: { id: leagueId } });
+      const leagueJornada = league?.currentJornada ?? jornada;
       
       // Obtener la plantilla del usuario
       const squad = await prisma.squad.findUnique({
@@ -411,6 +414,18 @@ export class JornadaService {
           console.log(`         Jornada a buscar: ${jornada}`);
           
           let playerPoints = 0;
+
+          // Preferir puntos cacheados si estamos calculando la jornada actual de la liga
+          const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
+          if (localPlayer && leagueJornada === jornada) {
+            playerPoints = (localPlayer as any).lastJornadaPoints ?? 0;
+            console.log(`         ♻️ Usando cache (liga.jornada=${leagueJornada}): ${playerPoints} puntos`);
+            totalPoints += playerPoints;
+            console.log(`         💰 Total acumulado: ${totalPoints}`);
+            console.log(`         ====================================\n`);
+            await new Promise((r) => setTimeout(r, 50));
+            continue;
+          }
           
           // PASO 1: Obtener información del jugador para saber su equipo
           // Preferimos nuestra BD local (más fiable y sin rate-limit)

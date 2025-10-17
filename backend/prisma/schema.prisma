@@ -110,6 +110,10 @@ model Player {
   shirtNumber Int?
   photo       String?
   price       Int
+  // Puntos calculados de la última jornada (cache)
+  lastJornadaPoints Int @default(0)
+  // Jornada a la que pertenecen esos puntos
+  lastJornadaNumber Int @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
+import { PlayerService } from '../../services/PlayerService';
 import { SquadService } from '../../services/SquadService';
 import { JornadaService } from '../../services/JornadaService';
 import LoadingScreen from '../../components/LoadingScreen';
@@ -201,7 +202,22 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         
         // Seleccionar la última jornada por defecto
         if (matchdays.length > 0) {
-          setSelectedMatchday(matchdays[matchdays.length - 1]);
+          const last = matchdays[matchdays.length - 1];
+          setSelectedMatchday(last);
+
+          // Sincronizar puntos de última jornada con la BD si difiere
+          const lastEntry = pointsPerMatchday.find(p => p.matchday === last);
+          const lastPointsCalculated = lastEntry?.points ?? 0;
+
+          try {
+            const dbPlayer = await PlayerService.getPlayerById(player.id);
+            const dbLastPoints = dbPlayer?.lastJornadaPoints ?? 0;
+            if (dbLastPoints !== lastPointsCalculated) {
+              await PlayerService.updatePlayerLastPoints(player.id, lastPointsCalculated);
+            }
+          } catch (e) {
+            console.warn('No se pudo sincronizar puntos última jornada:', e);
+          }
         }
       } catch (error) {
         console.error('Error cargando datos del jugador:', error);

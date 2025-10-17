@@ -11,6 +11,7 @@ export interface PlayerWithPrice {
   shirtNumber?: number;
   photo?: string;
   price: number; // Precio en millones
+  lastJornadaPoints?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -137,6 +138,23 @@ export class PlayerService {
       console.error('Error actualizando posición:', error);
       throw error;
     }
+  }
+
+  /**
+   * Actualizar puntos de la última jornada (cache)
+   */
+  static async updatePlayerLastPoints(id: number, points: number, jornada?: number): Promise<PlayerWithPrice> {
+    const response = await fetch(`${this.BASE_URL}/${id}/last-points`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(jornada != null ? { points, jornada } : { points })
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData?.message || `Error ${response.status}`);
+    }
+    const json = await response.json();
+    return json.data;
   }
 
   /**

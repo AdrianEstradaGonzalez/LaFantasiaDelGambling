@@ -148,6 +148,27 @@ export class PlayerController {
         }
     }
     /**
+     * Actualizar puntos de la última jornada (cache)
+     * PATCH /api/players/:id/last-points
+     */
+    static async updateLastPoints(req, reply) {
+        try {
+            const params = req.params;
+            const body = req.body;
+            const { id } = params;
+            const { points, jornada } = body;
+            if (typeof points !== 'number') {
+                return reply.status(400).send({ success: false, message: 'points debe ser numérico' });
+            }
+            const updated = await PlayerService.updateLastJornadaPoints(Number(id), points, jornada != null ? Number(jornada) : undefined);
+            return reply.status(200).send({ success: true, data: updated });
+        }
+        catch (error) {
+            console.error('Error actualizando last points:', error);
+            return reply.status(500).send({ success: false, message: error?.message || 'Error al actualizar puntos' });
+        }
+    }
+    /**
      * Obtener estadísticas de jugadores
      * GET /api/players/stats
      */
