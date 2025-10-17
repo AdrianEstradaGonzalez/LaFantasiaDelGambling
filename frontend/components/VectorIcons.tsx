@@ -503,6 +503,35 @@ export const LockIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
   </Svg>
 );
 
+// Icono de candado abierto
+export const UnlockIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Rect
+      x="5"
+      y="11"
+      width="14"
+      height="10"
+      rx="2"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M12 17a1 1 0 100-2 1 1 0 000 2z"
+      fill={color}
+    />
+    <Path
+      d="M8 11V7a4 4 0 010-8"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 // Icono de Táctica/Formación (para Alineación)
 export const TacticsIcon = ({ size = 24, color = '#ffffff', isActive = false }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">

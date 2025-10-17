@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { BetService } from '../services/bet.service.js';
+import { AppError } from '../utils/errors.js';
 
 export class BetController {
   /**
@@ -17,6 +18,9 @@ export class BetController {
       const budget = await BetService.getBettingBudget(userId, leagueId);
       return reply.status(200).send(budget);
     } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
       return reply.status(400).send({ error: error.message });
     }
   }
@@ -59,6 +63,9 @@ export class BetController {
 
       return reply.status(201).send(bet);
     } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
       return reply.status(400).send({ error: error.message });
     }
   }
@@ -78,6 +85,9 @@ export class BetController {
       const bets = await BetService.getUserBets(userId, leagueId);
       return reply.status(200).send(bets);
     } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
       return reply.status(400).send({ error: error.message });
     }
   }
@@ -97,6 +107,9 @@ export class BetController {
       const result = await BetService.deleteBet(betId, userId, leagueId);
       return reply.status(200).send(result);
     } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
       return reply.status(400).send({ error: error.message });
     }
   }
@@ -156,6 +169,9 @@ export class BetController {
           : 'Presupuestos reseteados a 250M para todas las ligas'
       });
     } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
       return reply.status(400).send({ error: error.message });
     }
   }

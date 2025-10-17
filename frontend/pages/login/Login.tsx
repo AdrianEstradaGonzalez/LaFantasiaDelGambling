@@ -78,7 +78,7 @@ const Login: React.FC<Props> = ({ navigation }) => {
           </View>
           <Text style={LoginStyles.appName}>DreamLeague</Text>
           <Text style={LoginStyles.appTagline}>
-            Tu fantasy football con apuestas
+            Tu sueño, tu equipo, tu legado
           </Text>
         </View>
 

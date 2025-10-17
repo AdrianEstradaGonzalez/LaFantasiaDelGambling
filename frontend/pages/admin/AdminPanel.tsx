@@ -22,7 +22,7 @@ import {
   UsersIcon,
   TrophyIcon,
   LockIcon,
-  CheckIcon
+  UnlockIcon
 } from '../../components/VectorIcons';
 import { Typography } from '../../styles/DesignSystem';
 
@@ -392,7 +392,7 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                🔒 Cerrar Jornada
+                Cerrar Jornada
               </Text>
             )}
           </TouchableOpacity>
@@ -411,7 +411,7 @@ const AdminPanel: React.FC = () => {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
             <View style={{ marginRight: 12 }}>
-              <CheckIcon size={32} color="#10b981" />
+              <UnlockIcon size={32} color="#10b981" />
             </View>
             <Text
               style={{
@@ -473,7 +473,7 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                ✅ Abrir Jornada
+                Abrir Jornada
               </Text>
             )}
           </TouchableOpacity>

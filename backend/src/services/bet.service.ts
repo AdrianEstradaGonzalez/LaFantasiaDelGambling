@@ -1,8 +1,28 @@
 import { PrismaClient } from '@prisma/client';
+import { AppError } from '../utils/errors.js';
 
 const prisma = new PrismaClient();
 
 export class BetService {
+  // Verifica si la liga permite cambios (jornada no bloqueada)
+  private static async assertBettingAllowed(leagueId: string) {
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      select: { jornadaStatus: true, name: true }
+    });
+
+    if (!league) {
+      throw new AppError(404, 'NOT_FOUND', 'Liga no encontrada');
+    }
+
+    if (league.jornadaStatus === 'closed') {
+      throw new AppError(
+        403,
+        'JORNADA_BLOQUEADA',
+        'La jornada está abierta (bloqueada). No se pueden crear, modificar ni eliminar apuestas en este momento.'
+      );
+    }
+  }
   /**
    * Obtener presupuesto de apuestas disponible para un usuario en una liga
    */
@@ -51,6 +71,9 @@ export class BetService {
     amount: number;
   }) {
     const { userId, leagueId, matchId, betType, betLabel, odd, amount } = params;
+
+    // Bloquear si la jornada está abierta (bloqueada)
+    await this.assertBettingAllowed(leagueId);
 
     // Validar que el usuario es miembro de la liga
     const member = await prisma.leagueMember.findUnique({
@@ -120,6 +143,9 @@ export class BetService {
    * Eliminar una apuesta (solo si está pendiente)
    */
   static async deleteBet(betId: string, userId: string, leagueId: string) {
+    // Bloquear si la jornada está abierta (bloqueada)
+    await this.assertBettingAllowed(leagueId);
+
     const bet = await prisma.bet.findUnique({
       where: { id: betId },
     });
@@ -147,6 +173,9 @@ export class BetService {
    * Actualizar monto de una apuesta existente
    */
   static async updateBetAmount(betId: string, userId: string, leagueId: string, newAmount: number) {
+    // Bloquear si la jornada está abierta (bloqueada)
+    await this.assertBettingAllowed(leagueId);
+
     const bet = await prisma.bet.findUnique({
       where: { id: betId },
     });
