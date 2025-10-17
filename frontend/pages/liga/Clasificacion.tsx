@@ -6,12 +6,16 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { LigaService } from '../../services/LigaService';
+import { JornadaService } from '../../services/JornadaService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LigaTopNavBar from '../navBar/LigaTopNavBar';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LoadingScreen from '../../components/LoadingScreen';
 import FootballService from '../../services/FutbolService';
 import { DrawerMenu } from '../../components/DrawerMenu';
+import { CustomAlertManager } from '../../components/CustomAlert';
+
+
 
 type UsuarioClasificacion = {
   id: string;
@@ -38,6 +42,7 @@ export const Clasificacion = () => {
   const [availableJornadas, setAvailableJornadas] = useState<number[]>([]);
   const [showJornadaPicker, setShowJornadaPicker] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
   const slideAnim = useRef(new Animated.Value(-300)).current;
 
   // Animar drawer
@@ -124,6 +129,22 @@ export const Clasificacion = () => {
     };
 
     fetchClasificacion();
+  }, [ligaId]);
+
+  // Cargar estado de la jornada
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (ligaId) {
+          const status = await JornadaService.getJornadaStatus(ligaId);
+          if (mounted) setJornadaStatus((status.status as 'open' | 'closed'));
+        }
+      } catch (e) {
+        console.warn('No se pudo obtener estado de jornada:', e);
+      }
+    })();
+    return () => { mounted = false; };
   }, [ligaId]);
 
   return (
@@ -259,6 +280,17 @@ export const Clasificacion = () => {
               : undefined;
             
             const handleOpenUserLineup = () => {
+              // Solo permitir ver plantillas de otros usuarios cuando la jornada está cerrada
+              if (!isCurrentUser && jornadaStatus === 'open') {
+                CustomAlertManager.alert(
+                  'Jornada abierta',
+                  'No puedes ver las plantillas de otros jugadores mientras la jornada está abierta.',
+                  [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+                  { icon: 'lock-closed', iconColor: '#f59e0b' }
+                );
+                return;
+              }
+              
               // Navegar a ver la plantilla de este usuario
               navigation.navigate('VerPlantillaUsuario', {
                 ligaId,
