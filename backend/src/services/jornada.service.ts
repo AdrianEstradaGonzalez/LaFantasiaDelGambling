@@ -308,20 +308,30 @@ export class JornadaService {
       // Intentar desde la jornada objetivo hacia atrás hasta encontrar una con partidos terminados
       for (let j = targetJornada; j >= 1; j--) {
         try {
-          const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
-            headers: {
-              'x-rapidapi-key': this.API_KEY,
-              'x-rapidapi-host': 'v3.football.api-sports.io',
-            },
-            params: {
-              league: 140,
-              season: this.SEASON,
-              round: `Regular Season - ${j}`,
-            },
-            timeout: 10000,
-          });
-
-          const fixtures = data?.response || [];
+          // Probar con temporada actual y, si no hay datos, con la anterior
+          const seasonsToTry = [this.SEASON, this.SEASON - 1];
+          let fixtures: any[] = [];
+          let usedSeason: number | null = null;
+          for (const season of seasonsToTry) {
+            const { data } = await axios.get(`${this.API_BASE}/fixtures`, {
+              headers: {
+                'x-rapidapi-key': this.API_KEY,
+                'x-rapidapi-host': 'v3.football.api-sports.io',
+              },
+              params: {
+                league: 140,
+                season,
+                round: `Regular Season - ${j}`,
+              },
+              timeout: 10000,
+            });
+            fixtures = data?.response || [];
+            if (fixtures.length > 0) { usedSeason = season; break; }
+            await new Promise(r => setTimeout(r, 150));
+          }
+          if (usedSeason) {
+            console.log(`   🔁 Jornada ${j}: usando season ${usedSeason} (fixtures: ${fixtures.length})`);
+          }
           
           if (fixtures.length > 0) {
             // Verificar si al menos un partido está terminado
@@ -451,24 +461,30 @@ export class JornadaService {
           console.log(`         🏟️ Equipo usado: ${playerTeamName ?? 'desconocido'} (ID: ${playerTeamId})`);
           
           // PASO 2: Obtener partidos de la jornada
-          const fixturesResponse = await axios.get(`${this.API_BASE}/fixtures`, {
-            headers: {
-              'x-rapidapi-key': this.API_KEY,
-              'x-rapidapi-host': 'v3.football.api-sports.io',
-            },
-            params: {
-              league: 140,
-              season: this.SEASON,
-              round: `Regular Season - ${jornada}`,
-            },
-          });
-
-          const fixtures = fixturesResponse.data?.response || [];
+          // Intentar fixtures con season actual y fallback a anterior
+          let fixtures: any[] = [];
+          let usedSeason: number | null = null;
+          for (const season of [this.SEASON, this.SEASON - 1]) {
+            const fixturesResponse = await axios.get(`${this.API_BASE}/fixtures`, {
+              headers: {
+                'x-rapidapi-key': this.API_KEY,
+                'x-rapidapi-host': 'v3.football.api-sports.io',
+              },
+              params: {
+                league: 140,
+                season,
+                round: `Regular Season - ${jornada}`,
+              },
+            });
+            fixtures = fixturesResponse.data?.response || [];
+            if (Array.isArray(fixtures) && fixtures.length > 0) { usedSeason = season; break; }
+            await new Promise(r => setTimeout(r, 120));
+          }
           if (!Array.isArray(fixtures) || fixtures.length === 0) {
-            console.log(`         ⚠️ No hay fixtures para la jornada ${jornada} (season ${this.SEASON})`);
+            console.log(`         ⚠️ No hay fixtures para la jornada ${jornada} (tried seasons: ${this.SEASON}, ${this.SEASON - 1})`);
             continue;
           }
-          console.log(`         📅 ${fixtures.length} partidos en jornada ${jornada}`);
+          console.log(`         📅 ${fixtures.length} partidos en jornada ${jornada} (season ${usedSeason ?? this.SEASON})`);
           
           // PASO 3: Buscar el partido donde jugó su equipo
           const teamFixture = fixtures.find((f: any) => 
