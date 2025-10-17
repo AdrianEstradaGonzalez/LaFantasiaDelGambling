@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
+import { JornadaService } from '../../services/JornadaService';
 import { BetService, BettingBudget, Bet as UserBet } from '../../services/BetService';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
@@ -56,6 +57,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [leagueBets, setLeagueBets] = useState<UserBet[]>([]);
+  const [jornadaStatus, setJornadaStatus] = useState<string | null>(null); // 'open' | 'closed'
+  const [amountInputs, setAmountInputs] = useState<Record<string, string>>({});
   
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -71,11 +74,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         let budgetData = { total: 250, used: 0, available: 250 };
         let userBetsData: UserBet[] = [];
         let leagueBetsData: UserBet[] = [];
+        let statusData: string | null = null;
         if (ligaId) {
           try {
             budgetData = await BetService.getBettingBudget(ligaId);
             userBetsData = await BetService.getUserBets(ligaId);
             leagueBetsData = await BetService.getLeagueBets(ligaId);
+            const statusResp = await JornadaService.getJornadaStatus(ligaId);
+            statusData = statusResp.status;
           } catch (err) {
             console.warn('Error getting budget/bets:', err);
           }
@@ -108,9 +114,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           setUserBets(userBetsData);
           setLeagueBets(leagueBetsData);
           setBudget(budgetData);
+          if (statusData) setJornadaStatus(statusData);
           if (apuestas.length > 0) {
             setJornada(apuestas[0].jornada);
           }
+          console.log('🎲 DEBUG Apuestas - Status:', statusData);
+          console.log('🎲 DEBUG Apuestas - League Bets:', leagueBetsData);
+          console.log('🎲 DEBUG Apuestas - Grouped Bets:', groupedArray);
           setLoading(false);
         }
       } catch (e) {
@@ -120,6 +130,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           setUserBets([]);
           setBudget({ total: 250, used: 0, available: 250 });
           setJornada(null);
+          setJornadaStatus(null);
           setLoading(false);
         }
       }
@@ -127,7 +138,94 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return () => { mounted = false; };
   }, [ligaId, ligaName]);
 
-  // Todas las acciones de crear/editar/eliminar apuestas se han deshabilitado (bloqueo de jornada)
+  // Helpers y handlers para crear/editar/eliminar apuestas cuando la jornada está abierta
+
+  const refreshBets = async () => {
+    if (!ligaId) return;
+    try {
+      const [budgetData, userBetsData, leagueBetsData, statusResp] = await Promise.all([
+        BetService.getBettingBudget(ligaId),
+        BetService.getUserBets(ligaId),
+        BetService.getLeagueBets(ligaId),
+        JornadaService.getJornadaStatus(ligaId),
+      ]);
+      setBudget(budgetData);
+      setUserBets(userBetsData);
+      setLeagueBets(leagueBetsData);
+      setJornadaStatus(statusResp.status);
+    } catch (err: any) {
+      console.warn('Error refreshing bets/budget:', err?.message || err);
+    }
+  };
+
+  const setAmountForKey = (key: string, value: string) => {
+    // Solo números y punto
+    const sanitized = value.replace(/[^0-9.]/g, '');
+    setAmountInputs((prev) => ({ ...prev, [key]: sanitized }));
+  };
+
+  const handlePlaceBet = async (key: string, params: { matchId: number; betType: string; betLabel: string; odd: number }) => {
+    if (!ligaId) return;
+    const raw = amountInputs[key] ?? '';
+    const amount = parseFloat(raw);
+    if (!raw || isNaN(amount) || amount <= 0) {
+      showError('Introduce una cantidad válida');
+      return;
+    }
+    try {
+      setSavingBet(key);
+      await BetService.placeBet({
+        leagueId: ligaId,
+        matchId: params.matchId,
+        betType: params.betType,
+        betLabel: params.betLabel,
+        odd: params.odd,
+        amount,
+      });
+      showSuccess('Apuesta realizada');
+      // limpiar input del grupo (evitar reusar importe)
+      setAmountInputs((prev) => ({ ...prev, [key]: '' }));
+      await refreshBets();
+    } catch (err: any) {
+      showError(err?.message || 'Error al crear apuesta');
+    } finally {
+      setSavingBet(null);
+    }
+  };
+
+  const handleUpdateBet = async (key: string, betId: string) => {
+    if (!ligaId) return;
+    const raw = amountInputs[key] ?? '';
+    const amount = parseFloat(raw);
+    if (!raw || isNaN(amount) || amount <= 0) {
+      showError('Introduce una cantidad válida');
+      return;
+    }
+    try {
+      setSavingBet(key);
+      await BetService.updateBetAmount(ligaId, betId, amount);
+      showSuccess('Apuesta actualizada');
+      await refreshBets();
+    } catch (err: any) {
+      showError(err?.message || 'Error al actualizar apuesta');
+    } finally {
+      setSavingBet(null);
+    }
+  };
+
+  const handleDeleteBet = async (key: string, betId: string) => {
+    if (!ligaId) return;
+    try {
+      setSavingBet(key);
+      await BetService.deleteBet(ligaId, betId);
+      showSuccess('Apuesta eliminada');
+      await refreshBets();
+    } catch (err: any) {
+      showError(err?.message || 'Error al eliminar apuesta');
+    } finally {
+      setSavingBet(null);
+    }
+  };
 
   const showSuccess = (message: string) => {
     setSuccessMessage(message);
@@ -139,13 +237,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     setTimeout(() => setErrorMessage(null), 3000);
   };
 
-  // Se eliminan manejadores de crear/editar/eliminar apuestas para vista de solo lectura
-
-  // Edición de apuestas deshabilitada
-
-  // Eliminación de apuestas deshabilitada
-
-  // Cálculos de ganancias potenciales no son necesarios en modo lectura
+  // Cálculos de ganancias potenciales los devuelve el backend con la apuesta del usuario
 
   // Función auxiliar para verificar si una opción tiene apuesta del usuario
   const getUserBetForOption = (matchId: number, betType: string, betLabel: string): UserBet | undefined => {
@@ -153,6 +245,23 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       (bet) => bet.matchId === matchId && bet.betType === betType && bet.betLabel === betLabel
     );
   };
+
+  // Normalizar etiquetas para comparar (quita tildes, espacios extra y mayúsculas/minúsculas)
+  const normalizeLabel = (s: string) =>
+    (s || '')
+      .toString()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // quitar tildes
+      .replace(/\s+/g, ' ') // colapsar espacios
+      .trim()
+      .toLowerCase();
+
+  const normalizeType = (s: string) =>
+    (s || '')
+      .toString()
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
 
   // Función para verificar si existe alguna apuesta en el grupo (mismo matchId + betType)
   const hasAnyBetInGroup = (matchId: number, betType: string): boolean => {
@@ -301,6 +410,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   <Text style={{ color: '#94a3b8', fontSize: 14, fontWeight: '600' }}>Disponible:</Text>
                   <Text style={{ color: '#22c55e', fontSize: 16, fontWeight: '800' }}>{budget.available}M</Text>
                 </View>
+                {jornadaStatus && (
+                  <View style={{ marginTop: 10, padding: 8, borderRadius: 8, backgroundColor: jornadaStatus === 'open' ? '#052e16' : '#3f1d1d', borderWidth: 1, borderColor: jornadaStatus === 'open' ? '#16a34a' : '#ef4444' }}>
+                    <Text style={{ color: jornadaStatus === 'open' ? '#86efac' : '#fecaca', fontWeight: '700' }}>
+                      {jornadaStatus === 'open' ? 'JORNADA ABIERTA PARA CAMBIOS' : 'JORNADA CERRADA PARA CAMBIOS'}
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
 
@@ -380,11 +496,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     {b.type}
                   </Text>
 
-                  {/* TODAS las opciones - Solo lectura */}
+                  {/* Opciones: interactivas si jornada está abierta, lectura si cerrada */}
                   {b.options.map((option, optionIndex) => {
                     const betKey = `${b.matchId}-${b.type}-${optionIndex}`;
-                    // Modo lectura: no inputs ni botones
-                    
+                    const isJornadaOpen = jornadaStatus === 'open';
                     // Verificar si el usuario ya apostó en esta opción
                     const userBet = getUserBetForOption(b.matchId, b.type, option.label);
                     const groupHasBet = hasAnyBetInGroup(b.matchId, b.type);
@@ -400,11 +515,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           borderWidth: userBet ? 2 : 1,
                           borderColor: userBet ? '#3b82f6' : isBlocked ? '#1e293b' : '#334155',
                           marginBottom: optionIndex < b.options.length - 1 ? 8 : 0,
-                          opacity: isBlocked ? 0.5 : 1,
+                          opacity: isBlocked && isJornadaOpen ? 0.5 : 1,
                         }}
                       >
                         {/* Indicador de bloqueado */}
-                        {isBlocked && (
+                        {isBlocked && isJornadaOpen && (
                           <View style={{
                             backgroundColor: '#7f1d1d',
                             borderRadius: 6,
@@ -439,8 +554,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           </View>
                         </View>
 
-                        {/* Si el usuario ya apostó - Mostrar info de apuesta (solo lectura) */}
-                        {userBet && ligaId && (
+                        {/* Si el usuario ya apostó */}
+                        {userBet && ligaId && isJornadaOpen && (
                           <View style={{
                             backgroundColor: '#1e293b',
                             borderRadius: 8,
@@ -461,11 +576,132 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     </Text>
                                   </View>
                                 </View>
-                            {/* Sin botones de editar/eliminar ni inputs */}
+                            {/* Controles de edición si jornada abierta */}
+                            {isJornadaOpen ? (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <TextInput
+                                  value={amountInputs[betKey] ?? String(userBet.amount)}
+                                  onChangeText={(t) => setAmountForKey(betKey, t)}
+                                  keyboardType="decimal-pad"
+                                  placeholder="Cantidad"
+                                  placeholderTextColor="#64748b"
+                                  style={{
+                                    flex: 1,
+                                    backgroundColor: '#0b1220',
+                                    borderWidth: 1,
+                                    borderColor: '#334155',
+                                    color: '#e5e7eb',
+                                    paddingHorizontal: 10,
+                                    paddingVertical: 8,
+                                    borderRadius: 8,
+                                    marginRight: 8,
+                                  }}
+                                />
+                                <TouchableOpacity
+                                  onPress={() => handleUpdateBet(betKey, userBet.id)}
+                                  disabled={savingBet === betKey}
+                                  style={{
+                                    backgroundColor: '#2563eb',
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 10,
+                                    borderRadius: 8,
+                                    opacity: savingBet === betKey ? 0.6 : 1,
+                                    marginRight: 8,
+                                  }}
+                                >
+                                  <Text style={{ color: '#fff', fontWeight: '700' }}>Actualizar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  onPress={() => handleDeleteBet(betKey, userBet.id)}
+                                  disabled={savingBet === betKey}
+                                  style={{
+                                    backgroundColor: '#7f1d1d',
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 10,
+                                    borderRadius: 8,
+                                    opacity: savingBet === betKey ? 0.6 : 1,
+                                  }}
+                                >
+                                  <Text style={{ color: '#fecaca', fontWeight: '700' }}>Eliminar</Text>
+                                </TouchableOpacity>
+                              </View>
+                            ) : null}
+                          </View>
+                        )}
+                        {/* Si no hay apuesta del usuario en este grupo y la jornada está abierta, permitir apostar */}
+                        {!userBet && !isBlocked && ligaId && isJornadaOpen && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                            <TextInput
+                              value={amountInputs[betKey] ?? ''}
+                              onChangeText={(t) => setAmountForKey(betKey, t)}
+                              keyboardType="decimal-pad"
+                              placeholder="Cantidad"
+                              placeholderTextColor="#64748b"
+                              style={{
+                                flex: 1,
+                                backgroundColor: '#0b1220',
+                                borderWidth: 1,
+                                borderColor: '#334155',
+                                color: '#e5e7eb',
+                                paddingHorizontal: 10,
+                                paddingVertical: 8,
+                                borderRadius: 8,
+                                marginRight: 8,
+                              }}
+                            />
+                            <TouchableOpacity
+                              onPress={() => handlePlaceBet(betKey, { matchId: b.matchId, betType: b.type, betLabel: option.label, odd: option.odd })}
+                              disabled={savingBet === betKey}
+                              style={{
+                                backgroundColor: '#16a34a',
+                                paddingHorizontal: 16,
+                                paddingVertical: 10,
+                                borderRadius: 8,
+                                opacity: savingBet === betKey ? 0.6 : 1,
+                              }}
+                            >
+                              <Text style={{ color: '#ecfdf5', fontWeight: '800' }}>Apostar</Text>
+                            </TouchableOpacity>
                           </View>
                         )}
 
-                        {/* Sin input de cantidad ni botón de apostar en modo lectura */}
+                        {/* En jornada cerrada: mostrar jugadores y cantidades que apostaron en esta opción */}
+                        {!isJornadaOpen && ligaId && (
+                          (() => {
+                            const betsForOption = leagueBets.filter((betItem) =>
+                              betItem.matchId === b.matchId &&
+                              normalizeType(betItem.betType) === normalizeType(b.type) &&
+                              normalizeLabel(betItem.betLabel) === normalizeLabel(option.label)
+                            );
+                            console.log('🔍 Filtering bets for option:', {
+                              matchId: b.matchId,
+                              type: b.type,
+                              label: option.label,
+                              normalizedType: normalizeType(b.type),
+                              normalizedLabel: normalizeLabel(option.label),
+                              totalLeagueBets: leagueBets.length,
+                              betsForOption: betsForOption.length,
+                              betsForOptionData: betsForOption
+                            });
+                            if (betsForOption.length === 0) return null;
+                            return (
+                              <View style={{
+                                backgroundColor: '#0b1220',
+                                borderWidth: 1,
+                                borderColor: '#334155',
+                                borderRadius: 8,
+                                padding: 10,
+                                marginTop: 8,
+                              }}>
+                                {betsForOption.map((bf) => (
+                                  <Text key={bf.id} style={{ color: '#e5e7eb', paddingVertical: 4 }} numberOfLines={2}>
+                                    {(bf.userName || 'Jugador') + ' ha apostado ' + bf.amount + 'M'}
+                                  </Text>
+                                ))}
+                              </View>
+                            );
+                          })()
+                        )}
                       </View>
                     );
                   })}
@@ -473,46 +709,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               ))
             )}
 
-            {/* Apuestas de todos los participantes de la liga (jornada actual) */}
-            {ligaId && (
-              <View style={{ marginTop: 16 }}>
-                <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '800', marginBottom: 8 }}>
-                  Apuestas de la liga
-                </Text>
-                {leagueBets.length === 0 ? (
-                  <Text style={{ color: '#94a3b8' }}>Nadie ha apostado aún.</Text>
-                ) : (
-                  leagueBets.map((bet) => (
-                    <View
-                      key={bet.id}
-                      style={{
-                        backgroundColor: '#0f172a',
-                        borderWidth: 1,
-                        borderColor: '#334155',
-                        borderRadius: 10,
-                        padding: 12,
-                        marginBottom: 8,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: '#e5e7eb', fontWeight: '700' }}>
-                          {bet.userName || 'Jugador'}
-                        </Text>
-                        <Text style={{ color: '#22c55e', fontWeight: '800' }}>
-                          {bet.amount}M
-                        </Text>
-                      </View>
-                      <Text style={{ color: '#93c5fd', marginTop: 4, fontSize: 12 }}>
-                        {bet.betType}
-                      </Text>
-                      <Text style={{ color: '#94a3b8', marginTop: 2 }}>
-                        {bet.betLabel} · cuota {bet.odd.toFixed(2)}
-                      </Text>
-                    </View>
-                  ))
-                )}
-              </View>
-            )}
           </ScrollView>
           <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
           

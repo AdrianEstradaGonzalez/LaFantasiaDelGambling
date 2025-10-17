@@ -182,12 +182,14 @@ const Dropdown = ({
   label, 
   value, 
   onValueChange, 
-  items 
+  items,
+  disabled = false
 }: { 
   label: string; 
   value: any; 
   onValueChange: (value: any) => void; 
-  items: { label: string; value: any }[] 
+  items: { label: string; value: any }[];
+  disabled?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectedLabel = items.find(item => item.value === value)?.label || label;
@@ -197,20 +199,22 @@ const Dropdown = ({
       <Text style={{ color: '#94a3b8', marginBottom: 6 }}>{label}</Text>
       <View>
         <TouchableOpacity
-          onPress={() => setIsOpen(!isOpen)}
+          onPress={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
           style={{
-            backgroundColor: '#1a2332',
+            backgroundColor: disabled ? '#0f1624' : '#1a2332',
             borderWidth: 1,
-            borderColor: '#334155',
+            borderColor: disabled ? '#1e293b' : '#334155',
             borderRadius: 10,
             paddingHorizontal: 12,
             paddingVertical: 12,
             flexDirection: 'row',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            opacity: disabled ? 0.6 : 1
           }}
         >
-          <Text style={{ color: '#fff', flex: 1 }}>{selectedLabel}</Text>
+          <Text style={{ color: disabled ? '#64748b' : '#fff', flex: 1 }}>{selectedLabel}</Text>
           <Text style={{ color: '#94a3b8', fontSize: 16 }}>{isOpen ? '▲' : '▼'}</Text>
         </TouchableOpacity>
         {isOpen && (
@@ -1016,6 +1020,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         <Dropdown
           label="Formación"
           value={selectedFormation.id}
+          disabled={jornadaStatus === 'closed'}
           onValueChange={async (formationId) => {
             const formation = formations.find(f => f.id === formationId);
             if (formation && ligaId) {
@@ -1664,7 +1669,6 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   paddingVertical: 8,
                   borderBottomWidth: 1,
                   borderBottomColor: '#334155',
-                  backgroundColor: isCaptain ? 'rgba(255, 215, 0, 0.1)' : 'transparent'
                 }}>
                   <View style={{
                     width: 24,
@@ -1720,16 +1724,6 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                       <Text style={{ color: isCaptain ? '#ffd700' : '#cbd5e1', fontWeight: isCaptain ? '700' : '600' }}>
                         {player.name}
                       </Text>
-                      {isCaptain && (
-                        <View style={{
-                          backgroundColor: '#ffd700',
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 6
-                        }}>
-                          <Text style={{ color: '#000', fontSize: 10, fontWeight: 'bold' }}>CAPITÁN</Text>
-                        </View>
-                      )}
                       {player.price && (
                         <View style={{
                           backgroundColor: '#10b981',
@@ -1763,13 +1757,15 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   
                   <TouchableOpacity
                     onPress={() => removePlayer(positionId)}
+                    disabled={jornadaStatus === 'closed'}
                     style={{
-                      backgroundColor: '#ef4444',
+                      backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444',
                       borderRadius: 12,
                       width: 24,
                       height: 24,
                       justifyContent: 'center',
-                      alignItems: 'center'
+                      alignItems: 'center',
+                      opacity: jornadaStatus === 'closed' ? 0.6 : 1
                     }}
                   >
                     <DeleteIcon size={14} color="#fff" />

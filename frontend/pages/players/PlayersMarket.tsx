@@ -789,18 +789,18 @@ export const PlayersMarket = ({ navigation, route }: {
               // Botón de vender para jugadores fichados
               <TouchableOpacity
                 onPress={() => handleSellPlayer(p)}
-                disabled={isSaving}
+                disabled={isSaving || jornadaStatus === 'closed'}
                 style={{ 
-                  backgroundColor: '#ef4444', 
+                  backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444', 
                   paddingHorizontal: 12, 
                   paddingVertical: 8, 
                   borderRadius: 8,
-                  shadowColor: '#ef4444',
+                  shadowColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.3,
                   shadowRadius: 4,
                   elevation: 4,
-                  opacity: isSaving ? 0.6 : 1
+                  opacity: (isSaving || jornadaStatus === 'closed') ? 0.6 : 1
                 }}
               >
                 <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>VENDER</Text>

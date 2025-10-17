@@ -336,6 +336,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
   // Función para vender jugador
   const handleSellPlayer = async () => {
     if (!ligaId) return;
+    if (jornadaStatus === 'closed') return; // bloqueado
 
     try {
       setIsBuying(true);
@@ -571,21 +572,21 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   {playerInSquad ? (
                     <TouchableOpacity
                       onPress={handleSellPlayer}
-                      disabled={isBuying}
+                      disabled={isBuying || jornadaStatus === 'closed'}
                       style={{ 
                         flex: 1,
-                        backgroundColor: '#ef4444',
+                        backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444',
                         borderRadius: 12,
                         paddingVertical: 10,
                         paddingHorizontal: 12,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        shadowColor: '#ef4444',
+                        shadowColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444',
                         shadowOffset: { width: 0, height: 2 },
                         shadowOpacity: 0.3,
                         shadowRadius: 4,
                         elevation: 4,
-                        opacity: isBuying ? 0.6 : 1
+                        opacity: (isBuying || jornadaStatus === 'closed') ? 0.6 : 1
                       }}
                       activeOpacity={0.7}
                     >

@@ -5,6 +5,8 @@ import { RouteProp, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SquadService, Squad } from '../../services/SquadService';
 import { JornadaService } from '../../services/JornadaService';
+import FootballService from '../../services/FutbolService';
+import { PlayerService } from '../../services/PlayerService';
 import LoadingScreen from '../../components/LoadingScreen';
 import { ChevronLeftIcon } from '../../components/VectorIcons';
 
@@ -119,6 +121,9 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
   const { ligaId, ligaName, userId, userName } = route.params;
   const [loading, setLoading] = useState(true);
   const [squad, setSquad] = useState<Squad | null>(null);
+  const [playerPhotos, setPlayerPhotos] = useState<Record<number, { photo?: string; teamCrest?: string }>>({});
+  const [playerPoints, setPlayerPoints] = useState<Record<number, number | null>>({});
+  const [currentJornada, setCurrentJornada] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -126,13 +131,48 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         setLoading(true);
         const s = await SquadService.getSquadByUser(ligaId, userId);
         setSquad(s);
+        // Jornada actual
+        try {
+          const status = await JornadaService.getJornadaStatus(ligaId);
+          setCurrentJornada(status.currentJornada);
+        } catch {}
+        // Cargar fotos y puntos si hay plantilla
+        if (s && s.players && s.players.length) {
+          const ids = s.players.map(p => p.playerId);
+          // Fotos
+          try {
+            const details = await Promise.all(ids.map(async (id) => {
+              try {
+                const det = await PlayerService.getPlayerById(id);
+                return { id, photo: det.photo, teamCrest: det.teamCrest };
+              } catch {
+                return { id, photo: undefined, teamCrest: undefined };
+              }
+            }));
+            const photosMap: Record<number, { photo?: string; teamCrest?: string }> = {};
+            for (const d of details) photosMap[d.id] = { photo: d.photo, teamCrest: d.teamCrest };
+            setPlayerPhotos(photosMap);
+          } catch {}
+
+          // Puntos de la jornada actual (si la tenemos)
+          if (currentJornada != null) {
+            try {
+              const rolesById: Record<number, 'POR'|'DEF'|'CEN'|'DEL'> = {};
+              for (const sp of s.players) rolesById[sp.playerId] = (sp.role as any);
+              const ptsMap = await FootballService.getPlayersPointsForJornada(currentJornada, ids, rolesById);
+              const pointsWithDefaults: Record<number, number | null> = {};
+              for (const id of ids) pointsWithDefaults[id] = ptsMap[id] ?? null;
+              setPlayerPoints(pointsWithDefaults);
+            } catch {}
+          }
+        }
       } catch (e) {
         setSquad(null);
       } finally {
         setLoading(false);
       }
     })();
-  }, [ligaId, userId]);
+  }, [ligaId, userId, currentJornada]);
 
   if (loading) return <LoadingScreen />;
 
@@ -157,33 +197,71 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
 
       <ScrollView style={{ flex: 1, paddingTop: 60 }} contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={{ backgroundColor: '#0f172a', borderBottomColor: '#334155' }}>
-          {/* Campo táctico */}
+          {/* Campo de fútbol (mismo estilo que MiPlantilla) */}
           <View style={{
             backgroundColor: '#0a1628',
-            borderRadius: 14,
+            borderRadius: 16,
             borderWidth: 1,
             borderColor: '#334155',
             overflow: 'hidden',
             padding: 14,
-            alignItems: 'center'
           }}>
-            <View style={{ width: '100%', aspectRatio: 9/16, backgroundColor: '#0b1220', borderRadius: 8, position: 'relative' }}>
-              {/* Líneas del campo */}
-              <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderColor: '#1f2937' }} />
+            <View style={{
+              backgroundColor: '#0f0f0f',
+              borderRadius: 16,
+              height: 500,
+              position: 'relative',
+              marginBottom: 0,
+              borderWidth: 3,
+              borderColor: '#fff',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 8,
+              overflow: 'hidden'
+            }}>
+              {/* Línea central */}
+              <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, backgroundColor: '#fff', opacity: 0.9 }} />
+              {/* Círculo central */}
+              <View style={{ position: 'absolute', top: '50%', left: '50%', width: 80, height: 80, borderRadius: 40, borderWidth: 2, borderColor: '#fff', opacity: 0.9, marginLeft: -40, marginTop: -40 }} />
+              {/* Punto central */}
+              <View style={{ position: 'absolute', top: '50%', left: '50%', width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff', marginLeft: -3, marginTop: -3 }} />
+              {/* Áreas del portero (arriba/abajo) */}
+              <View style={{ position: 'absolute', top: 0, left: '25%', width: '50%', height: 70, borderBottomWidth: 2, borderLeftWidth: 2, borderRightWidth: 2, borderColor: '#fff', opacity: 0.9 }} />
+              <View style={{ position: 'absolute', top: 0, left: '35%', width: '30%', height: 35, borderBottomWidth: 2, borderLeftWidth: 2, borderRightWidth: 2, borderColor: '#fff', opacity: 0.9 }} />
+              <View style={{ position: 'absolute', bottom: 0, left: '25%', width: '50%', height: 70, borderTopWidth: 2, borderLeftWidth: 2, borderRightWidth: 2, borderColor: '#fff', opacity: 0.9 }} />
+              <View style={{ position: 'absolute', bottom: 0, left: '35%', width: '30%', height: 35, borderTopWidth: 2, borderLeftWidth: 2, borderRightWidth: 2, borderColor: '#fff', opacity: 0.9 }} />
 
               {squad && formationPositions[squad.formation]?.map(position => {
                 const player = squad.players.find(p => p.position === position.id);
+                const pid = player?.playerId;
+                const photo = pid ? playerPhotos[pid]?.photo : undefined;
+                const crest = pid ? playerPhotos[pid]?.teamCrest : undefined;
+                const points = pid != null ? playerPoints[pid] : null;
                 return (
                   <View key={position.id} style={{ position: 'absolute', left: `${position.x}%`, top: `${position.y}%`, width: 80, height: 105, marginLeft: -40, marginTop: -52, alignItems: 'center' }}>
                     {player ? (
                       <View style={{ alignItems: 'center' }}>
-                        <View style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 2, borderColor: player.isCaptain ? '#ffd700' : '#0892D0', backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8 }}>
-                          <Image source={{ uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2` }} style={{ width: 66, height: 66, borderRadius: 33 }} resizeMode="cover" />
+                        <View style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 2, borderColor: player.isCaptain ? '#ffd700' : '#0892D0', backgroundColor: '#0b1220', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8, position: 'relative', overflow: 'visible' }}>
+                          <View style={{ overflow: 'hidden', borderRadius: 33, width: 66, height: 66 }}>
+                            <Image source={{ uri: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2` }} style={{ width: 66, height: 66, borderRadius: 33 }} resizeMode="cover" />
+                          </View>
+                          {/* Escudo del equipo */}
+                          {crest && (
+                            <View style={{ position: 'absolute', top: -2, right: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 4 }}>
+                              <Image source={{ uri: crest }} style={{ width: 20, height: 20, borderRadius: 10 }} resizeMode="contain" />
+                            </View>
+                          )}
                           {player.isCaptain && (
                             <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#ffd700', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#b45309' }}>
                               <Text style={{ color: '#1f2937', fontWeight: '900', fontSize: 10 }}>C</Text>
                             </View>
                           )}
+                          {/* Badge de puntos - arriba derecha */}
+                          <View style={{ position: 'absolute', top: -8, left: -8, width: 32, height: 32, borderRadius: 16, backgroundColor: '#0892D0', borderWidth: 2, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, elevation: 5 }}>
+                            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>{points != null ? points : '-'}</Text>
+                          </View>
                         </View>
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginTop: 8 }} numberOfLines={1}>
                           {player.playerName}

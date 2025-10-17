@@ -429,6 +429,131 @@ export default class FootballService {
     return { jornada: jornadaDevuelta, partidos };
   }
 
+  // ======= Points calculation (frontend) =======
+  private static mapRoleCode(role: 'POR'|'DEF'|'CEN'|'DEL'): 'GK'|'DEF'|'MID'|'ATT' {
+    switch (role) {
+      case 'POR': return 'GK';
+      case 'DEF': return 'DEF';
+      case 'CEN': return 'MID';
+      case 'DEL': return 'ATT';
+      default: return 'MID';
+    }
+  }
+
+  private static calculatePlayerPoints(stats: any, roleCode: 'POR'|'DEF'|'CEN'|'DEL'): number {
+    if (!stats || !stats.games) return 0;
+    const role = this.mapRoleCode(roleCode);
+
+    let points = 0;
+    const minutes = stats.games?.minutes || 0;
+
+    // Base general
+    if (minutes > 0 && minutes < 45) points += 1;
+    else if (minutes >= 45) points += 2;
+
+    const goals = stats.goals || {};
+    const cards = stats.cards || {};
+    const penalty = stats.penalty || {};
+    const passes = stats.passes || {};
+    const shots = stats.shots || {};
+    const dribbles = stats.dribbles || {};
+    const tackles = stats.tackles || {};
+    const duels = stats.duels || {};
+    const fouls = stats.fouls || {};
+
+    points += (goals.assists || 0) * 3;
+    points -= (cards.yellow || 0) * 1;
+    points -= (cards.red || 0) * 3;
+    points += (penalty.won || 0) * 2;
+    points -= (penalty.committed || 0) * 2;
+    points += (penalty.scored || 0) * 3;
+    points -= (penalty.missed || 0) * 2;
+
+    // Específico por posición
+    if (role === 'GK') {
+      const conceded = stats.goals?.conceded || 0;
+      if (minutes >= 60 && conceded === 0) points += 5;
+      points -= conceded * 2;
+      points += (stats.goals?.saves || 0) * 1;
+      points += (penalty.saved || 0) * 5;
+      points += (goals.total || 0) * 10;
+      points += Math.floor((tackles.interceptions || 0) / 5);
+    } else if (role === 'DEF') {
+      const conceded = stats.goals?.conceded || 0;
+      if (minutes >= 60 && conceded === 0) points += 4;
+      points += (goals.total || 0) * 6;
+      points += Math.floor((duels.won || 0) / 2);
+      points += Math.floor((tackles.interceptions || 0) / 5);
+      points -= conceded * 1;
+      points += (shots.on || 0) * 1;
+    } else if (role === 'MID') {
+      const conceded = stats.goals?.conceded || 0;
+      if (minutes >= 60 && conceded === 0) points += 1;
+      points += (goals.total || 0) * 5;
+      points -= Math.floor(conceded / 2);
+      points += (passes.key || 0) * 1;
+      points += Math.floor((dribbles.success || 0) / 2);
+      points += Math.floor((fouls.drawn || 0) / 3);
+      points += Math.floor((tackles.interceptions || 0) / 3);
+      points += (shots.on || 0) * 1;
+    } else if (role === 'ATT') {
+      points += (goals.total || 0) * 4;
+      points += (passes.key || 0) * 1;
+      points += Math.floor((fouls.drawn || 0) / 3);
+      points += Math.floor((dribbles.success || 0) / 2);
+      points += (shots.on || 0) * 1;
+    }
+
+    return points;
+  }
+
+  /**
+   * Obtener puntos por jugador para una jornada (usando API-FOOTBALL)
+   * Hace 1 llamada para fixtures + ~10 llamadas (una por partido) para stats de jugadores.
+   */
+  static async getPlayersPointsForJornada(jornada: number, playerIds: number[], rolesById: Record<number, 'POR'|'DEF'|'CEN'|'DEL'>): Promise<Record<number, number>> {
+    const pointsMap: Record<number, number> = {};
+    if (!playerIds.length) return pointsMap;
+    try {
+      const fixtures = await this.getAllMatchesWithJornadas(jornada);
+      if (!fixtures || fixtures.length === 0) return pointsMap;
+
+      const wanted = new Set(playerIds);
+      // For each fixture, get players stats and check for our players
+      for (const fx of fixtures) {
+        try {
+          const { data } = await axios.get(`${API_BASE}/fixtures/players`, {
+            headers: HEADERS,
+            timeout: 12000,
+            params: { fixture: fx.id },
+          });
+          const teamsData = data?.response || [];
+          for (const teamData of teamsData) {
+            const plist = teamData.players || [];
+            for (const p of plist) {
+              const pid = p?.player?.id;
+              if (!pid || !wanted.has(pid)) continue;
+              const stats = p?.statistics?.[0];
+              const roleCode = rolesById[pid] ?? 'CEN';
+              const pts = this.calculatePlayerPoints(stats, roleCode);
+              pointsMap[pid] = (pointsMap[pid] ?? 0) + pts;
+              // Once found, remove to reduce future checks
+              wanted.delete(pid);
+            }
+          }
+          // Small delay to be gentle
+          await new Promise(r => setTimeout(r, 100));
+          if (wanted.size === 0) break;
+        } catch (e) {
+          // ignore fixture errors to allow partial results
+        }
+      }
+    } catch (e) {
+      // ignore errors, return what we have
+    }
+    return pointsMap;
+  }
+
   static async getFormattedAndAdvance(): Promise<{ jornada: number; items: string[] }> {
     const { jornada, partidos } = await FootballService.getMatchesForCurrentAndAdvance();
     const items = partidos.map(p => `${p.local} - ${p.visitante} - ${p.hora ?? "--:--"}`);
