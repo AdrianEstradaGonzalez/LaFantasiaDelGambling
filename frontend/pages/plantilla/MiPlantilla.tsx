@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Animated, PanResponder, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Animated, PanResponder, ActivityIndicator, Modal } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -8,8 +8,9 @@ import { SquadService } from '../../services/SquadService';
 import { PlayerService } from '../../services/PlayerService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon } from '../../components/VectorIcons';
+import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
+import { DrawerMenu } from '../../components/DrawerMenu';
 
 type Formation = {
   id: string;
@@ -270,6 +271,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [budget, setBudget] = useState<number>(0);
   const [targetPosition, setTargetPosition] = useState<string | null>(null);
   
+  // Estados para el drawer
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const drawerSlideAnim = useRef(new Animated.Value(-300)).current;
+  
   // Estados para las pestaÃ±as (AlineaciÃ³n / PuntuaciÃ³n)
   const [activeTab, setActiveTab] = useState<'alineacion' | 'puntuacion'>('alineacion');
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -293,6 +298,23 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     };
     fetchCurrentMatchday();
   }, []);
+  
+  // Animación del drawer
+  useEffect(() => {
+    if (isDrawerOpen) {
+      Animated.timing(drawerSlideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(drawerSlideAnim, {
+        toValue: -300,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isDrawerOpen, drawerSlideAnim]);
   
   // Listener para cuando se selecciona un jugador desde PlayersMarket
   useEffect(() => {
@@ -851,14 +873,26 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               paddingHorizontal: 16,
               flexDirection: 'row',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'space-between'
             }}>
+              {/* Botón de menú a la izquierda */}
+              <TouchableOpacity 
+                onPress={() => setIsDrawerOpen(true)}
+                style={{ 
+                  padding: 8,
+                  marginLeft: -8
+                }}
+              >
+                <MenuIcon size={24} color="#fff" />
+              </TouchableOpacity>
+
               <Text
                 style={{
                   color: '#fff',
                   fontSize: 20,
                   fontWeight: '700',
                   textAlign: 'center',
+                  flex: 1,
                 }}
                 numberOfLines={1}
               >
@@ -867,6 +901,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   {ligaName.toUpperCase()}
                 </Text>
               </Text>
+
+              {/* Espacio para equilibrar el diseño */}
+              <View style={{ width: 40 }} />
             </View>
           )}
 
@@ -1742,6 +1779,42 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               </View>
             </View>
           )}
+          
+          {/* Drawer Modal */}
+          <Modal
+            visible={isDrawerOpen}
+            animationType="none"
+            transparent={true}
+            onRequestClose={() => setIsDrawerOpen(false)}
+          >
+            <View style={{ flex: 1, flexDirection: 'row' }}>
+              {/* Drawer content con animación */}
+              <Animated.View 
+                style={{ 
+                  width: '75%', 
+                  maxWidth: 300,
+                  transform: [{ translateX: drawerSlideAnim }]
+                }}
+              >
+                <DrawerMenu 
+                  navigation={{
+                    ...navigation,
+                    closeDrawer: () => setIsDrawerOpen(false),
+                    reset: (state: any) => {
+                      navigation.reset(state);
+                      setIsDrawerOpen(false);
+                    },
+                  }} 
+                />
+              </Animated.View>
+              {/* Overlay to close drawer */}
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+                activeOpacity={1}
+                onPress={() => setIsDrawerOpen(false)}
+              />
+            </View>
+          </Modal>
           
         </LinearGradient>
       )}

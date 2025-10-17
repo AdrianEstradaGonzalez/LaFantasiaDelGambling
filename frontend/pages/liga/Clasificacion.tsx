@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Modal, Animated } from 'react-native';
 import { ClasificacionStyles as styles } from '../../styles/ClasificacionStyles';
 import LinearGradient from 'react-native-linear-gradient';
 import { RouteProp, useRoute } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import LigaTopNavBar from '../navBar/LigaTopNavBar';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LoadingScreen from '../../components/LoadingScreen';
 import FootballService from '../../services/FutbolService';
+import { DrawerMenu } from '../../components/DrawerMenu';
 
 type UsuarioClasificacion = {
   id: string;
@@ -36,6 +37,25 @@ export const Clasificacion = () => {
   const [selectedJornada, setSelectedJornada] = useState<number | 'Total'>('Total');
   const [availableJornadas, setAvailableJornadas] = useState<number[]>([]);
   const [showJornadaPicker, setShowJornadaPicker] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-300)).current;
+
+  // Animar drawer
+  useEffect(() => {
+    if (isDrawerOpen) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: -300,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isDrawerOpen, slideAnim]);
 
   useEffect(() => {
     const fetchClasificacion = async () => {
@@ -124,6 +144,7 @@ export const Clasificacion = () => {
               codigo: codigoLiga,
               ligaId: ligaId
             })}
+            onMenuPress={() => setIsDrawerOpen(true)}
           />
           {/* Header */}
           <View style={styles.header}>
@@ -395,6 +416,40 @@ export const Clasificacion = () => {
 
           {/* Barra inferior */}
           <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+
+          {/* Drawer Modal */}
+          <Modal
+            visible={isDrawerOpen}
+            animationType="none"
+            transparent={true}
+            onRequestClose={() => setIsDrawerOpen(false)}
+          >
+            <View style={{ flex: 1, flexDirection: 'row' }}>
+              <Animated.View 
+                style={{ 
+                  width: '75%', 
+                  maxWidth: 300,
+                  transform: [{ translateX: slideAnim }]
+                }}
+              >
+                <DrawerMenu 
+                  navigation={{
+                    ...navigation,
+                    closeDrawer: () => setIsDrawerOpen(false),
+                    reset: (state: any) => {
+                      navigation.reset(state);
+                      setIsDrawerOpen(false);
+                    },
+                  }} 
+                />
+              </Animated.View>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+                activeOpacity={1}
+                onPress={() => setIsDrawerOpen(false)}
+              />
+            </View>
+          </Modal>
         </LinearGradient>
       )}
     </>

@@ -88,6 +88,9 @@ export const LoginStyles = StyleSheet.create({
   // Input styles - responsive
   inputContainer: {
     marginBottom: Spacing.sm,
+    maxWidth: width * 0.88,
+    alignSelf: 'center',
+    width: '100%',
   },
 
   inputLabel: {
@@ -145,12 +148,15 @@ export const LoginStyles = StyleSheet.create({
     marginLeft: Spacing.xs,
   },
 
-  // Remember me & Forgot password
+  // Forgot password
   optionsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginVertical: Spacing.sm,
+    maxWidth: width * 0.88,
+    alignSelf: 'center',
+    width: '100%',
   },
 
   rememberMeContainer: {
@@ -182,6 +188,9 @@ export const LoginStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: Spacing.sm,
+    maxWidth: width * 0.88,
+    alignSelf: 'center',
+    width: '100%',
     ...Shadows.medium,
   },
 

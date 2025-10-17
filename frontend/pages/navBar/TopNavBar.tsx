@@ -4,16 +4,17 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
 import { Typography } from '../../styles/DesignSystem';
-import { ChevronLeftIcon } from '../../components/VectorIcons';
+import { ChevronLeftIcon, MenuIcon } from '../../components/VectorIcons';
 
 interface TopNavBarProps {
   title?: string;
   backTo?: 'Home' | 'Clasificacion' | 'goBack';
   ligaId?: string;
   ligaName?: string;
+  onMenuPress?: () => void;
 }
 
-const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId, ligaName }) => {
+const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId, ligaName, onMenuPress }) => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
 
   // 👉 Acción inteligente para volver
@@ -39,15 +40,15 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
       zIndex: 10,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: ligaName ? 'space-between' : 'flex-start',
+      justifyContent: 'space-between',
       paddingHorizontal: 16,
     }]}>
       {/* Botón de volver */}
       <TouchableOpacity
         onPress={handleBackPress}
         style={{
-          padding: 4, // Área táctil más grande
-          zIndex: 20, // Asegurar que esté por encima
+          padding: 4,
+          zIndex: 20,
         }}
         activeOpacity={0.8}
       >
@@ -63,8 +64,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
             fontWeight: '700',
             textAlign: 'center',
             flex: 1,
-            marginHorizontal: 8, // Espacio a los lados
-            zIndex: 1, // Por debajo del botón
+            marginHorizontal: 8,
+            zIndex: 1,
           }}
           numberOfLines={1}
         >
@@ -72,8 +73,17 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
         </Text>
       )}
 
-      {/* Espacio a la derecha para balance visual cuando hay título */}
-      {(title || ligaName) && <View style={{ width: 28 }} />}
+      {/* Botón de menú en la derecha */}
+      <TouchableOpacity
+        onPress={onMenuPress}
+        style={{
+          padding: 4,
+          zIndex: 20,
+        }}
+        activeOpacity={0.8}
+      >
+        <MenuIcon size={24} color="#ffffff" />
+      </TouchableOpacity>
     </View>
   );
 };

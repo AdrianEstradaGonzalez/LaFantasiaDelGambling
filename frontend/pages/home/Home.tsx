@@ -260,7 +260,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
           activeOpacity={0.7}
           style={{
             position: 'absolute',
-            top: 20, // Subido de 50 a 40
+            top: 20, 
             left: 10,
             zIndex: 100,
             width: 48,

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
 import { BetService, BettingBudget, Bet as UserBet } from '../../services/BetService';
@@ -7,6 +7,8 @@ import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
 import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon } from '../../components/VectorIcons';
+import { DrawerMenu } from '../../components/DrawerMenu';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Bet = {
   matchId: number;
@@ -37,8 +39,12 @@ type GroupedBet = {
 
 type ApuestasRouteProps = RouteProp<{ params: { ligaId?: string; ligaName?: string } }, 'params'>;
 
-export const Apuestas: React.FC = () => {
-  const route = useRoute<ApuestasRouteProps>();
+type ApuestasProps = {
+  navigation: NativeStackNavigationProp<any>;
+  route: ApuestasRouteProps;
+};
+
+export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
   const [loading, setLoading] = useState(true);
@@ -51,6 +57,10 @@ export const Apuestas: React.FC = () => {
   const [savingBet, setSavingBet] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Estados para el drawer
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-300)).current;
 
   useEffect(() => {
     let mounted = true;
@@ -279,9 +289,22 @@ export const Apuestas: React.FC = () => {
     return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType);
   };
 
-  function setIsDrawerOpen(arg0: boolean): void {
-    throw new Error('Function not implemented.');
-  }
+  // Animación del drawer
+  useEffect(() => {
+    if (isDrawerOpen) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: -300,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isDrawerOpen, slideAnim]);
 
   return (
     <>
@@ -816,6 +839,42 @@ export const Apuestas: React.FC = () => {
             )}
           </ScrollView>
           <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+          
+          {/* Drawer Modal */}
+          <Modal
+            visible={isDrawerOpen}
+            animationType="none"
+            transparent={true}
+            onRequestClose={() => setIsDrawerOpen(false)}
+          >
+            <View style={{ flex: 1, flexDirection: 'row' }}>
+              {/* Drawer content con animación */}
+              <Animated.View 
+                style={{ 
+                  width: '75%', 
+                  maxWidth: 300,
+                  transform: [{ translateX: slideAnim }]
+                }}
+              >
+                <DrawerMenu 
+                  navigation={{
+                    ...navigation,
+                    closeDrawer: () => setIsDrawerOpen(false),
+                    reset: (state: any) => {
+                      navigation.reset(state);
+                      setIsDrawerOpen(false);
+                    },
+                  }} 
+                />
+              </Animated.View>
+              {/* Overlay to close drawer */}
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+                activeOpacity={1}
+                onPress={() => setIsDrawerOpen(false)}
+              />
+            </View>
+          </Modal>
         </LinearGradient>
       )}
     </>

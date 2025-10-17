@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
 import { Typography } from '../../styles/DesignSystem';
+import { MenuIcon } from '../../components/VectorIcons';
 
 // 📸 Icono de invitar (puedes ajustar la ruta del archivo o usar otro icono)
 const inviteIcon = require('../../assets/iconos/inviteIcon.png');
@@ -11,9 +12,10 @@ const inviteIcon = require('../../assets/iconos/inviteIcon.png');
 type Props = {
     nombreLiga: string;
     onInvitePress?: () => void;
+    onMenuPress?: () => void;
 };
 
-const LigaTopNavBar: React.FC<Props> = ({ nombreLiga, onInvitePress }) => {
+const LigaTopNavBar: React.FC<Props> = ({ nombreLiga, onInvitePress, onMenuPress }) => {
     const navigation = useNavigation<NativeStackNavigationProp<any>>();
 
     return (
@@ -35,8 +37,14 @@ const LigaTopNavBar: React.FC<Props> = ({ nombreLiga, onInvitePress }) => {
                 },
             ]}
         >
-            {/* Espacio a la izquierda para balance visual */}
-            <View style={{ width: 28 }} />
+            {/* Botón de menú a la izquierda */}
+            <TouchableOpacity
+                onPress={onMenuPress}
+                style={{ padding: 4 }}
+                activeOpacity={0.8}
+            >
+                <MenuIcon size={24} color="#ffffff" />
+            </TouchableOpacity>
 
             {/* Título centrado */}
             <Text

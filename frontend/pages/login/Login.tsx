@@ -16,7 +16,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { LoginStyles } from '../../styles/AuthStyles';
 import { LoginData, LoginService } from '../../services/LoginService';
-import { CheckIcon, EmailIcon, LockIcon } from '../../components/VectorIcons';
+import { EmailIcon, LockIcon } from '../../components/VectorIcons';
 
 type LoginFormData = { email: string; password: string };
 
@@ -41,7 +41,6 @@ const Login: React.FC<Props> = ({ navigation }) => {
 
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  const [rememberMe, setRememberMe] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -185,24 +184,8 @@ const Login: React.FC<Props> = ({ navigation }) => {
             )}
           />
 
-          {/* Remember Me & Forgot Password */}
+          {/* Forgot Password */}
           <View style={LoginStyles.optionsRow}>
-            <TouchableOpacity
-              style={LoginStyles.rememberMeContainer}
-              onPress={() => setRememberMe(!rememberMe)}
-              activeOpacity={0.7}
-            >
-              <View
-                style={[
-                  LoginStyles.checkbox,
-                  rememberMe && LoginStyles.checkboxChecked,
-                ]}
-              >
-                {rememberMe && <CheckIcon size={12} color="#ffffff" />}
-              </View>
-              <Text style={LoginStyles.rememberMeText}>Recuérdame</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity style={LoginStyles.forgotPasswordButton}>
               <Text style={LoginStyles.forgotPasswordText}>
                 ¿Olvidaste tu contraseña?

@@ -1,5 +1,5 @@
-﻿import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, FlatList, Modal } from 'react-native';
+﻿import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, FlatList, Modal, Animated } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { PlayerService, PlayerWithPrice } from '../../services/PlayerService';
 import { SquadService } from '../../services/SquadService';
@@ -14,7 +14,8 @@ import { LoginService } from '../../services/LoginService';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { Buffer } from 'buffer';
 import { useFocusEffect } from '@react-navigation/native';
-import { ChevronLeftIcon } from '../../components/VectorIcons';
+import { ChevronLeftIcon, MenuIcon } from '../../components/VectorIcons';
+import { DrawerMenu } from '../../components/DrawerMenu';
 import Svg, { Path } from 'react-native-svg';
 
 // Función para decodificar JWT
@@ -248,6 +249,10 @@ export const PlayersMarket = ({ navigation, route }: {
   const [budget, setBudget] = useState<number>(0);
   const [squadPlayerIds, setSquadPlayerIds] = useState<Set<number>>(new Set());
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+  
+  // Estados para el drawer
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const drawerSlideAnim = useRef(new Animated.Value(-300)).current;
 
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
@@ -305,6 +310,23 @@ export const PlayersMarket = ({ navigation, route }: {
   useEffect(() => {
     loadPlayers();
   }, [loadPlayers]);
+
+  // Animación del drawer
+  useEffect(() => {
+    if (isDrawerOpen) {
+      Animated.timing(drawerSlideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(drawerSlideAnim, {
+        toValue: -300,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isDrawerOpen, drawerSlideAnim]);
 
   // Recargar presupuesto y plantilla cuando la pantalla obtiene el foco
   useFocusEffect(
@@ -878,13 +900,13 @@ export const PlayersMarket = ({ navigation, route }: {
               paddingHorizontal: 16,
             }}
           >
-            {/* Botón volver */}
+            {/* Botón de menú a la izquierda */}
             <TouchableOpacity
-              onPress={() => navigation.goBack()}
+              onPress={() => setIsDrawerOpen(true)}
               style={{ padding: 4 }}
               activeOpacity={0.8}
             >
-              <ChevronLeftIcon size={28} color="#0892D0" />
+              <MenuIcon size={24} color="#fff" />
             </TouchableOpacity>
 
             {/* TÃ­tulo centrado */}
@@ -904,7 +926,8 @@ export const PlayersMarket = ({ navigation, route }: {
               </Text>
             </Text>
 
-            <View style={{ width: 28 }} />
+            {/* Espacio vacío para balancear */}
+            <View style={{ width: 32 }} />
           </View>
 
           <FlatList
@@ -1054,6 +1077,42 @@ export const PlayersMarket = ({ navigation, route }: {
 
           {/* Barra de navegaciÃ³n - solo en modo normal */}
           {!selectMode && <LigaNavBar ligaId={ligaId} ligaName={ligaName} />}
+
+          {/* Drawer Modal */}
+          <Modal
+            visible={isDrawerOpen}
+            animationType="none"
+            transparent={true}
+            onRequestClose={() => setIsDrawerOpen(false)}
+          >
+            <View style={{ flex: 1, flexDirection: 'row' }}>
+              {/* Drawer content con animación */}
+              <Animated.View 
+                style={{ 
+                  width: '75%', 
+                  maxWidth: 300,
+                  transform: [{ translateX: drawerSlideAnim }]
+                }}
+              >
+                <DrawerMenu 
+                  navigation={{
+                    ...navigation,
+                    closeDrawer: () => setIsDrawerOpen(false),
+                    reset: (state: any) => {
+                      navigation.reset(state);
+                      setIsDrawerOpen(false);
+                    },
+                  }} 
+                />
+              </Animated.View>
+              {/* Overlay to close drawer */}
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+                activeOpacity={1}
+                onPress={() => setIsDrawerOpen(false)}
+              />
+            </View>
+          </Modal>
         </>
       )}
     </LinearGradient>
