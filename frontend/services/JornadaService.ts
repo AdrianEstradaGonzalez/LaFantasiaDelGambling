@@ -137,7 +137,7 @@ export class JornadaService {
   }
 
   /**
-   * Cerrar jornada (antes "Abrir") - Permite apuestas y modificaciones
+   * Cerrar jornada (proceso completo: evalúa apuestas, calcula puntos, actualiza presupuestos, etc.)
    * No requiere jornada, usa la actual de la liga
    */
   static async closeJornada(leagueId: string): Promise<{
@@ -145,9 +145,19 @@ export class JornadaService {
     message: string;
     leagueName: string;
     jornada: number;
+    evaluations: Array<{
+      betId: string;
+      won: boolean;
+      profit: number;
+    }>;
+    updatedMembers: number;
+    clearedSquads: number;
+    deletedBetOptions: number;
   }> {
     try {
       const token = await EncryptedStorage.getItem('accessToken');
+      
+      console.log(`🔒 Cerrando jornada para liga ${leagueId} (proceso completo)...`);
       
       const response = await axios.post(
         `${API_URL}/jornada/close/${leagueId}`,
@@ -157,12 +167,14 @@ export class JornadaService {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          timeout: 120000, // 2 minutos (puede tardar con muchos jugadores)
         }
       );
 
+      console.log('✅ Jornada cerrada exitosamente:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('Error cerrando jornada:', error.response?.data || error.message);
+      console.error('❌ Error cerrando jornada:', error.response?.data || error.message);
       throw new Error(error.response?.data?.error || 'Error al cerrar jornada');
     }
   }
@@ -229,20 +241,29 @@ export class JornadaService {
   }
 
   /**
-   * Cerrar jornada para TODAS las ligas (permite cambios)
+   * Cerrar jornada para TODAS las ligas (proceso completo: evalúa apuestas, calcula puntos, actualiza presupuestos, etc.)
    */
   static async closeAllJornadas(): Promise<{
     success: boolean;
     message: string;
     leaguesProcessed: number;
+    totalEvaluations: number;
+    totalUpdatedMembers: number;
+    totalClearedSquads: number;
     leagues: Array<{
       id: string;
       name: string;
-      jornada: number;
+      oldJornada: number;
+      newJornada: number;
+      evaluations: number;
+      updatedMembers: number;
+      clearedSquads: number;
     }>;
   }> {
     try {
       const token = await EncryptedStorage.getItem('accessToken');
+      
+      console.log('🔒 Cerrando TODAS las jornadas (proceso completo)...');
       
       const response = await axios.post(
         `${API_URL}/jornada/close-all`,
@@ -252,12 +273,14 @@ export class JornadaService {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          timeout: 180000, // 3 minutos (puede tardar con muchas ligas/jugadores)
         }
       );
 
+      console.log('✅ Jornadas cerradas exitosamente:', response.data);
       return response.data;
     } catch (error: any) {
-      console.error('Error cerrando todas las jornadas:', error.response?.data || error.message);
+      console.error('❌ Error cerrando todas las jornadas:', error.response?.data || error.message);
       throw new Error(error.response?.data?.error || 'Error al cerrar jornadas');
     }
   }

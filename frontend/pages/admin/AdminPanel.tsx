@@ -39,11 +39,19 @@ const AdminPanel: React.FC = () => {
     CustomAlertManager.alert(
       '🔒 Cerrar Jornada',
       `¿Estás seguro de que quieres cerrar la jornada actual para TODAS las ligas?\n\n` +
-      `Esto hará lo siguiente:\n` +
-      `✅ Permitirá modificar plantillas\n` +
-      `✅ Habilitará fichajes y ventas\n` +
-      `✅ Permitirá modificar apuestas\n\n` +
-      `Los usuarios de TODAS las ligas podrán prepararse para la próxima jornada.`,
+      `Esto ejecutará el siguiente proceso:\n\n` +
+      `📊 EVALUACIÓN Y CÁLCULOS:\n` +
+      `• Evaluará todas las apuestas con resultados reales\n` +
+      `• Calculará puntos de plantillas\n` +
+      `• Actualizará presupuestos (500M base + puntos + apuestas)\n` +
+      `• Actualizará clasificación total\n\n` +
+      `🗑️ LIMPIEZA:\n` +
+      `• Vaciará todas las plantillas\n` +
+      `• Eliminará opciones de apuestas antiguas\n\n` +
+      `⏭️ AVANCE:\n` +
+      `• Incrementará jornada en +1\n` +
+      `• Desbloqueará modificaciones para nueva jornada\n\n` +
+      `⚠️ Este proceso puede tardar varios minutos.`,
       [
         {
           text: 'Cancelar',
@@ -57,26 +65,34 @@ const AdminPanel: React.FC = () => {
             try {
               setIsClosingJornada(true);
               
+              console.log('🚀 Iniciando cierre de jornada...');
               const result = await JornadaService.closeAllJornadas();
+              console.log('📊 Resultado:', result);
               
               // Actualizar el estado de la jornada
-              setJornadaStatus('closed');
+              setJornadaStatus('open');
               
               CustomAlertManager.alert(
-                '✅ Jornada Cerrada',
-                `La jornada ha sido cerrada exitosamente.\n\n` +
-                `📊 Ligas procesadas: ${result.leaguesProcessed}\n\n` +
-                `Los usuarios de todas las ligas ya pueden:\n` +
-                `• Modificar sus plantillas\n` +
-                `• Hacer fichajes o ventas\n` +
-                `• Realizar y modificar apuestas`,
+                '✅ Jornada Cerrada Exitosamente',
+                `El proceso ha finalizado correctamente.\n\n` +
+                `📊 RESUMEN GLOBAL:\n` +
+                `• Ligas procesadas: ${result.leaguesProcessed}\n` +
+                `• Apuestas evaluadas: ${result.totalEvaluations}\n` +
+                `• Miembros actualizados: ${result.totalUpdatedMembers}\n` +
+                `• Plantillas vaciadas: ${result.totalClearedSquads}\n\n` +
+                `✅ DESBLOQUEADO:\n` +
+                `• Modificar plantillas\n` +
+                `• Hacer fichajes y ventas\n` +
+                `• Realizar apuestas\n\n` +
+                `🎮 Los usuarios ya pueden prepararse para la próxima jornada.`,
                 [{ text: 'OK', onPress: () => {}, style: 'default' }],
                 { icon: 'check-circle', iconColor: '#10b981' }
               );
             } catch (error: any) {
+              console.error('❌ Error cerrando jornada:', error);
               CustomAlertManager.alert(
-                '❌ Error',
-                error.message || 'No se pudo cerrar la jornada',
+                '❌ Error al Cerrar Jornada',
+                error.message || 'No se pudo completar el proceso de cierre de jornada.\n\nRevisa la consola del servidor para más detalles.',
                 [{ text: 'OK', onPress: () => {}, style: 'default' }],
                 { icon: 'alert-circle', iconColor: '#ef4444' }
               );
