@@ -555,7 +555,18 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                 </Text>
               </View>
             ) : (
-              groupedBets.map((b, index) => (
+              // Ordenar apuestas por fecha y hora antes de renderizar
+              [...groupedBets]
+                .sort((a, b) => {
+                  // Si falta fecha/hora, poner al final
+                  if (!a.fecha || !a.hora) return 1;
+                  if (!b.fecha || !b.hora) return -1;
+                  // Unir fecha y hora para comparar
+                  const dateA = new Date(`${a.fecha} ${a.hora}`);
+                  const dateB = new Date(`${b.fecha} ${b.hora}`);
+                  return dateA.getTime() - dateB.getTime();
+                })
+                .map((b, index) => (
                 <View 
                   key={`${b.matchId}-${b.type}`} 
                   style={{ 
