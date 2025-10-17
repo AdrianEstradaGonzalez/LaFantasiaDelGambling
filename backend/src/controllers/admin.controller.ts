@@ -24,6 +24,26 @@ export class AdminController {
     }
   }
 
+  // Actualizar puntuaciones de última jornada de todos los jugadores
+  async updatePlayerScores(req: any, res: any) {
+    try {
+      const result = await adminService.updateAllPlayersLastJornadaPoints();
+      res.send({ success: true, ...result });
+    } catch (error) {
+      if (error instanceof AppError) {
+        return res.code(error.statusCode).send({
+          code: error.code,
+          message: error.message,
+        });
+      }
+      console.error('Error in updatePlayerScores:', error);
+      res.code(500).send({
+        code: 'INTERNAL_ERROR',
+        message: 'Error actualizando puntuaciones de jugadores',
+      });
+    }
+  }
+
   // Delete a user
   async deleteUser(req: any, res: any) {
     try {

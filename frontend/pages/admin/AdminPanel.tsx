@@ -10,6 +10,8 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { JornadaService } from '../../services/JornadaService';
+import axios from 'axios';
+import { ApiConfig } from '../../utils/apiConfig';
 import { LigaService } from '../../services/LigaService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -34,6 +36,54 @@ const AdminPanel: React.FC = () => {
   const [isOpeningJornada, setIsOpeningJornada] = useState(false);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed' | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [isUpdatingPlayerScores, setIsUpdatingPlayerScores] = useState(false);
+  // Actualizar puntuaciones de jugadores (admin)
+  const handleUpdatePlayerScores = async () => {
+    CustomAlertManager.alert(
+      'Actualizar puntuaciones de jugadores',
+      '¿Estás seguro de que quieres actualizar la puntuación de la última jornada para TODOS los jugadores?\n\nEsto recalculará y guardará la puntuación de la última jornada real en la base de datos.',
+      [
+        { text: 'Cancelar', style: 'cancel', onPress: () => {} },
+        {
+          text: 'Actualizar',
+          style: 'default',
+          onPress: async () => {
+            try {
+              setIsUpdatingPlayerScores(true);
+              const token = await EncryptedStorage.getItem('accessToken');
+              const response = await axios.post(
+                `${ApiConfig.BASE_URL}/admin/update-player-scores`,
+                {},
+                {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  timeout: 180000,
+                }
+              );
+              CustomAlertManager.alert(
+                '✅ Puntuaciones actualizadas',
+                `Se han actualizado las puntuaciones de ${response.data.updatedPlayers} jugadores para la jornada ${response.data.lastJornada}.`,
+                [{ text: 'OK', style: 'default', onPress: () => {} }],
+                { icon: 'check-circle', iconColor: '#10b981' }
+              );
+            } catch (error: any) {
+              CustomAlertManager.alert(
+                '❌ Error',
+                error?.response?.data?.message || error.message || 'Error al actualizar puntuaciones.',
+                [{ text: 'OK', style: 'default', onPress: () => {} }],
+                { icon: 'alert-circle', iconColor: '#ef4444' }
+              );
+            } finally {
+              setIsUpdatingPlayerScores(false);
+            }
+          },
+        },
+      ],
+      { icon: 'alert', iconColor: '#f59e0b' }
+    );
+  };
 
   // Cargar estado inicial al montar el componente
   useEffect(() => {
@@ -268,6 +318,85 @@ const AdminPanel: React.FC = () => {
         style={{ flex: 1, marginTop: 100 }}
         contentContainerStyle={{ padding: 20 }}
       >
+        {/* Botón para actualizar puntuaciones de jugadores */}
+        <View
+          style={{
+            backgroundColor: '#1e293b',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: '#334155',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <View style={{ marginRight: 12 }}>
+              <UsersIcon size={32} color="#f59e0b" />
+            </View>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 'bold',
+                flex: 1,
+              }}
+            >
+              Actualizar puntuaciones jugadores
+            </Text>
+          </View>
+          <Text
+            style={{
+              color: '#fbbf24',
+              fontSize: 14,
+              marginBottom: 20,
+              lineHeight: 20,
+            }}
+          >
+            Calcula y guarda la puntuación de la última jornada real para todos los jugadores (lo mismo que se muestra en detalles).
+          </Text>
+          <TouchableOpacity
+            onPress={handleUpdatePlayerScores}
+            disabled={isUpdatingPlayerScores}
+            style={{
+              backgroundColor: isUpdatingPlayerScores ? '#334155' : '#fbbf24',
+              paddingVertical: 16,
+              borderRadius: 12,
+              alignItems: 'center',
+              shadowColor: '#fbbf24',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: isUpdatingPlayerScores ? 0 : 0.3,
+              shadowRadius: 8,
+              elevation: isUpdatingPlayerScores ? 0 : 4,
+              opacity: isUpdatingPlayerScores ? 0.7 : 1,
+            }}
+          >
+            {isUpdatingPlayerScores ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    marginLeft: 12,
+                  }}
+                >
+                  Actualizando...
+                </Text>
+              </View>
+            ) : (
+              <Text
+                style={{
+                  color: '#18181b',
+                  fontSize: 16,
+                  fontWeight: 'bold',
+                }}
+              >
+                Actualizar puntuaciones
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
         {/* Gestión de Usuarios */}
         <TouchableOpacity
           onPress={() => (navigation as any).navigate('GestionUsuarios')}
