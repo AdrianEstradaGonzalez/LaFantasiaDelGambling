@@ -95,7 +95,7 @@ export const AppNavigator = () => {
         <Stack.Screen name="InvitarAmigos" component={InvitarAmigos} options={{
           animation: 'slide_from_right',
         }} />
-        <Stack.Screen name="Apuestas" component={Apuestas} options={{
+        <Stack.Screen name="Apuestas" component={Apuestas as any} options={{
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="AdminPanel" component={AdminPanel} options={{
