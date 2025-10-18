@@ -653,19 +653,28 @@ export default class FootballService {
     if (penalty.scored) add('Penaltis marcados', penalty.scored, penalty.scored * 3);
     if (penalty.missed) add('Penaltis fallados', penalty.missed, -2 * penalty.missed);
 
+    // Valoración (rating) común a todos los roles
+    const rawRating = (stats.games?.rating as any);
+    if (rawRating != null && rawRating !== '') {
+      const rating = Number(rawRating);
+      if (!Number.isNaN(rating)) {
+        let ratingPoints = 0;
+        if (rating >= 9.0) ratingPoints = 3;
+        else if (rating >= 8.0) ratingPoints = 2;
+        else if (rating >= 7.0) ratingPoints = 1;
+        if (ratingPoints) add('Valoración', rating.toFixed(2), ratingPoints);
+      }
+    }
+
     if (role === 'GK') {
       const goalsScored = goals.total || 0;
       if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 10);
       const conceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
-      if (minutes >= CLEAN_SHEET_MINUTES && conceded === 0) add('Portería a cero', 'Sí', 5);
       const savesVal = Number(stats.goalkeeper?.saves ?? goals.saves ?? 0);
       if (savesVal) add('Paradas', savesVal, savesVal);
       if (conceded) add('Goles encajados', conceded, -2 * conceded);
-      const savedPens = Number(penalty.saved ?? stats.goalkeeper?.saved ?? 0);
+      const savedPens = Number(penalty.saved ?? stats.goalkeeper?.savedPenalties ?? stats.goalkeeper?.saved ?? 0);
       if (savedPens) add('Penaltis parados', savedPens, savedPens * 5);
-      const interceptions = Number(tackles.interceptions || 0);
-      const interceptionPoints = Math.floor(interceptions / 5);
-      if (interceptionPoints) add('Recuperaciones', interceptions, interceptionPoints);
     } else if (role === 'DEF') {
       const goalsScored = goals.total || 0;
       if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 6);

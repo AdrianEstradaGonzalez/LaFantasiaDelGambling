@@ -576,22 +576,20 @@ export class JornadaService {
           }
 
           
-if (!playerStats) {
+          if (!playerStats) {
             // Fallbacks específicos para porteros: algunos partidos no devuelven el ID esperado
             const roleExpected = mapSquadRole(squadPlayer.role);
             if (roleExpected === 'Goalkeeper') {
-              // 1) intentar por coincidencia de nombre (normalizado)
-              const targetName = String(squadPlayer.playerName || '')
-                .normalize('NFD')
-                .replace(/̀-ͯ/g, '')
-                .toLowerCase();
+              const normalizeName = (value: string) =>
+                value
+                  .normalize('NFD')
+                  .replace(/\p{Diacritic}+/gu, '')
+                  .toLowerCase();
+              const targetName = normalizeName(String(squadPlayer.playerName || ''));
               for (const teamData of teamsData) {
                 const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
                 const byName = playersArr.find((p: any) => {
-                  const nm = String(p?.player?.name || '')
-                    .normalize('NFD')
-                    .replace(/̀-ͯ/g, '')
-                    .toLowerCase();
+                  const nm = normalizeName(String(p?.player?.name || ''));
                   return nm && nm === targetName && p?.statistics?.[0];
                 });
                 if (byName?.statistics?.[0]) {
@@ -599,7 +597,6 @@ if (!playerStats) {
                   break;
                 }
               }
-              // 2) si aún no, elegir el portero que jugó (minutos>0)
               if (!playerStats) {
                 for (const teamData of teamsData) {
                   const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
@@ -619,7 +616,9 @@ if (!playerStats) {
             }
 
             if (!playerStats) {
-              console.log(`         ⚠️ No participó en el partido (no convocado/lesionado/suplente sin jugar)`);
+              console.log(
+                `         ⚠️ No participó en el partido (no convocado/lesionado/suplente sin jugar)`
+              );
               continue;
             }
           }
