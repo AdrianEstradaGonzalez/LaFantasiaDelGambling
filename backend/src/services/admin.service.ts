@@ -266,27 +266,6 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
     }
   }
 
-      if (DEFAULT_REQUEST_DELAY_MS > 0) {
-        await delay(DEFAULT_REQUEST_DELAY_MS);
-      }
-    } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 429) {
-        console.error(`[API] Rate limit alcanzado. Pausando...`);
-        await delay(60000);
-        continue;
-      }
-      if (status === 403) {
-        console.error(`[API] Acceso denegado para la API de fútbol. Revisa la API key configurada.`);
-        throw new AppError(502, 'FOOTBALL_API_FORBIDDEN', 'La API de fútbol rechazó la petición (403). Revisa la API key configurada en el backend.');
-      }
-      console.error(`[ERROR] ${player.name}:`, err?.message || err);
-      if (DEFAULT_REQUEST_DELAY_MS > 0) {
-        await delay(DEFAULT_REQUEST_DELAY_MS);
-      }
-    }
-  }
-
   console.log(`[ADMIN] Actualización completada ✅ (${updatedCount} jugadores actualizados para jornada ${lastCompletedJornada})`);
   return { updatedPlayers: updatedCount, processedJornada: lastCompletedJornada };
 }
