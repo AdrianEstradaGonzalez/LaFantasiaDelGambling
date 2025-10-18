@@ -1585,70 +1585,79 @@ export default class FootballService {
         }
 
         // Calcular goles encajados por el equipo del jugador
-        const isHomeTeam = teamFixture.teams?.home?.id === playerTeamId;
-        const goalsAgainst = isHomeTeam 
-          ? teamFixture.goals?.away || 0 
-          : teamFixture.goals?.home || 0;
+          const isHomeTeam = teamFixture.teams?.home?.id === playerTeamId;
+          let goalsAgainst = 0;
+          const minutesPlayed = playerStats.games?.minutes || 0;
+          const wasSubstitute = playerStats.games?.substitute === true;
+          // Si el jugador fue suplente y no jugó, goles encajados = 0
+          if (minutesPlayed === 0 || wasSubstitute) {
+            goalsAgainst = 0;
+          } else {
+            // Si no hay eventos, no se puede saber los goles por minuto, así que se asignan todos los goles del rival
+            goalsAgainst = isHomeTeam 
+              ? teamFixture.goals?.away || 0 
+              : teamFixture.goals?.home || 0;
+          }
 
-        // Retornar estadísticas del partido específico
-        return {
-          games: {
-            appearances: 1,
-            lineups: playerStats.games?.substitute === false ? 1 : 0,
-            minutes: playerStats.games?.minutes || 0,
-            position: playerStats.games?.position || ''
-          },
-          goals: {
-            total: playerStats.goals?.total || 0,
-            assists: playerStats.goals?.assists || 0,
-            conceded: goalsAgainst
-          },
-          passes: {
-            total: playerStats.passes?.total || 0,
-            key: playerStats.passes?.key || 0,
-            accuracy: playerStats.passes?.accuracy || '0%'
-          },
-          shots: {
-            total: playerStats.shots?.total || 0,
-            on: playerStats.shots?.on || 0
-          },
-          dribbles: {
-            attempts: playerStats.dribbles?.attempts || 0,
-            success: playerStats.dribbles?.success || 0
-          },
-          tackles: {
-            total: playerStats.tackles?.total || 0,
-            blocks: playerStats.tackles?.blocks || 0,
-            interceptions: playerStats.tackles?.interceptions || 0
-          },
-          duels: {
-            total: playerStats.duels?.total || 0,
-            won: playerStats.duels?.won || 0
-          },
-          cards: {
-            yellow: playerStats.cards?.yellow || 0,
-            red: playerStats.cards?.red || 0
-          },
-          fouls: {
-            drawn: playerStats.fouls?.drawn || 0,
-            committed: playerStats.fouls?.committed || 0
-          },
-          penalty: {
-            won: playerStats.penalty?.won || 0,
-            committed: playerStats.penalty?.commited || 0,
-            scored: playerStats.penalty?.scored || 0,
-            missed: playerStats.penalty?.missed || 0,
-            saved: playerStats.penalty?.saved || 0
-          },
-          rating: playerStats.games?.rating,
-          // Estadísticas de portero (si aplica)
-          goalkeeper: playerStats.goals?.saves != null ? {
-            saves: playerStats.goals?.saves || 0,
-            conceded: playerStats.goals?.conceded || 0,
-            cleanSheets: (playerStats.goals?.conceded || 0) === 0 && (playerStats.games?.minutes || 0) > 0 ? 1 : 0,
-            savedPenalties: playerStats.penalty?.saved || 0
-          } : undefined
-        };
+          // Retornar estadísticas del partido específico
+          return {
+            games: {
+              appearances: 1,
+              lineups: playerStats.games?.substitute === false ? 1 : 0,
+              minutes: minutesPlayed,
+              position: playerStats.games?.position || ''
+            },
+            goals: {
+              total: playerStats.goals?.total || 0,
+              assists: playerStats.goals?.assists || 0,
+              conceded: goalsAgainst
+            },
+            passes: {
+              total: playerStats.passes?.total || 0,
+              key: playerStats.passes?.key || 0,
+              accuracy: playerStats.passes?.accuracy || '0%'
+            },
+            shots: {
+              total: playerStats.shots?.total || 0,
+              on: playerStats.shots?.on || 0
+            },
+            dribbles: {
+              attempts: playerStats.dribbles?.attempts || 0,
+              success: playerStats.dribbles?.success || 0
+            },
+            tackles: {
+              total: playerStats.tackles?.total || 0,
+              blocks: playerStats.tackles?.blocks || 0,
+              interceptions: playerStats.tackles?.interceptions || 0
+            },
+            duels: {
+              total: playerStats.duels?.total || 0,
+              won: playerStats.duels?.won || 0
+            },
+            cards: {
+              yellow: playerStats.cards?.yellow || 0,
+              red: playerStats.cards?.red || 0
+            },
+            fouls: {
+              drawn: playerStats.fouls?.drawn || 0,
+              committed: playerStats.fouls?.committed || 0
+            },
+            penalty: {
+              won: playerStats.penalty?.won || 0,
+              committed: playerStats.penalty?.commited || 0,
+              scored: playerStats.penalty?.scored || 0,
+              missed: playerStats.penalty?.missed || 0,
+              saved: playerStats.penalty?.saved || 0
+            },
+            rating: playerStats.games?.rating,
+            // Estadísticas de portero (si aplica)
+            goalkeeper: playerStats.goals?.saves != null ? {
+              saves: playerStats.goals?.saves || 0,
+              conceded: playerStats.goals?.conceded || 0,
+              cleanSheets: (playerStats.goals?.conceded || 0) === 0 && minutesPlayed > 0 ? 1 : 0,
+              savedPenalties: playerStats.penalty?.saved || 0
+            } : undefined
+          };
       } else {
         // Obtener estadísticas globales de la temporada
         const { data } = await axios.get(`${API_BASE}/players`, {
