@@ -94,8 +94,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       points += (stats.goals?.total || 0) * 10;
       // Asistencias
       points += (stats.goals?.assists || 0) * 3;
-      // Goles encajados = 0 (bonus por no encajar)
-      if ((stats.goalkeeper?.conceded || 0) === 0) points += 5;
+      // Goles encajados = 0 (bonus por no encajar, solo si juega >= 60 min)
+      if ((stats.goalkeeper?.conceded || 0) === 0 && (stats.games?.minutes || 0) >= 60) points += 5;
       // Paradas
       points += (stats.goalkeeper?.saves || 0);
       // Goles encajados
@@ -109,8 +109,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       points += (stats.goals?.total || 0) * 6;
       // Asistencias
       points += (stats.goals?.assists || 0) * 3;
-      // Goles encajados = 0 (sin portería a cero)
-      if ((stats.goals?.conceded || 0) === 0) points += 4;
+      // Goles encajados = 0 (sin portería a cero, solo si juega >= 60 min)
+      if ((stats.goals?.conceded || 0) === 0 && (stats.games?.minutes || 0) >= 60) points += 4;
       // Tiros a puerta
       points += (stats.shots?.on || 0);
       // Goles encajados
@@ -124,8 +124,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       points += (stats.goals?.total || 0) * 5;
       // Asistencias
       points += (stats.goals?.assists || 0) * 3;
-      // Goles encajados = 0 (sin portería a cero)
-      if ((stats.goals?.conceded || 0) === 0) points += 1;
+      // Goles encajados = 0 (sin portería a cero, solo si juega >= 60 min)
+      if ((stats.goals?.conceded || 0) === 0 && (stats.games?.minutes || 0) >= 60) points += 1;
       // Tiros a puerta
       points += (stats.shots?.on || 0);
       // Goles encajados (cada 2)
@@ -785,8 +785,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   cantidad={selectedData.stats?.games?.minutes || 0}
                   estadistica="Minutos jugados"
                   puntos={
-                    (selectedData.stats?.games?.minutes || 0) > 0 && (selectedData.stats?.games?.minutes || 0) < 45 ? 1 :
-                    (selectedData.stats?.games?.minutes || 0) >= 45 ? 2 : 0
+                    (selectedData.stats?.games?.minutes || 0) > 0 && (selectedData.stats?.games?.minutes || 0) <= 45 ? 1 :
+                    (selectedData.stats?.games?.minutes || 0) > 45 ? 2 : 0
                   }
                 />
 
@@ -812,9 +812,9 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       cantidad={selectedData.stats?.goalkeeper?.conceded || 0}
                       estadistica="Goles encajados"
                       puntos={
-                        (selectedData.stats?.goalkeeper?.conceded || 0) === 0 
-                          ? 5  // Bonus por no encajar goles
-                          : (selectedData.stats?.goalkeeper?.conceded || 0) * -2  // Penalización por goles encajados
+                        (selectedData.stats?.goalkeeper?.conceded || 0) === 0 && (selectedData.stats?.games?.minutes || 0) >= 60
+                          ? 5
+                          : (selectedData.stats?.goalkeeper?.conceded || 0) * -2
                       }
                     />
                     <StatRow
@@ -847,9 +847,9 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       cantidad={selectedData.stats?.goals?.conceded || 0}
                       estadistica="Goles encajados"
                       puntos={
-                        (selectedData.stats?.goals?.conceded || 0) === 0 
-                          ? 4  // Bonus por no encajar goles
-                          : (selectedData.stats?.goals?.conceded || 0) * -1  // Penalización por goles encajados
+                        (selectedData.stats?.goals?.conceded || 0) === 0 && (selectedData.stats?.games?.minutes || 0) >= 60
+                          ? 4
+                          : (selectedData.stats?.goals?.conceded || 0) * -1
                       }
                     />
                     <StatRow
@@ -882,9 +882,9 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       cantidad={Math.floor((selectedData.stats?.goals?.conceded || 0) / 2)}
                       estadistica="Goles encajados"
                       puntos={
-                        (selectedData.stats?.goals?.conceded || 0) === 0 
-                          ? 1  // Bonus por no encajar goles
-                          : Math.floor((selectedData.stats?.goals?.conceded || 0) / 2) * -1  // Penalización por goles encajados
+                        (selectedData.stats?.goals?.conceded || 0) === 0 && (selectedData.stats?.games?.minutes || 0) >= 60
+                          ? 1
+                          : Math.floor((selectedData.stats?.goals?.conceded || 0) / 2) * -1
                       }
                     />
                     <StatRow
