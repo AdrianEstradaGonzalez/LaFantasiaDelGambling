@@ -657,20 +657,21 @@ export class JornadaService {
     if (role === 'GK' || role === 'POR') {
       console.log(`   🧤 PORTERO`);
       // Portero
-      const conceded = stats.goals?.conceded || 0;
+      const conceded = Number(stats.goalkeeper?.conceded ?? stats.goals?.conceded ?? 0);
       console.log(`      - Goles encajados: ${conceded}`);
-      console.log(`      - Paradas: ${stats.goals?.saves || 0}`);
+      const savesValue = Number(stats.goalkeeper?.saves ?? stats.goals?.saves ?? 0);
+      console.log(`      - Paradas: ${savesValue}`);
       
       if (meetsCleanSheetMinutes && conceded === 0) {
         points += 5;
         console.log(`      ✅ +5 puntos por portería a cero (>= 60 min)`);
       }
       
-      const concededPenalty = conceded * 2;
+      const concededPenalty = conceded * 1;
       points -= concededPenalty;
       if (concededPenalty > 0) console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
       
-      const savesPoints = (stats.goals?.saves || 0) * 1;
+      const savesPoints = savesValue;
       points += savesPoints;
       if (savesPoints > 0) console.log(`      ✅ +${savesPoints} puntos por paradas`);
       
@@ -688,7 +689,7 @@ export class JornadaService {
     } else if (role === 'DEF') {
       console.log(`   🛡️ DEFENSA`);
       // Defensa
-      const conceded = stats.goals?.conceded || 0;
+      const conceded = Number(stats.goals?.conceded ?? stats.goalkeeper?.conceded ?? 0);
       console.log(`      - Goles encajados: ${conceded}`);
       console.log(`      - Duelos ganados: ${duels.won || 0}`);
       
@@ -723,11 +724,6 @@ export class JornadaService {
       console.log(`      - Goles encajados: ${conceded}`);
       console.log(`      - Pases clave: ${passes.key || 0}`);
       console.log(`      - Regates: ${dribbles.success || 0}`);
-      
-      if (meetsCleanSheetMinutes && conceded === 0) {
-        points += 1;
-        console.log(`      ✅ +1 punto por portería a cero (>= 60 min)`);
-      }
       
       const goalPoints = (goals.total || 0) * 5;
       points += goalPoints;

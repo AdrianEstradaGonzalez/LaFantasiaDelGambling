@@ -54,12 +54,12 @@ const calculatePlayerPoints = (stats: any, role: string): number => {
 
   // --- PORTERO ---
   if (role === "Goalkeeper") {
+    const conceded = Number(stats.goalkeeper?.conceded ?? stats.goals?.conceded ?? 0);
     points += (stats.goals?.total || 0) * 10;
     points += (stats.goals?.assists || 0) * 3;
-    // Bonus solo si juega >= 60 min
-    if (meetsCleanSheetMinutes && (stats.goalkeeper?.conceded || 0) === 0) points += 5;
-    points += stats.goalkeeper?.saves || 0;
-    points -= (stats.goalkeeper?.conceded || 0) * 2;
+    if (meetsCleanSheetMinutes && conceded === 0) points += 5;
+    points += Number(stats.goalkeeper?.saves ?? stats.goals?.saves ?? 0);
+    points -= conceded;
     points += (stats.penalty?.saved || 0) * 5;
   }
 
@@ -78,8 +78,6 @@ const calculatePlayerPoints = (stats: any, role: string): number => {
   if (role === "Midfielder") {
     points += (stats.goals?.total || 0) * 5;
     points += (stats.goals?.assists || 0) * 3;
-    // Bonus solo si juega >= 60 min
-    if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 1;
     points += stats.shots?.on || 0;
     points -= Math.floor((stats.goals?.conceded || 0) / 2);
     points += Math.floor((stats.passes?.key || 0) / 2);
