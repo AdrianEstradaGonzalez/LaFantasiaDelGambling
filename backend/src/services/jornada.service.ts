@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
+import { calculatePlayerPoints, normalizeRole } from './playerPoints.service';
 
 const prisma = new PrismaClient();
 
@@ -15,6 +16,27 @@ interface UserBalance {
   wonBets: number;
   lostBets: number;
   squadPoints: number; // Puntos conseguidos por la plantilla
+}
+
+const squadRoleMap: Record<string, "Goalkeeper" | "Defender" | "Midfielder" | "Attacker"> = {
+  POR: "Goalkeeper",
+  GK: "Goalkeeper",
+  DEF: "Defender",
+  DF: "Defender",
+  CEN: "Midfielder",
+  MID: "Midfielder",
+  CM: "Midfielder",
+  DM: "Midfielder",
+  AM: "Midfielder",
+  DEL: "Attacker",
+  ATT: "Attacker",
+  FW: "Attacker",
+};
+
+function mapSquadRole(role: string | null | undefined): "Goalkeeper" | "Defender" | "Midfielder" | "Attacker" {
+  if (!role) return "Midfielder";
+  const upper = role.trim().toUpperCase();
+  return squadRoleMap[upper] ?? normalizeRole(role);
 }
 
 export class JornadaService {
@@ -556,7 +578,7 @@ export class JornadaService {
           }
 
           // PASO 6: Calcular puntos
-          playerPoints = this.calculatePlayerPoints(playerStats, squadPlayer.role);
+          playerPoints = calculatePlayerPoints(playerStats, mapSquadRole(squadPlayer.role));
           console.log(`         ⚽ PUNTOS: ${playerPoints}`);
           
           totalPoints += playerPoints;

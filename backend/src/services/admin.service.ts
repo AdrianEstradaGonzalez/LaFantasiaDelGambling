@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { AppError } from '../utils/errors.js';
+import { calculatePlayerPoints, normalizeRole } from './playerPoints.service.js';
 
 const prisma = new PrismaClient();
 
@@ -37,80 +38,6 @@ function buildFootballApiHeaders() {
 }
 
 const FOOTBALL_API_HEADERS = buildFootballApiHeaders();
-
-// --- Cálculo de puntos DreamLeague ---
-const CLEAN_SHEET_MINUTES = 60;
-
-const calculatePlayerPoints = (stats: any, role: string): number => {
-  if (!stats) return 0;
-
-  let points = 0;
-  const minutes = Number(stats.games?.minutes ?? 0);
-  const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
-
-  // BASE GENERAL - Minutos jugados
-  if (minutes > 0 && minutes < 45) points += 1;
-  if (minutes >= 45) points += 2;
-
-  // --- PORTERO ---
-  if (role === "Goalkeeper") {
-    const conceded = Number(stats.goalkeeper?.conceded ?? stats.goals?.conceded ?? 0);
-    points += (stats.goals?.total || 0) * 10;
-    points += (stats.goals?.assists || 0) * 3;
-    if (meetsCleanSheetMinutes && conceded === 0) points += 5;
-    points += Number(stats.goalkeeper?.saves ?? stats.goals?.saves ?? 0);
-    points -= conceded;
-    points += (stats.penalty?.saved || 0) * 5;
-  }
-
-  // --- DEFENSOR ---
-  if (role === "Defender") {
-    points += (stats.goals?.total || 0) * 6;
-    points += (stats.goals?.assists || 0) * 3;
-    // Bonus solo si juega >= 60 min
-    if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 4;
-    points += stats.shots?.on || 0;
-    points -= stats.goals?.conceded || 0;
-    points += Math.floor((stats.duels?.won || 0) / 2);
-  }
-
-  // --- MEDIOCAMPISTA ---
-  if (role === "Midfielder") {
-    points += (stats.goals?.total || 0) * 5;
-    points += (stats.goals?.assists || 0) * 3;
-    points += stats.shots?.on || 0;
-    points -= Math.floor((stats.goals?.conceded || 0) / 2);
-    points += Math.floor((stats.passes?.key || 0) / 2);
-    points += Math.floor((stats.dribbles?.success || 0) / 2);
-    points += Math.floor((stats.fouls?.drawn || 0) / 3);
-  }
-
-  // --- DELANTERO ---
-  if (role === "Attacker") {
-    points += (stats.goals?.total || 0) * 4;
-    points += (stats.goals?.assists || 0) * 3;
-    points += stats.shots?.on || 0;
-    points += Math.floor((stats.passes?.key || 0) / 2);
-    points += Math.floor((stats.dribbles?.success || 0) / 2);
-    points += Math.floor((stats.fouls?.drawn || 0) / 3);
-  }
-
-  // --- BASE GENERAL ---
-  points += (stats.penalty?.won || 0) * 2;
-  points -= (stats.penalty?.committed || 0) * 2;
-  points -= (stats.penalty?.missed || 0) * 2;
-
-  points -= (stats.cards?.yellow || 0);
-  points -= (stats.cards?.red || 0) * 3;
-
-  const rating = stats.rating ? parseFloat(stats.rating) : 0;
-  if (rating > 8) points += 3;
-  else if (rating >= 6.5 && rating <= 8) points += 2;
-  else if (rating >= 5) points += 1;
-
-  return points;
-};
-
 
 export class AdminService {
   // Get all users
@@ -156,16 +83,6 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
   });
 
   // Role mapping (frontend logic)
-  const normalizePosition = (pos?: string): string | undefined => {
-    if (!pos) return undefined;
-    const p = pos.trim().toLowerCase();
-    if (p === 'goalkeeper' || p.includes('goal') || p.includes('keeper')) return 'Goalkeeper';
-    if (p === 'defender' || p.includes('defen') || p.includes('back')) return 'Defender';
-    if (p === 'midfielder' || p.includes('midfield') || p.includes('midf') || p === 'mid') return 'Midfielder';
-    if (p === 'attacker' || p.includes('attack') || p.includes('forward') || p.includes('striker') || p.includes('wing')) return 'Attacker';
-    return undefined;
-  };
-
   let updatedCount = 0;
   for (const player of players) {
     try {
@@ -230,8 +147,8 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
       }
 
       // Calcular puntos usando lógica frontend
-      const role = normalizePosition(player.position);
-      const points = calculatePlayerPoints(playerStats, role ?? "Unknown");
+      const role = normalizeRole(player.position ?? playerStats?.games?.position);
+      const points = calculatePlayerPoints(playerStats, role);
 
       await prisma.player.update({
         where: { id: player.id },

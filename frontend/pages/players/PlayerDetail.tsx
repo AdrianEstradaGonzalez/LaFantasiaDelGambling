@@ -735,7 +735,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   fontWeight: '900',
                   zIndex: 1
                 }}>
-                  {hasNumericPoints ? (mp.points! > 0 ? `+${mp.points}` : mp.points) : '--'}
+                  {hasNumericPoints ? (mp.points! > 0 ? `${mp.points}` : mp.points) : '--'}
                 </Text>
                   </TouchableOpacity>
                 );
@@ -783,7 +783,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   >
                     {typeof selectedData.points === 'number'
                       ? selectedData.points > 0
-                        ? `+${selectedData.points}`
+                        ? `${selectedData.points}`
                         : selectedData.points
                       : '--'}
                   </Text>
