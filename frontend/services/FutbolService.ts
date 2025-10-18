@@ -51,6 +51,12 @@ export type Player = {
   teamCrest?: string;
 };
 
+type PointsBreakdownEntry = {
+  label: string;
+  amount: number | string;
+  points: number;
+};
+
 function fmtFechaHoraES(isoUtc?: string) {
   if (!isoUtc) return { fecha: undefined, hora: undefined };
   const d = new Date(isoUtc);
@@ -596,17 +602,38 @@ export default class FootballService {
     }
   }
 
-  private static calculatePlayerPoints(stats: any, roleCode: 'POR'|'DEF'|'CEN'|'DEL'): number {
-    if (!stats || !stats.games) return 0;
+  private static canonicalRoleToCode(role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'): 'POR'|'DEF'|'CEN'|'DEL' {
+    switch (role) {
+      case 'Goalkeeper': return 'POR';
+      case 'Defender': return 'DEF';
+      case 'Midfielder': return 'CEN';
+      case 'Attacker': return 'DEL';
+    }
+  }
+
+  private static calculatePlayerPointsDetailed(
+    stats: any,
+    roleCode: 'POR'|'DEF'|'CEN'|'DEL'
+  ): { total: number; breakdown: PointsBreakdownEntry[] } {
+    if (!stats || !stats.games) {
+      return { total: 0, breakdown: [] };
+    }
+
     const role = this.mapRoleCode(roleCode);
+    const breakdown: PointsBreakdownEntry[] = [];
+    let total = 0;
 
-    let points = 0;
+    const add = (label: string, amount: number | string | undefined, points: number) => {
+      if (points === 0) return;
+      breakdown.push({ label, amount: amount ?? 0, points: Math.trunc(points) });
+      total += points;
+    };
+
     const minutes = Number(stats.games?.minutes ?? 0);
-    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
-
-    // Base general
-    if (minutes > 0 && minutes < 45) points += 1;
-    else if (minutes >= 45) points += 2;
+    let minutesPoints = 0;
+    if (minutes > 0 && minutes < 45) minutesPoints = 1;
+    else if (minutes >= 45) minutesPoints = 2;
+    if (minutesPoints !== 0) add('Minutos jugados', minutes, minutesPoints);
 
     const goals = stats.goals || {};
     const cards = stats.cards || {};
@@ -618,69 +645,95 @@ export default class FootballService {
     const duels = stats.duels || {};
     const fouls = stats.fouls || {};
 
-    points += (goals.assists || 0) * 3;
-    points -= (cards.yellow || 0) * 1;
-    points -= (cards.red || 0) * 3;
-    points += (penalty.won || 0) * 2;
-    points -= (penalty.committed || 0) * 2;
-    points += (penalty.scored || 0) * 3;
-    points -= (penalty.missed || 0) * 2;
+    if (goals.assists) add('Asistencias', goals.assists, goals.assists * 3);
+    if (cards.yellow) add('Tarjetas amarillas', cards.yellow, -cards.yellow);
+    if (cards.red) add('Tarjetas rojas', cards.red, -3 * cards.red);
+    if (penalty.won) add('Penaltis ganados', penalty.won, penalty.won * 2);
+    if (penalty.committed) add('Penaltis cometidos', penalty.committed, -2 * penalty.committed);
+    if (penalty.scored) add('Penaltis marcados', penalty.scored, penalty.scored * 3);
+    if (penalty.missed) add('Penaltis fallados', penalty.missed, -2 * penalty.missed);
 
-    // Específico por posición
     if (role === 'GK') {
-      const conceded = Number(stats.goalkeeper?.conceded ?? stats.goals?.conceded ?? 0);
-      if (meetsCleanSheetMinutes && conceded === 0) points += 5;
-      // Alinear con backend: -2 por gol encajado
-      points -= conceded * 2;
-      const savesVal = Number(stats.goalkeeper?.saves ?? stats.goals?.saves ?? 0);
-      points += savesVal;
-      points += (penalty.saved || 0) * 5;
-      points += (goals.total || 0) * 10;
-      points += Math.floor((tackles.interceptions || 0) / 5);
+      const goalsScored = goals.total || 0;
+      if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 10);
+      const conceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
+      if (minutes >= CLEAN_SHEET_MINUTES && conceded === 0) add('Portería a cero', 'Sí', 5);
+      const savesVal = Number(stats.goalkeeper?.saves ?? goals.saves ?? 0);
+      if (savesVal) add('Paradas', savesVal, savesVal);
+      if (conceded) add('Goles encajados', conceded, -2 * conceded);
+      const savedPens = Number(penalty.saved ?? stats.goalkeeper?.saved ?? 0);
+      if (savedPens) add('Penaltis parados', savedPens, savedPens * 5);
+      const interceptions = Number(tackles.interceptions || 0);
+      const interceptionPoints = Math.floor(interceptions / 5);
+      if (interceptionPoints) add('Recuperaciones', interceptions, interceptionPoints);
     } else if (role === 'DEF') {
-      const conceded = Number(stats.goals?.conceded ?? stats.goalkeeper?.conceded ?? 0);
-      if (meetsCleanSheetMinutes && conceded === 0) points += 4;
-      points += (goals.total || 0) * 6;
-      points += Math.floor((duels.won || 0) / 2);
-      points += Math.floor((tackles.interceptions || 0) / 5);
-      points -= conceded * 1;
-      points += (shots.on || 0) * 1;
+      const goalsScored = goals.total || 0;
+      if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 6);
+      const conceded = Number(goals.conceded ?? stats.goalkeeper?.conceded ?? 0);
+      if (minutes >= CLEAN_SHEET_MINUTES && conceded === 0) add('Portería a cero', 'Sí', 4);
+      if (conceded) add('Goles encajados', conceded, -conceded);
+      const shotsOn = Number(shots.on || 0);
+      if (shotsOn) add('Tiros a puerta', shotsOn, shotsOn);
+      const duelsWon = Number(duels.won || 0);
+      const duelPoints = Math.floor(duelsWon / 2);
+      if (duelPoints) add('Duelos ganados', duelsWon, duelPoints);
+      const interceptions = Number(tackles.interceptions || 0);
+      const interceptionPoints = Math.floor(interceptions / 5);
+      if (interceptionPoints) add('Intercepciones', interceptions, interceptionPoints);
     } else if (role === 'MID') {
-      const conceded = Number(stats.goals?.conceded ?? 0);
-      // Clean sheet (>=60 min): +1
-      if (meetsCleanSheetMinutes && conceded === 0) points += 1;
-      points += (goals.total || 0) * 5;
-      points -= Math.floor(conceded / 2);
-      points += (passes.key || 0) * 1;
-      points += Math.floor((dribbles.success || 0) / 2);
-      points += Math.floor((fouls.drawn || 0) / 3);
-      points += Math.floor((tackles.interceptions || 0) / 3);
-      points += (shots.on || 0) * 1;
+      const goalsScored = goals.total || 0;
+      if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 5);
+      const conceded = Number(goals.conceded ?? 0);
+      if (minutes >= CLEAN_SHEET_MINUTES && conceded === 0) add('Portería a cero', 'Sí', 1);
+      const concededPenalty = Math.floor(conceded / 2);
+      if (concededPenalty) add('Goles encajados', conceded, -concededPenalty);
+      const shotsOn = Number(shots.on || 0);
+      if (shotsOn) add('Tiros a puerta', shotsOn, shotsOn);
+      const passesKey = Number(passes.key || 0);
+      if (passesKey) add('Pases clave', passesKey, passesKey);
+      const dribblesSuccess = Number(dribbles.success || 0);
+      const dribblePoints = Math.floor(dribblesSuccess / 2);
+      if (dribblePoints) add('Regates exitosos', dribblesSuccess, dribblePoints);
+      const foulsDrawn = Number(fouls.drawn || 0);
+      const foulPoints = Math.floor(foulsDrawn / 3);
+      if (foulPoints) add('Faltas recibidas', foulsDrawn, foulPoints);
+      const interceptions = Number(tackles.interceptions || 0);
+      const interceptionPoints = Math.floor(interceptions / 3);
+      if (interceptionPoints) add('Intercepciones', interceptions, interceptionPoints);
     } else if (role === 'ATT') {
-      points += (goals.total || 0) * 4;
-      points += (passes.key || 0) * 1;
-      points += Math.floor((fouls.drawn || 0) / 3);
-      points += Math.floor((dribbles.success || 0) / 2);
-      points += (shots.on || 0) * 1;
+      const goalsScored = goals.total || 0;
+      if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 4);
+      const shotsOn = Number(shots.on || 0);
+      if (shotsOn) add('Tiros a puerta', shotsOn, shotsOn);
+      const passesKey = Number(passes.key || 0);
+      if (passesKey) add('Pases clave', passesKey, passesKey);
+      const dribblesSuccess = Number(dribbles.success || 0);
+      const dribblePoints = Math.floor(dribblesSuccess / 2);
+      if (dribblePoints) add('Regates exitosos', dribblesSuccess, dribblePoints);
+      const foulsDrawn = Number(fouls.drawn || 0);
+      const foulPoints = Math.floor(foulsDrawn / 3);
+      if (foulPoints) add('Faltas recibidas', foulsDrawn, foulPoints);
     }
 
-    return points;
+    return { total: Math.trunc(total), breakdown };
   }
 
-  // Public wrapper to ensure a single scoring source for UI
+  private static calculatePlayerPoints(stats: any, roleCode: 'POR'|'DEF'|'CEN'|'DEL'): number {
+    return this.calculatePlayerPointsDetailed(stats, roleCode).total;
+  }
+
   static calculatePointsForStats(
     stats: any,
     role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'
   ): number {
-    const toCode = (r: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'): 'POR'|'DEF'|'CEN'|'DEL' => {
-      switch (r) {
-        case 'Goalkeeper': return 'POR';
-        case 'Defender': return 'DEF';
-        case 'Midfielder': return 'CEN';
-        case 'Attacker': return 'DEL';
-      }
-    };
-    return this.calculatePlayerPoints(stats, toCode(role));
+    return this.getPointsBreakdown(stats, role).total;
+  }
+
+  static getPointsBreakdown(
+    stats: any,
+    role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'
+  ): { total: number; breakdown: PointsBreakdownEntry[] } {
+    return this.calculatePlayerPointsDetailed(stats, this.canonicalRoleToCode(role));
   }
 
   /**

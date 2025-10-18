@@ -744,41 +744,52 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   />
 
                   {/* PORTERO - Estadísticas específicas */}
-                  {position === 'Goalkeeper' && (
-                    <>
+                {position === 'Goalkeeper' && (
+                  <>
+                    <StatRow
+                      cantidad={selectedData.stats?.goals?.total || 0}
+                      estadistica="Goles marcados"
+                      puntos={(selectedData.stats?.goals?.total || 0) * 10}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats?.goals?.assists || 0}
+                      estadistica="Asistencias"
+                      puntos={(selectedData.stats?.goals?.assists || 0) * 3}
+                    />
+                    <StatRow
+                      cantidad={selectedData.stats?.goalkeeper?.saves || 0}
+                      estadistica="Paradas"
+                      puntos={selectedData.stats?.goalkeeper?.saves || 0}
+                    />
+                    {(
+                      Number(selectedData.stats?.goalkeeper?.conceded ?? selectedData.stats?.goals?.conceded ?? 0) === 0 &&
+                      (selectedData.stats?.games?.minutes || 0) >= CLEAN_SHEET_MINUTES
+                    ) && (
                       <StatRow
-                        cantidad={selectedData.stats?.goals?.total || 0}
-                        estadistica="Goles marcados"
-                        puntos={(selectedData.stats?.goals?.total || 0) * 10}
+                        cantidad={'Sí'}
+                        estadistica="Portería a cero"
+                        puntos={5}
                       />
-                      <StatRow
-                        cantidad={selectedData.stats?.goals?.assists || 0}
-                        estadistica="Asistencias"
-                        puntos={(selectedData.stats?.goals?.assists || 0) * 3}
-                      />
-                      <StatRow
-                        cantidad={selectedData.stats?.goalkeeper?.saves || 0}
-                        estadistica="Paradas"
-                        puntos={selectedData.stats?.goalkeeper?.saves || 0}
-                      />
+                    )}
                     <StatRow
                       cantidad={selectedData.stats?.goalkeeper?.conceded || 0}
                       estadistica="Goles encajados"
-                      puntos={(() => {
-                        const conceded =
-                          Number(selectedData.stats?.goalkeeper?.conceded ?? selectedData.stats?.goals?.conceded ?? 0);
-                        const minutesPlayed = Number(selectedData.stats?.games?.minutes ?? 0);
-                        const cleanSheetBonus = minutesPlayed >= CLEAN_SHEET_MINUTES && conceded === 0 ? 5 : 0;
-                        return cleanSheetBonus - conceded;
-                      })()}
+                      puntos={-2 * (selectedData.stats?.goalkeeper?.conceded || 0)}
                     />
+                    <StatRow
+                      cantidad={(selectedData.stats?.penalty?.saved ?? selectedData.stats?.goalkeeper?.saved) || 0}
+                      estadistica="Penaltis parados"
+                      puntos={(((selectedData.stats?.penalty?.saved ?? selectedData.stats?.goalkeeper?.saved) || 0) * 5)}
+                    />
+                    {Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 5) !== 0 && (
                       <StatRow
-                        cantidad={selectedData.stats?.penalty?.saved || 0}
-                        estadistica="Penaltis parados"
-                        puntos={(selectedData.stats?.penalty?.saved || 0) * 5}
+                        cantidad={selectedData.stats?.tackles?.interceptions || 0}
+                        estadistica="Recuperaciones"
+                        puntos={Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 5)}
                       />
-                    </>
-                  )}
+                    )}
+                  </>
+                )}
 
                 {/* DEFENSA - Estadísticas específicas */}
                 {position === 'Defender' && (
@@ -812,6 +823,13 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       estadistica="Duelos ganados"
                       puntos={Math.floor((selectedData.stats?.duels?.won || 0) / 2)}
                     />
+                    {Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 5) !== 0 && (
+                      <StatRow
+                        cantidad={selectedData.stats?.tackles?.interceptions || 0}
+                        estadistica="Intercepciones"
+                        puntos={Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 5)}
+                      />
+                    )}
                   </>
                 )}
 
@@ -834,18 +852,14 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       puntos={selectedData.stats?.shots?.on || 0}
                     />
                     <StatRow
-                      cantidad={Math.floor((selectedData.stats?.goals?.conceded || 0))}
+                      cantidad={selectedData.stats?.goals?.conceded || 0}
                       estadistica="Goles encajados"
-                      puntos={
-                        (selectedData.stats?.goals?.conceded || 0) === 0 && (selectedData.stats?.games?.minutes || 0) >= 60
-                          ? 1
-                          : Math.floor((selectedData.stats?.goals?.conceded || 0) / 2) * -1
-                      }
+                      puntos={-Math.floor((selectedData.stats?.goals?.conceded || 0) / 2)}
                     />
                     <StatRow
                       cantidad={selectedData.stats?.passes?.key || 0}
                       estadistica="Pases clave"
-                      puntos={Math.floor((selectedData.stats?.passes?.key || 0) / 2)}
+                      puntos={selectedData.stats?.passes?.key || 0}
                     />
                     <StatRow
                       cantidad={selectedData.stats?.dribbles?.success || 0}
@@ -857,6 +871,13 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       estadistica="Faltas recibidas"
                       puntos={Math.floor((selectedData.stats?.fouls?.drawn || 0) / 3)}
                     />
+                    {Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 3) !== 0 && (
+                      <StatRow
+                        cantidad={selectedData.stats?.tackles?.interceptions || 0}
+                        estadistica="Intercepciones"
+                        puntos={Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 3)}
+                      />
+                    )}
                   </>
                 )}
 
@@ -881,7 +902,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                     <StatRow
                       cantidad={selectedData.stats?.passes?.key || 0}
                       estadistica="Pases clave"
-                      puntos={Math.floor((selectedData.stats?.passes?.key || 0) / 2)}
+                      puntos={selectedData.stats?.passes?.key || 0}
                     />
                     <StatRow
                       cantidad={selectedData.stats?.dribbles?.success || 0}
@@ -899,13 +920,18 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                 {/* BASE GENERAL - Penaltis y tarjetas (para todas las posiciones) */}
                 <StatRow
                   cantidad={selectedData.stats?.penalty?.won || 0}
-                  estadistica="Penaltis recibidos"
+                  estadistica="Penaltis ganados"
                   puntos={(selectedData.stats?.penalty?.won || 0) * 2}
                 />
                 <StatRow
                   cantidad={selectedData.stats?.penalty?.committed || 0}
                   estadistica="Penaltis cometidos"
                   puntos={(selectedData.stats?.penalty?.committed || 0) * -2}
+                />
+                <StatRow
+                  cantidad={selectedData.stats?.penalty?.scored || 0}
+                  estadistica="Penaltis marcados"
+                  puntos={(selectedData.stats?.penalty?.scored || 0) * 3}
                 />
                 <StatRow
                   cantidad={selectedData.stats?.penalty?.missed || 0}
@@ -921,17 +947,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   cantidad={selectedData.stats?.cards?.red || 0}
                   estadistica="Tarjetas rojas"
                   puntos={(selectedData.stats?.cards?.red || 0) * -3}
-                />
-                <StatRow
-                  cantidad={selectedData.stats?.rating ? parseFloat(selectedData.stats.rating).toFixed(1) : '-'}
-                  estadistica="Valoración del partido"
-                  puntos={(() => {
-                    const rating = selectedData.stats?.rating ? parseFloat(selectedData.stats.rating) : 0;
-                    if (rating > 8) return 3;
-                    if (rating >= 6.5 && rating <= 8) return 2;
-                    if (rating >= 5) return 1;
-                    return 0;
-                  })()}
                 />
               </ScrollView>
             ) : (
