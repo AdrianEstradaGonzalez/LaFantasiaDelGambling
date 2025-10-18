@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
-import { calculatePlayerPoints, normalizeRole } from './playerPoints.service.js';
+import { calculatePlayerPoints as calculatePlayerPointsService, normalizeRole } from './playerPoints.service.js';
 const prisma = new PrismaClient();
 const squadRoleMap = {
     POR: "Goalkeeper",
@@ -370,8 +370,10 @@ export class JornadaService {
             }
             console.log(`    ✅ Plantilla válida (${squad.players.length} jugadores). Calculando puntos...`);
             let totalPoints = 0;
+            const playerPointsMap = new Map();
             // Obtener estadísticas de cada jugador para la jornada
             for (const squadPlayer of squad.players) {
+                playerPointsMap.set(squadPlayer.playerId, 0);
                 try {
                     console.log(`\n      🔍 ===== PROCESANDO JUGADOR =====`);
                     console.log(`         Nombre: ${squadPlayer.playerName}`);
@@ -383,9 +385,10 @@ export class JornadaService {
                     // Preferir puntos cacheados si estamos calculando la jornada actual de la liga
                     const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
                     if (localPlayer && leagueJornada === jornada) {
-                        playerPoints = localPlayer.lastJornadaPoints ?? 0;
-                        console.log(`         ♻️ Usando cache (liga.jornada=${leagueJornada}): ${playerPoints} puntos`);
-                        totalPoints += playerPoints;
+                        const cachedPoints = Math.trunc(Number(localPlayer.lastJornadaPoints ?? 0));
+                        playerPointsMap.set(squadPlayer.playerId, cachedPoints);
+                        console.log(`         ♻️ Usando cache (liga.jornada=${leagueJornada}): ${cachedPoints} puntos`);
+                        totalPoints += cachedPoints;
                         console.log(`         💰 Total acumulado: ${totalPoints}`);
                         console.log(`         ====================================\n`);
                         await new Promise((r) => setTimeout(r, 50));
@@ -511,9 +514,11 @@ export class JornadaService {
                         continue;
                     }
                     // PASO 6: Calcular puntos
-                    playerPoints = calculatePlayerPoints(playerStats, mapSquadRole(squadPlayer.role));
-                    console.log(`         ⚽ PUNTOS: ${playerPoints}`);
-                    totalPoints += playerPoints;
+                    playerPoints = calculatePlayerPointsService(playerStats, mapSquadRole(squadPlayer.role));
+                    const roundedPoints = Math.trunc(Number(playerPoints) || 0);
+                    playerPointsMap.set(squadPlayer.playerId, roundedPoints);
+                    console.log(`         ⚽ PUNTOS: ${roundedPoints}`);
+                    totalPoints += roundedPoints;
                     console.log(`         💰 Total acumulado: ${totalPoints}`);
                     console.log(`         ====================================\n`);
                     // Pequeña pausa para evitar rate limit
@@ -521,6 +526,22 @@ export class JornadaService {
                 }
                 catch (error) {
                     console.error(`      ❌ Error con ${squadPlayer.playerName}:`, error.message);
+                }
+            }
+            if (playerPointsMap.size > 0) {
+                for (const [playerId, points] of playerPointsMap.entries()) {
+                    try {
+                        await prisma.player.update({
+                            where: { id: playerId },
+                            data: {
+                                lastJornadaPoints: points,
+                                lastJornadaNumber: jornada,
+                            },
+                        });
+                    }
+                    catch (error) {
+                        console.warn(`    ⚠️ No se pudo actualizar puntos cacheados para jugador ${playerId}:`, error);
+                    }
                 }
             }
             console.log(`    📊 TOTAL PUNTOS PLANTILLA: ${totalPoints}`);

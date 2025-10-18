@@ -988,9 +988,17 @@ export default class FootballService {
                 odd: opt.odd,
               };
             });
-            
-            console.log(`✅ ${bets.length} opciones cargadas desde BD`);
-            return bets;
+            // Enforce 1 apuesta por partido en la visualización (mantiene primeras 2 opciones por partido)
+            const byMatchCount = new Map<number, number>();
+            const filtered = bets.filter((b) => {
+              const c = byMatchCount.get(b.matchId) ?? 0;
+              if (c >= 2) return false;
+              byMatchCount.set(b.matchId, c + 1);
+              return true;
+            });
+
+            console.log(`✅ ${filtered.length} opciones cargadas desde BD (filtradas por 1 apuesta/partido)`);
+            return filtered;
           } else {
             console.log(`⚠️ No hay opciones en BD, generando nuevas...`);
           }
@@ -1574,14 +1582,23 @@ export default class FootballService {
       console.log(`   - Tarjetas: ${bets.filter(b => b.type === 'Tarjetas').length}`);
       console.log(`   - Total: ${bets.length} apuestas`);
 
+      // Enforce 1 bet per match (keep the first pair of options for each match)
+      const byMatchCount = new Map<number, number>();
+      const betsToPersist = bets.filter((b) => {
+        const c = byMatchCount.get(b.matchId) ?? 0;
+        if (c >= 2) return false;
+        byMatchCount.set(b.matchId, c + 1);
+        return true;
+      });
+
       // Persistir apuestas
       if (ligaId) {
         // Si hay ligaId, guardar en base de datos para compartir entre jugadores
         try {
-          console.log(`💾 Guardando ${bets.length} opciones en BD para liga ${ligaId}, jornada ${nextJ}`);
+          console.log(`💾 Guardando ${betsToPersist.length} opciones en BD para liga ${ligaId}, jornada ${nextJ}`);
           
           // Transformar al formato que espera el backend
-          const betOptionsToSave = bets.map(bet => ({
+          const betOptionsToSave = betsToPersist.map(bet => ({
             matchId: bet.matchId,
             homeTeam: bet.local,
             awayTeam: bet.visitante,
@@ -1596,17 +1613,17 @@ export default class FootballService {
           console.error('❌ Error guardando en BD:', error);
           // Fallback a caché local si falla DB
           try {
-            await EncryptedStorage.setItem(storeKey, JSON.stringify(bets));
+            await EncryptedStorage.setItem(storeKey, JSON.stringify(betsToPersist));
           } catch {}
         }
       } else {
         // Sin ligaId, usar caché local
         try {
-          await EncryptedStorage.setItem(storeKey, JSON.stringify(bets));
+          await EncryptedStorage.setItem(storeKey, JSON.stringify(betsToPersist));
         } catch {}
       }
 
-      return bets;
+      return betsToPersist;
     } catch (error) {
       console.error('Error fetching apuestas:', error);
       return [];
