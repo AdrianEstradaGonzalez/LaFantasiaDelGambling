@@ -104,7 +104,7 @@ export function calculatePlayerPoints(
     // Goles encajados: -2 por gol
     points -= conceded * 2;
     // Penaltis parados
-    points += (penalty.saved || 0) * 5;
+    points += Number((penalty.saved || stats.goalkeeper?.savedPenalties || 0)) * 5;
     // Recuperaciones (aprox. intercepciones): +1 cada 5
     points += Math.floor((tackles.interceptions || 0) / 5);
   } else if (role === 'Defender') {
@@ -224,7 +224,52 @@ export async function getPlayerMatchdayStats(playerId: number, matchday: number,
       }
     }
 
-    if (!playerStats) return { matchday, points: 0, stats: createEmptyStats() };
+    
+
+// Fallback 1: coincidencia por nombre (normalizado) cuando el ID no aparece
+if (!playerStats && (playerInfo as any)?.player?.name) {
+  const target = String((playerInfo as any).player.name)
+    .normalize('NFD')
+    .replace(/̀-ͯ/g, '')
+    .toLowerCase();
+  for (const teamData of teamsData) {
+    const players = teamData?.players || [];
+    const foundByName = players.find((p: any) => {
+      const name = String(p?.player?.name || '')
+        .normalize('NFD')
+        .replace(/̀-ͯ/g, '')
+        .toLowerCase();
+      return name && name === target && p?.statistics?.[0];
+    });
+    if (foundByName?.statistics?.[0]) {
+      playerStats = foundByName.statistics[0];
+      break;
+    }
+  }
+}
+
+// Fallback 2: si el rol esperado es portero, tomar el portero con minutos > 0
+const expectedRole = normalizeRole(roleInput ?? (playerInfo as any)?.statistics?.[0]?.games?.position);
+if (!playerStats && expectedRole === 'Goalkeeper') {
+  for (const teamData of teamsData) {
+    const players = teamData?.players || [];
+    const gk = players.find((p: any) => {
+      const pos = String(p?.statistics?.[0]?.games?.position || '')
+        .trim()
+        .toLowerCase();
+      const mins = Number(p?.statistics?.[0]?.games?.minutes || 0);
+      return mins > 0 && (pos === 'g' || pos === 'gk' || pos.includes('goal'));
+    });
+    if (gk?.statistics?.[0]) {
+      playerStats = gk.statistics[0];
+      break;
+    }
+  }
+}
+
+if (!playerStats) return { matchday, points: 0, stats: createEmptyStats() };
+
+
 
     const role = normalizeRole(roleInput ?? playerStats?.games?.position);
     const points = calculatePlayerPoints(playerStats, role);

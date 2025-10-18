@@ -92,7 +92,7 @@ export function calculatePlayerPoints(stats, role) {
         // Goles encajados: -2 por gol
         points -= conceded * 2;
         // Penaltis parados
-        points += (penalty.saved || 0) * 5;
+        points += Number((penalty.saved || stats.goalkeeper?.savedPenalties || 0)) * 5;
         // Recuperaciones (aprox. intercepciones): +1 cada 5
         points += Math.floor((tackles.interceptions || 0) / 5);
     }
@@ -205,6 +205,45 @@ export async function getPlayerMatchdayStats(playerId, matchday, roleInput) {
             if (found?.statistics?.[0]) {
                 playerStats = found.statistics[0];
                 break;
+            }
+        }
+        // Fallback 1: coincidencia por nombre (normalizado) cuando el ID no aparece
+        if (!playerStats && playerInfo?.player?.name) {
+            const target = String(playerInfo.player.name)
+                .normalize('NFD')
+                .replace(/̀-ͯ/g, '')
+                .toLowerCase();
+            for (const teamData of teamsData) {
+                const players = teamData?.players || [];
+                const foundByName = players.find((p) => {
+                    const name = String(p?.player?.name || '')
+                        .normalize('NFD')
+                        .replace(/̀-ͯ/g, '')
+                        .toLowerCase();
+                    return name && name === target && p?.statistics?.[0];
+                });
+                if (foundByName?.statistics?.[0]) {
+                    playerStats = foundByName.statistics[0];
+                    break;
+                }
+            }
+        }
+        // Fallback 2: si el rol esperado es portero, tomar el portero con minutos > 0
+        const expectedRole = normalizeRole(roleInput ?? playerInfo?.statistics?.[0]?.games?.position);
+        if (!playerStats && expectedRole === 'Goalkeeper') {
+            for (const teamData of teamsData) {
+                const players = teamData?.players || [];
+                const gk = players.find((p) => {
+                    const pos = String(p?.statistics?.[0]?.games?.position || '')
+                        .trim()
+                        .toLowerCase();
+                    const mins = Number(p?.statistics?.[0]?.games?.minutes || 0);
+                    return mins > 0 && (pos === 'g' || pos === 'gk' || pos.includes('goal'));
+                });
+                if (gk?.statistics?.[0]) {
+                    playerStats = gk.statistics[0];
+                    break;
+                }
             }
         }
         if (!playerStats)

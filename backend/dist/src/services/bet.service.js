@@ -123,6 +123,20 @@ export class BetService {
         }
         // Crear la apuesta
         const currentJornada = await this.getCurrentJornada(leagueId);
+        // Regla: solo una apuesta por partido y jornada para cada usuario
+        const existingForMatch = await prisma.bet.findFirst({
+            where: {
+                leagueId,
+                userId,
+                jornada: currentJornada,
+                matchId,
+                status: 'pending',
+            },
+            select: { id: true },
+        });
+        if (existingForMatch) {
+            throw new AppError(400, 'ONE_BET_PER_MATCH', 'Solo puedes tener una apuesta por partido en esta jornada. Borra o edita tu apuesta existente.');
+        }
         const potentialWin = Math.round(amount * odd);
         const bet = await prisma.bet.create({
             data: {

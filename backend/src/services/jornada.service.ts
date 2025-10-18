@@ -575,10 +575,55 @@ export class JornadaService {
             }
           }
 
-          if (!playerStats) {
-            console.log(`         ⚠️ No participó en el partido (no convocado/lesionado/suplente sin jugar)`);
-            continue;
+          
+if (!playerStats) {
+            // Fallbacks específicos para porteros: algunos partidos no devuelven el ID esperado
+            const roleExpected = mapSquadRole(squadPlayer.role);
+            if (roleExpected === 'Goalkeeper') {
+              // 1) intentar por coincidencia de nombre (normalizado)
+              const targetName = String(squadPlayer.playerName || '')
+                .normalize('NFD')
+                .replace(/̀-ͯ/g, '')
+                .toLowerCase();
+              for (const teamData of teamsData) {
+                const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
+                const byName = playersArr.find((p: any) => {
+                  const nm = String(p?.player?.name || '')
+                    .normalize('NFD')
+                    .replace(/̀-ͯ/g, '')
+                    .toLowerCase();
+                  return nm && nm === targetName && p?.statistics?.[0];
+                });
+                if (byName?.statistics?.[0]) {
+                  playerStats = byName.statistics[0];
+                  break;
+                }
+              }
+              // 2) si aún no, elegir el portero que jugó (minutos>0)
+              if (!playerStats) {
+                for (const teamData of teamsData) {
+                  const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
+                  const gk = playersArr.find((p: any) => {
+                    const pos = String(p?.statistics?.[0]?.games?.position || '')
+                      .trim()
+                      .toLowerCase();
+                    const mins = Number(p?.statistics?.[0]?.games?.minutes || 0);
+                    return mins > 0 && (pos === 'g' || pos === 'gk' || pos.includes('goal'));
+                  });
+                  if (gk?.statistics?.[0]) {
+                    playerStats = gk.statistics[0];
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (!playerStats) {
+              console.log(`         ⚠️ No participó en el partido (no convocado/lesionado/suplente sin jugar)`);
+              continue;
+            }
           }
+
 
           // PASO 6: Calcular puntos
           playerPoints = calculatePlayerPointsService(playerStats, mapSquadRole(squadPlayer.role));
@@ -718,7 +763,7 @@ export class JornadaService {
       points += savesPoints;
       if (savesPoints > 0) console.log(`      ✅ +${savesPoints} puntos por paradas`);
       
-      const penaltySavedPoints = (penalty.saved || 0) * 5;
+      const penaltySavedPoints = Number((penalty.saved || stats.goalkeeper?.savedPenalties || 0)) * 5;
       points += penaltySavedPoints;
       if (penaltySavedPoints > 0) console.log(`      ✅ +${penaltySavedPoints} puntos por penaltis parados`);
       
