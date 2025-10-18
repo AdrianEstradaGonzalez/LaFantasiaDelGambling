@@ -592,9 +592,9 @@ export default class FootballService {
   }
 
   // ======= Points calculation (frontend) =======
-  private static mapRoleCode(role: 'POR'|'DEF'|'CEN'|'DEL'): 'GK'|'DEF'|'MID'|'ATT' {
+  private static mapRoleCode(role: 'GK'|'DEF'|'CEN'|'DEL'): 'GK'|'DEF'|'MID'|'ATT' {
     switch (role) {
-      case 'POR': return 'GK';
+      case 'GK': return 'GK';
       case 'DEF': return 'DEF';
       case 'CEN': return 'MID';
       case 'DEL': return 'ATT';
@@ -602,9 +602,9 @@ export default class FootballService {
     }
   }
 
-  private static canonicalRoleToCode(role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'): 'POR'|'DEF'|'CEN'|'DEL' {
+  private static canonicalRoleToCode(role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'): 'GK'|'DEF'|'CEN'|'DEL' {
     switch (role) {
-      case 'Goalkeeper': return 'POR';
+      case 'Goalkeeper': return 'GK';
       case 'Defender': return 'DEF';
       case 'Midfielder': return 'CEN';
       case 'Attacker': return 'DEL';
@@ -613,7 +613,7 @@ export default class FootballService {
 
   private static calculatePlayerPointsDetailed(
     stats: any,
-    roleCode: 'POR'|'DEF'|'CEN'|'DEL'
+    roleCode: 'GK'|'DEF'|'CEN'|'DEL'
   ): { total: number; breakdown: PointsBreakdownEntry[] } {
     if (!stats || !stats.games) {
       return { total: 0, breakdown: [] };
@@ -683,10 +683,6 @@ export default class FootballService {
     } else if (role === 'MID') {
       const goalsScored = goals.total || 0;
       if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 5);
-      const conceded = Number(goals.conceded ?? 0);
-      if (minutes >= CLEAN_SHEET_MINUTES && conceded === 0) add('Portería a cero', 'Sí', 1);
-      const concededPenalty = Math.floor(conceded / 2);
-      if (concededPenalty) add('Goles encajados', conceded, -concededPenalty);
       const shotsOn = Number(shots.on || 0);
       if (shotsOn) add('Tiros a puerta', shotsOn, shotsOn);
       const passesKey = Number(passes.key || 0);
@@ -718,7 +714,7 @@ export default class FootballService {
     return { total: Math.trunc(total), breakdown };
   }
 
-  private static calculatePlayerPoints(stats: any, roleCode: 'POR'|'DEF'|'CEN'|'DEL'): number {
+  private static calculatePlayerPoints(stats: any, roleCode: 'GK'|'DEF'|'CEN'|'DEL'): number {
     return this.calculatePlayerPointsDetailed(stats, roleCode).total;
   }
 
@@ -740,7 +736,7 @@ export default class FootballService {
    * Obtener puntos por jugador para una jornada (usando API-FOOTBALL)
    * Hace 1 llamada para fixtures + ~10 llamadas (una por partido) para stats de jugadores.
    */
-  static async getPlayersPointsForJornada(jornada: number, playerIds: number[], rolesById: Record<number, 'POR'|'DEF'|'CEN'|'DEL'>): Promise<Record<number, number>> {
+  static async getPlayersPointsForJornada(jornada: number, playerIds: number[], rolesById: Record<number, 'GK'|'DEF'|'CEN'|'DEL'>): Promise<Record<number, number>> {
     const pointsMap: Record<number, number> = {};
     if (!playerIds.length) return pointsMap;
     try {
@@ -1785,7 +1781,32 @@ export default class FootballService {
         }
 
         // Retornar estadísticas del partido específico
-        return {
+          // Detect if player is a goalkeeper
+          const position = (playerStats.games?.position || '').toLowerCase();
+          const isGoalkeeper = position === 'goalkeeper' || position === 'gk' || position.includes('goal');
+
+          // Always fill goalkeeper object for goalkeepers
+          let goalkeeperStats = playerStats.goalkeeper || {};
+          if (isGoalkeeper) {
+            goalkeeperStats = {
+              saves: goalkeeperStats.saves ?? playerStats.goalkeeper?.saves ?? 0,
+              conceded: goalsAgainst,
+              cleanSheets: (goalsAgainst === 0 && minutesPlayed > 0) ? 1 : 0,
+              savedPenalties: playerStats.goalkeeper?.saved ?? playerStats.penalty?.saved ?? 0,
+            };
+          } else if (playerStats.goalkeeper) {
+            // For non-goalkeepers, keep API stats if present
+            goalkeeperStats = {
+              saves: playerStats.goalkeeper?.saves ?? 0,
+              conceded: playerStats.goalkeeper?.conceded ?? 0,
+              cleanSheets: playerStats.goalkeeper?.cleanSheets ?? 0,
+              savedPenalties: playerStats.goalkeeper?.saved ?? 0,
+            };
+          } else {
+            goalkeeperStats = undefined;
+          }
+
+          return {
             games: {
               appearances: 1,
               lineups: playerStats.games?.substitute === false ? 1 : 0,
@@ -1835,15 +1856,7 @@ export default class FootballService {
               saved: playerStats.penalty?.saved || 0
             },
             rating: playerStats.games?.rating,
-            goalkeeper: playerStats.goalkeeper
-              ? {
-                  saves: playerStats.goalkeeper?.saves || 0,
-                  conceded: playerStats.goalkeeper?.conceded || 0,
-                  cleanSheets:
-                    (playerStats.goalkeeper?.conceded || 0) === 0 && minutesPlayed > 0 ? 1 : 0,
-                  savedPenalties: playerStats.goalkeeper?.saved || 0,
-                }
-              : undefined
+            goalkeeper: goalkeeperStats
           };
       } else {
         const playerInfo = await this.fetchPlayerSeasonInfo(playerId);
