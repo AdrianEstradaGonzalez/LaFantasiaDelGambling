@@ -5,11 +5,14 @@ import { AppError } from '../utils/errors.js';
 const prisma = new PrismaClient();
 
 // --- Cálculo de puntos DreamLeague ---
+const CLEAN_SHEET_MINUTES = 60;
+
 const calculatePlayerPoints = (stats: any, role: string): number => {
   if (!stats) return 0;
 
   let points = 0;
-  const minutes = stats.games?.minutes || 0;
+  const minutes = Number(stats.games?.minutes ?? 0);
+  const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
 
   // BASE GENERAL - Minutos jugados
   if (minutes > 0 && minutes < 45) points += 1;
@@ -20,7 +23,7 @@ const calculatePlayerPoints = (stats: any, role: string): number => {
     points += (stats.goals?.total || 0) * 10;
     points += (stats.goals?.assists || 0) * 3;
     // Bonus solo si juega >= 60 min
-    if ((stats.goalkeeper?.conceded || 0) === 0 && (stats.games?.minutes || 0) >= 60) points += 5;
+    if (meetsCleanSheetMinutes && (stats.goalkeeper?.conceded || 0) === 0) points += 5;
     points += stats.goalkeeper?.saves || 0;
     points -= (stats.goalkeeper?.conceded || 0) * 2;
     points += (stats.penalty?.saved || 0) * 5;
@@ -31,7 +34,7 @@ const calculatePlayerPoints = (stats: any, role: string): number => {
     points += (stats.goals?.total || 0) * 6;
     points += (stats.goals?.assists || 0) * 3;
     // Bonus solo si juega >= 60 min
-    if ((stats.goals?.conceded || 0) === 0 && (stats.games?.minutes || 0) >= 60) points += 4;
+    if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 4;
     points += stats.shots?.on || 0;
     points -= stats.goals?.conceded || 0;
     points += Math.floor((stats.duels?.won || 0) / 2);
@@ -42,7 +45,7 @@ const calculatePlayerPoints = (stats: any, role: string): number => {
     points += (stats.goals?.total || 0) * 5;
     points += (stats.goals?.assists || 0) * 3;
     // Bonus solo si juega >= 60 min
-    if ((stats.goals?.conceded || 0) === 0 && (stats.games?.minutes || 0) >= 60) points += 1;
+    if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 1;
     points += stats.shots?.on || 0;
     points -= Math.floor((stats.goals?.conceded || 0) / 2);
     points += Math.floor((stats.passes?.key || 0) / 2);
@@ -222,7 +225,35 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
   }
 
   console.log(`[ADMIN] Actualización completada ✅ (${updatedCount} jugadores actualizados para jornada ${lastCompletedJornada})`);
+  return { updatedPlayers: updatedCount, processedJornada: lastCompletedJornada };
 }
+
+  async updatePlayersPointsFromCurrentJornada() {
+    const leagues = await prisma.league.findMany({
+      select: { currentJornada: true },
+    });
+
+    if (!leagues.length) {
+      throw new AppError(404, 'NO_LEAGUES', 'No hay ligas registradas');
+    }
+
+    const jornadas = leagues
+      .map((league) => Number(league.currentJornada))
+      .filter((value) => Number.isFinite(value) && value > 0);
+
+    if (!jornadas.length) {
+      throw new AppError(400, 'NO_JORNADA', 'No hay jornadas configuradas en las ligas');
+    }
+
+    const requestedJornada = Math.max(...jornadas);
+    const summary = await this.updateAllPlayersLastJornadaPoints(requestedJornada);
+
+    return {
+      requestedJornada,
+      updatedPlayers: summary?.updatedPlayers ?? 0,
+      processedJornada: summary?.processedJornada ?? requestedJornada,
+    };
+  }
 
   // Delete a user
   async deleteUser(userId: string, requestingUserId: string) {

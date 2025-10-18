@@ -146,6 +146,8 @@ const formations: Formation[] = [
   }
 ];
 
+const CLEAN_SHEET_MINUTES = 60;
+
 const getAvatarUri = (p: Player) => {
   // Extraer iniciales del nombre del jugador
   const words = p.name.trim().split(/\s+/);
@@ -420,7 +422,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     let points = 0;
     
     // BASE GENERAL (para todos)
-    const minutes = games.minutes || 0;
+    const minutes = Number(games.minutes ?? 0);
+    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
     if (minutes > 0 && minutes < 45) {
       points += 1; // Juega menos de 45 min
     } else if (minutes >= 45) {
@@ -439,7 +442,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     if (role === 'POR') {
       // ðŸ§¤ PORTERO
       // PorterÃ­a a cero (â‰¥60 min)
-      if (minutes >= 60 && (goalkeeper.conceded || goals.conceded || 0) === 0) {
+      if (meetsCleanSheetMinutes && (goalkeeper.conceded || goals.conceded || 0) === 0) {
         points += 5;
       }
       points += (goalkeeper.conceded || goals.conceded || 0) * -2; // Gol encajado
@@ -451,7 +454,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     } else if (role === 'DEF') {
       // ðŸ›¡ï¸ DEFENSA
       // PorterÃ­a a cero (â‰¥60 min)
-      if (minutes >= 60 && (goals.conceded || 0) === 0) {
+      if (meetsCleanSheetMinutes && (goals.conceded || 0) === 0) {
         points += 4;
       }
       points += (goals.total || 0) * 6;           // Gol marcado
@@ -463,7 +466,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     } else if (role === 'CEN') {
       // âš™ï¸ CENTROCAMPISTA
       // PorterÃ­a a cero (â‰¥60 min)
-      if (minutes >= 60 && (goals.conceded || 0) === 0) {
+      if (meetsCleanSheetMinutes && (goals.conceded || 0) === 0) {
         points += 1;
       }
       points += (goals.total || 0) * 5;           // Gol

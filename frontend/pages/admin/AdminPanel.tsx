@@ -35,13 +35,17 @@ const AdminPanel: React.FC = () => {
   const [isClosingJornada, setIsClosingJornada] = useState(false);
   const [isOpeningJornada, setIsOpeningJornada] = useState(false);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed' | null>(null);
+  const [currentJornada, setCurrentJornada] = useState<number | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [isUpdatingPlayerScores, setIsUpdatingPlayerScores] = useState(false);
+  const [isSyncingCurrentScores, setIsSyncingCurrentScores] = useState(false);
   // Actualizar puntuaciones de jugadores (admin)
   const handleUpdatePlayerScores = async () => {
+    const targetJornada = currentJornada ?? 1;
+
     CustomAlertManager.alert(
       'Actualizar puntuaciones de jugadores',
-      '¿Estás seguro de que quieres actualizar la puntuación de la última jornada para TODOS los jugadores?\n\nEsto recalculará y guardará la puntuación de la última jornada real en la base de datos.',
+      `¿Estás seguro de que quieres recalcular y guardar la puntuación para la jornada ${targetJornada}?\n\nEste proceso consultará la API oficial y almacenará el resultado en la base de datos.`,
       [
         { text: 'Cancelar', style: 'cancel', onPress: () => {} },
         {
@@ -53,7 +57,7 @@ const AdminPanel: React.FC = () => {
               const token = await EncryptedStorage.getItem('accessToken');
               const response = await axios.post(
                 `${ApiConfig.BASE_URL}/admin/update-player-scores`,
-                { jornada: 8 }, // 👈 aquí agregas la jornada actual
+                { jornada: targetJornada },
                 {
                   headers: {
                     Authorization: `Bearer ${token}`,
@@ -64,7 +68,7 @@ const AdminPanel: React.FC = () => {
               );
               CustomAlertManager.alert(
                 '✅ Puntuaciones actualizadas',
-                `Se han actualizado las puntuaciones de ${response.data.updatedPlayers} jugadores para la jornada ${response.data.lastJornada}.`,
+                `Se han actualizado las puntuaciones de ${response.data?.updatedPlayers ?? 0} jugadores para la jornada ${response.data?.processedJornada ?? targetJornada}.`,
                 [{ text: 'OK', style: 'default', onPress: () => {} }],
                 { icon: 'check-circle', iconColor: '#10b981' }
               );
@@ -85,6 +89,54 @@ const AdminPanel: React.FC = () => {
     );
   };
 
+  const handleSyncCurrentPlayerScores = () => {
+    CustomAlertManager.alert(
+      'Sincronizar puntuaciones (jornada actual)',
+      'Se calcularán los puntos de todos los jugadores usando la jornada actual registrada en las ligas. ¿Deseas continuar?',
+      [
+        { text: 'Cancelar', style: 'cancel', onPress: () => {} },
+        {
+          text: 'Sincronizar',
+          style: 'default',
+          onPress: async () => {
+            try {
+              setIsSyncingCurrentScores(true);
+              const token = await EncryptedStorage.getItem('accessToken');
+              const response = await axios.post(
+                `${ApiConfig.BASE_URL}/admin/update-player-scores/current`,
+                {},
+                {
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  timeout: 180000,
+                }
+              );
+
+              CustomAlertManager.alert(
+                '✅ Puntuaciones actualizadas',
+                `Se han actualizado ${response.data?.updatedPlayers ?? 0} jugadores. Jornada solicitada: ${response.data?.requestedJornada}. Jornada procesada: ${response.data?.processedJornada}.`,
+                [{ text: 'OK', style: 'default', onPress: () => {} }],
+                { icon: 'check-circle', iconColor: '#10b981' }
+              );
+            } catch (error: any) {
+              CustomAlertManager.alert(
+                '❌ Error',
+                error?.response?.data?.message || error.message || 'Error al sincronizar puntuaciones.',
+                [{ text: 'OK', style: 'default', onPress: () => {} }],
+                { icon: 'alert-circle', iconColor: '#ef4444' }
+              );
+            } finally {
+              setIsSyncingCurrentScores(false);
+            }
+          },
+        },
+      ],
+      { icon: 'alert', iconColor: '#f59e0b' }
+    );
+  };
+
   // Cargar estado inicial al montar el componente
   useEffect(() => {
     const loadJornadaStatus = async () => {
@@ -97,6 +149,7 @@ const AdminPanel: React.FC = () => {
         if (!userId) {
           console.log('⚠️ AdminPanel - No hay userId disponible');
           setJornadaStatus(null);
+          setCurrentJornada(null);
           return;
         }
         
@@ -113,14 +166,17 @@ const AdminPanel: React.FC = () => {
           console.log('📊 AdminPanel - Estado obtenido:', status.status);
           
           setJornadaStatus(status.status as 'open' | 'closed');
+          setCurrentJornada(status.currentJornada);
         } else {
           console.log('⚠️ AdminPanel - No hay ligas disponibles');
           setJornadaStatus('open'); // Default a open si no hay ligas
+          setCurrentJornada(null);
         }
       } catch (error) {
         console.error('❌ AdminPanel - Error cargando estado:', error);
         // En caso de error, dejar ambos botones habilitados
         setJornadaStatus(null);
+        setCurrentJornada(null);
       } finally {
         setIsLoadingStatus(false);
         console.log('✅ AdminPanel - Estado de jornada cargado');
@@ -393,6 +449,44 @@ const AdminPanel: React.FC = () => {
                 }}
               >
                 Actualizar puntuaciones
+              </Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleSyncCurrentPlayerScores}
+            disabled={isSyncingCurrentScores}
+            style={{
+              marginTop: 12,
+              backgroundColor: isSyncingCurrentScores ? '#334155' : '#0892D0',
+              paddingVertical: 14,
+              borderRadius: 12,
+              alignItems: 'center',
+              opacity: isSyncingCurrentScores ? 0.7 : 1,
+            }}
+          >
+            {isSyncingCurrentScores ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <ActivityIndicator color="#fff" size="small" />
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 16,
+                    fontWeight: 'bold',
+                    marginLeft: 12,
+                  }}
+                >
+                  Sincronizando...
+                </Text>
+              </View>
+            ) : (
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: 16,
+                  fontWeight: 'bold',
+                }}
+              >
+                Usar jornada de las ligas
               </Text>
             )}
           </TouchableOpacity>

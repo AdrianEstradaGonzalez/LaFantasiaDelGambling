@@ -10,6 +10,7 @@ import { BetOptionService, BetOption } from './BetOptionService';
 const API_BASE = "https://v3.football.api-sports.io";
 const LA_LIGA_LEAGUE_ID = 140; // La Liga ID en API-FOOTBALL
 const SEASON_DEFAULT = 2025;
+const CLEAN_SHEET_MINUTES = 60;
 
 // Nota: por simplicidad usamos la key proporcionada; idealmente cargar desde .env o almacenamiento seguro
 export const HEADERS = {
@@ -446,7 +447,8 @@ export default class FootballService {
     const role = this.mapRoleCode(roleCode);
 
     let points = 0;
-    const minutes = stats.games?.minutes || 0;
+    const minutes = Number(stats.games?.minutes ?? 0);
+    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
 
     // Base general
     if (minutes > 0 && minutes < 45) points += 1;
@@ -473,7 +475,7 @@ export default class FootballService {
     // Específico por posición
     if (role === 'GK') {
       const conceded = stats.goals?.conceded || 0;
-      if (minutes >= 60 && conceded === 0) points += 5;
+      if (meetsCleanSheetMinutes && conceded === 0) points += 5;
       points -= conceded * 2;
       points += (stats.goals?.saves || 0) * 1;
       points += (penalty.saved || 0) * 5;
@@ -481,7 +483,7 @@ export default class FootballService {
       points += Math.floor((tackles.interceptions || 0) / 5);
     } else if (role === 'DEF') {
       const conceded = stats.goals?.conceded || 0;
-      if (minutes >= 60 && conceded === 0) points += 4;
+      if (meetsCleanSheetMinutes && conceded === 0) points += 4;
       points += (goals.total || 0) * 6;
       points += Math.floor((duels.won || 0) / 2);
       points += Math.floor((tackles.interceptions || 0) / 5);
@@ -489,7 +491,7 @@ export default class FootballService {
       points += (shots.on || 0) * 1;
     } else if (role === 'MID') {
       const conceded = stats.goals?.conceded || 0;
-      if (minutes >= 60 && conceded === 0) points += 1;
+      if (meetsCleanSheetMinutes && conceded === 0) points += 1;
       points += (goals.total || 0) * 5;
       points -= Math.floor(conceded / 2);
       points += (passes.key || 0) * 1;

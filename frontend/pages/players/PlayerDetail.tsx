@@ -82,7 +82,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     if (!stats) return 0;
     
     let points = 0;
-    const minutes = stats.games?.minutes || 0;
+    const minutes = Number(stats.games?.minutes ?? 0);
+    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
 
     // BASE GENERAL - Minutos jugados
     if (minutes > 0 && minutes < 45) points += 1;
@@ -95,7 +96,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       // Asistencias
       points += (stats.goals?.assists || 0) * 3;
       // Goles encajados = 0 (bonus por no encajar, solo si juega >= 60 min)
-      if ((stats.goalkeeper?.conceded || 0) === 0 && (stats.games?.minutes || 0) >= 60) points += 5;
+      if (meetsCleanSheetMinutes && (stats.goalkeeper?.conceded || 0) === 0) points += 5;
       // Paradas
       points += (stats.goalkeeper?.saves || 0);
       // Goles encajados
@@ -110,7 +111,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       // Asistencias
       points += (stats.goals?.assists || 0) * 3;
       // Goles encajados = 0 (sin portería a cero, solo si juega >= 60 min)
-      if ((stats.goals?.conceded || 0) === 0 && (stats.games?.minutes || 0) >= 60) points += 4;
+      if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 4;
       // Tiros a puerta
       points += (stats.shots?.on || 0);
       // Goles encajados
@@ -125,7 +126,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       // Asistencias
       points += (stats.goals?.assists || 0) * 3;
       // Goles encajados = 0 (sin portería a cero, solo si juega >= 60 min)
-      if ((stats.goals?.conceded || 0) === 0 && (stats.games?.minutes || 0) >= 60) points += 1;
+      if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 1;
       // Tiros a puerta
       points += (stats.shots?.on || 0);
       // Goles encajados (cada 2)
@@ -989,3 +990,4 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
 };
 
 export default PlayerDetail;
+const CLEAN_SHEET_MINUTES = 60;

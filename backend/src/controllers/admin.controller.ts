@@ -26,11 +26,28 @@ export class AdminController {
         });
       }
 
-      await adminService.updateAllPlayersLastJornadaPoints(jornada);
-
+      const result = await adminService.updateAllPlayersLastJornadaPoints(jornada);
       res.send({
         success: true,
-        message: `Puntuaciones actualizadas para la jornada ${jornada}`,
+        message: `Puntuaciones actualizadas para la jornada ${result?.processedJornada ?? jornada}`,
+        requestedJornada: jornada,
+        processedJornada: result?.processedJornada ?? jornada,
+        updatedPlayers: result?.updatedPlayers ?? 0,
+      });
+    } catch (error) {
+      this.handleError(res, error, 'Error actualizando puntuaciones de jugadores');
+    }
+  }
+
+  async updatePlayerScoresFromCurrent(req: any, res: any) {
+    try {
+      const result = await adminService.updatePlayersPointsFromCurrentJornada();
+      res.send({
+        success: true,
+        message: `Puntuaciones actualizadas para la jornada ${result.processedJornada}`,
+        requestedJornada: result.requestedJornada,
+        processedJornada: result.processedJornada,
+        updatedPlayers: result.updatedPlayers,
       });
     } catch (error) {
       this.handleError(res, error, 'Error actualizando puntuaciones de jugadores');

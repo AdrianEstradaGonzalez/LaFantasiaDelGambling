@@ -581,6 +581,8 @@ export class JornadaService {
   /**
    * Calcular puntos de un jugador según DreamLeague
    */
+  private static readonly CLEAN_SHEET_MINUTES = 60;
+
   private static calculatePlayerPoints(stats: any, role: string): number {
     console.log(`\n🎯 ===== CALCULANDO PUNTOS DE JUGADOR =====`);
     console.log(`   Rol: ${role}`);
@@ -592,7 +594,8 @@ export class JornadaService {
     }
 
     let points = 0;
-    const minutes = stats.games?.minutes || 0;
+    const minutes = Number(stats.games?.minutes ?? 0);
+    const meetsCleanSheetMinutes = minutes >= this.CLEAN_SHEET_MINUTES;
     console.log(`   ⏱️ Minutos jugados: ${minutes}`);
 
     // BASE GENERAL (para todos)
@@ -658,7 +661,7 @@ export class JornadaService {
       console.log(`      - Goles encajados: ${conceded}`);
       console.log(`      - Paradas: ${stats.goals?.saves || 0}`);
       
-      if (minutes >= 60 && conceded === 0) {
+      if (meetsCleanSheetMinutes && conceded === 0) {
         points += 5;
         console.log(`      ✅ +5 puntos por portería a cero (>= 60 min)`);
       }
@@ -689,7 +692,7 @@ export class JornadaService {
       console.log(`      - Goles encajados: ${conceded}`);
       console.log(`      - Duelos ganados: ${duels.won || 0}`);
       
-      if (minutes >= 60 && conceded === 0) {
+      if (meetsCleanSheetMinutes && conceded === 0) {
         points += 4;
         console.log(`      ✅ +4 puntos por portería a cero (>= 60 min)`);
       }
@@ -721,7 +724,7 @@ export class JornadaService {
       console.log(`      - Pases clave: ${passes.key || 0}`);
       console.log(`      - Regates: ${dribbles.success || 0}`);
       
-      if (minutes >= 60 && conceded === 0) {
+      if (meetsCleanSheetMinutes && conceded === 0) {
         points += 1;
         console.log(`      ✅ +1 punto por portería a cero (>= 60 min)`);
       }
