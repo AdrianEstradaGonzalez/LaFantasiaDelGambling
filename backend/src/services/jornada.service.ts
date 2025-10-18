@@ -689,7 +689,7 @@ export class JornadaService {
         console.log(`      ✅ +5 puntos por portería a cero (>= 60 min)`);
       }
       
-      const concededPenalty = conceded * 1;
+      const concededPenalty = conceded * 2;
       points -= concededPenalty;
       if (concededPenalty > 0) console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
       
@@ -753,6 +753,11 @@ export class JornadaService {
       
       const concededPenalty = Math.floor(conceded / 2);
       points -= concededPenalty;
+      // Clean sheet (>=60 min): +1
+      if (meetsCleanSheetMinutes && conceded === 0) {
+        points += 1;
+        console.log(`      ✅ +1 punto por portería a cero (>= 60 min)`);
+      }
       if (concededPenalty > 0) console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
       
       const passesPoints = (passes.key || 0) * 1;

@@ -1,5 +1,5 @@
 // FootballService.ts
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { LigaService } from './LigaService';
 import { ApuestasEvaluator } from './ApuestasEvaluator';
@@ -163,7 +163,7 @@ export default class FootballService {
     store.set(key, { ts: Date.now(), data });
   }
 
-  private static async fetchWithRetry<T>(config: AxiosRequestConfig, retries = 3, backoffMs = 700): Promise<T> {
+  private static async fetchWithRetry<T>(config: AxiosRequestConfig, retries = 3, backoffMs = 700): Promise<AxiosResponse<T>> {
     let lastError: any;
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
@@ -258,7 +258,7 @@ export default class FootballService {
             this.setCachedValue(this.playerInfoCache, playerId, info);
           }
           return info;
-        } catch (error) {
+        } catch (error: any) {
           console.warn('FootballService.fetchPlayerSeasonInfo error:', error?.message || error);
           return null;
         }
@@ -630,7 +630,8 @@ export default class FootballService {
     if (role === 'GK') {
       const conceded = Number(stats.goalkeeper?.conceded ?? stats.goals?.conceded ?? 0);
       if (meetsCleanSheetMinutes && conceded === 0) points += 5;
-      points -= conceded * 1;
+      // Alinear con backend: -2 por gol encajado
+      points -= conceded * 2;
       const savesVal = Number(stats.goalkeeper?.saves ?? stats.goals?.saves ?? 0);
       points += savesVal;
       points += (penalty.saved || 0) * 5;
@@ -646,6 +647,8 @@ export default class FootballService {
       points += (shots.on || 0) * 1;
     } else if (role === 'MID') {
       const conceded = Number(stats.goals?.conceded ?? 0);
+      // Clean sheet (>=60 min): +1
+      if (meetsCleanSheetMinutes && conceded === 0) points += 1;
       points += (goals.total || 0) * 5;
       points -= Math.floor(conceded / 2);
       points += (passes.key || 0) * 1;
@@ -662,6 +665,22 @@ export default class FootballService {
     }
 
     return points;
+  }
+
+  // Public wrapper to ensure a single scoring source for UI
+  static calculatePointsForStats(
+    stats: any,
+    role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'
+  ): number {
+    const toCode = (r: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'): 'POR'|'DEF'|'CEN'|'DEL' => {
+      switch (r) {
+        case 'Goalkeeper': return 'POR';
+        case 'Defender': return 'DEF';
+        case 'Midfielder': return 'CEN';
+        case 'Attacker': return 'DEL';
+      }
+    };
+    return this.calculatePlayerPoints(stats, toCode(role));
   }
 
   /**

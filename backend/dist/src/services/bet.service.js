@@ -113,6 +113,9 @@ export class BetService {
         if (amount <= 0) {
             throw new Error('El monto debe ser mayor a 0');
         }
+        if (amount > 50) {
+            throw new Error('El monto máximo por apuesta es 50M');
+        }
         // Verificar presupuesto disponible
         const budget = await this.getBettingBudget(userId, leagueId);
         if (amount > budget.available) {
@@ -197,6 +200,9 @@ export class BetService {
         }
         if (newAmount <= 0) {
             throw new Error('El monto debe ser mayor a 0');
+        }
+        if (newAmount > 50) {
+            throw new Error('El monto máximo por apuesta es 50M');
         }
         // Verificar presupuesto (excluyendo el monto actual de esta apuesta)
         const budget = await this.getBettingBudget(userId, leagueId);

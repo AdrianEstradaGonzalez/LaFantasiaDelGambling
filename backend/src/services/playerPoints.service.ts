@@ -95,12 +95,18 @@ export function calculatePlayerPoints(
 
   if (role === 'Goalkeeper') {
     const conceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
+    // Goles marcados por portero
     points += (goals.total || 0) * 10;
-    points += (goals.assists || 0) * 3;
+    // Asistencias ya fueron sumadas en la sección general
     if (meetsCleanSheetMinutes && conceded === 0) points += 5;
+    // Paradas
     points += Number(stats.goalkeeper?.saves ?? goals.saves ?? 0);
-    points -= conceded;
+    // Goles encajados: -2 por gol
+    points -= conceded * 2;
+    // Penaltis parados
     points += (penalty.saved || 0) * 5;
+    // Recuperaciones (aprox. intercepciones): +1 cada 5
+    points += Math.floor((tackles.interceptions || 0) / 5);
   } else if (role === 'Defender') {
     const conceded = Number(goals.conceded ?? stats.goalkeeper?.conceded ?? 0);
     if (meetsCleanSheetMinutes && conceded === 0) points += 4;
@@ -111,6 +117,8 @@ export function calculatePlayerPoints(
     points += (shots.on || 0);
   } else if (role === 'Midfielder') {
     const conceded = Number(goals.conceded ?? 0);
+    // Portería a cero (>=60 min): +1
+    if (meetsCleanSheetMinutes && conceded === 0) points += 1;
     points += (goals.total || 0) * 5;
     points -= Math.floor(conceded / 2);
     points += (passes.key || 0);

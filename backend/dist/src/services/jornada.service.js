@@ -1,6 +1,27 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
+import { calculatePlayerPoints, normalizeRole } from './playerPoints.service.js';
 const prisma = new PrismaClient();
+const squadRoleMap = {
+    POR: "Goalkeeper",
+    GK: "Goalkeeper",
+    DEF: "Defender",
+    DF: "Defender",
+    CEN: "Midfielder",
+    MID: "Midfielder",
+    CM: "Midfielder",
+    DM: "Midfielder",
+    AM: "Midfielder",
+    DEL: "Attacker",
+    ATT: "Attacker",
+    FW: "Attacker",
+};
+function mapSquadRole(role) {
+    if (!role)
+        return "Midfielder";
+    const upper = role.trim().toUpperCase();
+    return squadRoleMap[upper] ?? normalizeRole(role);
+}
 export class JornadaService {
     /**
      * Evaluar una apuesta individual
@@ -490,7 +511,7 @@ export class JornadaService {
                         continue;
                     }
                     // PASO 6: Calcular puntos
-                    playerPoints = this.calculatePlayerPoints(playerStats, squadPlayer.role);
+                    playerPoints = calculatePlayerPoints(playerStats, mapSquadRole(squadPlayer.role));
                     console.log(`         ⚽ PUNTOS: ${playerPoints}`);
                     totalPoints += playerPoints;
                     console.log(`         💰 Total acumulado: ${totalPoints}`);
@@ -510,9 +531,6 @@ export class JornadaService {
             return 0;
         }
     }
-    /**
-     * Calcular puntos de un jugador según DreamLeague
-     */
     static calculatePlayerPoints(stats, role) {
         console.log(`\n🎯 ===== CALCULANDO PUNTOS DE JUGADOR =====`);
         console.log(`   Rol: ${role}`);
@@ -522,7 +540,8 @@ export class JornadaService {
             return 0;
         }
         let points = 0;
-        const minutes = stats.games?.minutes || 0;
+        const minutes = Number(stats.games?.minutes ?? 0);
+        const meetsCleanSheetMinutes = minutes >= this.CLEAN_SHEET_MINUTES;
         console.log(`   ⏱️ Minutos jugados: ${minutes}`);
         // BASE GENERAL (para todos)
         if (minutes > 0 && minutes < 45) {
@@ -580,10 +599,11 @@ export class JornadaService {
         if (role === 'GK' || role === 'POR') {
             console.log(`   🧤 PORTERO`);
             // Portero
-            const conceded = stats.goals?.conceded || 0;
+            const conceded = Number(stats.goalkeeper?.conceded ?? stats.goals?.conceded ?? 0);
             console.log(`      - Goles encajados: ${conceded}`);
-            console.log(`      - Paradas: ${stats.goals?.saves || 0}`);
-            if (minutes >= 60 && conceded === 0) {
+            const savesValue = Number(stats.goalkeeper?.saves ?? stats.goals?.saves ?? 0);
+            console.log(`      - Paradas: ${savesValue}`);
+            if (meetsCleanSheetMinutes && conceded === 0) {
                 points += 5;
                 console.log(`      ✅ +5 puntos por portería a cero (>= 60 min)`);
             }
@@ -591,7 +611,7 @@ export class JornadaService {
             points -= concededPenalty;
             if (concededPenalty > 0)
                 console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
-            const savesPoints = (stats.goals?.saves || 0) * 1;
+            const savesPoints = savesValue;
             points += savesPoints;
             if (savesPoints > 0)
                 console.log(`      ✅ +${savesPoints} puntos por paradas`);
@@ -611,10 +631,10 @@ export class JornadaService {
         else if (role === 'DEF') {
             console.log(`   🛡️ DEFENSA`);
             // Defensa
-            const conceded = stats.goals?.conceded || 0;
+            const conceded = Number(stats.goals?.conceded ?? stats.goalkeeper?.conceded ?? 0);
             console.log(`      - Goles encajados: ${conceded}`);
             console.log(`      - Duelos ganados: ${duels.won || 0}`);
-            if (minutes >= 60 && conceded === 0) {
+            if (meetsCleanSheetMinutes && conceded === 0) {
                 points += 4;
                 console.log(`      ✅ +4 puntos por portería a cero (>= 60 min)`);
             }
@@ -646,16 +666,17 @@ export class JornadaService {
             console.log(`      - Goles encajados: ${conceded}`);
             console.log(`      - Pases clave: ${passes.key || 0}`);
             console.log(`      - Regates: ${dribbles.success || 0}`);
-            if (minutes >= 60 && conceded === 0) {
-                points += 1;
-                console.log(`      ✅ +1 punto por portería a cero (>= 60 min)`);
-            }
             const goalPoints = (goals.total || 0) * 5;
             points += goalPoints;
             if (goalPoints > 0)
                 console.log(`      ✅ +${goalPoints} puntos por goles marcados`);
             const concededPenalty = Math.floor(conceded / 2);
             points -= concededPenalty;
+            // Clean sheet (>=60 min): +1
+            if (meetsCleanSheetMinutes && conceded === 0) {
+                points += 1;
+                console.log(`      ✅ +1 punto por portería a cero (>= 60 min)`);
+            }
             if (concededPenalty > 0)
                 console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
             const passesPoints = (passes.key || 0) * 1;
@@ -1159,3 +1180,7 @@ export class JornadaService {
 JornadaService.API_BASE = 'https://v3.football.api-sports.io';
 JornadaService.API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';
 JornadaService.SEASON = 2025; // Temporada actual de La Liga
+/**
+ * Calcular puntos de un jugador según DreamLeague
+ */
+JornadaService.CLEAN_SHEET_MINUTES = 60;
