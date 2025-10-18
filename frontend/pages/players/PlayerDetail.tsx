@@ -33,7 +33,7 @@ const posColors: Record<CanonicalPos, string> = {
 };
 
 const posAbbr: Record<CanonicalPos, string> = {
-  Goalkeeper: 'POR',
+  Goalkeeper: 'GK',
   Defender: 'DEF',
   Midfielder: 'CEN',
   Attacker: 'DEL',
@@ -194,7 +194,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       if (!playerPosition) return;
 
       const roleMap: Record<CanonicalPos, string> = {
-        'Goalkeeper': 'POR',
+        'Goalkeeper': 'GK',
         'Defender': 'DEF',
         'Midfielder': 'CEN',
         'Attacker': 'DEL'
@@ -204,7 +204,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       const squad = await SquadService.getUserSquad(ligaId);
       
       const allPositionsByRole: Record<string, string[]> = {
-        'POR': ['por'],
+        'GK': ['por'],
         'DEF': ['def1', 'def2', 'def3', 'def4', 'def5'],
         'CEN': ['cen1', 'cen2', 'cen3', 'cen4', 'cen5'],
         'DEL': ['del1', 'del2', 'del3']
@@ -223,7 +223,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       if (!squadPosition) {
         CustomAlertManager.alert(
           'Sin espacio', 
-          `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.`,
+          `No hay espacio disponible para ${role === 'GK' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.`,
           [{ text: 'OK', onPress: () => {}, style: 'default' }],
           { icon: 'alert-circle', iconColor: '#f59e0b' }
         );
@@ -761,16 +761,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       estadistica="Paradas"
                       puntos={selectedData.stats?.goalkeeper?.saves || 0}
                     />
-                    {(
-                      Number(selectedData.stats?.goalkeeper?.conceded ?? selectedData.stats?.goals?.conceded ?? 0) === 0 &&
-                      (selectedData.stats?.games?.minutes || 0) >= CLEAN_SHEET_MINUTES
-                    ) && (
-                      <StatRow
-                        cantidad={'Sí'}
-                        estadistica="Portería a cero"
-                        puntos={5}
-                      />
-                    )}
+            
                     <StatRow
                       cantidad={selectedData.stats?.goalkeeper?.conceded || 0}
                       estadistica="Goles encajados"
@@ -850,11 +841,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       cantidad={selectedData.stats?.shots?.on || 0}
                       estadistica="Tiros a puerta"
                       puntos={selectedData.stats?.shots?.on || 0}
-                    />
-                    <StatRow
-                      cantidad={selectedData.stats?.goals?.conceded || 0}
-                      estadistica="Goles encajados"
-                      puntos={-Math.floor((selectedData.stats?.goals?.conceded || 0) / 2)}
                     />
                     <StatRow
                       cantidad={selectedData.stats?.passes?.key || 0}

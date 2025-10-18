@@ -73,7 +73,7 @@ const posColors: Record<CanonicalPos, string> = {
   Attacker: '#ef4444',       // rojo
 };
 const posAbbr: Record<CanonicalPos, string> = {
-  Goalkeeper: 'POR',
+  Goalkeeper: 'GK',
   Defender: 'DEF',
   Midfielder: 'CEN',
   Attacker: 'DEL',
