@@ -513,18 +513,15 @@ export class JornadaService {
                         // Fallbacks específicos para porteros: algunos partidos no devuelven el ID esperado
                         const roleExpected = mapSquadRole(squadPlayer.role);
                         if (roleExpected === 'Goalkeeper') {
-                            // 1) intentar por coincidencia de nombre (normalizado)
-                            const targetName = String(squadPlayer.playerName || '')
+                            const normalizeName = (value) => value
                                 .normalize('NFD')
-                                .replace(/̀-ͯ/g, '')
+                                .replace(/\p{Diacritic}+/gu, '')
                                 .toLowerCase();
+                            const targetName = normalizeName(String(squadPlayer.playerName || ''));
                             for (const teamData of teamsData) {
                                 const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
                                 const byName = playersArr.find((p) => {
-                                    const nm = String(p?.player?.name || '')
-                                        .normalize('NFD')
-                                        .replace(/̀-ͯ/g, '')
-                                        .toLowerCase();
+                                    const nm = normalizeName(String(p?.player?.name || ''));
                                     return nm && nm === targetName && p?.statistics?.[0];
                                 });
                                 if (byName?.statistics?.[0]) {
@@ -532,7 +529,6 @@ export class JornadaService {
                                     break;
                                 }
                             }
-                            // 2) si aún no, elegir el portero que jugó (minutos>0)
                             if (!playerStats) {
                                 for (const teamData of teamsData) {
                                     const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];

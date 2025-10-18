@@ -82,19 +82,13 @@ export function calculatePlayerPoints(stats, role) {
     points -= (penalty.missed || 0) * 2;
     if (role === 'Goalkeeper') {
         const conceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
-        // Goles marcados por portero
+        const saves = Number(stats.goalkeeper?.saves ?? goals.saves ?? 0);
+        const savedPens = Number(penalty.saved ?? stats.goalkeeper?.savedPenalties ?? stats.goalkeeper?.saved ?? 0);
         points += (goals.total || 0) * 10;
-        // Asistencias ya fueron sumadas en la sección general
-        if (meetsCleanSheetMinutes && conceded === 0)
-            points += 5;
-        // Paradas
-        points += Number(stats.goalkeeper?.saves ?? goals.saves ?? 0);
-        // Goles encajados: -2 por gol
+        points += (goals.assists || 0) * 3;
+        points += saves;
         points -= conceded * 2;
-        // Penaltis parados
-        points += Number((penalty.saved || stats.goalkeeper?.savedPenalties || 0)) * 5;
-        // Recuperaciones (aprox. intercepciones): +1 cada 5
-        points += Math.floor((tackles.interceptions || 0) / 5);
+        points += savedPens * 5;
     }
     else if (role === 'Defender') {
         const conceded = Number(goals.conceded ?? stats.goalkeeper?.conceded ?? 0);
@@ -125,6 +119,18 @@ export function calculatePlayerPoints(stats, role) {
         points += Math.floor((fouls.drawn || 0) / 3);
         points += Math.floor((dribbles.success || 0) / 2);
         points += (shots.on || 0);
+    }
+    const rawRating = stats.games?.rating;
+    if (rawRating != null && rawRating !== '') {
+        const rating = Number(rawRating);
+        if (!Number.isNaN(rating)) {
+            if (rating >= 9)
+                points += 3;
+            else if (rating >= 8)
+                points += 2;
+            else if (rating >= 7)
+                points += 1;
+        }
     }
     return points;
 }
