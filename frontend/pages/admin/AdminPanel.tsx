@@ -410,6 +410,17 @@ const AdminPanel: React.FC = () => {
           >
             Calcula y guarda la puntuación de la última jornada real para todos los jugadores (lo mismo que se muestra en detalles).
           </Text>
+          {currentJornada != null && (
+            <Text
+              style={{
+                color: '#94a3b8',
+                fontSize: 13,
+                marginBottom: 16,
+              }}
+            >
+              Jornada detectada en tus ligas: <Text style={{ color: '#fbbf24', fontWeight: 'bold' }}>{currentJornada}</Text>
+            </Text>
+          )}
           <TouchableOpacity
             onPress={handleUpdatePlayerScores}
             disabled={isUpdatingPlayerScores}

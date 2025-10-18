@@ -4,6 +4,40 @@ import { AppError } from '../utils/errors.js';
 
 const prisma = new PrismaClient();
 
+const FOOTBALL_API_BASE = 'https://v3.football.api-sports.io';
+const FALLBACK_APISPORTS_KEY = '099ef4c6c0803639d80207d4ac1ad5da';
+const DEFAULT_REQUEST_DELAY_MS = Number(process.env.FOOTBALL_API_DELAY_MS ?? 350);
+
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function buildFootballApiHeaders() {
+  const apiSportsKey =
+    process.env.FOOTBALL_API_KEY ||
+    process.env.APISPORTS_API_KEY ||
+    process.env.API_FOOTBALL_KEY ||
+    process.env.APISPORTS_KEY;
+
+  if (apiSportsKey) {
+    return { 'x-apisports-key': apiSportsKey };
+  }
+
+  const rapidKey =
+    process.env.RAPIDAPI_KEY ||
+    process.env.RAPIDAPI_FOOTBALL_KEY ||
+    process.env.API_FOOTBALL_RAPID_KEY;
+
+  if (rapidKey) {
+    return {
+      'x-rapidapi-key': rapidKey,
+      'x-rapidapi-host': 'v3.football.api-sports.io',
+    };
+  }
+
+  return { 'x-apisports-key': FALLBACK_APISPORTS_KEY };
+}
+
+const FOOTBALL_API_HEADERS = buildFootballApiHeaders();
+
 // --- Cálculo de puntos DreamLeague ---
 const CLEAN_SHEET_MINUTES = 60;
 
@@ -118,11 +152,9 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
 
   // API config
   const api = axios.create({
-    baseURL: "https://v3.football.api-sports.io",
-    headers: {
-      "x-rapidapi-key": process.env.API_FOOTBALL_KEY!,
-      "x-rapidapi-host": "v3.football.api-sports.io",
-    },
+    baseURL: FOOTBALL_API_BASE,
+    headers: FOOTBALL_API_HEADERS,
+    timeout: 15000,
   });
 
   // Role mapping (frontend logic)
@@ -139,8 +171,6 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
   let updatedCount = 0;
   for (const player of players) {
     try {
-      await new Promise((r) => setTimeout(r, 1200)); // 1.2 segundos entre requests
-
       // Buscar equipo del jugador
       let playerTeamId: number | undefined = player.teamId as unknown as number;
       if (!playerTeamId) {
@@ -205,7 +235,7 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
       const role = normalizePosition(player.position);
       const points = calculatePlayerPoints(playerStats, role ?? "Unknown");
 
-  await prisma.player.update({
+      await prisma.player.update({
         where: { id: player.id },
         data: {
           lastJornadaPoints: points,
@@ -214,12 +244,45 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
       });
       updatedCount++;
       console.log(`[OK] ${player.name}: ${points} pts (jornada ${lastCompletedJornada})`);
+      if (DEFAULT_REQUEST_DELAY_MS > 0) {
+        await delay(DEFAULT_REQUEST_DELAY_MS);
+      }
     } catch (err: any) {
-      if (err.response?.status === 429) {
+      const status = err?.response?.status;
+      if (status === 429) {
         console.error(`[API] Rate limit alcanzado. Pausando...`);
-        await new Promise((r) => setTimeout(r, 60000));
+        await delay(60000);
+        continue;
+      }
+      if (status === 403) {
+        console.error(`[API] Acceso denegado para la API de fútbol. Revisa la API key configurada.`);
+        throw new AppError(502, 'FOOTBALL_API_FORBIDDEN', 'La API de fútbol rechazó la petición (403). Revisa la API key configurada en el backend.');
       } else {
-        console.error(`[ERROR] ${player.name}:`, err.message);
+        console.error(`[ERROR] ${player.name}:`, err?.message || err);
+      }
+      if (DEFAULT_REQUEST_DELAY_MS > 0) {
+        await delay(DEFAULT_REQUEST_DELAY_MS);
+      }
+    }
+  }
+
+      if (DEFAULT_REQUEST_DELAY_MS > 0) {
+        await delay(DEFAULT_REQUEST_DELAY_MS);
+      }
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 429) {
+        console.error(`[API] Rate limit alcanzado. Pausando...`);
+        await delay(60000);
+        continue;
+      }
+      if (status === 403) {
+        console.error(`[API] Acceso denegado para la API de fútbol. Revisa la API key configurada.`);
+        throw new AppError(502, 'FOOTBALL_API_FORBIDDEN', 'La API de fútbol rechazó la petición (403). Revisa la API key configurada en el backend.');
+      }
+      console.error(`[ERROR] ${player.name}:`, err?.message || err);
+      if (DEFAULT_REQUEST_DELAY_MS > 0) {
+        await delay(DEFAULT_REQUEST_DELAY_MS);
       }
     }
   }
