@@ -8,6 +8,7 @@ import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
 import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon } from '../../components/VectorIcons';
+import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -160,12 +161,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   };
 
   const setAmountForKey = (key: string, value: string) => {
-    // Solo números y punto, y máximo 50
+    // Solo números y punto
     let sanitized = value.replace(/[^0-9.]/g, '');
-    let num = parseFloat(sanitized);
-    if (!isNaN(num) && num > 50) {
-      sanitized = '50';
-    }
     setAmountInputs((prev) => ({ ...prev, [key]: sanitized }));
   };
 
@@ -178,7 +175,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
     if (amount > 50) {
-      showError('El máximo por apuesta es 50M');
+      CustomAlertManager.alert(
+        'Límite de apuesta',
+        'El máximo por apuesta es 50M',
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
       return;
     }
     try {
@@ -211,7 +213,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
     if (amount > 50) {
-      showError('El máximo por apuesta es 50M');
+      CustomAlertManager.alert(
+        'Límite de apuesta',
+        'El máximo por apuesta es 50M',
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
       return;
     }
     try {
@@ -279,6 +286,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Función para verificar si existe alguna apuesta en el grupo (mismo matchId + betType)
   const hasAnyBetInGroup = (matchId: number, betType: string): boolean => {
     return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType);
+  };
+
+  // Regla global: una sola apuesta por partido
+  const hasAnyBetInMatch = (matchId: number): boolean => {
+    return userBets.some((bet) => bet.matchId === matchId);
   };
 
   // Animación del drawer
@@ -767,7 +779,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     // Verificar si el usuario ya apostó en esta opción
                     const userBet = getUserBetForOption(b.matchId, b.type, option.label);
                     const groupHasBet = hasAnyBetInGroup(b.matchId, b.type);
-                    const isBlocked = groupHasBet && !userBet;
+                    const anyBetInMatch = hasAnyBetInMatch(b.matchId);
+                    const isBlocked = (groupHasBet || anyBetInMatch) && !userBet;
                     
                     return (
                       <View 
@@ -792,9 +805,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             marginBottom: 8,
                             alignSelf: 'flex-start',
                           }}>
-                            <Text style={{ color: '#fca5a5', fontSize: 11, fontWeight: '700' }}>
-                              🔒 BLOQUEADA - Ya apostaste en otra opción
-                            </Text>
+                            <Text style={{ color: '#fca5a5', fontSize: 11, fontWeight: '700' }}>🔒 BLOQUEADA - Ya apostaste en este partido</Text>
                           </View>
                         )}
                         
@@ -842,7 +853,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 </View>
                             {/* Controles de edición si jornada abierta */}
                             {isJornadaOpen ? (
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
                                 {/* Two simple buttons: Edit and Delete. Edit toggles an inline editable input. */}
                                 {!editingBets[betKey] ? (
                                   <>
@@ -855,8 +866,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         borderRadius: 8,
                                         marginRight: 8,
                                       }}
+                                      accessibilityLabel="Editar apuesta"
                                     >
-                                      <Text style={{ color: '#fff', fontWeight: '700' }}>Editar</Text>
+                                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <EditIcon size={18} color="#ffffff" />
+                                        <Text style={{ color: '#fff', fontWeight: '700', marginLeft: 6 }}>Editar</Text>
+                                      </View>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                       onPress={() => handleDeleteBet(betKey, userBet.id)}
@@ -867,8 +882,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         paddingVertical: 10,
                                         borderRadius: 8,
                                       }}
+                                      accessibilityLabel="Eliminar apuesta"
                                     >
-                                      <Text style={{ color: '#fecaca', fontWeight: '700' }}>Eliminar</Text>
+                                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <DeleteIcon size={18} color="#fecaca" />
+                                        <Text style={{ color: '#fecaca', fontWeight: '700', marginLeft: 6 }}>Eliminar</Text>
+                                      </View>
                                     </TouchableOpacity>
                                   </>
                                 ) : (
