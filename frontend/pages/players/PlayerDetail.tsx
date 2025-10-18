@@ -853,7 +853,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       }
                     />
                     <StatRow
-                      cantidad={Math.floor((selectedData.stats?.duels?.won || 0) / 2)}
+                      cantidad={Math.floor((selectedData.stats?.duels?.won || 0))}
                       estadistica="Duelos ganados"
                       puntos={Math.floor((selectedData.stats?.duels?.won || 0) / 2)}
                     />
@@ -879,7 +879,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       puntos={selectedData.stats?.shots?.on || 0}
                     />
                     <StatRow
-                      cantidad={Math.floor((selectedData.stats?.goals?.conceded || 0) / 2)}
+                      cantidad={Math.floor((selectedData.stats?.goals?.conceded || 0))}
                       estadistica="Goles encajados"
                       puntos={
                         (selectedData.stats?.goals?.conceded || 0) === 0 && (selectedData.stats?.games?.minutes || 0) >= 60
