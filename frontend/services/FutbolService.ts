@@ -1,5 +1,5 @@
 // FootballService.ts
-import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
+import axios from "axios";
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { LigaService } from './LigaService';
 import { ApuestasEvaluator } from './ApuestasEvaluator';
@@ -49,12 +49,6 @@ export type Player = {
   teamId: number;
   teamName: string;
   teamCrest?: string;
-};
-
-type PointsBreakdownEntry = {
-  label: string;
-  amount: number | string;
-  points: number;
 };
 
 function fmtFechaHoraES(isoUtc?: string) {
@@ -115,19 +109,6 @@ export default class FootballService {
   private static matchesPromise: Promise<Partido[]> | null = null;
   private static readonly MATCHES_CACHE_KEY = 'laLiga_matches_v2';
   private static readonly TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
-  private static readonly STATS_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
-
-  private static matchdayFixturesCache = new Map<number, { ts: number; data: any[] }>();
-  private static matchdayFixturesPromises = new Map<number, Promise<any[]>>();
-
-  private static fixturePlayersCache = new Map<number, { ts: number; data: any[] }>();
-  private static fixturePlayersPromises = new Map<number, Promise<any[]>>();
-
-  private static playerInfoCache = new Map<number, { ts: number; data: any | null }>();
-  private static playerInfoPromises = new Map<number, Promise<any | null>>();
-
-  private static playerStatsCache = new Map<string, { ts: number; data: any | null }>();
-  private static playerStatsPromises = new Map<string, Promise<any | null>>();
 
   static async setMatchday(jornada: number, season = FootballService.season) {
     await saveState({ season, currentMatchday: jornada });
@@ -155,147 +136,6 @@ export default class FootballService {
     } catch {
       // ignore storage errors
     }
-  }
-
-  private static getCachedValue<T>(store: Map<any, { ts: number; data: T }>, key: any, ttl: number): T | null {
-    const entry = store.get(key);
-    if (entry && Date.now() - entry.ts < ttl) {
-      return entry.data;
-    }
-    return null;
-  }
-
-  private static setCachedValue<T>(store: Map<any, { ts: number; data: T }>, key: any, data: T) {
-    store.set(key, { ts: Date.now(), data });
-  }
-
-  private static async fetchWithRetry<T>(config: AxiosRequestConfig, retries = 3, backoffMs = 700): Promise<AxiosResponse<T>> {
-    let lastError: any;
-    for (let attempt = 0; attempt < retries; attempt++) {
-      try {
-        const response = await axios.request<T>({ method: 'GET', ...config });
-        return response;
-      } catch (error: any) {
-        lastError = error;
-        const status = error?.response?.status;
-        if (status === 429 || status === 408 || (status >= 500 && status < 600)) {
-          const delayMs = backoffMs * (attempt + 1);
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
-          continue;
-        }
-        throw error;
-      }
-    }
-    throw lastError;
-  }
-
-  private static async fetchMatchdayFixtures(matchday: number): Promise<any[]> {
-    const cached = this.getCachedValue(this.matchdayFixturesCache, matchday, this.TTL_MS);
-    if (cached) return cached;
-
-    let promise = this.matchdayFixturesPromises.get(matchday);
-    if (!promise) {
-      promise = (async () => {
-        const response = await this.fetchWithRetry<{ response: any[] }>({
-          url: `${API_BASE}/fixtures`,
-          headers: HEADERS,
-          params: {
-            league: LA_LIGA_LEAGUE_ID,
-            season: this.season,
-            round: `Regular Season - ${matchday}`,
-          },
-          timeout: 10000,
-        });
-        const fixtures = response?.data?.response ?? [];
-        this.setCachedValue(this.matchdayFixturesCache, matchday, fixtures);
-        return fixtures;
-      })().finally(() => this.matchdayFixturesPromises.delete(matchday));
-
-      this.matchdayFixturesPromises.set(matchday, promise);
-    }
-
-    return promise;
-  }
-
-  private static async fetchFixturePlayers(fixtureId: number): Promise<any[]> {
-    const cached = this.getCachedValue(this.fixturePlayersCache, fixtureId, this.TTL_MS);
-    if (cached) return cached;
-
-    let promise = this.fixturePlayersPromises.get(fixtureId);
-    if (!promise) {
-      promise = (async () => {
-        const response = await this.fetchWithRetry<{ response: any[] }>({
-          url: `${API_BASE}/fixtures/players`,
-          headers: HEADERS,
-          params: { fixture: fixtureId },
-          timeout: 10000,
-        });
-        const data = response?.data?.response ?? [];
-        this.setCachedValue(this.fixturePlayersCache, fixtureId, data);
-        return data;
-      })().finally(() => this.fixturePlayersPromises.delete(fixtureId));
-
-      this.fixturePlayersPromises.set(fixtureId, promise);
-    }
-
-    return promise;
-  }
-
-  private static async fetchPlayerSeasonInfo(playerId: number): Promise<any | null> {
-    const cached = this.getCachedValue(this.playerInfoCache, playerId, this.TTL_MS);
-    if (cached !== null) return cached;
-
-    let promise = this.playerInfoPromises.get(playerId);
-    if (!promise) {
-      promise = (async () => {
-        try {
-          const response = await this.fetchWithRetry<{ response: any[] }>({
-            url: `${API_BASE}/players`,
-            headers: HEADERS,
-            params: {
-              id: playerId,
-              season: this.season,
-              league: LA_LIGA_LEAGUE_ID,
-            },
-            timeout: 10000,
-          });
-          const info = response?.data?.response?.[0] ?? null;
-          if (info) {
-            this.setCachedValue(this.playerInfoCache, playerId, info);
-          }
-          return info;
-        } catch (error: any) {
-          console.warn('FootballService.fetchPlayerSeasonInfo error:', error?.message || error);
-          return null;
-        }
-      })().finally(() => this.playerInfoPromises.delete(playerId));
-
-      this.playerInfoPromises.set(playerId, promise);
-    }
-
-    return promise;
-  }
-
-  private static createEmptyStats() {
-    return {
-      games: { appearances: 0, lineups: 0, minutes: 0, position: '' },
-      goals: { total: 0, assists: 0, conceded: 0 },
-      passes: { total: 0, key: 0, accuracy: '0%' },
-      shots: { total: 0, on: 0 },
-      dribbles: { attempts: 0, success: 0 },
-      tackles: { total: 0, blocks: 0, interceptions: 0 },
-      duels: { total: 0, won: 0 },
-      cards: { yellow: 0, red: 0 },
-      fouls: { drawn: 0, committed: 0 },
-      penalty: { won: 0, committed: 0, scored: 0, missed: 0, saved: 0 },
-      rating: undefined,
-      goalkeeper: {
-        saves: 0,
-        conceded: 0,
-        cleanSheets: 0,
-        savedPenalties: 0,
-      },
-    };
   }
 
   static async getLaLigaTeamsCached(): Promise<TeamMinimal[]> {
@@ -592,9 +432,9 @@ export default class FootballService {
   }
 
   // ======= Points calculation (frontend) =======
-  private static mapRoleCode(role: 'GK'|'DEF'|'CEN'|'DEL'): 'GK'|'DEF'|'MID'|'ATT' {
+  private static mapRoleCode(role: 'POR'|'DEF'|'CEN'|'DEL'): 'GK'|'DEF'|'MID'|'ATT' {
     switch (role) {
-      case 'GK': return 'GK';
+      case 'POR': return 'GK';
       case 'DEF': return 'DEF';
       case 'CEN': return 'MID';
       case 'DEL': return 'ATT';
@@ -602,38 +442,17 @@ export default class FootballService {
     }
   }
 
-  private static canonicalRoleToCode(role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'): 'GK'|'DEF'|'CEN'|'DEL' {
-    switch (role) {
-      case 'Goalkeeper': return 'GK';
-      case 'Defender': return 'DEF';
-      case 'Midfielder': return 'CEN';
-      case 'Attacker': return 'DEL';
-    }
-  }
-
-  private static calculatePlayerPointsDetailed(
-    stats: any,
-    roleCode: 'GK'|'DEF'|'CEN'|'DEL'
-  ): { total: number; breakdown: PointsBreakdownEntry[] } {
-    if (!stats || !stats.games) {
-      return { total: 0, breakdown: [] };
-    }
-
+  private static calculatePlayerPoints(stats: any, roleCode: 'POR'|'DEF'|'CEN'|'DEL'): number {
+    if (!stats || !stats.games) return 0;
     const role = this.mapRoleCode(roleCode);
-    const breakdown: PointsBreakdownEntry[] = [];
-    let total = 0;
 
-    const add = (label: string, amount: number | string | undefined, points: number) => {
-      if (points === 0) return;
-      breakdown.push({ label, amount: amount ?? 0, points: Math.trunc(points) });
-      total += points;
-    };
-
+    let points = 0;
     const minutes = Number(stats.games?.minutes ?? 0);
-    let minutesPoints = 0;
-    if (minutes > 0 && minutes < 45) minutesPoints = 1;
-    else if (minutes >= 45) minutesPoints = 2;
-    if (minutesPoints !== 0) add('Minutos jugados', minutes, minutesPoints);
+    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
+
+    // Base general
+    if (minutes > 0 && minutes < 45) points += 1;
+    else if (minutes >= 45) points += 2;
 
     const goals = stats.goals || {};
     const cards = stats.cards || {};
@@ -645,107 +464,57 @@ export default class FootballService {
     const duels = stats.duels || {};
     const fouls = stats.fouls || {};
 
-    if (goals.assists) add('Asistencias', goals.assists, goals.assists * 3);
-    if (cards.yellow) add('Tarjetas amarillas', cards.yellow, -cards.yellow);
-    if (cards.red) add('Tarjetas rojas', cards.red, -3 * cards.red);
-    if (penalty.won) add('Penaltis ganados', penalty.won, penalty.won * 2);
-    if (penalty.committed) add('Penaltis cometidos', penalty.committed, -2 * penalty.committed);
-    if (penalty.scored) add('Penaltis marcados', penalty.scored, penalty.scored * 3);
-    if (penalty.missed) add('Penaltis fallados', penalty.missed, -2 * penalty.missed);
+    points += (goals.assists || 0) * 3;
+    points -= (cards.yellow || 0) * 1;
+    points -= (cards.red || 0) * 3;
+    points += (penalty.won || 0) * 2;
+    points -= (penalty.committed || 0) * 2;
+    points += (penalty.scored || 0) * 3;
+    points -= (penalty.missed || 0) * 2;
 
-    // Valoración (rating) común a todos los roles
-    const rawRating = (stats.games?.rating as any);
-    if (rawRating != null && rawRating !== '') {
-      const rating = Number(rawRating);
-      if (!Number.isNaN(rating)) {
-        let ratingPoints = 0;
-        if (rating >= 9.0) ratingPoints = 3;
-        else if (rating >= 8.0) ratingPoints = 2;
-        else if (rating >= 7.0) ratingPoints = 1;
-        if (ratingPoints) add('Valoración', rating.toFixed(2), ratingPoints);
-      }
-    }
-
+    // Específico por posición
     if (role === 'GK') {
-      const goalsScored = goals.total || 0;
-      if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 10);
-      const conceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
-      const savesVal = Number(stats.goalkeeper?.saves ?? goals.saves ?? 0);
-      if (savesVal) add('Paradas', savesVal, savesVal);
-      if (conceded) add('Goles encajados', conceded, -2 * conceded);
-      const savedPens = Number(penalty.saved ?? stats.goalkeeper?.savedPenalties ?? stats.goalkeeper?.saved ?? 0);
-      if (savedPens) add('Penaltis parados', savedPens, savedPens * 5);
+      const conceded = stats.goals?.conceded || 0;
+      if (meetsCleanSheetMinutes && conceded === 0) points += 5;
+      points -= conceded * 2;
+      points += (stats.goals?.saves || 0) * 1;
+      points += (penalty.saved || 0) * 5;
+      points += (goals.total || 0) * 10;
+      points += Math.floor((tackles.interceptions || 0) / 5);
     } else if (role === 'DEF') {
-      const goalsScored = goals.total || 0;
-      if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 6);
-      const conceded = Number(goals.conceded ?? stats.goalkeeper?.conceded ?? 0);
-      if (minutes >= CLEAN_SHEET_MINUTES && conceded === 0) add('Portería a cero', 'Sí', 4);
-      if (conceded) add('Goles encajados', conceded, -conceded);
-      const shotsOn = Number(shots.on || 0);
-      if (shotsOn) add('Tiros a puerta', shotsOn, shotsOn);
-      const duelsWon = Number(duels.won || 0);
-      const duelPoints = Math.floor(duelsWon / 2);
-      if (duelPoints) add('Duelos ganados', duelsWon, duelPoints);
-      const interceptions = Number(tackles.interceptions || 0);
-      const interceptionPoints = Math.floor(interceptions / 5);
-      if (interceptionPoints) add('Intercepciones', interceptions, interceptionPoints);
+      const conceded = stats.goals?.conceded || 0;
+      if (meetsCleanSheetMinutes && conceded === 0) points += 4;
+      points += (goals.total || 0) * 6;
+      points += Math.floor((duels.won || 0) / 2);
+      points += Math.floor((tackles.interceptions || 0) / 5);
+      points -= conceded * 1;
+      points += (shots.on || 0) * 1;
     } else if (role === 'MID') {
-      const goalsScored = goals.total || 0;
-      if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 5);
-      const shotsOn = Number(shots.on || 0);
-      if (shotsOn) add('Tiros a puerta', shotsOn, shotsOn);
-      const passesKey = Number(passes.key || 0);
-      if (passesKey) add('Pases clave', passesKey, passesKey);
-      const dribblesSuccess = Number(dribbles.success || 0);
-      const dribblePoints = Math.floor(dribblesSuccess / 2);
-      if (dribblePoints) add('Regates exitosos', dribblesSuccess, dribblePoints);
-      const foulsDrawn = Number(fouls.drawn || 0);
-      const foulPoints = Math.floor(foulsDrawn / 3);
-      if (foulPoints) add('Faltas recibidas', foulsDrawn, foulPoints);
-      const interceptions = Number(tackles.interceptions || 0);
-      const interceptionPoints = Math.floor(interceptions / 3);
-      if (interceptionPoints) add('Intercepciones', interceptions, interceptionPoints);
+      const conceded = stats.goals?.conceded || 0;
+      if (meetsCleanSheetMinutes && conceded === 0) points += 1;
+      points += (goals.total || 0) * 5;
+      points -= Math.floor(conceded / 2);
+      points += (passes.key || 0) * 1;
+      points += Math.floor((dribbles.success || 0) / 2);
+      points += Math.floor((fouls.drawn || 0) / 3);
+      points += Math.floor((tackles.interceptions || 0) / 3);
+      points += (shots.on || 0) * 1;
     } else if (role === 'ATT') {
-      const goalsScored = goals.total || 0;
-      if (goalsScored) add('Goles marcados', goalsScored, goalsScored * 4);
-      const shotsOn = Number(shots.on || 0);
-      if (shotsOn) add('Tiros a puerta', shotsOn, shotsOn);
-      const passesKey = Number(passes.key || 0);
-      if (passesKey) add('Pases clave', passesKey, passesKey);
-      const dribblesSuccess = Number(dribbles.success || 0);
-      const dribblePoints = Math.floor(dribblesSuccess / 2);
-      if (dribblePoints) add('Regates exitosos', dribblesSuccess, dribblePoints);
-      const foulsDrawn = Number(fouls.drawn || 0);
-      const foulPoints = Math.floor(foulsDrawn / 3);
-      if (foulPoints) add('Faltas recibidas', foulsDrawn, foulPoints);
+      points += (goals.total || 0) * 4;
+      points += (passes.key || 0) * 1;
+      points += Math.floor((fouls.drawn || 0) / 3);
+      points += Math.floor((dribbles.success || 0) / 2);
+      points += (shots.on || 0) * 1;
     }
 
-    return { total: Math.trunc(total), breakdown };
-  }
-
-  private static calculatePlayerPoints(stats: any, roleCode: 'GK'|'DEF'|'CEN'|'DEL'): number {
-    return this.calculatePlayerPointsDetailed(stats, roleCode).total;
-  }
-
-  static calculatePointsForStats(
-    stats: any,
-    role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'
-  ): number {
-    return this.getPointsBreakdown(stats, role).total;
-  }
-
-  static getPointsBreakdown(
-    stats: any,
-    role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'
-  ): { total: number; breakdown: PointsBreakdownEntry[] } {
-    return this.calculatePlayerPointsDetailed(stats, this.canonicalRoleToCode(role));
+    return points;
   }
 
   /**
    * Obtener puntos por jugador para una jornada (usando API-FOOTBALL)
    * Hace 1 llamada para fixtures + ~10 llamadas (una por partido) para stats de jugadores.
    */
-  static async getPlayersPointsForJornada(jornada: number, playerIds: number[], rolesById: Record<number, 'GK'|'DEF'|'CEN'|'DEL'>): Promise<Record<number, number>> {
+  static async getPlayersPointsForJornada(jornada: number, playerIds: number[], rolesById: Record<number, 'POR'|'DEF'|'CEN'|'DEL'>): Promise<Record<number, number>> {
     const pointsMap: Record<number, number> = {};
     if (!playerIds.length) return pointsMap;
     try {
@@ -997,17 +766,9 @@ export default class FootballService {
                 odd: opt.odd,
               };
             });
-            // Enforce 1 apuesta por partido en la visualización (mantiene primeras 2 opciones por partido)
-            const byMatchCount = new Map<number, number>();
-            const filtered = bets.filter((b) => {
-              const c = byMatchCount.get(b.matchId) ?? 0;
-              if (c >= 2) return false;
-              byMatchCount.set(b.matchId, c + 1);
-              return true;
-            });
-
-            console.log(`✅ ${filtered.length} opciones cargadas desde BD (filtradas por 1 apuesta/partido)`);
-            return filtered;
+            
+            console.log(`✅ ${bets.length} opciones cargadas desde BD`);
+            return bets;
           } else {
             console.log(`⚠️ No hay opciones en BD, generando nuevas...`);
           }
@@ -1591,23 +1352,14 @@ export default class FootballService {
       console.log(`   - Tarjetas: ${bets.filter(b => b.type === 'Tarjetas').length}`);
       console.log(`   - Total: ${bets.length} apuestas`);
 
-      // Enforce 1 bet per match (keep the first pair of options for each match)
-      const byMatchCount = new Map<number, number>();
-      const betsToPersist = bets.filter((b) => {
-        const c = byMatchCount.get(b.matchId) ?? 0;
-        if (c >= 2) return false;
-        byMatchCount.set(b.matchId, c + 1);
-        return true;
-      });
-
       // Persistir apuestas
       if (ligaId) {
         // Si hay ligaId, guardar en base de datos para compartir entre jugadores
         try {
-          console.log(`💾 Guardando ${betsToPersist.length} opciones en BD para liga ${ligaId}, jornada ${nextJ}`);
+          console.log(`💾 Guardando ${bets.length} opciones en BD para liga ${ligaId}, jornada ${nextJ}`);
           
           // Transformar al formato que espera el backend
-          const betOptionsToSave = betsToPersist.map(bet => ({
+          const betOptionsToSave = bets.map(bet => ({
             matchId: bet.matchId,
             homeTeam: bet.local,
             awayTeam: bet.visitante,
@@ -1622,17 +1374,17 @@ export default class FootballService {
           console.error('❌ Error guardando en BD:', error);
           // Fallback a caché local si falla DB
           try {
-            await EncryptedStorage.setItem(storeKey, JSON.stringify(betsToPersist));
+            await EncryptedStorage.setItem(storeKey, JSON.stringify(bets));
           } catch {}
         }
       } else {
         // Sin ligaId, usar caché local
         try {
-          await EncryptedStorage.setItem(storeKey, JSON.stringify(betsToPersist));
+          await EncryptedStorage.setItem(storeKey, JSON.stringify(bets));
         } catch {}
       }
 
-      return betsToPersist;
+      return bets;
     } catch (error) {
       console.error('Error fetching apuestas:', error);
       return [];
@@ -1720,63 +1472,95 @@ export default class FootballService {
   // Obtener estadísticas de un jugador específico
   // Si matchday es null o undefined, obtiene estadísticas globales de la temporada
   // Si matchday es un número, obtiene estadísticas solo de esa jornada específica
-  static async getPlayerStatistics(playerId: number, matchday?: number | null): Promise<any | null> {
-    const cacheKey = `${playerId}:${matchday ?? 'season'}`;
-    const cached = this.getCachedValue(this.playerStatsCache, cacheKey, this.STATS_TTL_MS);
-    if (cached !== null && cached !== undefined) {
-      return cached;
-    }
-
-    const inflight = this.playerStatsPromises.get(cacheKey);
-    if (inflight) {
-      return inflight;
-    }
-
-    const fetchPromise = (async () => {
-      try {
-        if (matchday != null && matchday > 0) {
+  static async getPlayerStatistics(playerId: number, matchday?: number | null): Promise<{
+    games: { appearances: number; lineups: number; minutes: number; position: string };
+    goals: { total: number; assists: number; conceded: number };
+    passes: { total: number; key: number; accuracy: string };
+    shots: { total: number; on: number };
+    dribbles: { attempts: number; success: number };
+    tackles: { total: number; blocks: number; interceptions: number };
+    duels: { total: number; won: number };
+    cards: { yellow: number; red: number };
+    rating?: string;
+    fouls: { drawn: number; committed: number };
+    penalty: { won: number; committed: number; scored: number; missed: number; saved: number };
+    // Estadísticas específicas de porteros
+    goalkeeper?: {
+      saves: number;
+      conceded: number;
+      cleanSheets: number;
+      savedPenalties: number;
+    };
+  } | null> {
+    try {
+      if (matchday != null && matchday > 0) {
         // Obtener estadísticas de una jornada específica
         // Primero obtenemos el partido de esa jornada donde jugó el jugador
-        const fixtures = await this.fetchMatchdayFixtures(matchday);
+        const fixturesResponse = await axios.get(`${API_BASE}/fixtures`, {
+          headers: HEADERS,
+          timeout: 10000,
+          params: {
+            league: LA_LIGA_LEAGUE_ID,
+            season: this.season,
+            round: `Regular Season - ${matchday}`
+          }
+        });
+
+        const fixtures = fixturesResponse.data?.response || [];
         
         // Buscar en qué partido jugó el jugador (necesitamos obtener su equipo primero)
-        const playerInfo = await this.fetchPlayerSeasonInfo(playerId);
+        const playerInfoResponse = await axios.get(`${API_BASE}/players`, {
+          headers: HEADERS,
+          timeout: 10000,
+          params: { 
+            id: playerId, 
+            season: this.season,
+            league: LA_LIGA_LEAGUE_ID
+          },
+        });
+
+        const playerInfo = playerInfoResponse.data?.response?.[0];
         if (!playerInfo) return null;
 
-        const leagueStats = (playerInfo.statistics || []).filter((stat: any) => stat?.league?.id === LA_LIGA_LEAGUE_ID);
-        const relevantStats = leagueStats.length > 0 ? leagueStats : (playerInfo.statistics || []);
+        const playerTeamId = playerInfo.statistics?.[0]?.team?.id;
+        if (!playerTeamId) return null;
 
-        const playerTeamIds = relevantStats
-          .map((stat: any) => stat?.team?.id)
-          .filter((id: any) => typeof id === 'number');
-
-        if (!playerTeamIds.length) return null;
-
-        // Encontrar el fixture donde jugó su equipo en esa jornada (considerando transferencias)
-        let teamFixture: any = null;
-        let activeTeamId: number | null = null;
-        for (const teamId of playerTeamIds) {
-          const foundFixture = fixtures.find((f: any) =>
-            f.teams?.home?.id === teamId || f.teams?.away?.id === teamId
-          );
-          if (foundFixture) {
-            teamFixture = foundFixture;
-            activeTeamId = teamId;
-            break;
-          }
-        }
+        // Encontrar el fixture donde jugó su equipo en esa jornada
+        const teamFixture = fixtures.find((f: any) => 
+          f.teams?.home?.id === playerTeamId || f.teams?.away?.id === playerTeamId
+        );
 
         if (!teamFixture) {
           // No jugó en esa jornada
-          return this.createEmptyStats();
+          return {
+            games: { appearances: 0, lineups: 0, minutes: 0, position: '' },
+            goals: { total: 0, assists: 0, conceded: 0 },
+            passes: { total: 0, key: 0, accuracy: '0%' },
+            shots: { total: 0, on: 0 },
+            dribbles: { attempts: 0, success: 0 },
+            tackles: { total: 0, blocks: 0, interceptions: 0 },
+            duels: { total: 0, won: 0 },
+            cards: { yellow: 0, red: 0 },
+            fouls: { drawn: 0, committed: 0 },
+            penalty: { won: 0, committed: 0, scored: 0, missed: 0, saved: 0 },
+            rating: undefined
+          };
         }
 
         // Obtener estadísticas del jugador en ese partido específico
-        const fixturePlayers = await this.fetchFixturePlayers(teamFixture.fixture.id);
+        const statsResponse = await axios.get(`${API_BASE}/fixtures/players`, {
+          headers: HEADERS,
+          timeout: 10000,
+          params: {
+            fixture: teamFixture.fixture.id
+          }
+        });
+
+        const teamsData = statsResponse.data?.response || [];
         let playerStats = null;
 
         // Buscar las estadísticas del jugador en los datos del partido
-        for (const teamData of fixturePlayers) {
+        for (const teamData of teamsData) {
           const players = teamData.players || [];
           const found = players.find((p: any) => p.player?.id === playerId);
           if (found) {
@@ -1787,51 +1571,37 @@ export default class FootballService {
 
         if (!playerStats) {
           // Jugador no participó en el partido
-          return this.createEmptyStats();
+          return {
+            games: { appearances: 0, lineups: 0, minutes: 0, position: '' },
+            goals: { total: 0, assists: 0, conceded: 0 },
+            passes: { total: 0, key: 0, accuracy: '0%' },
+            shots: { total: 0, on: 0 },
+            dribbles: { attempts: 0, success: 0 },
+            tackles: { total: 0, blocks: 0, interceptions: 0 },
+            duels: { total: 0, won: 0 },
+            cards: { yellow: 0, red: 0 },
+            fouls: { drawn: 0, committed: 0 },
+            penalty: { won: 0, committed: 0, scored: 0, missed: 0, saved: 0 },
+            rating: undefined
+          };
         }
 
         // Calcular goles encajados por el equipo del jugador
-        const teamIdForFixture = activeTeamId ?? playerTeamIds[0];
-        const isHomeTeam = teamFixture.teams?.home?.id === teamIdForFixture;
-        let goalsAgainst = 0;
-        const minutesPlayed = playerStats.games?.minutes || 0;
-        const wasSubstitute = playerStats.games?.substitute === true;
-        // Si el jugador fue suplente y no jugó, goles encajados = 0
-        if (minutesPlayed === 0 || wasSubstitute) {
-          goalsAgainst = 0;
-        } else {
-          // Si no hay eventos, no se puede saber los goles por minuto, así que se asignan todos los goles del rival
-          goalsAgainst = isHomeTeam 
-            ? teamFixture.goals?.away || 0 
-            : teamFixture.goals?.home || 0;
-        }
-
-        // Retornar estadísticas del partido específico
-          // Detect if player is a goalkeeper
-          const position = (playerStats.games?.position || '').toLowerCase();
-          const isGoalkeeper = position === 'goalkeeper' || position === 'gk' || position.includes('goal');
-
-          // Always fill goalkeeper object for goalkeepers
-          let goalkeeperStats = playerStats.goalkeeper || {};
-          if (isGoalkeeper) {
-            goalkeeperStats = {
-              saves: goalkeeperStats.saves ?? playerStats.goalkeeper?.saves ?? 0,
-              conceded: goalsAgainst,
-              cleanSheets: (goalsAgainst === 0 && minutesPlayed > 0) ? 1 : 0,
-              savedPenalties: playerStats.goalkeeper?.saved ?? playerStats.penalty?.saved ?? 0,
-            };
-          } else if (playerStats.goalkeeper) {
-            // For non-goalkeepers, keep API stats if present
-            goalkeeperStats = {
-              saves: playerStats.goalkeeper?.saves ?? 0,
-              conceded: playerStats.goalkeeper?.conceded ?? 0,
-              cleanSheets: playerStats.goalkeeper?.cleanSheets ?? 0,
-              savedPenalties: playerStats.goalkeeper?.saved ?? 0,
-            };
+          const isHomeTeam = teamFixture.teams?.home?.id === playerTeamId;
+          let goalsAgainst = 0;
+          const minutesPlayed = playerStats.games?.minutes || 0;
+          const wasSubstitute = playerStats.games?.substitute === true;
+          // Si el jugador fue suplente y no jugó, goles encajados = 0
+          if (minutesPlayed === 0 || wasSubstitute) {
+            goalsAgainst = 0;
           } else {
-            goalkeeperStats = undefined;
+            // Si no hay eventos, no se puede saber los goles por minuto, así que se asignan todos los goles del rival
+            goalsAgainst = isHomeTeam 
+              ? teamFixture.goals?.away || 0 
+              : teamFixture.goals?.home || 0;
           }
 
+          // Retornar estadísticas del partido específico
           return {
             games: {
               appearances: 1,
@@ -1882,14 +1652,30 @@ export default class FootballService {
               saved: playerStats.penalty?.saved || 0
             },
             rating: playerStats.games?.rating,
-            goalkeeper: goalkeeperStats
+            // Estadísticas de portero (si aplica)
+            goalkeeper: playerStats.goals?.saves != null ? {
+              saves: playerStats.goals?.saves || 0,
+              conceded: playerStats.goals?.conceded || 0,
+              cleanSheets: (playerStats.goals?.conceded || 0) === 0 && minutesPlayed > 0 ? 1 : 0,
+              savedPenalties: playerStats.penalty?.saved || 0
+            } : undefined
           };
       } else {
-        const playerInfo = await this.fetchPlayerSeasonInfo(playerId);
-        if (!playerInfo) return null;
+        // Obtener estadísticas globales de la temporada
+        const { data } = await axios.get(`${API_BASE}/players`, {
+          headers: HEADERS,
+          timeout: 10000,
+          params: { 
+            id: playerId, 
+            season: this.season,
+            league: LA_LIGA_LEAGUE_ID
+          },
+        });
 
-        const seasonalStats = (playerInfo.statistics || []).filter((stat: any) => stat?.league?.id === LA_LIGA_LEAGUE_ID);
-        const stats = seasonalStats.length > 0 ? seasonalStats[0] : playerInfo.statistics?.[0];
+        const playerData = data?.response?.[0];
+        if (!playerData) return null;
+
+        const stats = playerData.statistics?.[0];
         if (!stats) return null;
 
         return {
@@ -1942,28 +1728,19 @@ export default class FootballService {
             saved: stats.penalty?.saved || 0
           },
           rating: stats.games?.rating,
-          goalkeeper: stats.goalkeeper
-            ? {
-                saves: stats.goalkeeper?.saves || 0,
-                conceded: stats.goalkeeper?.conceded || 0,
-                cleanSheets: stats.goalkeeper?.clean_sheets || 0,
-                savedPenalties: stats.goalkeeper?.saved || 0,
-              }
-            : undefined
+          // Estadísticas de portero (si aplica)
+          goalkeeper: stats.goals?.saves != null ? {
+            saves: stats.goals?.saves || 0,
+            conceded: stats.goals?.conceded || 0,
+            cleanSheets: (stats.goals?.conceded === 0 && stats.games?.appearences > 0) ? stats.games?.appearences : 0,
+            savedPenalties: stats.penalty?.saved || 0
+          } : undefined
         };
       }
     } catch (error) {
-      console.warn('FootballService.getPlayerStatistics error:', error);
+      console.error('Error fetching player statistics:', error);
       return null;
     }
-    })().finally(() => this.playerStatsPromises.delete(cacheKey));
-
-    this.playerStatsPromises.set(cacheKey, fetchPromise);
-    const result = await fetchPromise;
-    if (result !== null) {
-      this.setCachedValue(this.playerStatsCache, cacheKey, result);
-    }
-    return result;
   }
 
   // Obtener lista de jornadas disponibles (jornadas que ya se han jugado o están en curso)

@@ -33,7 +33,7 @@ const posColors: Record<CanonicalPos, string> = {
 };
 
 const posAbbr: Record<CanonicalPos, string> = {
-  Goalkeeper: 'GK',
+  Goalkeeper: 'POR',
   Defender: 'DEF',
   Midfielder: 'CEN',
   Attacker: 'DEL',
@@ -46,8 +46,8 @@ interface PlayerDetailProps {
 
 interface MatchdayPoints {
   matchday: number;
-  points: number | null;
-  stats: any | null;
+  points: number;
+  stats: any;
 }
 
 export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route }) => {
@@ -77,10 +77,99 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
   const posColor = position ? posColors[position] : '#64748b';
   const posLabel = position ? posAbbr[position] : 'N/A';
 
-  // Unificar cálculo de puntos: usar FootballService (fuente única)
+  // Función para calcular puntos según DreamLeague
   const calculatePlayerPoints = (stats: any, role: CanonicalPos): number => {
-    if (!stats || !role) return 0;
-    return FootballService.calculatePointsForStats(stats, role);
+    if (!stats) return 0;
+    
+    let points = 0;
+    const minutes = Number(stats.games?.minutes ?? 0);
+    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
+
+    // BASE GENERAL - Minutos jugados
+    if (minutes > 0 && minutes < 45) points += 1;
+    if (minutes >= 45) points += 2;
+
+    // ESTADÍSTICAS ESPECÍFICAS POR POSICIÓN
+    if (role === 'Goalkeeper') {
+      // Goles marcados
+      points += (stats.goals?.total || 0) * 10;
+      // Asistencias
+      points += (stats.goals?.assists || 0) * 3;
+      // Goles encajados = 0 (bonus por no encajar, solo si juega >= 60 min)
+      if (meetsCleanSheetMinutes && (stats.goalkeeper?.conceded || 0) === 0) points += 5;
+      // Paradas
+      points += (stats.goalkeeper?.saves || 0);
+      // Goles encajados
+      points -= (stats.goalkeeper?.conceded || 0) * 2;
+      // Penaltis parados
+      points += (stats.penalty?.saved || 0) * 5;
+    }
+
+    if (role === 'Defender') {
+      // Goles marcados
+      points += (stats.goals?.total || 0) * 6;
+      // Asistencias
+      points += (stats.goals?.assists || 0) * 3;
+      // Goles encajados = 0 (sin portería a cero, solo si juega >= 60 min)
+      if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 4;
+      // Tiros a puerta
+      points += (stats.shots?.on || 0);
+      // Goles encajados
+      points -= (stats.goals?.conceded || 0);
+      // Duelos ganados (cada 2)
+      points += Math.floor((stats.duels?.won || 0) / 2);
+    }
+
+    if (role === 'Midfielder') {
+      // Goles marcados
+      points += (stats.goals?.total || 0) * 5;
+      // Asistencias
+      points += (stats.goals?.assists || 0) * 3;
+      // Goles encajados = 0 (sin portería a cero, solo si juega >= 60 min)
+      if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 1;
+      // Tiros a puerta
+      points += (stats.shots?.on || 0);
+      // Goles encajados (cada 2)
+      points -= Math.floor((stats.goals?.conceded || 0) / 2);
+      // Pases clave (cada 2)
+      points += Math.floor((stats.passes?.key || 0) / 2);
+      // Regates exitosos (cada 2)
+      points += Math.floor((stats.dribbles?.success || 0) / 2);
+      // Faltas recibidas (cada 3)
+      points += Math.floor((stats.fouls?.drawn || 0) / 3);
+    }
+
+    if (role === 'Attacker') {
+      // Goles marcados
+      points += (stats.goals?.total || 0) * 4;
+      // Asistencias
+      points += (stats.goals?.assists || 0) * 3;
+      // Tiros a puerta
+      points += (stats.shots?.on || 0);
+      // Pases clave (cada 2)
+      points += Math.floor((stats.passes?.key || 0) / 2);
+      // Regates exitosos (cada 2)
+      points += Math.floor((stats.dribbles?.success || 0) / 2);
+      // Faltas recibidas (cada 3)
+      points += Math.floor((stats.fouls?.drawn || 0) / 3);
+    }
+
+    // BASE GENERAL - Penaltis (para todas las posiciones)
+    points += (stats.penalty?.won || 0) * 2;
+    points -= (stats.penalty?.committed || 0) * 2;
+    points -= (stats.penalty?.missed || 0) * 2;
+    
+    // BASE GENERAL - Tarjetas (para todas las posiciones)
+    points -= (stats.cards?.yellow || 0);
+    points -= (stats.cards?.red || 0) * 3;
+
+    // BASE GENERAL - Valoración del partido (para todas las posiciones)
+    const rating = stats.rating ? parseFloat(stats.rating) : 0;
+    if (rating > 8) points += 3;
+    else if (rating >= 6.5 && rating <= 8) points += 2;
+    else if (rating >= 5) points += 1;
+
+    return points;
   };
 
   useEffect(() => {
@@ -97,27 +186,16 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         let total = 0;
 
         for (const matchday of matchdays) {
-          let stats: any | null = null;
-          let points: number | null = null;
-
-          try {
-            stats = await FootballService.getPlayerStatistics(player.id, matchday);
-            if (stats) {
-              points = position ? calculatePlayerPoints(stats, position) : 0;
-            }
-          } catch (error) {
-            console.warn('No se pudieron obtener estadísticas del jugador para la jornada', matchday, error);
-          }
-
+          const stats = await FootballService.getPlayerStatistics(player.id, matchday);
+          const points = position ? calculatePlayerPoints(stats, position) : 0;
+          
           pointsPerMatchday.push({
             matchday,
             points,
-            stats,
+            stats
           });
-
-          if (typeof points === 'number') {
-            total += points;
-          }
+          
+          total += points;
         }
 
         setMatchdayPoints(pointsPerMatchday);
@@ -130,18 +208,16 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
 
           // Sincronizar puntos de última jornada con la BD si difiere
           const lastEntry = pointsPerMatchday.find(p => p.matchday === last);
-          const lastPointsCalculated = typeof lastEntry?.points === 'number' ? lastEntry.points : null;
+          const lastPointsCalculated = lastEntry?.points ?? 0;
 
-          if (lastPointsCalculated !== null) {
-            try {
-              const dbPlayer = await PlayerService.getPlayerById(player.id);
-              const dbLastPoints = dbPlayer?.lastJornadaPoints ?? 0;
-              if (dbLastPoints !== lastPointsCalculated) {
-                await PlayerService.updatePlayerLastPoints(player.id, lastPointsCalculated);
-              }
-            } catch (e) {
-              console.warn('No se pudo sincronizar puntos última jornada:', e);
+          try {
+            const dbPlayer = await PlayerService.getPlayerById(player.id);
+            const dbLastPoints = dbPlayer?.lastJornadaPoints ?? 0;
+            if (dbLastPoints !== lastPointsCalculated) {
+              await PlayerService.updatePlayerLastPoints(player.id, lastPointsCalculated);
             }
+          } catch (e) {
+            console.warn('No se pudo sincronizar puntos última jornada:', e);
           }
         }
       } catch (error) {
@@ -194,7 +270,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       if (!playerPosition) return;
 
       const roleMap: Record<CanonicalPos, string> = {
-        'Goalkeeper': 'GK',
+        'Goalkeeper': 'POR',
         'Defender': 'DEF',
         'Midfielder': 'CEN',
         'Attacker': 'DEL'
@@ -204,7 +280,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       const squad = await SquadService.getUserSquad(ligaId);
       
       const allPositionsByRole: Record<string, string[]> = {
-        'GK': ['por'],
+        'POR': ['por'],
         'DEF': ['def1', 'def2', 'def3', 'def4', 'def5'],
         'CEN': ['cen1', 'cen2', 'cen3', 'cen4', 'cen5'],
         'DEL': ['del1', 'del2', 'del3']
@@ -223,7 +299,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       if (!squadPosition) {
         CustomAlertManager.alert(
           'Sin espacio', 
-          `No hay espacio disponible para ${role === 'GK' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.`,
+          `No hay espacio disponible para ${role === 'POR' ? 'porteros' : role === 'DEF' ? 'defensas' : role === 'CEN' ? 'centrocampistas' : 'delanteros'} en tu plantilla.`,
           [{ text: 'OK', onPress: () => {}, style: 'default' }],
           { icon: 'alert-circle', iconColor: '#f59e0b' }
         );
@@ -352,7 +428,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
               fontSize: 14, 
               fontWeight: '800' 
             }}>
-              {puntos > 0 ? `${puntos}` : puntos}
+              {puntos > 0 ? `+${puntos}` : puntos}
             </Text>
           </View>
         </View>
@@ -500,12 +576,9 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                 </Text>
                 <Text style={{ color: '#10b981', fontSize: 28, fontWeight: '900', lineHeight: 28 }}>
                   {(() => {
-                    const playedMatchdays = matchdayPoints.filter(
-                      mp => mp.stats && mp.stats.games?.minutes > 0 && typeof mp.points === 'number'
-                    );
+                    const playedMatchdays = matchdayPoints.filter(mp => mp.stats && mp.stats.games?.minutes > 0);
                     if (playedMatchdays.length === 0) return '0';
-                    const totalSum = playedMatchdays.reduce((sum, mp) => sum + (mp.points ?? 0), 0);
-                    const average = totalSum / playedMatchdays.length;
+                    const average = playedMatchdays.reduce((sum, mp) => sum + mp.points, 0) / playedMatchdays.length;
                     return average.toFixed(1);
                   })()}
                 </Text>
@@ -585,28 +658,19 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
             >
               {matchdayPoints.map((mp) => {
                 const isSelected = selectedMatchday === mp.matchday;
-                const hasNumericPoints = typeof mp.points === 'number';
-                const pointsColor = hasNumericPoints
-                  ? mp.points! > 0
-                    ? '#10b981'
-                    : mp.points! < 0
-                      ? '#ef4444'
-                      : '#f59e0b'
-                  : '#64748b';
+                const pointsColor = mp.points > 0 ? '#10b981' : mp.points < 0 ? '#ef4444' : '#f59e0b';
                 
                 // Calcular porcentaje de la barra (máximo 20 puntos positivos, -10 negativos)
                 const maxPoints = 20;
                 const minPoints = -10;
                 let barPercentage = 0;
                 
-                if (hasNumericPoints) {
-                  if (mp.points! > 0) {
-                    barPercentage = Math.min((mp.points! / maxPoints) * 100, 100);
-                  } else if (mp.points! < 0) {
-                    barPercentage = Math.min((Math.abs(mp.points!) / Math.abs(minPoints)) * 100, 100);
-                  } else {
-                    barPercentage = 10; // Mínimo visible para 0 puntos
-                  }
+                if (mp.points > 0) {
+                  barPercentage = Math.min((mp.points / maxPoints) * 100, 100);
+                } else if (mp.points < 0) {
+                  barPercentage = Math.min((Math.abs(mp.points) / Math.abs(minPoints)) * 100, 100);
+                } else {
+                  barPercentage = 10; // Mínimo visible para 0 puntos
                 }
                 
                 return (
@@ -646,14 +710,14 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                     }}>
                       Jornada {mp.matchday}
                     </Text>
-                <Text style={{ 
-                  color: '#fff', 
-                  fontSize: 20, 
-                  fontWeight: '900',
-                  zIndex: 1
-                }}>
-                  {hasNumericPoints ? (mp.points! > 0 ? `${mp.points}` : mp.points) : '--'}
-                </Text>
+                    <Text style={{ 
+                      color: '#fff', 
+                      fontSize: 20, 
+                      fontWeight: '900',
+                      zIndex: 1
+                    }}>
+                      {mp.points}
+                    </Text>
                   </TouchableOpacity>
                 );
               })}
@@ -676,44 +740,28 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   JORNADA {selectedData.matchday}
                 </Text>
                 <View style={{
-                  backgroundColor:
-                    typeof selectedData.points === 'number'
-                      ? selectedData.points >= 0
-                        ? '#10b98130'
-                        : '#ef444430'
-                      : '#47556930',
+                  backgroundColor: selectedData.points >= 0 ? '#10b98130' : '#ef444430',
                   paddingHorizontal: 16,
                   paddingVertical: 8,
                   borderRadius: 8
                 }}>
-                  <Text
-                    style={{
-                      color:
-                        typeof selectedData.points === 'number'
-                          ? selectedData.points >= 0
-                            ? '#10b981'
-                            : '#ef4444'
-                          : '#64748b',
-                      fontSize: 18,
-                      fontWeight: '900',
-                    }}
-                  >
-                    {typeof selectedData.points === 'number'
-                      ? selectedData.points > 0
-                        ? `${selectedData.points}`
-                        : selectedData.points
-                      : '--'}
+                  <Text style={{ 
+                    color: selectedData.points >= 0 ? '#10b981' : '#ef4444', 
+                    fontSize: 18, 
+                    fontWeight: '900' 
+                  }}>
+                    {selectedData.points}
                   </Text>
                 </View>
               </View>
-              {selectedData.stats ? (
-                <ScrollView style={{ backgroundColor: '#0f172a' }}>
-                  <View style={{
-                    flexDirection: 'row',
-                    paddingVertical: 14,
-                    paddingHorizontal: 16,
-                    backgroundColor: '#1e293b',
-                    borderBottomWidth: 2,
+
+              <ScrollView style={{ backgroundColor: '#0f172a' }}>
+                <View style={{
+                  flexDirection: 'row',
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  backgroundColor: '#1e293b',
+                  borderBottomWidth: 2,
                   borderBottomColor: '#0892D0'
                 }}>
                   <View style={{ width: 70, alignItems: 'center' }}>
@@ -731,19 +779,19 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       PUNTOS
                     </Text>
                   </View>
-                  </View>
+                </View>
 
-                  {/* BASE GENERAL - Todas las posiciones */}
-                  <StatRow
-                    cantidad={selectedData.stats?.games?.minutes || 0}
-                    estadistica="Minutos jugados"
-                    puntos={
-                      (selectedData.stats?.games?.minutes || 0) > 0 && (selectedData.stats?.games?.minutes || 0) <= 45 ? 1 :
-                      (selectedData.stats?.games?.minutes || 0) > 45 ? 2 : 0
-                    }
-                  />
+                {/* BASE GENERAL - Todas las posiciones */}
+                <StatRow
+                  cantidad={selectedData.stats?.games?.minutes || 0}
+                  estadistica="Minutos jugados"
+                  puntos={
+                    (selectedData.stats?.games?.minutes || 0) > 0 && (selectedData.stats?.games?.minutes || 0) <= 45 ? 1 :
+                    (selectedData.stats?.games?.minutes || 0) > 45 ? 2 : 0
+                  }
+                />
 
-                  {/* PORTERO - Estadísticas específicas */}
+                {/* PORTERO - Estadísticas específicas */}
                 {position === 'Goalkeeper' && (
                   <>
                     <StatRow
@@ -761,24 +809,20 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       estadistica="Paradas"
                       puntos={selectedData.stats?.goalkeeper?.saves || 0}
                     />
-            
                     <StatRow
                       cantidad={selectedData.stats?.goalkeeper?.conceded || 0}
                       estadistica="Goles encajados"
-                      puntos={-2 * (selectedData.stats?.goalkeeper?.conceded || 0)}
+                      puntos={
+                        (selectedData.stats?.goalkeeper?.conceded || 0) === 0 && (selectedData.stats?.games?.minutes || 0) >= 60
+                          ? 5
+                          : (selectedData.stats?.goalkeeper?.conceded || 0) * -2
+                      }
                     />
                     <StatRow
-                      cantidad={(selectedData.stats?.penalty?.saved ?? selectedData.stats?.goalkeeper?.saved) || 0}
+                      cantidad={selectedData.stats?.penalty?.saved || 0}
                       estadistica="Penaltis parados"
-                      puntos={(((selectedData.stats?.penalty?.saved ?? selectedData.stats?.goalkeeper?.saved) || 0) * 5)}
+                      puntos={(selectedData.stats?.penalty?.saved || 0) * 5}
                     />
-                    {Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 5) !== 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats?.tackles?.interceptions || 0}
-                        estadistica="Recuperaciones"
-                        puntos={Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 5)}
-                      />
-                    )}
                   </>
                 )}
 
@@ -814,13 +858,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       estadistica="Duelos ganados"
                       puntos={Math.floor((selectedData.stats?.duels?.won || 0) / 2)}
                     />
-                    {Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 5) !== 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats?.tackles?.interceptions || 0}
-                        estadistica="Intercepciones"
-                        puntos={Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 5)}
-                      />
-                    )}
                   </>
                 )}
 
@@ -843,9 +880,18 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       puntos={selectedData.stats?.shots?.on || 0}
                     />
                     <StatRow
+                      cantidad={Math.floor((selectedData.stats?.goals?.conceded || 0))}
+                      estadistica="Goles encajados"
+                      puntos={
+                        (selectedData.stats?.goals?.conceded || 0) === 0 && (selectedData.stats?.games?.minutes || 0) >= 60
+                          ? 1
+                          : Math.floor((selectedData.stats?.goals?.conceded || 0) / 2) * -1
+                      }
+                    />
+                    <StatRow
                       cantidad={selectedData.stats?.passes?.key || 0}
                       estadistica="Pases clave"
-                      puntos={selectedData.stats?.passes?.key || 0}
+                      puntos={Math.floor((selectedData.stats?.passes?.key || 0) / 2)}
                     />
                     <StatRow
                       cantidad={selectedData.stats?.dribbles?.success || 0}
@@ -857,13 +903,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       estadistica="Faltas recibidas"
                       puntos={Math.floor((selectedData.stats?.fouls?.drawn || 0) / 3)}
                     />
-                    {Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 3) !== 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats?.tackles?.interceptions || 0}
-                        estadistica="Intercepciones"
-                        puntos={Math.floor((selectedData.stats?.tackles?.interceptions || 0) / 3)}
-                      />
-                    )}
                   </>
                 )}
 
@@ -888,7 +927,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                     <StatRow
                       cantidad={selectedData.stats?.passes?.key || 0}
                       estadistica="Pases clave"
-                      puntos={selectedData.stats?.passes?.key || 0}
+                      puntos={Math.floor((selectedData.stats?.passes?.key || 0) / 2)}
                     />
                     <StatRow
                       cantidad={selectedData.stats?.dribbles?.success || 0}
@@ -906,18 +945,13 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                 {/* BASE GENERAL - Penaltis y tarjetas (para todas las posiciones) */}
                 <StatRow
                   cantidad={selectedData.stats?.penalty?.won || 0}
-                  estadistica="Penaltis ganados"
+                  estadistica="Penaltis recibidos"
                   puntos={(selectedData.stats?.penalty?.won || 0) * 2}
                 />
                 <StatRow
                   cantidad={selectedData.stats?.penalty?.committed || 0}
                   estadistica="Penaltis cometidos"
                   puntos={(selectedData.stats?.penalty?.committed || 0) * -2}
-                />
-                <StatRow
-                  cantidad={selectedData.stats?.penalty?.scored || 0}
-                  estadistica="Penaltis marcados"
-                  puntos={(selectedData.stats?.penalty?.scored || 0) * 3}
                 />
                 <StatRow
                   cantidad={selectedData.stats?.penalty?.missed || 0}
@@ -934,19 +968,18 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                   estadistica="Tarjetas rojas"
                   puntos={(selectedData.stats?.cards?.red || 0) * -3}
                 />
+                <StatRow
+                  cantidad={selectedData.stats?.rating ? parseFloat(selectedData.stats.rating).toFixed(1) : '-'}
+                  estadistica="Valoración del partido"
+                  puntos={(() => {
+                    const rating = selectedData.stats?.rating ? parseFloat(selectedData.stats.rating) : 0;
+                    if (rating > 8) return 3;
+                    if (rating >= 6.5 && rating <= 8) return 2;
+                    if (rating >= 5) return 1;
+                    return 0;
+                  })()}
+                />
               </ScrollView>
-            ) : (
-              <View style={{
-                backgroundColor: '#0f172a',
-                padding: 16,
-                borderBottomWidth: 1,
-                borderBottomColor: '#334155'
-              }}>
-                <Text style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center' }}>
-                  No disponemos de estadísticas oficiales para esta jornada. Puede deberse a que la API aún no ha publicado los datos del partido.
-                </Text>
-              </View>
-            )}
             </View>
           )}
         </ScrollView>
