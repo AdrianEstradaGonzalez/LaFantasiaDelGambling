@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { PlayerRepository, PlayerData } from '../repositories/player.repo.js';
+import { PlayerJornadaPointsRepo } from '../repositories/playerJornadaPoints.repo.js';
+import { getPlayerMatchdayStats } from './playerPoints.service.js';
 
 const API_BASE = 'https://v3.football.api-sports.io';
 const LA_LIGA_LEAGUE_ID = 140;
@@ -314,7 +316,7 @@ export class PlayerService {
   /**
    * Actualizar puntos cacheados de la última jornada para un jugador
    */
-  static async updateLastJornadaPoints(id: number, points: number, jornada?: number) {
+  static async updateLastJornadaPoints(id: number, points: number, jornada?: number, season?: number) {
     if (!Number.isFinite(points)) {
       throw new Error('Puntos inválidos');
     }
@@ -322,8 +324,85 @@ export class PlayerService {
     if (points < -1000 || points > 1000) {
       throw new Error('Puntos fuera de rango');
     }
-    // Jornada ya no se persiste en BD; permitimos que sea opcional
-    return PlayerRepository.updateLastJornadaPoints(id, Math.trunc(points));
+
+    const sanitized = Math.trunc(points);
+    const finalSeason = Number(season ?? process.env.FOOTBALL_API_SEASON ?? SEASON_DEFAULT);
+
+    const [playerUpdate] = await Promise.all([
+      PlayerRepository.updateLastJornadaPoints(id, sanitized, jornada),
+      jornada != null
+        ? PlayerJornadaPointsRepo.upsertPoints(id, finalSeason, {
+            [PlayerJornadaPointsRepo.getColumnName(jornada as number)]: sanitized,
+          } as any)
+        : Promise.resolve(),
+    ]);
+
+    return playerUpdate;
+  }
+
+  static async getJornadaPoints(
+    playerId: number,
+    matchdays: number[],
+    options?: { season?: number; refreshLast?: boolean }
+  ) {
+    if (!matchdays.length) {
+      throw new Error('Debes proporcionar al menos una jornada');
+    }
+
+    const uniqueMatchdays = Array.from(new Set(matchdays.filter((md) => Number.isInteger(md) && md > 0 && md <= 38))).sort(
+      (a, b) => a - b
+    );
+
+    if (!uniqueMatchdays.length) {
+      throw new Error('Jornadas inválidas');
+    }
+
+    const season = Number(options?.season ?? process.env.FOOTBALL_API_SEASON ?? SEASON_DEFAULT);
+    const refreshLast = options?.refreshLast !== false;
+    const lastMatchday = uniqueMatchdays[uniqueMatchdays.length - 1];
+
+    const player = await PlayerRepository.getPlayerById(playerId);
+    if (!player) {
+      throw new Error('Jugador no encontrado');
+    }
+
+    const record = await PlayerJornadaPointsRepo.findByPlayerSeason(playerId, season);
+    const updates: Record<string, number | null> = {};
+    const updatedMatchdays: number[] = [];
+    const pointsMap = new Map<number, number | null>();
+
+    for (const jornada of uniqueMatchdays) {
+      const column = PlayerJornadaPointsRepo.getColumnName(jornada);
+      const stored = (record as any)?.[column] ?? null;
+      const shouldRefresh = refreshLast && jornada === lastMatchday;
+      if (stored === null || shouldRefresh) {
+        const stats = await getPlayerMatchdayStats(playerId, jornada, player.position);
+        const computedPoints = stats?.points != null ? Math.trunc(stats.points) : 0;
+        updates[column] = computedPoints;
+        updatedMatchdays.push(jornada);
+        pointsMap.set(jornada, computedPoints);
+      } else {
+        pointsMap.set(jornada, stored);
+      }
+    }
+
+    if (Object.keys(updates).length) {
+      await PlayerJornadaPointsRepo.upsertPoints(playerId, season, updates as any);
+      await PlayerRepository.updateLastJornadaPoints(playerId, pointsMap.get(lastMatchday) ?? 0, lastMatchday);
+    }
+
+    const points = uniqueMatchdays.map((jornada) => ({
+      matchday: jornada,
+      points: pointsMap.get(jornada) ?? null,
+      source: updatedMatchdays.includes(jornada) ? 'api' as const : 'cache' as const,
+    }));
+
+    return {
+      season,
+      matchdays: uniqueMatchdays,
+      points,
+      updatedMatchdays,
+    };
   }
 
   /**

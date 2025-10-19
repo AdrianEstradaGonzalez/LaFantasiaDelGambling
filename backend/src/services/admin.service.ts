@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { AppError } from '../utils/errors.js';
 import { calculatePlayerPoints, normalizeRole } from './playerPoints.service.js';
+import { PlayerService } from './player.service.js';
 
 const prisma = new PrismaClient();
 
@@ -150,13 +151,7 @@ async updateAllPlayersLastJornadaPoints(jornada: number) {
       const role = normalizeRole(player.position ?? playerStats?.games?.position);
       const points = calculatePlayerPoints(playerStats, role);
 
-      await prisma.player.update({
-        where: { id: player.id },
-        data: {
-          lastJornadaPoints: points,
-          lastJornadaNumber: lastCompletedJornada,
-        },
-      });
+      await PlayerService.updateLastJornadaPoints(player.id, points, lastCompletedJornada);
       updatedCount++;
       console.log(`[OK] ${player.name}: ${points} pts (jornada ${lastCompletedJornada})`);
       if (DEFAULT_REQUEST_DELAY_MS > 0) {

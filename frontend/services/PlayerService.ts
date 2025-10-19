@@ -79,6 +79,43 @@ export class PlayerService {
     }
   }
 
+  static async getJornadaPoints(
+    id: number,
+    matchdays: number[],
+    options?: { refreshLast?: boolean; season?: number }
+  ): Promise<{
+    success: boolean;
+    data: {
+      season: number;
+      matchdays: number[];
+      points: Array<{ matchday: number; points: number | null; source: 'api' | 'cache' }>;
+      updatedMatchdays: number[];
+    };
+  }> {
+    try {
+      const response = await fetch(`${this.BASE_URL}/${id}/jornada-points`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matchdays,
+          refreshLast: options?.refreshLast,
+          season: options?.season,
+        }),
+      });
+
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(json?.message || `Error ${response.status}`);
+      }
+
+      return json;
+    } catch (error) {
+      console.error('Error obteniendo puntos por jornada:', error);
+      throw error;
+    }
+  }
+
   /**
    * Actualizar precio de un jugador
    */

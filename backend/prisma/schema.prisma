@@ -37,17 +37,17 @@ model PasswordResetCode {
 }
 
 model League {
-  id              String         @id @default(cuid())
-  name            String         @unique
-  leaderId        String
-  createdAt       DateTime       @default(now())
-  code            String         @unique
-  currentJornada  Int            @default(1)
-  jornadaStatus   String         @default("open") // "open" o "closed"
-  leader          User           @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
-  members         LeagueMember[]
-  squads          Squad[]
-  bet_option      bet_option[]
+  id             String         @id @default(cuid())
+  name           String         @unique
+  leaderId       String
+  createdAt      DateTime       @default(now())
+  code           String         @unique
+  currentJornada Int            @default(1)
+  jornadaStatus  String         @default("open") // "open" o "closed"
+  leader         User           @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+  members        LeagueMember[]
+  squads         Squad[]
+  bet_option     bet_option[]
 }
 
 model LeagueMember {
@@ -100,27 +100,80 @@ model SquadPlayer {
 }
 
 model Player {
-  id          Int      @id
-  name        String
-  position    String
-  teamId      Int
-  teamName    String
-  teamCrest   String?
-  nationality String?
-  shirtNumber Int?
-  photo       String?
-  price       Int
+  id                  Int                   @id
+  name                String
+  position            String
+  teamId              Int
+  teamName            String
+  teamCrest           String?
+  nationality         String?
+  shirtNumber         Int?
+  photo               String?
+  price               Int
   // Puntos calculados de la última jornada (cache)
-  lastJornadaPoints Int @default(0)
+  lastJornadaPoints   Int                   @default(0)
   // Jornada a la que pertenecen esos puntos
-  lastJornadaNumber Int @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  lastJornadaNumber   Int                   @default(0)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  PlayerJornadaPoints PlayerJornadaPoints[]
 
   @@index([teamId])
   @@index([position])
   @@index([price])
   @@map("player")
+}
+
+model PlayerJornadaPoints {
+  playerId Int
+  season   Int @default(2025)
+
+  pointsJ1  Int?
+  pointsJ2  Int?
+  pointsJ3  Int?
+  pointsJ4  Int?
+  pointsJ5  Int?
+  pointsJ6  Int?
+  pointsJ7  Int?
+  pointsJ8  Int?
+  pointsJ9  Int?
+  pointsJ10 Int?
+  pointsJ11 Int?
+  pointsJ12 Int?
+  pointsJ13 Int?
+  pointsJ14 Int?
+  pointsJ15 Int?
+  pointsJ16 Int?
+  pointsJ17 Int?
+  pointsJ18 Int?
+  pointsJ19 Int?
+  pointsJ20 Int?
+  pointsJ21 Int?
+  pointsJ22 Int?
+  pointsJ23 Int?
+  pointsJ24 Int?
+  pointsJ25 Int?
+  pointsJ26 Int?
+  pointsJ27 Int?
+  pointsJ28 Int?
+  pointsJ29 Int?
+  pointsJ30 Int?
+  pointsJ31 Int?
+  pointsJ32 Int?
+  pointsJ33 Int?
+  pointsJ34 Int?
+  pointsJ35 Int?
+  pointsJ36 Int?
+  pointsJ37 Int?
+  pointsJ38 Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([playerId, season])
+  @@map("player_jornada_points")
 }
 
 model Bet {

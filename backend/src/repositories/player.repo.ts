@@ -91,11 +91,13 @@ export class PlayerRepository {
   /**
    * Actualizar puntos de la última jornada en caché
    */
-  static async updateLastJornadaPoints(id: number, points: number) {
+  static async updateLastJornadaPoints(id: number, points: number, jornada?: number) {
     return prisma.player.update({
       where: { id },
-      // Cast temporal para evitar discrepancias de tipos si el cliente Prisma no se ha refrescado
-      data: ({ lastJornadaPoints: points } as any),
+      data: ({
+        lastJornadaPoints: points,
+        ...(Number.isInteger(jornada) ? { lastJornadaNumber: jornada } : {}),
+      } as any),
     });
   }
 

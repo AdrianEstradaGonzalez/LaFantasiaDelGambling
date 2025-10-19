@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { calculatePlayerPoints as calculatePlayerPointsService, normalizeRole } from './playerPoints.service.js';
+import { PlayerService } from './player.service.js';
 
 const prisma = new PrismaClient();
 
@@ -644,13 +645,7 @@ export class JornadaService {
       if (playerPointsMap.size > 0) {
         for (const [playerId, points] of playerPointsMap.entries()) {
           try {
-            await prisma.player.update({
-              where: { id: playerId },
-              data: {
-                lastJornadaPoints: points,
-                lastJornadaNumber: jornada,
-              },
-            });
+            await PlayerService.updateLastJornadaPoints(playerId, points, jornada);
           } catch (error) {
             console.warn(`    ⚠️ No se pudo actualizar puntos cacheados para jugador ${playerId}:`, error);
           }
@@ -1453,4 +1448,3 @@ export class JornadaService {
     }
   }
 }
-

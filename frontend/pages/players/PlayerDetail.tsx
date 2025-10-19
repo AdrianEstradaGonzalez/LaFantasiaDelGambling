@@ -168,45 +168,71 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         const matchdays = await FootballService.getAvailableMatchdays();
         setAvailableMatchdays(matchdays);
 
-        // Cargar estadísticas y puntos por jornada
-        const pointsPerMatchday: MatchdayPoints[] = [];
-        let total = 0;
-
-        for (const matchday of matchdays) {
-          const stats = await FootballService.getPlayerStatistics(player.id, matchday);
-          const points = position ? calculatePlayerPoints(stats, position) : 0;
-          
-          pointsPerMatchday.push({
-            matchday,
-            points,
-            stats
-          });
-          
-          total += points;
+        if (!matchdays.length) {
+          setMatchdayPoints([]);
+          setTotalPoints(0);
+          setSelectedMatchday(null);
+          return;
         }
 
-        setMatchdayPoints(pointsPerMatchday);
-        setTotalPoints(total);
-        
-        // Seleccionar la última jornada por defecto
-        if (matchdays.length > 0) {
-          const last = matchdays[matchdays.length - 1];
-          setSelectedMatchday(last);
+        const lastMatchday = matchdays[matchdays.length - 1];
 
-          // Sincronizar puntos de última jornada con la BD si difiere
-          const lastEntry = pointsPerMatchday.find(p => p.matchday === last);
-          const lastPointsCalculated = lastEntry?.points ?? 0;
+        let backendData: {
+          success: boolean;
+          data: {
+            matchdays: number[];
+            points: Array<{ matchday: number; points: number | null; source: 'api' | 'cache' }>;
+          };
+        } | null = null;
 
-          try {
-            const dbPlayer = await PlayerService.getPlayerById(player.id);
-            const dbLastPoints = dbPlayer?.lastJornadaPoints ?? 0;
-            if (dbLastPoints !== lastPointsCalculated) {
-              await PlayerService.updatePlayerLastPoints(player.id, lastPointsCalculated);
-            }
-          } catch (e) {
-            console.warn('No se pudo sincronizar puntos última jornada:', e);
+        try {
+          backendData = await PlayerService.getJornadaPoints(player.id, matchdays, { refreshLast: true });
+        } catch (error) {
+          console.warn('No se pudo obtener cache de puntos:', error);
+        }
+
+        if (!backendData?.success) {
+          // Fallback al comportamiento anterior si el backend falla
+          const pointsPerMatchday: MatchdayPoints[] = [];
+          let totalFallback = 0;
+
+          for (const matchday of matchdays) {
+            const stats = await FootballService.getPlayerStatistics(player.id, matchday);
+            const points = position ? calculatePlayerPoints(stats, position) : 0;
+            pointsPerMatchday.push({ matchday, points, stats });
+            totalFallback += points;
           }
+
+          setMatchdayPoints(pointsPerMatchday);
+          setTotalPoints(totalFallback);
+          setSelectedMatchday(lastMatchday);
+
+          const lastEntry = pointsPerMatchday.find((p) => p.matchday === lastMatchday);
+          const lastPointsCalculated = lastEntry?.points ?? 0;
+          try {
+            await PlayerService.updatePlayerLastPoints(player.id, lastPointsCalculated, lastMatchday);
+          } catch (e) {
+            console.warn('No se pudo sincronizar puntos de la última jornada:', e);
+          }
+          return;
         }
+
+        const pointsMap = new Map<number, number>();
+        for (const entry of backendData.data.points) {
+          pointsMap.set(entry.matchday, entry.points ?? 0);
+        }
+
+        const initialPoints: MatchdayPoints[] = matchdays.map((matchday) => ({
+          matchday,
+          points: pointsMap.get(matchday) ?? 0,
+          stats: null,
+        }));
+
+        const total = initialPoints.reduce((sum, item) => sum + (item.points ?? 0), 0);
+
+        setMatchdayPoints(initialPoints);
+        setTotalPoints(total);
+        setSelectedMatchday(lastMatchday);
       } catch (error) {
         console.error('Error cargando datos del jugador:', error);
       } finally {
@@ -216,6 +242,43 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
 
     loadPlayerData();
   }, [player.id, position]);
+
+  useEffect(() => {
+    if (selectedMatchday == null) return;
+    const current = matchdayPoints.find((mp) => mp.matchday === selectedMatchday);
+    if (!current || current.stats) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const stats = await FootballService.getPlayerStatistics(player.id, selectedMatchday);
+        const points = position ? calculatePlayerPoints(stats, position) : 0;
+
+        if (cancelled) return;
+
+        setMatchdayPoints((prev) =>
+          prev.map((mp) =>
+            mp.matchday === selectedMatchday ? { ...mp, stats, points } : mp
+          )
+        );
+
+        setTotalPoints((prev) => prev + points - (current.points ?? 0));
+
+        try {
+          await PlayerService.updatePlayerLastPoints(player.id, points, selectedMatchday);
+        } catch (error) {
+          console.warn('No se pudo actualizar los puntos de la jornada seleccionada:', error);
+        }
+      } catch (error) {
+        console.warn('Error obteniendo estadísticas de la jornada seleccionada:', error);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedMatchday, matchdayPoints, player.id, position]);
 
   // Auto-scroll a la derecha cuando se carguen las jornadas
   useEffect(() => {
@@ -563,9 +626,18 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                 </Text>
                 <Text style={{ color: '#10b981', fontSize: 28, fontWeight: '900', lineHeight: 28 }}>
                   {(() => {
-                    const playedMatchdays = matchdayPoints.filter(mp => mp.stats && mp.stats.games?.minutes > 0);
+                    const playedMatchdays = matchdayPoints.filter((mp) => {
+                      if (mp.stats && typeof mp.stats.games?.minutes === 'number') {
+                        return mp.stats.games.minutes > 0;
+                      }
+                      return mp.points != null;
+                    });
+
                     if (playedMatchdays.length === 0) return '0';
-                    const average = playedMatchdays.reduce((sum, mp) => sum + mp.points, 0) / playedMatchdays.length;
+
+                    const average =
+                      playedMatchdays.reduce((sum, mp) => sum + (mp.points ?? 0), 0) /
+                      playedMatchdays.length;
                     return average.toFixed(1);
                   })()}
                 </Text>

@@ -181,6 +181,34 @@ export class PlayerController {
     }
   }
 
+  static async getJornadaPoints(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { id } = req.params as { id: string };
+      const body = (req.body ?? {}) as any;
+      const matchdaysInput = Array.isArray(body.matchdays) ? body.matchdays : [];
+
+      const matchdays = matchdaysInput
+        .map((md: any) => Number(md))
+        .filter((md: number) => Number.isInteger(md) && md > 0 && md <= 38);
+
+      if (!matchdays.length) {
+        return reply.status(400).send({ success: false, message: 'Debe proporcionar las jornadas a consultar' });
+      }
+
+      const data = await PlayerService.getJornadaPoints(Number(id), matchdays, {
+        season: body.season != null ? Number(body.season) : undefined,
+        refreshLast: body.refreshLast !== false,
+      });
+
+      return reply.status(200).send({ success: true, data });
+    } catch (error: any) {
+      console.error('Error obteniendo puntos por jornada:', error);
+      return reply
+        .status(500)
+        .send({ success: false, message: error?.message || 'Error al obtener puntos por jornada' });
+    }
+  }
+
   /**
    * Obtener estadísticas de jugadores
    * GET /api/players/stats

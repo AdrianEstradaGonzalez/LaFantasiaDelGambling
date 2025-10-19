@@ -4,6 +4,7 @@ import { AppError } from '../utils/errors.js';
 const API_BASE = 'https://v3.football.api-sports.io';
 const FALLBACK_APISPORTS_KEY = '099ef4c6c0803639d80207d4ac1ad5da';
 const CLEAN_SHEET_MINUTES = 60;
+const DEFAULT_CACHE_TTL_MS = Number(process.env.FOOTBALL_API_CACHE_TTL_MS ?? 60_000);
 
 function buildHeaders() {
   const candidates = [
@@ -29,6 +30,27 @@ function buildHeaders() {
 
 const api = axios.create({ baseURL: API_BASE, timeout: 15000, headers: buildHeaders() });
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type CacheEntry<T> = { data: T; expiresAt: number };
+
+function getFromCache<T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined {
+  const entry = cache.get(key);
+  if (!entry) return undefined;
+  if (entry.expiresAt < Date.now()) {
+    cache.delete(key);
+    return undefined;
+  }
+  return entry.data;
+}
+
+function setInCache<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T) {
+  if (DEFAULT_CACHE_TTL_MS <= 0) return;
+  cache.set(key, { data, expiresAt: Date.now() + DEFAULT_CACHE_TTL_MS });
+}
+
+const fixturesCache = new Map<string, CacheEntry<any[]>>();
+const playerInfoCache = new Map<string, CacheEntry<any | null>>();
+const fixturePlayersCache = new Map<string, CacheEntry<any[]>>();
 
 const roleMap: Record<string, 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'> = {
   gk: 'Goalkeeper',
@@ -168,17 +190,28 @@ export function createEmptyStats() {
 }
 
 async function fetchMatchdayFixtures(matchday: number) {
+  const season = Number(process.env.FOOTBALL_API_SEASON ?? 2025);
+  const cacheKey = `${season}:${matchday}`;
+  const cached = getFromCache(fixturesCache, cacheKey);
+  if (cached !== undefined) return cached;
+
   const response = await api.get('/fixtures', {
     params: {
       league: 140,
-      season: process.env.FOOTBALL_API_SEASON ?? 2025,
+      season,
       round: `Regular Season - ${matchday}`,
     },
   });
-  return response.data?.response ?? [];
+  const fixtures = response.data?.response ?? [];
+  setInCache(fixturesCache, cacheKey, fixtures);
+  return fixtures;
 }
 
 async function fetchPlayerSeasonInfo(playerId: number) {
+  const cacheKey = String(playerId);
+  const cached = getFromCache(playerInfoCache, cacheKey);
+  if (cached !== undefined) return cached;
+
   const response = await api.get('/players', {
     params: {
       id: playerId,
@@ -186,12 +219,20 @@ async function fetchPlayerSeasonInfo(playerId: number) {
       league: 140,
     },
   });
-  return response.data?.response?.[0] ?? null;
+  const info = response.data?.response?.[0] ?? null;
+  setInCache(playerInfoCache, cacheKey, info);
+  return info;
 }
 
 async function fetchFixturePlayers(fixtureId: number) {
+  const cacheKey = String(fixtureId);
+  const cached = getFromCache(fixturePlayersCache, cacheKey);
+  if (cached !== undefined) return cached;
+
   const response = await api.get('/fixtures/players', { params: { fixture: fixtureId } });
-  return response.data?.response ?? [];
+  const players = response.data?.response ?? [];
+  setInCache(fixturePlayersCache, cacheKey, players);
+  return players;
 }
 
 export async function getPlayerMatchdayStats(playerId: number, matchday: number, roleInput?: string | null) {

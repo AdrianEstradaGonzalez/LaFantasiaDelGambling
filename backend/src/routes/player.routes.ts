@@ -36,6 +36,13 @@ export default async function playerRoutes(app: FastifyInstance) {
   app.get('/:id', PlayerController.getPlayerById);
 
   /**
+   * @route POST /api/players/:id/jornada-points
+   * @desc Obtener/actualizar puntos por jornada en caché
+   * @access Public
+   */
+  app.post('/:id/jornada-points', PlayerController.getJornadaPoints);
+
+  /**
    * @route PATCH /api/players/:id/price
    * @desc Actualizar precio de un jugador
    * @access Private (Admin)
