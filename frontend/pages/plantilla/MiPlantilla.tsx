@@ -12,6 +12,12 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
+// Importar sistema centralizado de puntos
+import {
+  calculatePlayerPoints as calculatePointsShared,
+  type Role,
+  CLEAN_SHEET_MINUTES
+} from '../../shared/pointsCalculator';
 
 type Formation = {
   id: string;
@@ -145,8 +151,6 @@ const formations: Formation[] = [
     ]
   }
 ];
-
-const CLEAN_SHEET_MINUTES = 60;
 
 const getAvatarUri = (p: Player) => {
   // Extraer iniciales del nombre del jugador

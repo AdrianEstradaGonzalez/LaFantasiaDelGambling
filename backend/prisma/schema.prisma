@@ -117,11 +117,88 @@ model Player {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   PlayerJornadaPoints PlayerJornadaPoints[]
+  stats               PlayerStats[]
 
   @@index([teamId])
   @@index([position])
   @@index([price])
   @@map("player")
+}
+
+model PlayerStats {
+  id        String   @id @default(cuid())
+  playerId  Int
+  jornada   Int
+  season    Int      @default(2025)
+  
+  // Información del partido
+  fixtureId Int
+  teamId    Int
+  
+  // Puntos calculados según DreamLeague
+  totalPoints Int    @default(0)
+  
+  // Games
+  minutes     Int?
+  position    String?
+  rating      String?
+  captain     Boolean  @default(false)
+  substitute  Boolean  @default(false)
+  
+  // Goals
+  goals       Int?
+  assists     Int?
+  conceded    Int?
+  saves       Int?
+  
+  // Shots
+  shotsTotal  Int?
+  shotsOn     Int?
+  
+  // Passes
+  passesTotal Int?
+  passesKey   Int?
+  passesAccuracy Int?
+  
+  // Tackles
+  tacklesTotal         Int?
+  tacklesBlocks        Int?
+  tacklesInterceptions Int?
+  
+  // Duels
+  duelsTotal Int?
+  duelsWon   Int?
+  
+  // Dribbles
+  dribblesAttempts Int?
+  dribblesSuccess  Int?
+  dribblesPast     Int?
+  
+  // Fouls
+  foulsDrawn     Int?
+  foulsCommitted Int?
+  
+  // Cards
+  yellowCards Int?
+  redCards    Int?
+  
+  // Penalty
+  penaltyWon       Int?
+  penaltyCommitted Int?
+  penaltyScored    Int?
+  penaltyMissed    Int?
+  penaltySaved     Int?
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, jornada, season])
+  @@index([playerId, jornada])
+  @@index([jornada, season])
+  @@map("player_stats")
 }
 
 model PlayerJornadaPoints {

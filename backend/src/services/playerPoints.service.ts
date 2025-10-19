@@ -1,9 +1,14 @@
 import axios from 'axios';
 import { AppError } from '../utils/errors.js';
+// Importar el sistema centralizado de puntos
+import {
+  calculatePlayerPointsTotal,
+  normalizeRole as normalizeRoleShared,
+  Role,
+} from '../../../shared/pointsCalculator.js';
 
 const API_BASE = 'https://v3.football.api-sports.io';
 const FALLBACK_APISPORTS_KEY = '099ef4c6c0803639d80207d4ac1ad5da';
-const CLEAN_SHEET_MINUTES = 60;
 const DEFAULT_CACHE_TTL_MS = Number(process.env.FOOTBALL_API_CACHE_TTL_MS ?? 60_000);
 
 function buildHeaders() {
@@ -52,118 +57,12 @@ const fixturesCache = new Map<string, CacheEntry<any[]>>();
 const playerInfoCache = new Map<string, CacheEntry<any | null>>();
 const fixturePlayersCache = new Map<string, CacheEntry<any[]>>();
 
-const roleMap: Record<string, 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker'> = {
-  gk: 'Goalkeeper',
-  goalkeeper: 'Goalkeeper',
-  g: 'Goalkeeper',
-  defender: 'Defender',
-  d: 'Defender',
-  df: 'Defender',
-  back: 'Defender',
-  lb: 'Defender',
-  rb: 'Defender',
-  cb: 'Defender',
-  midfielder: 'Midfielder',
-  m: 'Midfielder',
-  mf: 'Midfielder',
-  cm: 'Midfielder',
-  dm: 'Midfielder',
-  am: 'Midfielder',
-  winger: 'Attacker',
-  wing: 'Attacker',
-  forward: 'Attacker',
-  attacker: 'Attacker',
-  f: 'Attacker',
-  cf: 'Attacker',
-  st: 'Attacker',
-};
+// Exportar la función de normalización centralizada
+export const normalizeRole = normalizeRoleShared;
 
-export function normalizeRole(position?: string | null): 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker' {
-  if (!position) return 'Midfielder';
-  const key = position.trim().toLowerCase();
-  return roleMap[key] ?? 'Midfielder';
-}
-
-export function calculatePlayerPoints(
-  stats: any,
-  role: 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker',
-): number {
-  if (!stats || !stats.games) return 0;
-
-  let points = 0;
-  const minutes = Number(stats.games?.minutes ?? 0);
-  const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
-
-  if (minutes > 0 && minutes < 45) points += 1;
-  else if (minutes >= 45) points += 2;
-
-  const goals = stats.goals || {};
-  const cards = stats.cards || {};
-  const penalty = stats.penalty || {};
-  const passes = stats.passes || {};
-  const shots = stats.shots || {};
-  const dribbles = stats.dribbles || {};
-  const tackles = stats.tackles || {};
-  const duels = stats.duels || {};
-  const fouls = stats.fouls || {};
-
-  points += (goals.assists || 0) * 3;
-  points -= (cards.yellow || 0) * 1;
-  points -= (cards.red || 0) * 3;
-  points += (penalty.won || 0) * 2;
-  points -= (penalty.committed || 0) * 2;
-  points += (penalty.scored || 0) * 3;
-  points -= (penalty.missed || 0) * 2;
-
-  if (role === 'Goalkeeper') {
-    const conceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
-    const saves = Number(stats.goalkeeper?.saves ?? goals.saves ?? 0);
-    const savedPens = Number(
-      penalty.saved ?? stats.goalkeeper?.savedPenalties ?? stats.goalkeeper?.saved ?? 0
-    );
-    points += (goals.total || 0) * 10;
-    points += (goals.assists || 0) * 3;
-    points += saves;
-    points -= conceded * 2;
-    points += savedPens * 5;
-  } else if (role === 'Defender') {
-    const conceded = Number(goals.conceded ?? stats.goalkeeper?.conceded ?? 0);
-    if (meetsCleanSheetMinutes && conceded === 0) points += 4;
-    points += (goals.total || 0) * 6;
-    points += Math.floor((duels.won || 0) / 2);
-    points += Math.floor((tackles.interceptions || 0) / 5);
-    points -= conceded;
-    points += (shots.on || 0);
-  } else if (role === 'Midfielder') {
-    const conceded = Number(goals.conceded ?? 0);
-    // Portería a cero (>=60 min): +1
-    if (meetsCleanSheetMinutes && conceded === 0) points += 1;
-    points += (goals.total || 0) * 5;
-    points -= Math.floor(conceded / 2);
-    points += (passes.key || 0);
-    points += Math.floor((dribbles.success || 0) / 2);
-    points += Math.floor((fouls.drawn || 0) / 3);
-    points += Math.floor((tackles.interceptions || 0) / 3);
-    points += (shots.on || 0);
-  } else if (role === 'Attacker') {
-    points += (goals.total || 0) * 4;
-    points += (passes.key || 0);
-    points += Math.floor((fouls.drawn || 0) / 3);
-    points += Math.floor((dribbles.success || 0) / 2);
-    points += (shots.on || 0);
-  }
-
-  const rawRating = stats.games?.rating;
-  if (rawRating != null && rawRating !== '') {
-    const rating = Number(rawRating);
-    if (!Number.isNaN(rating)) {
-      if (rating >= 9) points += 3;
-      else if (rating >= 8) points += 2;
-      else if (rating >= 7) points += 1;
-    }
-  }
-
-  return points;
+// Exportar la función de cálculo de puntos centralizada
+export function calculatePlayerPoints(stats: any, role: Role): number {
+  return calculatePlayerPointsTotal(stats, role);
 }
 
 export function createEmptyStats() {

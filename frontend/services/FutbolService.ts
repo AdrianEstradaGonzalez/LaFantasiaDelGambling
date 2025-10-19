@@ -5,12 +5,17 @@ import { LigaService } from './LigaService';
 import { ApuestasEvaluator } from './ApuestasEvaluator';
 import { PresupuestoService } from './PresupuestoService';
 import { BetOptionService, BetOption } from './BetOptionService';
+// Importar sistema centralizado de puntos
+import { 
+  calculatePlayerPoints as calculatePointsShared,
+  type Role,
+  CLEAN_SHEET_MINUTES
+} from '../shared/pointsCalculator';
 
 // API-FOOTBALL (API-Sports v3)
 const API_BASE = "https://v3.football.api-sports.io";
 const LA_LIGA_LEAGUE_ID = 140; // La Liga ID en API-FOOTBALL
 const SEASON_DEFAULT = 2025;
-const CLEAN_SHEET_MINUTES = 60;
 
 // Nota: por simplicidad usamos la key proporcionada; idealmente cargar desde .env o almacenamiento seguro
 export const HEADERS = {
@@ -432,82 +437,20 @@ export default class FootballService {
   }
 
   // ======= Points calculation (frontend) =======
-  private static mapRoleCode(role: 'POR'|'DEF'|'CEN'|'DEL'): 'GK'|'DEF'|'MID'|'ATT' {
-    switch (role) {
-      case 'POR': return 'GK';
-      case 'DEF': return 'DEF';
-      case 'CEN': return 'MID';
-      case 'DEL': return 'ATT';
-      default: return 'MID';
-    }
+  private static mapRoleCode(role: 'POR'|'DEF'|'CEN'|'DEL'): Role {
+    const mapping: Record<string, Role> = {
+      'POR': 'Goalkeeper',
+      'DEF': 'Defender',
+      'CEN': 'Midfielder',
+      'DEL': 'Attacker'
+    };
+    return mapping[role] || 'Midfielder';
   }
 
   private static calculatePlayerPoints(stats: any, roleCode: 'POR'|'DEF'|'CEN'|'DEL'): number {
     if (!stats || !stats.games) return 0;
     const role = this.mapRoleCode(roleCode);
-
-    let points = 0;
-    const minutes = Number(stats.games?.minutes ?? 0);
-    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
-
-    // Base general
-    if (minutes > 0 && minutes < 45) points += 1;
-    else if (minutes >= 45) points += 2;
-
-    const goals = stats.goals || {};
-    const cards = stats.cards || {};
-    const penalty = stats.penalty || {};
-    const passes = stats.passes || {};
-    const shots = stats.shots || {};
-    const dribbles = stats.dribbles || {};
-    const tackles = stats.tackles || {};
-    const duels = stats.duels || {};
-    const fouls = stats.fouls || {};
-
-    points += (goals.assists || 0) * 3;
-    points -= (cards.yellow || 0) * 1;
-    points -= (cards.red || 0) * 3;
-    points += (penalty.won || 0) * 2;
-    points -= (penalty.committed || 0) * 2;
-    points += (penalty.scored || 0) * 3;
-    points -= (penalty.missed || 0) * 2;
-
-    // Específico por posición
-    if (role === 'GK') {
-      const conceded = stats.goals?.conceded || 0;
-      if (meetsCleanSheetMinutes && conceded === 0) points += 5;
-      points -= conceded * 2;
-      points += (stats.goals?.saves || 0) * 1;
-      points += (penalty.saved || 0) * 5;
-      points += (goals.total || 0) * 10;
-      points += Math.floor((tackles.interceptions || 0) / 5);
-    } else if (role === 'DEF') {
-      const conceded = stats.goals?.conceded || 0;
-      if (meetsCleanSheetMinutes && conceded === 0) points += 4;
-      points += (goals.total || 0) * 6;
-      points += Math.floor((duels.won || 0) / 2);
-      points += Math.floor((tackles.interceptions || 0) / 5);
-      points -= conceded * 1;
-      points += (shots.on || 0) * 1;
-    } else if (role === 'MID') {
-      const conceded = stats.goals?.conceded || 0;
-      if (meetsCleanSheetMinutes && conceded === 0) points += 1;
-      points += (goals.total || 0) * 5;
-      points -= Math.floor(conceded / 2);
-      points += (passes.key || 0) * 1;
-      points += Math.floor((dribbles.success || 0) / 2);
-      points += Math.floor((fouls.drawn || 0) / 3);
-      points += Math.floor((tackles.interceptions || 0) / 3);
-      points += (shots.on || 0) * 1;
-    } else if (role === 'ATT') {
-      points += (goals.total || 0) * 4;
-      points += (passes.key || 0) * 1;
-      points += Math.floor((fouls.drawn || 0) / 3);
-      points += Math.floor((dribbles.success || 0) / 2);
-      points += (shots.on || 0) * 1;
-    }
-
-    return points;
+    return calculatePointsShared(stats, role).total;
   }
 
   /**

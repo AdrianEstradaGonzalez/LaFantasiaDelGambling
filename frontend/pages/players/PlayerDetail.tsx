@@ -10,8 +10,14 @@ import { CustomAlertManager } from '../../components/CustomAlert';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { ChevronLeftIcon } from '../../components/VectorIcons';
+// Importar sistema centralizado de puntos
+import { 
+  calculatePlayerPoints as calculatePointsShared, 
+  type Role,
+  CLEAN_SHEET_MINUTES
+} from '../../shared/pointsCalculator';
 
-type CanonicalPos = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker';
+type CanonicalPos = Role;
 
 const normalizePosition = (pos?: string): CanonicalPos | undefined => {
   if (!pos) return undefined;
@@ -77,86 +83,9 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
   const posColor = position ? posColors[position] : '#64748b';
   const posLabel = position ? posAbbr[position] : 'N/A';
 
-  // Función para calcular puntos según DreamLeague
+  // Función para calcular puntos según DreamLeague usando el sistema centralizado
   const calculatePlayerPoints = (stats: any, role: CanonicalPos): number => {
-    if (!stats) return 0;
-    
-    let points = 0;
-    const minutes = Number(stats.games?.minutes ?? 0);
-    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
-
-    // BASE GENERAL - Minutos jugados
-    if (minutes > 0 && minutes < 45) points += 1;
-    if (minutes >= 45) points += 2;
-
-    // ESTADÍSTICAS ESPECÍFICAS POR POSICIÓN
-    if (role === 'Goalkeeper') {
-      // Goles marcados
-      points += (stats.goals?.total || 0) * 10;
-      // Goles encajados = 0 (bonus por no encajar, solo si juega >= 60 min)
-      if (meetsCleanSheetMinutes && (stats.goalkeeper?.conceded || 0) === 0) points += 5;
-      // Paradas
-      points += (stats.goalkeeper?.saves || 0);
-      // Goles encajados
-      points -= (stats.goalkeeper?.conceded || 0) * 2;
-      // Penaltis parados
-      points += (stats.penalty?.saved || 0) * 5;
-    }
-
-    if (role === 'Defender') {
-      // Goles marcados
-      points += (stats.goals?.total || 0) * 6;
-      // Goles encajados = 0 (sin portería a cero, solo si juega >= 60 min)
-      if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 4;
-      // Tiros a puerta
-      points += (stats.shots?.on || 0);
-      // Duelos ganados (cada 2)
-      points += Math.floor((stats.duels?.won || 0) / 2);
-    }
-
-    if (role === 'Midfielder') {
-      // Goles marcados
-      points += (stats.goals?.total || 0) * 5;
-      // Tiros a puerta
-      points += (stats.shots?.on || 0);
-      // Pases clave (cada 2)
-      points += Math.floor((stats.passes?.key || 0) / 2);
-      // Regates exitosos (cada 2)
-      points += Math.floor((stats.dribbles?.success || 0) / 2);
-      // Faltas recibidas (cada 3)
-      points += Math.floor((stats.fouls?.drawn || 0) / 3);
-    }
-
-    if (role === 'Attacker') {
-      // Goles marcados
-      points += (stats.goals?.total || 0) * 4;
-      // Tiros a puerta
-      points += (stats.shots?.on || 0);
-      // Pases clave (cada 2)
-      points += Math.floor((stats.passes?.key || 0) / 2);
-      // Regates exitosos (cada 2)
-      points += Math.floor((stats.dribbles?.success || 0) / 2);
-      // Faltas recibidas (cada 3)
-      points += Math.floor((stats.fouls?.drawn || 0) / 3);
-    }
-
-    // BASE GENERAL - Penaltis (para todas las posiciones)
-    points += (stats.goals?.assists || 0) * 3;
-    points += (stats.penalty?.won || 0) * 2;
-    points -= (stats.penalty?.committed || 0) * 2;
-    points -= (stats.penalty?.missed || 0) * 2;
-    
-    // BASE GENERAL - Tarjetas (para todas las posiciones)
-    points -= (stats.cards?.yellow || 0);
-    points -= (stats.cards?.red || 0) * 3;
-
-    // BASE GENERAL - Valoración del partido (para todas las posiciones)
-    const rating = stats.rating ? parseFloat(stats.rating) : 0;
-    if (rating > 8) points += 3;
-    else if (rating >= 6.5 && rating <= 8) points += 2;
-    else if (rating >= 5) points += 1;
-
-    return points;
+    return calculatePointsShared(stats, role).total;
   };
 
   useEffect(() => {
@@ -1038,4 +967,3 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
 };
 
 export default PlayerDetail;
-const CLEAN_SHEET_MINUTES = 60;
