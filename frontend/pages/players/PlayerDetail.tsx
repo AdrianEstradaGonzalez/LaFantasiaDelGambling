@@ -93,8 +93,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     if (role === 'Goalkeeper') {
       // Goles marcados
       points += (stats.goals?.total || 0) * 10;
-      // Asistencias
-      points += (stats.goals?.assists || 0) * 3;
       // Goles encajados = 0 (bonus por no encajar, solo si juega >= 60 min)
       if (meetsCleanSheetMinutes && (stats.goalkeeper?.conceded || 0) === 0) points += 5;
       // Paradas
@@ -108,14 +106,10 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     if (role === 'Defender') {
       // Goles marcados
       points += (stats.goals?.total || 0) * 6;
-      // Asistencias
-      points += (stats.goals?.assists || 0) * 3;
       // Goles encajados = 0 (sin portería a cero, solo si juega >= 60 min)
       if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 4;
       // Tiros a puerta
       points += (stats.shots?.on || 0);
-      // Goles encajados
-      points -= (stats.goals?.conceded || 0);
       // Duelos ganados (cada 2)
       points += Math.floor((stats.duels?.won || 0) / 2);
     }
@@ -123,14 +117,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     if (role === 'Midfielder') {
       // Goles marcados
       points += (stats.goals?.total || 0) * 5;
-      // Asistencias
-      points += (stats.goals?.assists || 0) * 3;
-      // Goles encajados = 0 (sin portería a cero, solo si juega >= 60 min)
-      if (meetsCleanSheetMinutes && (stats.goals?.conceded || 0) === 0) points += 1;
       // Tiros a puerta
       points += (stats.shots?.on || 0);
-      // Goles encajados (cada 2)
-      points -= Math.floor((stats.goals?.conceded || 0) / 2);
       // Pases clave (cada 2)
       points += Math.floor((stats.passes?.key || 0) / 2);
       // Regates exitosos (cada 2)
@@ -142,8 +130,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     if (role === 'Attacker') {
       // Goles marcados
       points += (stats.goals?.total || 0) * 4;
-      // Asistencias
-      points += (stats.goals?.assists || 0) * 3;
       // Tiros a puerta
       points += (stats.shots?.on || 0);
       // Pases clave (cada 2)
@@ -155,6 +141,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     }
 
     // BASE GENERAL - Penaltis (para todas las posiciones)
+    points += (stats.goals?.assists || 0) * 3;
     points += (stats.penalty?.won || 0) * 2;
     points -= (stats.penalty?.committed || 0) * 2;
     points -= (stats.penalty?.missed || 0) * 2;
@@ -850,7 +837,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       puntos={
                         (selectedData.stats?.goals?.conceded || 0) === 0 && (selectedData.stats?.games?.minutes || 0) >= 60
                           ? 4
-                          : (selectedData.stats?.goals?.conceded || 0) * -1
+                          : 0
                       }
                     />
                     <StatRow
@@ -880,15 +867,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       puntos={selectedData.stats?.shots?.on || 0}
                     />
                     <StatRow
-                      cantidad={Math.floor((selectedData.stats?.goals?.conceded || 0))}
-                      estadistica="Goles encajados"
-                      puntos={
-                        (selectedData.stats?.goals?.conceded || 0) === 0 && (selectedData.stats?.games?.minutes || 0) >= 60
-                          ? 1
-                          : Math.floor((selectedData.stats?.goals?.conceded || 0) / 2) * -1
-                      }
-                    />
-                    <StatRow
                       cantidad={selectedData.stats?.passes?.key || 0}
                       estadistica="Pases clave"
                       puntos={Math.floor((selectedData.stats?.passes?.key || 0) / 2)}
@@ -905,7 +883,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                     />
                   </>
                 )}
-
                 {/* DELANTERO - Estadísticas específicas */}
                 {position === 'Attacker' && (
                   <>
@@ -941,7 +918,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                     />
                   </>
                 )}
-
                 {/* BASE GENERAL - Penaltis y tarjetas (para todas las posiciones) */}
                 <StatRow
                   cantidad={selectedData.stats?.penalty?.won || 0}
