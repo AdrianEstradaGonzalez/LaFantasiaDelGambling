@@ -7,6 +7,7 @@ import { SquadService, Squad } from '../../services/SquadService';
 import { JornadaService } from '../../services/JornadaService';
 import FootballService from '../../services/FutbolService';
 import { PlayerService } from '../../services/PlayerService';
+import { PlayerStatsService } from '../../services/PlayerStatsService';
 import LoadingScreen from '../../components/LoadingScreen';
 import { ChevronLeftIcon } from '../../components/VectorIcons';
 
@@ -157,11 +158,20 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
           // Puntos de la jornada actual (si la tenemos)
           if (currentJornada != null) {
             try {
-              const rolesById: Record<number, 'POR'|'DEF'|'CEN'|'DEL'> = {};
-              for (const sp of s.players) rolesById[sp.playerId] = (sp.role as any);
-              const ptsMap = await FootballService.getPlayersPointsForJornada(currentJornada, ids, rolesById);
+              // ✨ MIGRADO: Ahora usa PlayerStatsService del backend
               const pointsWithDefaults: Record<number, number | null> = {};
-              for (const id of ids) pointsWithDefaults[id] = ptsMap[id] ?? null;
+              
+              // Obtener stats de cada jugador desde el backend
+              for (const playerId of ids) {
+                try {
+                  const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentJornada);
+                  pointsWithDefaults[playerId] = stats?.totalPoints ?? null;
+                } catch {
+                  // Si falla para un jugador, dejar null
+                  pointsWithDefaults[playerId] = null;
+                }
+              }
+              
               setPlayerPoints(pointsWithDefaults);
             } catch {}
           }

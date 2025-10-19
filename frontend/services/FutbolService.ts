@@ -5,12 +5,8 @@ import { LigaService } from './LigaService';
 import { ApuestasEvaluator } from './ApuestasEvaluator';
 import { PresupuestoService } from './PresupuestoService';
 import { BetOptionService, BetOption } from './BetOptionService';
-// Importar sistema centralizado de puntos
-import { 
-  calculatePlayerPoints as calculatePointsShared,
-  type Role,
-  CLEAN_SHEET_MINUTES
-} from '../shared/pointsCalculator';
+// ✨ MIGRACIÓN COMPLETADA: Ya no se importa shared/pointsCalculator
+// Todos los cálculos de puntos ahora vienen del backend vía PlayerStatsService
 
 // API-FOOTBALL (API-Sports v3)
 const API_BASE = "https://v3.football.api-sports.io";
@@ -437,68 +433,10 @@ export default class FootballService {
   }
 
   // ======= Points calculation (frontend) =======
-  private static mapRoleCode(role: 'POR'|'DEF'|'CEN'|'DEL'): Role {
-    const mapping: Record<string, Role> = {
-      'POR': 'Goalkeeper',
-      'DEF': 'Defender',
-      'CEN': 'Midfielder',
-      'DEL': 'Attacker'
-    };
-    return mapping[role] || 'Midfielder';
-  }
-
-  private static calculatePlayerPoints(stats: any, roleCode: 'POR'|'DEF'|'CEN'|'DEL'): number {
-    if (!stats || !stats.games) return 0;
-    const role = this.mapRoleCode(roleCode);
-    return calculatePointsShared(stats, role).total;
-  }
-
-  /**
-   * Obtener puntos por jugador para una jornada (usando API-FOOTBALL)
-   * Hace 1 llamada para fixtures + ~10 llamadas (una por partido) para stats de jugadores.
-   */
-  static async getPlayersPointsForJornada(jornada: number, playerIds: number[], rolesById: Record<number, 'POR'|'DEF'|'CEN'|'DEL'>): Promise<Record<number, number>> {
-    const pointsMap: Record<number, number> = {};
-    if (!playerIds.length) return pointsMap;
-    try {
-      const fixtures = await this.getAllMatchesWithJornadas(jornada);
-      if (!fixtures || fixtures.length === 0) return pointsMap;
-
-      const wanted = new Set(playerIds);
-      // For each fixture, get players stats and check for our players
-      for (const fx of fixtures) {
-        try {
-          const { data } = await axios.get(`${API_BASE}/fixtures/players`, {
-            headers: HEADERS,
-            timeout: 12000,
-            params: { fixture: fx.id },
-          });
-          const teamsData = data?.response || [];
-          for (const teamData of teamsData) {
-            const plist = teamData.players || [];
-            for (const p of plist) {
-              const pid = p?.player?.id;
-              if (!pid || !wanted.has(pid)) continue;
-              const stats = p?.statistics?.[0];
-              const roleCode = rolesById[pid] ?? 'CEN';
-              const pts = this.calculatePlayerPoints(stats, roleCode);
-              pointsMap[pid] = (pointsMap[pid] ?? 0) + pts;
-              // Once found, remove to reduce future checks
-              wanted.delete(pid);
-            }
-          }
-          // Small delay to be gentle
-          await new Promise(r => setTimeout(r, 100));
-          if (wanted.size === 0) break;
-        } catch (e) {
-          // ignore fixture errors to allow partial results
-        }
-      }
-    } catch (e) {
-      // ignore errors, return what we have
-    }
-    return pointsMap;
-  }
+  // ✨ ELIMINADO: Funciones de cálculo de puntos locales
+  // mapRoleCode(), calculatePlayerPoints() y getPlayersPointsForJornada() 
+  // Ya no son necesarias - todos los puntos vienen del backend vía PlayerStatsService
+  // Ver MIGRACION_FRONTEND_BACKEND_COMPLETADA.md para detalles
 
   static async getFormattedAndAdvance(): Promise<{ jornada: number; items: string[] }> {
     const { jornada, partidos } = await FootballService.getMatchesForCurrentAndAdvance();

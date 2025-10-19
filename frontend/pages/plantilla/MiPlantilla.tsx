@@ -12,12 +12,8 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
-// Importar sistema centralizado de puntos
-import {
-  calculatePlayerPoints as calculatePointsShared,
-  type Role,
-  CLEAN_SHEET_MINUTES
-} from '../../shared/pointsCalculator';
+// ✨ NUEVO: Importar servicio de estadísticas del backend
+import { PlayerStatsService } from '../../services/PlayerStatsService';
 
 type Formation = {
   id: string;
@@ -407,91 +403,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     return false;
   };
 
-  // FunciÃ³n para calcular puntuaciÃ³n de un jugador segÃºn DreamLeague
-  const calculatePlayerPoints = (playerStats: any, role: string): number => {
-    if (!playerStats) return 0;
-    
-    const games = playerStats.games || {};
-    const shots = playerStats.shots || {};
-    const goals = playerStats.goals || {};
-    const passes = playerStats.passes || {};
-    const tackles = playerStats.tackles || {};
-    const duels = playerStats.duels || {};
-    const dribbles = playerStats.dribbles || {};
-    const fouls = playerStats.fouls || {};
-    const cards = playerStats.cards || {};
-    const penalty = playerStats.penalty || {};
-    const goalkeeper = playerStats.goalkeeper || {};
-    
-    let points = 0;
-    
-    // BASE GENERAL (para todos)
-    const minutes = Number(games.minutes ?? 0);
-    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
-    if (minutes > 0 && minutes < 45) {
-      points += 1; // Juega menos de 45 min
-    } else if (minutes >= 45) {
-      points += 2; // Juega 45+ min
-    }
-    
-    points += (goals.assists || 0) * 3;           // Asistencias
-    points += (cards.yellow || 0) * -1;           // Tarjeta amarilla
-    points += (cards.red || 0) * -3;              // Tarjeta roja
-    points += (penalty.won || 0) * 2;             // Penalti ganado
-    points += (penalty.committed || 0) * -2;      // Penalti cometido
-    points += (penalty.scored || 0) * 3;          // Penalti anotado
-    points += (penalty.missed || 0) * -2;         // Penalti fallado
-    
-    // ESPECÃFICO POR POSICIÃ“N
-    if (role === 'POR') {
-      // ðŸ§¤ PORTERO
-      // PorterÃ­a a cero (â‰¥60 min)
-      if (meetsCleanSheetMinutes && (goalkeeper.conceded || goals.conceded || 0) === 0) {
-        points += 5;
-      }
-      points += (goalkeeper.conceded || goals.conceded || 0) * -2; // Gol encajado
-      points += (goalkeeper.saves || 0) * 1;       // Cada parada
-      points += (penalty.saved || 0) * 5;          // Penalti detenido
-      points += (goals.total || 0) * 10;           // Gol
-      points += Math.floor((tackles.interceptions || 0) / 5); // Recuperaciones (cada 5)
-      
-    } else if (role === 'DEF') {
-      // ðŸ›¡ï¸ DEFENSA
-      // PorterÃ­a a cero (â‰¥60 min)
-      if (meetsCleanSheetMinutes && (goals.conceded || 0) === 0) {
-        points += 4;
-      }
-      points += (goals.total || 0) * 6;           // Gol marcado
-      points += Math.floor((duels.won || 0) / 2); // Duelos ganados (cada 2)
-      points += Math.floor((tackles.interceptions || 0) / 5); // Recuperaciones (cada 5)
-      points += (goals.conceded || 0) * -1;       // Gol encajado
-      points += (shots.on || 0) * 1;              // Tiros a puerta
-      
-    } else if (role === 'CEN') {
-      // âš™ï¸ CENTROCAMPISTA
-      // PorterÃ­a a cero (â‰¥60 min)
-      if (meetsCleanSheetMinutes && (goals.conceded || 0) === 0) {
-        points += 1;
-      }
-      points += (goals.total || 0) * 5;           // Gol
-      points += Math.floor((goals.conceded || 0) / 2) * -1; // Gol encajado (cada 2)
-      points += (passes.key || 0) * 1;            // Pase clave
-      points += Math.floor((dribbles.success || 0) / 2); // Regate exitoso (cada 2)
-      points += Math.floor((fouls.drawn || 0) / 3); // Faltas recibidas (cada 3)
-      points += Math.floor((tackles.interceptions || 0) / 3); // Recuperaciones (cada 3)
-      points += (shots.on || 0) * 1;              // Tiros a puerta
-      
-    } else if (role === 'DEL') {
-      // ðŸŽ¯ DELANTERO
-      points += (goals.total || 0) * 4;           // Gol
-      points += (passes.key || 0) * 1;            // Pase clave
-      points += Math.floor((fouls.drawn || 0) / 3); // Faltas recibidas (cada 3)
-      points += Math.floor((dribbles.success || 0) / 2); // Regate exitoso (cada 2)
-      points += (shots.on || 0) * 1;              // Tiros a puerta
-    }
-    
-    return points;
-  };
+  // ✨ ELIMINADO: calculatePlayerPoints()
+  // Los puntos ahora vienen calculados del backend a través de PlayerStatsService
+  // Ya no se calculan en el frontend
 
   // PanResponder para detectar swipe horizontal
   const panResponder = useRef(
@@ -1856,3 +1770,4 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 };
 
 export default MiPlantilla;
+
