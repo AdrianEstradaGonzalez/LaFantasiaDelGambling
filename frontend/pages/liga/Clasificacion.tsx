@@ -155,21 +155,44 @@ export const Clasificacion = () => {
     fetchClasificacion();
   }, [ligaId, selectedJornada, jornadaStatus, refreshKey]); // ✨ refreshKey fuerza recarga al recibir focus
 
-  // Cargar estado de la jornada
+  // Cargar estado de la jornada y refrescar cuando cambie
   useEffect(() => {
     let mounted = true;
-    (async () => {
+    let interval: NodeJS.Timeout;
+    
+    const checkStatus = async () => {
       try {
         if (ligaId) {
           const status = await JornadaService.getJornadaStatus(ligaId);
-          if (mounted) setJornadaStatus((status.status as 'open' | 'closed'));
+          const newStatus = status.status as 'open' | 'closed';
+          
+          if (mounted && newStatus !== jornadaStatus) {
+            console.log(`[Clasificacion] Estado cambió de ${jornadaStatus} a ${newStatus}, refrescando datos`);
+            setJornadaStatus(newStatus);
+            
+            // Si cambió a 'open', forzar recarga para mostrar initialBudget actualizado
+            if (newStatus === 'open') {
+              setRefreshKey(prev => prev + 1);
+            }
+          } else if (mounted) {
+            setJornadaStatus(newStatus);
+          }
         }
       } catch (e) {
         console.warn('No se pudo obtener estado de jornada:', e);
       }
-    })();
-    return () => { mounted = false; };
-  }, [ligaId]);
+    };
+    
+    checkStatus();
+    
+    // Verificar cambios de estado cada 10 segundos
+    interval = setInterval(checkStatus, 10000);
+    
+    return () => { 
+      mounted = false;
+      if (interval) clearInterval(interval);
+    };
+  }, [ligaId, jornadaStatus]);
 
   return (
     <>

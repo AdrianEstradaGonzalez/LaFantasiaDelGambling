@@ -859,6 +859,24 @@ export class JornadaService {
         }
       });
 
+      // Resetear budget de todos los miembros al valor de initialBudget
+      console.log(`💰 Reseteando budget de todos los miembros a initialBudget...`);
+      const members = await prisma.leagueMember.findMany({
+        where: { leagueId }
+      });
+
+      for (const member of members) {
+        await prisma.leagueMember.update({
+          where: {
+            leagueId_userId: { leagueId, userId: member.userId }
+          },
+          data: {
+            budget: member.initialBudget
+          }
+        });
+        console.log(`  👤 Usuario ${member.userId}: budget reseteado de ${member.budget}M a ${member.initialBudget}M`);
+      }
+
       console.log(`✅ Jornada ${jornada} abierta (bloqueada) para liga "${league.name}"`);
 
       return {
@@ -959,9 +977,9 @@ export class JornadaService {
             where: { leagueId_userId: { leagueId, userId } },
             data: {
               budget: newBudget,
+              initialBudget: newBudget, // Actualizar initialBudget con el nuevo valor calculado
               bettingBudget: 250, // Siempre resetear a 250
               points: newTotalPoints,
-              // initialBudget NO se toca, siempre es 500
             },
           });
 
@@ -1118,6 +1136,23 @@ export class JornadaService {
             jornadaStatus: 'closed'
           }
         });
+
+        // Resetear budget de todos los miembros al valor de initialBudget
+        const members = await prisma.leagueMember.findMany({
+          where: { leagueId: league.id }
+        });
+
+        for (const member of members) {
+          await prisma.leagueMember.update({
+            where: {
+              leagueId_userId: { leagueId: league.id, userId: member.userId }
+            },
+            data: {
+              budget: member.initialBudget
+            }
+          });
+        }
+        console.log(`    💰 Budget reseteado para ${members.length} miembros`);
 
         processedLeagues.push({
           id: league.id,
