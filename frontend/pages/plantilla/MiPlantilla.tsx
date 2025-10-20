@@ -295,19 +295,49 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   
   // ✨ NUEVO: Estado para almacenar puntos de la jornada actual
   const [playerCurrentPoints, setPlayerCurrentPoints] = useState<Record<number, number>>({});
+  const [isLoadingPoints, setIsLoadingPoints] = useState(false);
+  const isLoadingPointsRef = useRef(false); // Evitar múltiples cargas simultáneas
+  const lastLoadedJornada = useRef<number | null>(null); // Tracking de última jornada cargada
   
   // ✨ NUEVO: Función para cargar puntos de la jornada actual
-  const loadCurrentJornadaPoints = async (players: Record<string, any>) => {
-    if (!ligaId || jornadaStatus !== 'closed' || !currentMatchday) return;
+  const loadCurrentJornadaPoints = async (players: Record<string, any>, isInitialLoad = false) => {
+    console.log('[MiPlantilla] loadCurrentJornadaPoints llamada:', {
+      ligaId,
+      jornadaStatus,
+      currentMatchday,
+      numPlayers: Object.keys(players).length,
+      isAlreadyLoading: isLoadingPointsRef.current
+    });
+    
+    // Evitar múltiples cargas simultáneas
+    if (isLoadingPointsRef.current) {
+      console.log('[MiPlantilla] ⏭️ Ya hay una carga en progreso, saltando...');
+      return;
+    }
+    
+    if (!ligaId || jornadaStatus !== 'closed' || !currentMatchday) {
+      console.warn('[MiPlantilla] ⚠️ No se cumplen condiciones para cargar puntos');
+      return;
+    }
+    
+    if (isInitialLoad) {
+      isLoadingPointsRef.current = true;
+      setIsLoadingPoints(true);
+    }
     
     try {
       const playerIds = Object.values(players)
         .filter(p => p && p.id)
         .map(p => p.id);
       
-      if (playerIds.length === 0) return;
+      if (playerIds.length === 0) {
+        console.warn('[MiPlantilla] ⚠️ No hay jugadores para cargar');
+        if (isInitialLoad) setIsLoadingPoints(false);
+        return;
+      }
       
-      console.log(`[MiPlantilla] Cargando puntos jornada ${currentMatchday} para ${playerIds.length} jugadores`);
+      console.log(`[MiPlantilla] ${isInitialLoad ? '📥 Carga inicial' : '🔄 Actualizando'} puntos jornada ${currentMatchday} para ${playerIds.length} jugadores`);
+      console.log('[MiPlantilla] Player IDs:', playerIds);
       
       const pointsMap: Record<number, number> = {};
       
@@ -315,23 +345,34 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       await Promise.all(
         playerIds.map(async (playerId) => {
           try {
+            console.log(`[MiPlantilla] Cargando stats para jugador ${playerId}, jornada ${currentMatchday}`);
             const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: true });
+            console.log(`[MiPlantilla] Stats recibidas para jugador ${playerId}:`, stats);
+            
             // Solo agregar al map si existe stats (el jugador ya jugó o está jugando)
             if (stats && stats.totalPoints !== null && stats.totalPoints !== undefined) {
               pointsMap[playerId] = stats.totalPoints;
+              console.log(`[MiPlantilla] ✅ Jugador ${playerId} tiene ${stats.totalPoints} puntos`);
+            } else {
+              console.log(`[MiPlantilla] ⚠️ Jugador ${playerId} sin stats o sin puntos`);
             }
             // Si no hay stats, no agregamos al map → se mostrará "-"
           } catch (error) {
-            console.warn(`[MiPlantilla] Error cargando puntos de jugador ${playerId}:`, error);
+            console.warn(`[MiPlantilla] ❌ Error cargando puntos de jugador ${playerId}:`, error);
             // No agregamos al map en caso de error → se mostrará "-"
           }
         })
       );
       
       setPlayerCurrentPoints(pointsMap);
-      console.log('[MiPlantilla] Puntos cargados:', pointsMap);
+      console.log('[MiPlantilla] 🎯 Puntos finales cargados:', pointsMap);
     } catch (error) {
       console.error('[MiPlantilla] Error al cargar puntos de jornada actual:', error);
+    } finally {
+      if (isInitialLoad) {
+        isLoadingPointsRef.current = false;
+        setIsLoadingPoints(false);
+      }
     }
   };
   
@@ -351,6 +392,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             setJornadaStatus(s);
             console.log('[MiPlantilla] Estado de la jornada:', s);
             
+            // Resetear última jornada cargada cuando cambia el estado o la jornada
+            if (lastLoadedJornada.current !== status.currentJornada) {
+              lastLoadedJornada.current = null;
+            }
+            
             if (s === 'closed') {
               setActiveTab('puntuacion');
             }
@@ -363,30 +409,40 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     return () => { mounted = false; };
   }, [ligaId]);
   
-  // ✨ NUEVO: Cargar puntos cuando cambie a tab "puntuacion" y la jornada esté abierta
+  // ✨ NUEVO: Cargar puntos cuando cambie a tab "puntuacion" y la jornada esté cerrada
   useEffect(() => {
+    // Solo ejecutar cuando cambia a tab 'puntuacion'
+    if (activeTab !== 'puntuacion') {
+      return;
+    }
+    
     const hasPlayers = Object.keys(selectedPlayers).length > 0;
     
-    if (activeTab === 'puntuacion' && jornadaStatus === 'closed' && hasPlayers && currentMatchday) {
-      console.log(`[MiPlantilla] Recargando puntos para jornada ${currentMatchday}`);
-      loadCurrentJornadaPoints(selectedPlayers);
-    }
-  }, [activeTab, jornadaStatus, currentMatchday]); // ✨ Agregada dependencia currentMatchday
-  
-  // ✨ NUEVO: Polling automático de puntos en tiempo real cuando la jornada está cerrada (partidos en curso)
-  useEffect(() => {
-    const hasPlayers = Object.keys(selectedPlayers).length > 0;
+    console.log('[MiPlantilla] useEffect puntos ejecutado:', {
+      activeTab,
+      jornadaStatus,
+      hasPlayers,
+      currentMatchday,
+      numPlayers: Object.keys(selectedPlayers).length,
+      lastLoadedJornada: lastLoadedJornada.current
+    });
     
-    if (activeTab === 'puntuacion' && jornadaStatus === 'closed' && hasPlayers && currentMatchday) {
-      // Actualizar cada 30 segundos
-      const interval = setInterval(() => {
-        console.log(`[MiPlantilla] 🔄 Actualizando puntos en tiempo real (Jornada ${currentMatchday})`);
-        loadCurrentJornadaPoints(selectedPlayers);
-      }, 30000); // 30 segundos
-      
-      return () => clearInterval(interval);
+    // Solo cargar si no hemos cargado esta jornada todavía o si cambió la jornada
+    const shouldLoad = jornadaStatus === 'closed' && 
+                       hasPlayers && 
+                       currentMatchday && 
+                       lastLoadedJornada.current !== currentMatchday;
+    
+    if (shouldLoad) {
+      console.log(`[MiPlantilla] ✅ Condiciones cumplidas, cargando puntos para jornada ${currentMatchday}`);
+      lastLoadedJornada.current = currentMatchday;
+      // Solo mostrar loading si no hay puntos cargados todavía
+      const hasLoadedPoints = Object.keys(playerCurrentPoints).length > 0;
+      loadCurrentJornadaPoints(selectedPlayers, !hasLoadedPoints); // true solo si no hay puntos
+    } else {
+      console.log('[MiPlantilla] ⚠️ No se cumplen condiciones para cargar puntos o ya fue cargada');
     }
-  }, [activeTab, jornadaStatus, selectedPlayers, currentMatchday]);
+  }, [activeTab, jornadaStatus, currentMatchday, selectedPlayers, playerCurrentPoints]); // ✨ Incluir playerCurrentPoints
   
   // Animación del drawer
   useEffect(() => {
@@ -875,7 +931,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
   return (
     <>
-      {isLoading ? (
+      {isLoading || isLoadingPoints ? (
         <LoadingScreen />
       ) : (
         <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
@@ -1129,6 +1185,48 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Total de puntos en tiempo real - Solo en modo Puntuación cuando la jornada está cerrada */}
+        {activeTab === 'puntuacion' && jornadaStatus === 'closed' && (
+          <View style={{
+            backgroundColor: '#1e293b',
+            borderRadius: 10,
+            padding: 12,
+            marginBottom: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderWidth: 1,
+            borderColor: '#334155'
+          }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: '500', marginBottom: 2 }}>
+                Jornada {currentMatchday}
+              </Text>
+              <Text style={{ color: '#cbd5e1', fontSize: 11, opacity: 0.7 }}>
+                Puntos totales del equipo
+              </Text>
+            </View>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'baseline',
+              gap: 4
+            }}>
+              <Text style={{ color: '#10b981', fontSize: 28, fontWeight: '800', letterSpacing: -1 }}>
+                {Object.keys(selectedPlayers).reduce((total, positionId) => {
+                  const player = selectedPlayers[positionId];
+                  if (!player) return total;
+                  const points = playerCurrentPoints[player.id] ?? 0;
+                  const isCaptain = captainPosition === positionId;
+                  return total + (isCaptain ? points * 2 : points);
+                }, 0)}
+              </Text>
+              <Text style={{ color: '#64748b', fontSize: 14, fontWeight: '600' }}>
+                pts
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Consejo para nombrar capitán - Solo en modo Alineación y cuando NO hay capitán */}
         {jornadaStatus === 'open' && activeTab === 'alineacion' && !captainPosition && (

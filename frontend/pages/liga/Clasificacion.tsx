@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Modal, Animated } from 'react-native';
 import { ClasificacionStyles as styles } from '../../styles/ClasificacionStyles';
 import LinearGradient from 'react-native-linear-gradient';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { RouteProp, useRoute, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { LigaService } from '../../services/LigaService';
@@ -43,7 +43,21 @@ export const Clasificacion = () => {
   const [showJornadaPicker, setShowJornadaPicker] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
+  const [refreshKey, setRefreshKey] = useState(0);
   const slideAnim = useRef(new Animated.Value(-300)).current;
+  const isFirstLoad = useRef(true);
+
+  // Resetear y forzar recarga cuando la pantalla recibe focus (al navegar desde Home u otra pantalla)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('[Clasificacion] Pantalla recibió focus, forzando recarga');
+      isFirstLoad.current = true;
+      setRefreshKey(prev => prev + 1); // Forzar re-render del useEffect
+      return () => {
+        // Cleanup si es necesario
+      };
+    }, [])
+  );
 
   // Animar drawer
   useEffect(() => {
@@ -77,28 +91,37 @@ export const Clasificacion = () => {
         const matchdays = await FootballService.getAvailableMatchdays();
         setAvailableJornadas(matchdays);
         
-        // ✨ NUEVO: Determinar jornada por defecto según el estado de la liga
-        try {
-          const status = await JornadaService.getJornadaStatus(ligaId);
-          const leagueJornada = status.currentJornada;
-          const leagueStatus = status.status as 'open' | 'closed';
-          
-          console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
-          
-          // Si la jornada está cerrada (partidos en curso), mostrar la jornada actual en tiempo real
-          // Si está abierta (se pueden hacer cambios), mostrar Total por defecto
-          if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
-            setSelectedJornada(leagueJornada);
-          } else if (leagueStatus === 'open') {
+        // ✨ NUEVO: Determinar jornada por defecto según el estado de la liga (solo en primera carga)
+        let jornadaToUse: number | 'Total' = selectedJornada;
+        
+        if (isFirstLoad.current) {
+          try {
+            const status = await JornadaService.getJornadaStatus(ligaId);
+            const leagueJornada = status.currentJornada;
+            const leagueStatus = status.status as 'open' | 'closed';
+            
+            console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
+            
+            // Si la jornada está cerrada (partidos en curso), mostrar la jornada actual en tiempo real
+            // Si está abierta (se pueden hacer cambios), mostrar Total por defecto
+            if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
+              jornadaToUse = leagueJornada;
+              setSelectedJornada(leagueJornada);
+            } else if (leagueStatus === 'open') {
+              jornadaToUse = 'Total';
+              setSelectedJornada('Total');
+            }
+          } catch (error) {
+            console.log('No se pudo obtener la jornada de la liga, usando Total');
+            jornadaToUse = 'Total';
             setSelectedJornada('Total');
           }
-        } catch (error) {
-          console.log('No se pudo obtener la jornada de la liga, usando Total');
-          setSelectedJornada('Total');
+          isFirstLoad.current = false;
         }
 
-        // ✨ NUEVO: Llamar al servicio con filtro de jornada
-        const response = await LigaService.listarMiembros(ligaId, selectedJornada);
+        // ✨ NUEVO: Llamar al servicio con filtro de jornada determinada
+        console.log('[Clasificacion] Cargando clasificación para jornada:', jornadaToUse);
+        const response = await LigaService.listarMiembros(ligaId, jornadaToUse);
         console.log('🔍 Clasificacion - Response completa:', JSON.stringify(response, null, 2));
 
         const dataOrdenada = response
@@ -130,7 +153,7 @@ export const Clasificacion = () => {
     };
 
     fetchClasificacion();
-  }, [ligaId, selectedJornada, jornadaStatus]); // ✨ Agregar selectedJornada como dependencia
+  }, [ligaId, selectedJornada, jornadaStatus, refreshKey]); // ✨ refreshKey fuerza recarga al recibir focus
 
   // Cargar estado de la jornada
   useEffect(() => {
@@ -147,33 +170,6 @@ export const Clasificacion = () => {
     })();
     return () => { mounted = false; };
   }, [ligaId]);
-
-  // ✨ NUEVO: Polling automático de clasificación cuando la jornada está cerrada (partidos en curso)
-  useEffect(() => {
-    if (jornadaStatus === 'closed' && selectedJornada !== 'Total') {
-      // Actualizar cada 30 segundos
-      const interval = setInterval(async () => {
-        console.log(`[Clasificacion] 🔄 Actualizando clasificación en tiempo real (Jornada ${selectedJornada})`);
-        try {
-          const response = await LigaService.listarMiembros(ligaId, selectedJornada);
-          const dataOrdenada = response
-            .sort((a: any, b: any) => b.points - a.points)
-            .map((u: any, index: number) => ({
-              id: u.user?.id || u.userId || `jugador-${index}`,
-              nombre: u.user?.name || 'Jugador desconocido',
-              puntos: u.points ?? 0,
-              posicion: index + 1,
-              presupuesto: u.initialBudget ?? 500,
-            }));
-          setJugadores(dataOrdenada);
-        } catch (error) {
-          console.error('[Clasificacion] Error actualizando clasificación:', error);
-        }
-      }, 30000); // 30 segundos
-      
-      return () => clearInterval(interval);
-    }
-  }, [jornadaStatus, selectedJornada, ligaId]);
 
   return (
     <>
