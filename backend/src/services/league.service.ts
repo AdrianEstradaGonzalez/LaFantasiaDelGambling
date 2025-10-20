@@ -1,3 +1,4 @@
+import { PrismaClient } from "@prisma/client";
 import { LeagueRepo } from "../repositories/league.repo.js";
 import { LeagueMemberRepo } from "../repositories/leagueMember.js";
 
@@ -80,6 +81,116 @@ export const LeagueService = {
       }
     }));
   },
+
+  /**
+   * Obtiene la clasificación de una liga para una jornada específica
+   * Calcula los puntos de cada usuario sumando los puntos de sus jugadores en esa jornada
+   */
+  listMembersByJornada: async (leagueId: string, jornada: number) => {
+    const prisma = new PrismaClient();
+    
+    try {
+      // Obtener información de la liga
+      const league = await LeagueRepo.getById(leagueId);
+      if (!league) {
+        throw new Error('Liga no encontrada');
+      }
+
+      // Obtener todos los miembros de la liga
+      const members = await LeagueMemberRepo.listByLeague(leagueId);
+
+      // Para cada miembro, calcular puntos de la jornada
+      const membersWithJornadaPoints = await Promise.all(
+        members.map(async (member) => {
+          try {
+            // Obtener la plantilla del usuario en esta liga
+            const squad = await prisma.squad.findUnique({
+              where: {
+                userId_leagueId: {
+                  userId: member.userId,
+                  leagueId: leagueId
+                }
+              },
+              include: {
+                players: true
+              }
+            });
+
+            if (!squad || squad.players.length === 0) {
+              return {
+                ...member,
+                points: 0,
+                league: {
+                  id: league.id,
+                  name: league.name,
+                  code: league.code
+                }
+              };
+            }
+
+            // Obtener las estadísticas de todos los jugadores de la plantilla para esta jornada
+            const playerIds = squad.players.map((p: any) => p.playerId);
+            const playerStats = await prisma.playerStats.findMany({
+              where: {
+                playerId: { in: playerIds },
+                jornada: jornada,
+                season: 2025
+              }
+            });
+
+            // Calcular puntos totales de la jornada
+            let totalPoints = 0;
+            let captainId: number | null = null;
+
+            // Encontrar el capitán
+            const captainPlayer = squad.players.find((p: any) => p.isCaptain);
+            if (captainPlayer) {
+              captainId = captainPlayer.playerId;
+            }
+
+            // Sumar puntos de cada jugador
+            playerStats.forEach((stats: any) => {
+              const points = stats.totalPoints || 0;
+              
+              // Si es el capitán, doblar los puntos
+              if (captainId && stats.playerId === captainId) {
+                totalPoints += points * 2;
+              } else {
+                totalPoints += points;
+              }
+            });
+
+            return {
+              ...member,
+              points: totalPoints,
+              league: {
+                id: league.id,
+                name: league.name,
+                code: league.code
+              }
+            };
+          } catch (error) {
+            console.error(`Error calculando puntos para usuario ${member.userId}:`, error);
+            return {
+              ...member,
+              points: 0,
+              league: {
+                id: league.id,
+                name: league.name,
+                code: league.code
+              }
+            };
+          }
+        })
+      );
+
+      // Ordenar por puntos descendente
+      return membersWithJornadaPoints.sort((a, b) => b.points - a.points);
+    } finally {
+      await prisma.$disconnect();
+    }
+  },
+
 getLeaguesByUser: (userId: string) =>
   LeagueRepo.getByUserId(userId),
 

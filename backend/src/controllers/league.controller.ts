@@ -49,8 +49,21 @@ export const LeagueController = {
 
   listMembers: async (req: FastifyRequest, reply: FastifyReply) => {
     const { leagueId } = deleteLeagueParams.parse((req as any).params);
-    const members = await LeagueService.listMembers(leagueId);
-    reply.send(members);
+    const jornada = (req as any).query?.jornada;
+    
+    // Si se especifica una jornada, calcular clasificación para esa jornada
+    if (jornada && jornada !== 'Total') {
+      const jornadaNum = parseInt(jornada, 10);
+      if (isNaN(jornadaNum) || jornadaNum < 1 || jornadaNum > 38) {
+        throw new AppError(400, "INVALID_JORNADA", "Jornada inválida");
+      }
+      const members = await LeagueService.listMembersByJornada(leagueId, jornadaNum);
+      reply.send(members);
+    } else {
+      // Clasificación total (por defecto)
+      const members = await LeagueService.listMembers(leagueId);
+      reply.send(members);
+    }
   },
 
 getByUser: async (req: any, reply: any) => {

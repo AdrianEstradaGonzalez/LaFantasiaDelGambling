@@ -89,8 +89,72 @@ const AdminPanel: React.FC = () => {
 
   const handleCerrarJornada = async () => {
     CustomAlertManager.alert(
-      '🔒 Cerrar Jornada',
-      `¿Estás seguro de que quieres cerrar la jornada actual para TODAS las ligas?\n\n` +
+      '🔒 Cerrar Cambios',
+      `¿Estás seguro de que quieres bloquear los cambios para TODAS las ligas?\n\n` +
+      `Esto hará lo siguiente:\n` +
+      `� BLOQUEO:\n` +
+      `• Bloqueará modificaciones de plantillas\n` +
+      `• Bloqueará fichajes y ventas\n` +
+      `• Bloqueará nuevas apuestas\n\n` +
+      `� INICIO DE JORNADA:\n` +
+      `• Comenzará el seguimiento en tiempo real\n` +
+      `• Los puntos se actualizarán automáticamente\n\n` +
+      `⚠️ Los usuarios NO podrán hacer cambios hasta que cierres la jornada.`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+          onPress: () => {}
+        },
+        {
+          text: 'Cerrar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsClosingJornada(true);
+              
+              console.log('🚀 Bloqueando cambios...');
+              const result = await JornadaService.openAllJornadas();
+              console.log('📊 Resultado:', result);
+              
+              // ✨ CORREGIDO: open → closed (cambios bloqueados)
+              setJornadaStatus('closed');
+              
+              CustomAlertManager.alert(
+                '✅ Cambios Bloqueados',
+                `Las plantillas y apuestas han sido bloqueadas.\n\n` +
+                `📊 RESUMEN:\n` +
+                `• Ligas bloqueadas: ${result.leaguesProcessed}\n\n` +
+                `🔒 BLOQUEADO:\n` +
+                `• Modificar plantillas\n` +
+                `• Hacer fichajes y ventas\n` +
+                `• Realizar apuestas\n\n` +
+                `📊 La jornada está en curso. Los puntos se actualizarán en tiempo real.`,
+                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                { icon: 'lock-closed', iconColor: '#ef4444' }
+              );
+            } catch (error: any) {
+              console.error('❌ Error bloqueando cambios:', error);
+              CustomAlertManager.alert(
+                '❌ Error al Bloquear',
+                error.message || 'No se pudo completar el bloqueo.\n\nRevisa la consola del servidor para más detalles.',
+                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                { icon: 'alert-circle', iconColor: '#ef4444' }
+              );
+            } finally {
+              setIsClosingJornada(false);
+            }
+          },
+        },
+      ],
+      { icon: 'alert', iconColor: '#f59e0b' }
+    );
+  };
+
+  const handleAbrirJornada = async () => {
+    CustomAlertManager.alert(
+      '🔓 Abrir Cambios',
+      `¿Estás seguro de que quieres abrir los cambios para TODAS las ligas?\n\n` +
       `Esto ejecutará el siguiente proceso:\n\n` +
       `📊 EVALUACIÓN Y CÁLCULOS:\n` +
       `• Evaluará todas las apuestas con resultados reales\n` +
@@ -111,28 +175,28 @@ const AdminPanel: React.FC = () => {
           onPress: () => {}
         },
         {
-          text: 'Cerrar Jornada',
+          text: 'Abrir Cambios',
           style: 'destructive',
           onPress: async () => {
             try {
-              setIsClosingJornada(true);
+              setIsOpeningJornada(true);
               
               console.log('🚀 Iniciando cierre de jornada...');
               const result = await JornadaService.closeAllJornadas();
               console.log('📊 Resultado:', result);
               
-              // Actualizar el estado de la jornada
+              // ✨ CORREGIDO: closed → open (cambios permitidos)
               setJornadaStatus('open');
               
               CustomAlertManager.alert(
-                '✅ Jornada Cerrada Exitosamente',
+                '✅ Cambios Abiertos',
                 `El proceso ha finalizado correctamente.\n\n` +
                 `📊 RESUMEN GLOBAL:\n` +
                 `• Ligas procesadas: ${result.leaguesProcessed}\n` +
                 `• Apuestas evaluadas: ${result.totalEvaluations}\n` +
                 `• Miembros actualizados: ${result.totalUpdatedMembers}\n` +
                 `• Plantillas vaciadas: ${result.totalClearedSquads}\n\n` +
-                `✅ DESBLOQUEADO:\n` +
+                `✅ PERMITIDO:\n` +
                 `• Modificar plantillas\n` +
                 `• Hacer fichajes y ventas\n` +
                 `• Realizar apuestas\n\n` +
@@ -141,68 +205,10 @@ const AdminPanel: React.FC = () => {
                 { icon: 'check-circle', iconColor: '#10b981' }
               );
             } catch (error: any) {
-              console.error('❌ Error cerrando jornada:', error);
+              console.error('❌ Error abriendo cambios:', error);
               CustomAlertManager.alert(
-                '❌ Error al Cerrar Jornada',
+                '❌ Error al Abrir Cambios',
                 error.message || 'No se pudo completar el proceso de cierre de jornada.\n\nRevisa la consola del servidor para más detalles.',
-                [{ text: 'OK', onPress: () => {}, style: 'default' }],
-                { icon: 'alert-circle', iconColor: '#ef4444' }
-              );
-            } finally {
-              setIsClosingJornada(false);
-            }
-          },
-        },
-      ],
-      { icon: 'alert', iconColor: '#f59e0b' }
-    );
-  };
-
-  const handleAbrirJornada = async () => {
-    CustomAlertManager.alert(
-      '🔓 Abrir Jornada',
-      `¿Estás seguro de que quieres abrir la jornada actual para TODAS las ligas?\n\n` +
-      `Esto hará lo siguiente:\n` +
-      `🔒 Bloqueará las alineaciones actuales\n` +
-      `🚫 Impedirá cambios en plantillas\n` +
-      `🚫 Bloqueará fichajes y ventas\n` +
-      `🚫 Bloqueará modificación de apuestas\n` +
-      `📊 Comenzará el seguimiento en tiempo real\n\n` +
-      `Esta acción afectará a TODAS las ligas.`,
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-          onPress: () => {}
-        },
-        {
-          text: 'Abrir Jornada',
-          style: 'default',
-          onPress: async () => {
-            try {
-              setIsOpeningJornada(true);
-              
-              const result = await JornadaService.openAllJornadas();
-              
-              // Actualizar el estado de la jornada a 'closed' (bloqueada)
-              setJornadaStatus('closed');
-              
-              CustomAlertManager.alert(
-                '✅ Jornada Abierta',
-                `La jornada ha sido abierta exitosamente.\n\n` +
-                `📊 Ligas procesadas: ${result.leaguesProcessed}\n\n` +
-                `Los usuarios de todas las ligas ya NO pueden:\n` +
-                `• Modificar sus plantillas\n` +
-                `• Hacer fichajes y ventas\n` +
-                `• Realizar y modificar apuestas\n\n` +
-                `El seguimiento en tiempo real está activo.`,
-                [{ text: 'OK', onPress: () => {}, style: 'default' }],
-                { icon: 'check-circle', iconColor: '#10b981' }
-              );
-            } catch (error: any) {
-              CustomAlertManager.alert(
-                '❌ Error',
-                error.message || 'No se pudo abrir la jornada',
                 [{ text: 'OK', onPress: () => {}, style: 'default' }],
                 { icon: 'alert-circle', iconColor: '#ef4444' }
               );
@@ -212,7 +218,7 @@ const AdminPanel: React.FC = () => {
           },
         },
       ],
-      { icon: 'information', iconColor: '#0892D0' }
+      { icon: 'alert', iconColor: '#f59e0b' }
     );
   };
 
@@ -395,7 +401,7 @@ const AdminPanel: React.FC = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Cerrar Jornada */}
+        {/* Bloquear Cambios (antes "Cerrar Jornada") */}
         <View
           style={{
             backgroundColor: '#1e293b',
@@ -418,7 +424,7 @@ const AdminPanel: React.FC = () => {
                 flex: 1,
               }}
             >
-              Cerrar Jornada
+              Cerrar Cambios
             </Text>
           </View>
 
@@ -430,10 +436,10 @@ const AdminPanel: React.FC = () => {
               lineHeight: 20,
             }}
           >
-            Cierra la jornada actual para TODAS las ligas. Permitirá que los usuarios realicen apuestas y modifiquen sus plantillas para prepararse para la próxima jornada.
+            Bloquea las plantillas y apuestas para TODAS las ligas. Comenzará el seguimiento en tiempo real de la jornada.
           </Text>
 
-          {currentJornada != null && jornadaStatus === 'closed' && (
+          {currentJornada != null && jornadaStatus === 'open' && (
             <View style={{
               backgroundColor: '#451a03',
               borderRadius: 8,
@@ -443,22 +449,22 @@ const AdminPanel: React.FC = () => {
               borderLeftColor: '#f59e0b',
             }}>
               <Text style={{ color: '#fbbf24', fontSize: 14, fontWeight: 'bold' }}>
-                📊 Jornada {currentJornada} → Se cerrará y avanzará a Jornada {currentJornada + 1}
+                � Jornada {currentJornada} → Se bloqueará para cambios
               </Text>
             </View>
           )}
 
           <TouchableOpacity
             onPress={handleCerrarJornada}
-            disabled={isClosingJornada || isLoadingStatus || jornadaStatus === 'open'}
+            disabled={isClosingJornada || isLoadingStatus || jornadaStatus === 'closed'}
             style={{
-              backgroundColor: isClosingJornada || isLoadingStatus || jornadaStatus === 'open' ? '#334155' : '#ef4444',
+              backgroundColor: isClosingJornada || isLoadingStatus || jornadaStatus === 'closed' ? '#334155' : '#ef4444',
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: 'center',
               shadowColor: '#ef4444',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: isClosingJornada || isLoadingStatus || jornadaStatus === 'open' ? 0 : 0.3,
+              shadowOpacity: isClosingJornada || isLoadingStatus || jornadaStatus === 'closed' ? 0 : 0.3,
               shadowRadius: 8,
               elevation: isClosingJornada || jornadaStatus === 'closed' ? 0 : 4,
               opacity: jornadaStatus === 'closed' ? 0.5 : 1,
@@ -475,7 +481,7 @@ const AdminPanel: React.FC = () => {
                     marginLeft: 12,
                   }}
                 >
-                  Cerrando Jornada {currentJornada}...
+                  Bloqueando Jornada {currentJornada}...
                 </Text>
               </View>
             ) : (
@@ -486,13 +492,13 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                {isLoadingStatus ? 'Cargando...' : jornadaStatus === 'open' ? `Jornada ${currentJornada ?? ''} ya desbloqueada` : `Cerrar Jornada ${currentJornada ?? ''} (Desbloquear)`}
+                {isLoadingStatus ? 'Cargando...' : jornadaStatus === 'closed' ? `Jornada ${currentJornada ?? ''} ya bloqueada` : `Bloquear Jornada ${currentJornada ?? ''}`}
               </Text>
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Abrir Jornada */}
+        {/* Cerrar Jornada (antes "Abrir Jornada") */}
         <View
           style={{
             backgroundColor: '#1e293b',
@@ -515,7 +521,7 @@ const AdminPanel: React.FC = () => {
                 flex: 1,
               }}
             >
-              Abrir Jornada
+              Abrir Cambios
             </Text>
           </View>
 
@@ -527,10 +533,10 @@ const AdminPanel: React.FC = () => {
               lineHeight: 20,
             }}
           >
-            Abre la jornada para TODAS las ligas. Bloqueará las plantillas y apuestas actuales para comenzar el seguimiento en tiempo real de la jornada.
+            Cierra la jornada actual para TODAS las ligas. Evaluará apuestas, calculará puntos y permitirá que los usuarios realicen cambios para la próxima jornada.
           </Text>
 
-          {currentJornada != null && jornadaStatus === 'open' && (
+          {currentJornada != null && jornadaStatus === 'closed' && (
             <View style={{
               backgroundColor: '#022c22',
               borderRadius: 8,
@@ -540,25 +546,25 @@ const AdminPanel: React.FC = () => {
               borderLeftColor: '#10b981',
             }}>
               <Text style={{ color: '#6ee7b7', fontSize: 14, fontWeight: 'bold' }}>
-                🔓 Jornada {currentJornada} → Se bloqueará 
+                � Jornada {currentJornada} → Se cerrará y avanzará a Jornada {currentJornada + 1}
               </Text>
             </View>
           )}
 
           <TouchableOpacity
             onPress={handleAbrirJornada}
-            disabled={isOpeningJornada || isLoadingStatus || jornadaStatus === 'closed'}
+            disabled={isOpeningJornada || isLoadingStatus || jornadaStatus === 'open'}
             style={{
-              backgroundColor: isOpeningJornada || isLoadingStatus || jornadaStatus === 'closed' ? '#334155' : '#10b981',
+              backgroundColor: isOpeningJornada || isLoadingStatus || jornadaStatus === 'open' ? '#334155' : '#10b981',
               paddingVertical: 16,
               borderRadius: 12,
               alignItems: 'center',
               shadowColor: '#10b981',
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: isOpeningJornada || isLoadingStatus || jornadaStatus === 'closed' ? 0 : 0.3,
+              shadowOpacity: isOpeningJornada || isLoadingStatus || jornadaStatus === 'open' ? 0 : 0.3,
               shadowRadius: 8,
-              elevation: isOpeningJornada || isLoadingStatus || jornadaStatus === 'closed' ? 0 : 4,
-              opacity: isLoadingStatus || jornadaStatus === 'closed' ? 0.5 : 1,
+              elevation: isOpeningJornada || isLoadingStatus || jornadaStatus === 'open' ? 0 : 4,
+              opacity: isLoadingStatus || jornadaStatus === 'open' ? 0.5 : 1,
             }}
           >
             {isOpeningJornada ? (
@@ -572,7 +578,7 @@ const AdminPanel: React.FC = () => {
                     marginLeft: 12,
                   }}
                 >
-                  Abriendo Jornada {currentJornada}...
+                  Abriendo Cambios (Jornada {currentJornada})...
                 </Text>
               </View>
             ) : (
@@ -583,7 +589,7 @@ const AdminPanel: React.FC = () => {
                   fontWeight: 'bold',
                 }}
               >
-                {isLoadingStatus ? 'Cargando...' : jornadaStatus === 'closed' ? `Jornada ${currentJornada ?? ''} ya bloqueada` : `Abrir Jornada ${currentJornada ?? ''} (Bloquear)`}
+                {isLoadingStatus ? 'Cargando...' : jornadaStatus === 'open' ? `Cambios ya permitidos (J${currentJornada ?? ''})` : `Abrir Cambios (Jornada ${currentJornada ?? ''})`}
               </Text>
             )}
           </TouchableOpacity>

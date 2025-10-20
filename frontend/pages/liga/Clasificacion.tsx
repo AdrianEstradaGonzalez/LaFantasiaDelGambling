@@ -77,29 +77,30 @@ export const Clasificacion = () => {
         const matchdays = await FootballService.getAvailableMatchdays();
         setAvailableJornadas(matchdays);
         
-        // Determinar jornada por defecto: jornada actual o Total
+        // ✨ NUEVO: Determinar jornada por defecto según el estado de la liga
         try {
-          const { jornada: currentMatchday } = await FootballService.getMatchesForCurrentAndAdvance();
-          // Por defecto mostrar Total, salvo que estemos en jornada en curso
-          if (currentMatchday && matchdays.includes(currentMatchday)) {
-            // Si la jornada actual está disponible, mantener Total como default
-            if (selectedJornada === currentMatchday) {
-              // Solo cambiar si ya estábamos en esa jornada
-            } else if (typeof selectedJornada !== 'number') {
-              // Primera carga: mantener Total
-              setSelectedJornada('Total');
-            }
+          const status = await JornadaService.getJornadaStatus(ligaId);
+          const leagueJornada = status.currentJornada;
+          const leagueStatus = status.status as 'open' | 'closed';
+          
+          console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
+          
+          // Si la jornada está cerrada (partidos en curso), mostrar la jornada actual en tiempo real
+          // Si está abierta (se pueden hacer cambios), mostrar Total por defecto
+          if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
+            setSelectedJornada(leagueJornada);
+          } else if (leagueStatus === 'open') {
+            setSelectedJornada('Total');
           }
         } catch (error) {
-          console.log('No se pudo obtener la jornada actual, usando Total');
+          console.log('No se pudo obtener la jornada de la liga, usando Total');
           setSelectedJornada('Total');
         }
 
-        const response = await LigaService.listarMiembros(ligaId);
+        // ✨ NUEVO: Llamar al servicio con filtro de jornada
+        const response = await LigaService.listarMiembros(ligaId, selectedJornada);
         console.log('🔍 Clasificacion - Response completa:', JSON.stringify(response, null, 2));
 
-        // Por ahora, siempre mostramos puntos totales
-        // TODO: Implementar puntos por jornada cuando el backend lo soporte
         const dataOrdenada = response
           .sort((a: any, b: any) => b.points - a.points)
           .map((u: any, index: number) => ({
@@ -107,7 +108,7 @@ export const Clasificacion = () => {
             nombre: u.user?.name || 'Jugador desconocido',
             puntos: u.points ?? 0,
             posicion: index + 1,
-            presupuesto: u.initialBudget ?? 500, // Presupuesto inicial de la jornada (no muestra gastos en tiempo real)
+            presupuesto: u.initialBudget ?? 500,
           }));
 
         setJugadores(dataOrdenada);
@@ -129,7 +130,7 @@ export const Clasificacion = () => {
     };
 
     fetchClasificacion();
-  }, [ligaId]);
+  }, [ligaId, selectedJornada, jornadaStatus]); // ✨ Agregar selectedJornada como dependencia
 
   // Cargar estado de la jornada
   useEffect(() => {
@@ -146,6 +147,33 @@ export const Clasificacion = () => {
     })();
     return () => { mounted = false; };
   }, [ligaId]);
+
+  // ✨ NUEVO: Polling automático de clasificación cuando la jornada está cerrada (partidos en curso)
+  useEffect(() => {
+    if (jornadaStatus === 'closed' && selectedJornada !== 'Total') {
+      // Actualizar cada 30 segundos
+      const interval = setInterval(async () => {
+        console.log(`[Clasificacion] 🔄 Actualizando clasificación en tiempo real (Jornada ${selectedJornada})`);
+        try {
+          const response = await LigaService.listarMiembros(ligaId, selectedJornada);
+          const dataOrdenada = response
+            .sort((a: any, b: any) => b.points - a.points)
+            .map((u: any, index: number) => ({
+              id: u.user?.id || u.userId || `jugador-${index}`,
+              nombre: u.user?.name || 'Jugador desconocido',
+              puntos: u.points ?? 0,
+              posicion: index + 1,
+              presupuesto: u.initialBudget ?? 500,
+            }));
+          setJugadores(dataOrdenada);
+        } catch (error) {
+          console.error('[Clasificacion] Error actualizando clasificación:', error);
+        }
+      }, 30000); // 30 segundos
+      
+      return () => clearInterval(interval);
+    }
+  }, [jornadaStatus, selectedJornada, ligaId]);
 
   return (
     <>

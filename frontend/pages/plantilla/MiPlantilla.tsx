@@ -293,21 +293,45 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [originalFormation, setOriginalFormation] = useState<Formation>(formations[0]);
   const [originalPlayers, setOriginalPlayers] = useState<Record<string, any>>({});
   
-  // Obtener jornada actual al cargar el componente
-  useEffect(() => {
-    const fetchCurrentMatchday = async () => {
-      try {
-        const { jornada } = await FootballService.getMatchesForCurrentAndAdvance();
-        setCurrentMatchday(jornada);
-        console.log('Jornada actual:', jornada);
-      } catch (error) {
-        console.error('Error al obtener jornada actual:', error);
-      }
-    };
-    fetchCurrentMatchday();
-  }, []);
-
-  // Obtener estado de jornada para bloquear Alineación si está 'closed'
+  // ✨ NUEVO: Estado para almacenar puntos de la jornada actual
+  const [playerCurrentPoints, setPlayerCurrentPoints] = useState<Record<number, number>>({});
+  
+  // ✨ NUEVO: Función para cargar puntos de la jornada actual
+  const loadCurrentJornadaPoints = async (players: Record<string, any>) => {
+    if (!ligaId || jornadaStatus !== 'closed' || !currentMatchday) return;
+    
+    try {
+      const playerIds = Object.values(players)
+        .filter(p => p && p.id)
+        .map(p => p.id);
+      
+      if (playerIds.length === 0) return;
+      
+      console.log(`[MiPlantilla] Cargando puntos jornada ${currentMatchday} para ${playerIds.length} jugadores`);
+      
+      const pointsMap: Record<number, number> = {};
+      
+      // Cargar puntos para cada jugador
+      await Promise.all(
+        playerIds.map(async (playerId) => {
+          try {
+            const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: true });
+            pointsMap[playerId] = stats?.totalPoints ?? 0;
+          } catch (error) {
+            console.warn(`[MiPlantilla] Error cargando puntos de jugador ${playerId}:`, error);
+            pointsMap[playerId] = 0;
+          }
+        })
+      );
+      
+      setPlayerCurrentPoints(pointsMap);
+      console.log('[MiPlantilla] Puntos cargados:', pointsMap);
+    } catch (error) {
+      console.error('[MiPlantilla] Error al cargar puntos de jornada actual:', error);
+    }
+  };
+  
+  // ✨ MODIFICADO: Obtener jornada y estado de la liga (no de la API)
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -315,8 +339,14 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         if (ligaId) {
           const status = await JornadaService.getJornadaStatus(ligaId);
           if (mounted) {
+            // ✨ NUEVO: Usar la jornada de la liga, no de la API
+            setCurrentMatchday(status.currentJornada);
+            console.log('[MiPlantilla] Jornada de la liga:', status.currentJornada);
+            
             const s = (status.status as 'open' | 'closed');
             setJornadaStatus(s);
+            console.log('[MiPlantilla] Estado de la jornada:', s);
+            
             if (s === 'closed') {
               setActiveTab('puntuacion');
             }
@@ -328,6 +358,31 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     })();
     return () => { mounted = false; };
   }, [ligaId]);
+  
+  // ✨ NUEVO: Cargar puntos cuando cambie a tab "puntuacion" y la jornada esté abierta
+  useEffect(() => {
+    const hasPlayers = Object.keys(selectedPlayers).length > 0;
+    
+    if (activeTab === 'puntuacion' && jornadaStatus === 'closed' && hasPlayers && currentMatchday) {
+      console.log(`[MiPlantilla] Recargando puntos para jornada ${currentMatchday}`);
+      loadCurrentJornadaPoints(selectedPlayers);
+    }
+  }, [activeTab, jornadaStatus, currentMatchday]); // ✨ Agregada dependencia currentMatchday
+  
+  // ✨ NUEVO: Polling automático de puntos en tiempo real cuando la jornada está cerrada (partidos en curso)
+  useEffect(() => {
+    const hasPlayers = Object.keys(selectedPlayers).length > 0;
+    
+    if (activeTab === 'puntuacion' && jornadaStatus === 'closed' && hasPlayers && currentMatchday) {
+      // Actualizar cada 30 segundos
+      const interval = setInterval(() => {
+        console.log(`[MiPlantilla] 🔄 Actualizando puntos en tiempo real (Jornada ${currentMatchday})`);
+        loadCurrentJornadaPoints(selectedPlayers);
+      }, 30000); // 30 segundos
+      
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, jornadaStatus, selectedPlayers, currentMatchday]);
   
   // Animación del drawer
   useEffect(() => {
@@ -564,6 +619,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           if (captainPos) {
             console.log('Capitán detectado en posición:', captainPos);
           }
+          
+          // ✨ Los puntos se cargarán automáticamente por el useEffect cuando currentMatchday esté listo
         }
       } catch (error) {
         console.error('Error al cargar plantilla existente:', error);
@@ -630,6 +687,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             setOriginalPlayers(playersMap);
             setCaptainPosition(captainPos);
             console.log('Plantilla recargada:', Object.keys(playersMap).length, 'jugadores');
+            
+            // ✨ Los puntos se cargarán automáticamente por el useEffect cuando currentMatchday esté listo
           }
         } catch (error) {
           console.error('Error recargando plantilla:', error);
@@ -1474,7 +1533,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         }}
                       >
                         <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>
-                          -
+                          {jornadaStatus === 'open' && playerCurrentPoints[player.id] !== undefined
+                            ? (player.isCaptain ? playerCurrentPoints[player.id] * 2 : playerCurrentPoints[player.id])
+                            : '-'
+                          }
                         </Text>
                       </View>
                     </View>

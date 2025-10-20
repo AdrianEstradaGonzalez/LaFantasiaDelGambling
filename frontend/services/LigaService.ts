@@ -217,13 +217,19 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
     }
   }
 
-  // 👥 Listar miembros
-  static async listarMiembros(leagueId: string) {
+  // 👥 Listar miembros (con filtro opcional de jornada)
+  static async listarMiembros(leagueId: string, jornada?: number | 'Total') {
     try {
       const token = await this.getAccessToken();
       if (!token) throw new Error('Usuario no autenticado');
 
-      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/${leagueId}/members`, {
+      // Construir URL con parámetro de query si se especifica jornada
+      let url = `${ApiConfig.BASE_URL}/leagues/${leagueId}/members`;
+      if (jornada && jornada !== 'Total') {
+        url += `?jornada=${jornada}`;
+      }
+
+      const res = await fetch(url, {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });
