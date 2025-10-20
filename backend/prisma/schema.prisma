@@ -261,8 +261,9 @@ model bet_option {
   homeTeam  String
   awayTeam  String
   betType   String
-  betLabel  String
-  odd       Float
+  betLabel  String   // Descripción general (ej: "Resultado final", "Total de goles")
+  odd       Float    @default(1.0) // Odd por defecto (deprecated, usar options)
+  options   Json?    // Array de {label: string, odd: number} - ej: [{label: "Más de 2.5", odd: 1.8}, {label: "Menos de 2.5", odd: 2.1}]
   createdAt DateTime @default(now())
   League    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
 

@@ -1,4 +1,5 @@
 import { AdminService } from '../services/admin.service.js';
+import { BetEvaluationService } from '../services/betEvaluation.service.js';
 import { AppError } from '../utils/errors.js';
 
 const adminService = new AdminService();
@@ -45,6 +46,40 @@ export class AdminController {
       res.send(result);
     } catch (error) {
       this.handleError(res, error, 'Error eliminando liga');
+    }
+  }
+
+  // --- Evaluar apuestas pendientes ---
+  async evaluateBets(req: any, res: any) {
+    try {
+      const { leagueId } = req.params;
+      
+      console.log(`🎯 Iniciando evaluación de apuestas para liga ${leagueId}...`);
+      const result = await BetEvaluationService.evaluatePendingBets(leagueId);
+      
+      res.send({
+        success: true,
+        ...result,
+        message: `Evaluadas ${result.evaluated} apuestas: ${result.won} ganadas, ${result.lost} perdidas`
+      });
+    } catch (error) {
+      this.handleError(res, error, 'Error evaluando apuestas');
+    }
+  }
+
+  // --- Evaluar TODAS las apuestas pendientes de TODAS las ligas ---
+  async evaluateAllBets(req: any, res: any) {
+    try {
+      console.log(`🌍 Iniciando evaluación de apuestas para TODAS las ligas...`);
+      const result = await BetEvaluationService.evaluateAllPendingBets();
+      
+      res.send({
+        success: true,
+        ...result,
+        message: `Evaluadas ${result.totalEvaluated} apuestas en ${result.leagues.length} ligas: ${result.totalWon} ganadas, ${result.totalLost} perdidas`
+      });
+    } catch (error) {
+      this.handleError(res, error, 'Error evaluando todas las apuestas');
     }
   }
 

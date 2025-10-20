@@ -170,4 +170,91 @@ export class BetService {
       throw new Error(error?.response?.data?.error || 'Error al eliminar apuesta');
     }
   }
+
+  /**
+   * Evaluar apuestas pendientes de una liga específica
+   */
+  static async evaluateBets(leagueId: string): Promise<{
+    evaluated: number;
+    won: number;
+    lost: number;
+    pending: number;
+    details: Array<{
+      betId: string;
+      matchId: number;
+      homeTeam: string;
+      awayTeam: string;
+      betType: string;
+      betLabel: string;
+      result: 'won' | 'lost' | 'pending';
+      reason?: string;
+    }>;
+  }> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      
+      const response = await axios.post(
+        `${API_URL}/admin/evaluate-bets/${leagueId}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('Error evaluating bets:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al evaluar apuestas');
+    }
+  }
+
+  /**
+   * Evaluar todas las apuestas pendientes de todas las ligas
+   */
+  static async evaluateAllBets(): Promise<{
+    totalEvaluated: number;
+    totalWon: number;
+    totalLost: number;
+    totalPending: number;
+    leagueResults: Array<{
+      leagueId: string;
+      leagueName: string;
+      evaluated: number;
+      won: number;
+      lost: number;
+      pending: number;
+    }>;
+    details: Array<{
+      betId: string;
+      leagueId: string;
+      matchId: number;
+      homeTeam: string;
+      awayTeam: string;
+      betType: string;
+      betLabel: string;
+      result: 'won' | 'lost' | 'pending';
+      reason?: string;
+    }>;
+  }> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      
+      const response = await axios.post(
+        `${API_URL}/admin/evaluate-all-bets`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('Error evaluating all bets:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al evaluar todas las apuestas');
+    }
+  }
 }
