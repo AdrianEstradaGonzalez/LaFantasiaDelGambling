@@ -239,7 +239,9 @@ export class JornadaService {
           const won = await this.evaluateBet(bet);
           
           // Calcular ganancia
-          const profit = won ? (bet.amount * bet.odd) - bet.amount : -bet.amount;
+          // Si gana: suma lo ganado (potentialWin)
+          // Si pierde: resta lo apostado (amount)
+          const profit = won ? (bet.amount * bet.odd) : -bet.amount;
 
           evaluations.push({
             betId: bet.id,
@@ -1032,19 +1034,8 @@ export class JornadaService {
       });
       console.log(`✅ ${deletedBets.count} apuestas eliminadas\n`);
 
-      // 8. Actualizar estadísticas finales de TODOS los jugadores
-      console.log(`📊 8. Actualizando estadísticas finales de jugadores...`);
-      try {
-        const { PlayerStatsService } = await import('./playerStats.service.js');
-        const updateResult = await PlayerStatsService.updateAllPlayersStatsForJornada(jornada);
-        console.log(`✅ Estadísticas actualizadas: ${updateResult.successCount} éxitos, ${updateResult.errorCount} errores\n`);
-      } catch (error) {
-        console.error(`⚠️  Error actualizando estadísticas de jugadores:`, error);
-        console.log(`⚠️  Continuando con el cierre de jornada...\n`);
-      }
-
-      // 9. Avanzar jornada y cambiar estado
-      console.log(`⏭️  9. Avanzando jornada...`);
+      // 8. Avanzar jornada y cambiar estado
+      console.log(`⏭️  8. Avanzando jornada...`);
       const nextJornada = jornada + 1;
       await prisma.league.update({
         where: { id: leagueId },
