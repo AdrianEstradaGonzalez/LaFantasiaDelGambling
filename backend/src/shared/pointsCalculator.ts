@@ -12,11 +12,11 @@ import {
   MIDFIELDER_POINTS,
   ATTACKER_POINTS,
   CLEAN_SHEET_MINUTES,
-  Role,
+  type Role,
   normalizeRole,
-} from './pointsConfig';
+} from './pointsConfig.js';
 
-export { normalizeRole, Role };
+export { normalizeRole, type Role };
 
 /**
  * Estructura de breakdown de puntos (para mostrar detalles)

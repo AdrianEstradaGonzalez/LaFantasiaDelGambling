@@ -15,7 +15,7 @@ import {
   calculatePlayerPoints,
   normalizeRole,
   Role,
-} from '../../../shared/pointsCalculator.js';
+} from '../shared/pointsCalculator.js';
 
 const prisma = new PrismaClient();
 

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
-import { calculatePlayerPointsTotal as calculatePlayerPointsService, normalizeRole } from '../../../shared/pointsCalculator.js';
+import { calculatePlayerPointsTotal as calculatePlayerPointsService, normalizeRole } from '../shared/pointsCalculator.js';
 import { PlayerService } from './player.service.js';
 
 const prisma = new PrismaClient();

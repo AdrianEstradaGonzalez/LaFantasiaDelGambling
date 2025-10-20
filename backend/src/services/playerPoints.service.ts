@@ -5,7 +5,7 @@ import {
   calculatePlayerPointsTotal,
   normalizeRole as normalizeRoleShared,
   Role,
-} from '../../../shared/pointsCalculator.js';
+} from '../shared/pointsCalculator.js';
 
 const API_BASE = 'https://v3.football.api-sports.io';
 const FALLBACK_APISPORTS_KEY = '099ef4c6c0803639d80207d4ac1ad5da';
