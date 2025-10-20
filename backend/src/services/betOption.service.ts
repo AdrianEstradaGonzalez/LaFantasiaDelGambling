@@ -243,7 +243,36 @@ export class BetOptionService {
 
       console.log(`✅ Encontrados ${fixtures.length} partidos para la jornada ${jornada}`);
 
-      // 2. Para cada partido, generar 1 apuesta con sus opciones
+      // 2. Obtener TODAS las odds de la jornada en UNA SOLA petición
+      console.log(`📡 Obteniendo odds de todos los partidos en una sola petición...`);
+      let oddsMap = new Map<number, any>(); // matchId -> odds data
+      
+      try {
+        const { data: oddsData } = await axios.get(`${API_BASE}/odds`, {
+          headers: HEADERS,
+          timeout: 15000,
+          params: {
+            league: LA_LIGA_LEAGUE_ID,
+            season: CURRENT_SEASON,
+            bookmaker: 8, // Bet365
+          },
+        });
+
+        const oddsResponse = oddsData?.response || [];
+        console.log(`✅ Recibidas odds de ${oddsResponse.length} partidos`);
+
+        // Mapear odds por fixture ID
+        for (const oddsItem of oddsResponse) {
+          const fixtureId = oddsItem?.fixture?.id;
+          if (fixtureId) {
+            oddsMap.set(fixtureId, oddsItem);
+          }
+        }
+      } catch (err: any) {
+        console.warn(`⚠️  Error obteniendo odds masivas, se usarán apuestas sintéticas:`, err?.message);
+      }
+
+      // 3. Para cada partido, generar 1 apuesta con sus opciones
       const allBets: Array<{
         matchId: number;
         homeTeam: string;
@@ -270,22 +299,14 @@ export class BetOptionService {
 
         console.log(`   📌 Tipo seleccionado: "${selectedBetType}"`);
 
-        try {
-          // Intentar obtener odds reales de la API
-          const { data: oddsData } = await axios.get(`${API_BASE}/odds`, {
-            headers: HEADERS,
-            timeout: 10000,
-            params: {
-              fixture: matchId,
-              bookmaker: 8, // Bet365
-            },
-          });
+        // Buscar odds del partido en el mapa
+        const oddsItem = oddsMap.get(matchId);
+        const bookmaker = oddsItem?.bookmakers?.[0];
+        const bets = bookmaker?.bets ?? [];
 
-          const bookmaker = oddsData?.response?.[0]?.bookmakers?.[0];
-          const bets = bookmaker?.bets ?? [];
+        let foundOdds = false;
 
-          let foundOdds = false;
-
+        if (bets.length > 0) {
           // Buscar el tipo de apuesta seleccionado
           for (const bet of bets) {
             const betId = bet.id;
@@ -352,26 +373,16 @@ export class BetOptionService {
               }
             }
           }
+        }
 
-          // Si no se encontraron odds, generar sintéticas
-          if (!foundOdds) {
-            console.warn(`   ⚠️  No se encontraron odds de "${selectedBetType}", usando sintéticas`);
-            const syntheticBets = this.generateSyntheticBetsOfType(matchId, homeTeam, awayTeam, selectedBetType);
-            allBets.push(...syntheticBets);
-          }
-
-          // Pequeña pausa para rate limit
-          await new Promise(r => setTimeout(r, 150));
-        } catch (err: any) {
-          console.warn(`   ⚠️  Error obteniendo odds, usando apuestas sintéticas:`, err?.message);
+        // Si no se encontraron odds, generar sintéticas
+        if (!foundOdds) {
+          console.warn(`   ⚠️  No se encontraron odds de "${selectedBetType}", usando sintéticas`);
           const syntheticBets = this.generateSyntheticBetsOfType(matchId, homeTeam, awayTeam, selectedBetType);
           allBets.push(...syntheticBets);
         }
       }
 
-      console.log(`📊 Total de apuestas generadas antes de filtrar: ${allBets.length}`);
-
-      // 3. Ya no es necesario garantizar mínimos porque ahora generamos 1 apuesta por partido
       console.log(`📊 Total de apuestas generadas: ${allBets.length}`);
       console.log(`📊 Partidos procesados: ${fixtures.length}`);
       console.log(`📊 Opciones por partido: ${(allBets.length / fixtures.length).toFixed(1)} promedio`);
