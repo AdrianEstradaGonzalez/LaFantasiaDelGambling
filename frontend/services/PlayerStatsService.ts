@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import { ApiConfig } from '../utils/apiConfig';
 
 const API_URL = ApiConfig.BASE_URL;
@@ -98,30 +98,48 @@ class PlayerStatsServiceClass {
       refresh?: boolean;
     }
   ): Promise<PlayerStats> {
-    const token = await AsyncStorage.getItem('token');
-    if (!token) throw new Error('No autenticado');
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        console.error('[PlayerStatsService] No se encontró token de autenticación');
+        throw new Error('No autenticado');
+      }
 
-    const queryParams = new URLSearchParams();
-    if (options?.season) queryParams.append('season', String(options.season));
-    if (options?.refresh) queryParams.append('refresh', 'true');
+      const queryParams = new URLSearchParams();
+      if (options?.season) queryParams.append('season', String(options.season));
+      if (options?.refresh) queryParams.append('refresh', 'true');
 
-    const url = `${API_URL}/player-stats/${playerId}/jornada/${jornada}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      const url = `${API_URL}/player-stats/${playerId}/jornada/${jornada}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      console.log('[PlayerStatsService] Solicitando estadísticas:', { playerId, jornada, url });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al obtener estadísticas');
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('[PlayerStatsService] Error en respuesta:', response.status, response.statusText);
+        let errorMessage = 'Error al obtener estadísticas';
+        try {
+          const error = await response.json();
+          errorMessage = error.message || error.error || errorMessage;
+        } catch (e) {
+          // Si no se puede parsear el error como JSON
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      console.log('[PlayerStatsService] Estadísticas obtenidas correctamente');
+      return result.data;
+    } catch (error) {
+      console.error('[PlayerStatsService] Error en getPlayerJornadaStats:', error);
+      throw error;
     }
-
-    const result = await response.json();
-    return result.data;
   }
 
   /**
@@ -135,29 +153,47 @@ class PlayerStatsServiceClass {
       refresh?: boolean;
     }
   ): Promise<(PlayerStats | null)[]> {
-    const token = await AsyncStorage.getItem('token');
-    if (!token) throw new Error('No autenticado');
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        console.error('[PlayerStatsService] No se encontró token de autenticación');
+        throw new Error('No autenticado');
+      }
 
-    const response = await fetch(`${API_URL}/player-stats/${playerId}/multiple-jornadas`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        jornadas,
-        season: options?.season,
-        refresh: options?.refresh,
-      }),
-    });
+      console.log('[PlayerStatsService] Solicitando estadísticas múltiples:', { playerId, jornadas: jornadas.length });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Error al obtener estadísticas');
+      const response = await fetch(`${API_URL}/player-stats/${playerId}/multiple-jornadas`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          jornadas,
+          season: options?.season,
+          refresh: options?.refresh,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('[PlayerStatsService] Error en respuesta:', response.status, response.statusText);
+        let errorMessage = 'Error al obtener estadísticas';
+        try {
+          const error = await response.json();
+          errorMessage = error.message || error.error || errorMessage;
+        } catch (e) {
+          // Si no se puede parsear el error como JSON
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      console.log('[PlayerStatsService] Estadísticas múltiples obtenidas:', result.count || jornadas.length);
+      return result.data;
+    } catch (error) {
+      console.error('[PlayerStatsService] Error en getPlayerMultipleJornadasStats:', error);
+      throw error;
     }
-
-    const result = await response.json();
-    return result.data;
   }
 
   /**

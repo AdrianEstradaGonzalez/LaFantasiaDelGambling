@@ -12,6 +12,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { ChevronLeftIcon } from '../../components/VectorIcons';
 // Importar nuevo servicio de estadísticas (backend-first)
 import { PlayerStatsService, type PlayerStats } from '../../services/PlayerStatsService';
+import { AuthDebug } from '../../utils/authDebug';
 
 type CanonicalPos = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker';
 
@@ -84,9 +85,26 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       try {
         setLoading(true);
         
+        console.log('[PlayerDetail] Iniciando carga de datos para jugador:', player.id, player.name);
+        
+        // Verificar estado de autenticación
+        const authStatus = await AuthDebug.checkAuthStatus();
+        if (!authStatus.hasToken) {
+          console.error('[PlayerDetail] ¡No hay token de autenticación! El usuario debe iniciar sesión.');
+          CustomAlertManager.alert(
+            'Sesión expirada',
+            'Por favor, inicia sesión nuevamente para ver los detalles del jugador.',
+            [{ text: 'OK', onPress: () => {}, style: 'default' }],
+            { icon: 'alert-circle', iconColor: '#ef4444' }
+          );
+          setLoading(false);
+          return;
+        }
+        
         // Obtener jornadas disponibles
         const matchdays = await FootballService.getAvailableMatchdays();
         setAvailableMatchdays(matchdays);
+        console.log('[PlayerDetail] Jornadas disponibles:', matchdays);
 
         if (!matchdays.length) {
           setMatchdayPoints([]);
@@ -99,6 +117,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
 
         // ✨ NUEVO: Usar PlayerStatsService para obtener estadísticas del backend
         try {
+          console.log('[PlayerDetail] Solicitando estadísticas al backend...');
           const statsArray = await PlayerStatsService.getPlayerMultipleJornadasStats(
             player.id,
             matchdays,
@@ -115,12 +134,18 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
           });
 
           const total = pointsData.reduce((sum, item) => sum + item.points, 0);
+          console.log('[PlayerDetail] Estadísticas obtenidas. Total de puntos:', total);
 
           setMatchdayPoints(pointsData);
           setTotalPoints(total);
           setSelectedMatchday(lastMatchday);
         } catch (error) {
-          console.error('Error obteniendo estadísticas del backend:', error);
+          console.error('[PlayerDetail] Error obteniendo estadísticas del backend:', error);
+          console.error('[PlayerDetail] Detalles del error:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined
+          });
+          
           // Fallback: mostrar sin datos
           const emptyPoints: MatchdayPoints[] = matchdays.map((matchday) => ({
             matchday,
@@ -133,7 +158,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
           setSelectedMatchday(lastMatchday);
         }
       } catch (error) {
-        console.error('Error cargando datos del jugador:', error);
+        console.error('[PlayerDetail] Error cargando datos del jugador:', error);
       } finally {
         setLoading(false);
       }
@@ -151,6 +176,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
 
     (async () => {
       try {
+        console.log('[PlayerDetail] Solicitando estadísticas para jornada:', selectedMatchday);
         // ✨ NUEVO: Obtener stats específicas del backend
         const stats = await PlayerStatsService.getPlayerJornadaStats(
           player.id,
@@ -159,6 +185,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         );
 
         if (cancelled) return;
+
+        console.log('[PlayerDetail] Estadísticas de jornada obtenidas:', stats.totalPoints);
 
         setMatchdayPoints((prev) =>
           prev.map((mp) =>
@@ -173,7 +201,11 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
           setTotalPoints((prev) => prev + stats.totalPoints - current.points);
         }
       } catch (error) {
-        console.warn('Error obteniendo estadísticas de la jornada seleccionada:', error);
+        console.error('[PlayerDetail] Error obteniendo estadísticas de la jornada seleccionada:', error);
+        console.error('[PlayerDetail] Detalles del error:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          jornada: selectedMatchday
+        });
       }
     })();
 
