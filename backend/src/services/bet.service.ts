@@ -197,33 +197,41 @@ export class BetService {
     const potentialWin = Math.round(amount * odd);
 
     // Mapear automáticamente la configuración de la API
+    console.log('🔍 Datos recibidos para mapeo:', { betType, betLabel, homeTeam, awayTeam });
     const apiConfig = mapBetToApiConfig(betType, betLabel, homeTeam, awayTeam);
+    console.log('🔍 Configuración API generada:', apiConfig);
 
-    const bet = await prisma.bet.create({
-      data: {
-        leagueId,
-        userId,
-        jornada: currentJornada,
-        matchId,
-        homeTeam,
-        awayTeam,
-        betType,
-        betLabel,
-        apiBetId: apiConfig.apiBetId,
-        apiEndpoint: apiConfig.apiEndpoint,
-        apiStatKey: apiConfig.apiStatKey,
-        apiOperator: apiConfig.apiOperator,
-        apiValue: apiConfig.apiValue,
-        odd,
-        amount,
-        potentialWin,
-        status: 'pending',
-      },
-    });
-
-    console.log(`✅ Apuesta creada con configuración API:`, {
+    const betData = {
+      leagueId,
+      userId,
+      jornada: currentJornada,
+      matchId,
+      homeTeam,
+      awayTeam,
       betType,
       betLabel,
+      apiBetId: apiConfig.apiBetId,
+      apiEndpoint: apiConfig.apiEndpoint,
+      apiStatKey: apiConfig.apiStatKey,
+      apiOperator: apiConfig.apiOperator,
+      apiValue: apiConfig.apiValue,
+      odd,
+      amount,
+      potentialWin,
+      status: 'pending' as const,
+    };
+
+    console.log('🔍 Datos que se van a guardar en BD:', betData);
+
+    const bet = await prisma.bet.create({
+      data: betData,
+    });
+
+    console.log(`✅ Apuesta creada con ID: ${bet.id}`, {
+      homeTeam: bet.homeTeam,
+      awayTeam: bet.awayTeam,
+      apiBetId: bet.apiBetId,
+      apiEndpoint: bet.apiEndpoint,
       apiConfig
     });
 
