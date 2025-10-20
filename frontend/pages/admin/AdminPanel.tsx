@@ -10,6 +10,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { JornadaService } from '../../services/JornadaService';
+import { BetService } from '../../services/BetService';
 import axios from 'axios';
 import { ApiConfig } from '../../utils/apiConfig';
 import { LigaService } from '../../services/LigaService';
@@ -34,6 +35,7 @@ const AdminPanel: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const [isClosingJornada, setIsClosingJornada] = useState(false);
   const [isOpeningJornada, setIsOpeningJornada] = useState(false);
+  const [isEvaluatingBets, setIsEvaluatingBets] = useState(false);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed' | null>(null);
   const [currentJornada, setCurrentJornada] = useState<number | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
@@ -155,6 +157,141 @@ const AdminPanel: React.FC = () => {
         },
       ],
       { icon: 'alert', iconColor: '#f59e0b' }
+    );
+  };
+
+  const handleEvaluarApuestas = async () => {
+    try {
+      // Obtener primera liga disponible
+      const userId = await EncryptedStorage.getItem('userId');
+      if (!userId) {
+        throw new Error('No hay usuario autenticado');
+      }
+      
+      const ligas = await LigaService.obtenerLigasPorUsuario(userId);
+      if (ligas.length === 0) {
+        throw new Error('No hay ligas disponibles');
+      }
+
+      const primeraLiga = ligas[0];
+
+      CustomAlertManager.alert(
+        '🎯 Evaluar Apuestas',
+        `¿Evaluar todas las apuestas pendientes de la liga "${primeraLiga.name}"?\n\n` +
+        `Esto hará lo siguiente:\n` +
+        `📊 Consultará la API de Football para obtener resultados reales\n` +
+        `✅ Marcará apuestas como ganadas o perdidas\n` +
+        `💰 Guardará los resultados para futuros cálculos de presupuesto\n\n` +
+        `Solo se evaluarán partidos que ya hayan terminado.`,
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+            onPress: () => {}
+          },
+          {
+            text: 'Evaluar',
+            style: 'default',
+            onPress: async () => {
+              try {
+                setIsEvaluatingBets(true);
+                
+                const result = await BetService.evaluateBets(primeraLiga.id);
+                
+                CustomAlertManager.alert(
+                  '✅ Evaluación Completada',
+                  `📊 Total evaluadas: ${result.evaluated}\n` +
+                  `✅ Ganadas: ${result.won}\n` +
+                  `❌ Perdidas: ${result.lost}\n` +
+                  `⏳ Pendientes: ${result.pending}`,
+                  [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                  { icon: 'check-circle', iconColor: '#10b981' }
+                );
+              } catch (error: any) {
+                CustomAlertManager.alert(
+                  '❌ Error',
+                  error.message || 'No se pudieron evaluar las apuestas',
+                  [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                  { icon: 'alert-circle', iconColor: '#ef4444' }
+                );
+              } finally {
+                setIsEvaluatingBets(false);
+              }
+            },
+          },
+        ],
+        { icon: 'target', iconColor: '#0892D0' }
+      );
+    } catch (error: any) {
+      CustomAlertManager.alert(
+        '❌ Error',
+        error.message || 'Error al preparar evaluación',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+    }
+  };
+
+  const handleEvaluarTodasLasApuestas = async () => {
+    CustomAlertManager.alert(
+      '🌍 Evaluar TODAS las Apuestas',
+      `¿Evaluar todas las apuestas pendientes de TODAS las ligas?\n\n` +
+      `Esto hará lo siguiente:\n` +
+      `📊 Consultará la API de Football para cada partido\n` +
+      `✅ Marcará apuestas como ganadas o perdidas en todas las ligas\n` +
+      `💰 Guardará los resultados para futuros cálculos de presupuesto\n` +
+      `⏱️ Puede tardar varios segundos dependiendo de la cantidad de apuestas\n\n` +
+      `Solo se evaluarán partidos que ya hayan terminado.`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+          onPress: () => {}
+        },
+        {
+          text: 'Evaluar Todo',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsEvaluatingBets(true);
+              
+              const result = await BetService.evaluateAllBets();
+              
+              // Construir mensaje con detalle por liga
+              let detalleMsg = `📊 RESUMEN GLOBAL:\n`;
+              detalleMsg += `Total evaluadas: ${result.totalEvaluated}\n`;
+              detalleMsg += `✅ Ganadas: ${result.totalWon}\n`;
+              detalleMsg += `❌ Perdidas: ${result.totalLost}\n`;
+              detalleMsg += `⏳ Pendientes: ${result.totalPending}`;
+              
+              if (result.leagueResults && result.leagueResults.length > 0) {
+                detalleMsg += `\n\n📋 DETALLE POR LIGA:\n`;
+                result.leagueResults.forEach((league) => {
+                  detalleMsg += `\n${league.leagueName}:\n`;
+                  detalleMsg += `  ${league.evaluated} evaluadas (${league.won}✅ / ${league.lost}❌)\n`;
+                });
+              }
+              
+              CustomAlertManager.alert(
+                '✅ Evaluación Global Completada',
+                detalleMsg,
+                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                { icon: 'check-circle', iconColor: '#10b981' }
+              );
+            } catch (error: any) {
+              CustomAlertManager.alert(
+                '❌ Error',
+                error.message || 'No se pudieron evaluar todas las apuestas',
+                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                { icon: 'alert-circle', iconColor: '#ef4444' }
+              );
+            } finally {
+              setIsEvaluatingBets(false);
+            }
+          },
+        },
+      ],
+      { icon: 'globe', iconColor: '#0892D0' }
     );
   };
 
@@ -392,6 +529,92 @@ const AdminPanel: React.FC = () => {
             }}
           >
             Edita precios y posiciones de todos los jugadores de La Liga.
+          </Text>
+        </TouchableOpacity>
+
+        {/* Evaluar Apuestas */}
+        <TouchableOpacity
+          onPress={handleEvaluarApuestas}
+          disabled={isEvaluatingBets}
+          style={{
+            backgroundColor: '#1e293b',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: '#334155',
+            opacity: isEvaluatingBets ? 0.6 : 1,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <View style={{ marginRight: 12 }}>
+              <Text style={{ fontSize: 32 }}>🎯</Text>
+            </View>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 'bold',
+                flex: 1,
+              }}
+            >
+              {isEvaluatingBets ? 'Evaluando Apuestas...' : 'Evaluar Apuestas'}
+            </Text>
+            {!isEvaluatingBets && <ChevronRightIcon size={24} color="#0ea5e9" />}
+            {isEvaluatingBets && <ActivityIndicator color="#0892D0" size="small" />}
+          </View>
+
+          <Text
+            style={{
+              color: '#94a3b8',
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            Consulta la API de Football y marca las apuestas pendientes como ganadas o perdidas según los resultados reales (solo primera liga).
+          </Text>
+        </TouchableOpacity>
+
+        {/* Evaluar TODAS las Apuestas */}
+        <TouchableOpacity
+          onPress={handleEvaluarTodasLasApuestas}
+          disabled={isEvaluatingBets}
+          style={{
+            backgroundColor: '#1e293b',
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 20,
+            borderWidth: 1,
+            borderColor: '#334155',
+            opacity: isEvaluatingBets ? 0.6 : 1,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+            <View style={{ marginRight: 12 }}>
+              <Text style={{ fontSize: 32 }}>🌍</Text>
+            </View>
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: 20,
+                fontWeight: 'bold',
+                flex: 1,
+              }}
+            >
+              {isEvaluatingBets ? 'Evaluando Todo...' : 'Evaluar TODAS las Apuestas'}
+            </Text>
+            {!isEvaluatingBets && <ChevronRightIcon size={24} color="#0ea5e9" />}
+            {isEvaluatingBets && <ActivityIndicator color="#0892D0" size="small" />}
+          </View>
+
+          <Text
+            style={{
+              color: '#94a3b8',
+              fontSize: 14,
+              lineHeight: 20,
+            }}
+          >
+            Evalúa TODAS las apuestas pendientes de TODAS las ligas del sistema. Puede tardar varios segundos.
           </Text>
         </TouchableOpacity>
 
