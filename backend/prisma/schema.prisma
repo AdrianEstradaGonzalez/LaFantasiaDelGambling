@@ -136,7 +136,8 @@ model PlayerStats {
   teamId    Int
   
   // Puntos calculados según DreamLeague
-  totalPoints Int    @default(0)
+  totalPoints     Int    @default(0)
+  pointsBreakdown Json?  // Desglose detallado de puntos por estadística
   
   // Games
   minutes     Int?

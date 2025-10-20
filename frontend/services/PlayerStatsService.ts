@@ -10,6 +10,12 @@ const API_URL = ApiConfig.BASE_URL;
  * NO realiza cálculos de puntos - eso lo hace el backend.
  */
 
+export interface PointsBreakdownEntry {
+  label: string;
+  amount: number | string;
+  points: number;
+}
+
 export interface PlayerStats {
   id: string;
   playerId: number;
@@ -22,6 +28,7 @@ export interface PlayerStats {
   
   // Puntos calculados (por el backend)
   totalPoints: number;
+  pointsBreakdown: PointsBreakdownEntry[] | null; // ✨ NUEVO: Desglose de puntos
   
   // Games
   minutes: number | null;

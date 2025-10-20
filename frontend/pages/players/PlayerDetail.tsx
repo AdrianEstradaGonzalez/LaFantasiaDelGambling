@@ -335,6 +335,18 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     }
   };
 
+  // ✨ NUEVO: Helper para obtener puntos de una estadística del breakdown
+  const getPointsFromBreakdown = (breakdown: any[] | null | undefined, statLabel: string): number | string => {
+    if (!breakdown || !Array.isArray(breakdown)) return '-';
+    
+    // Buscar en el breakdown por label (insensible a mayúsculas/minúsculas)
+    const entry = breakdown.find((item: any) => 
+      item.label?.toLowerCase().includes(statLabel.toLowerCase())
+    );
+    
+    return entry ? entry.points : 0;
+  };
+
   // Componente para mostrar una fila de estadística con 3 columnas
   const StatRow = ({ 
     cantidad, 
@@ -754,7 +766,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.minutes}
                         estadistica="Minutos jugados"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Minutos')}
                       />
                     )}
 
@@ -763,7 +775,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.goals}
                         estadistica="Goles"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Goles marcados')}
                       />
                     )}
 
@@ -772,7 +784,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.assists}
                         estadistica="Asistencias"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Asistencias')}
                       />
                     )}
 
@@ -783,24 +795,41 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                           <StatRow
                             cantidad={selectedData.stats.saves}
                             estadistica="Paradas"
-                            puntos="-"
+                            puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Paradas')}
                           />
                         )}
                         {selectedData.stats.conceded !== null && (
                           <StatRow
                             cantidad={selectedData.stats.conceded}
                             estadistica="Goles encajados"
-                            puntos="-"
+                            puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Goles encajados')}
+                          />
+                        )}
+                        {/* Portería a cero */}
+                        {selectedData.stats.conceded !== null && selectedData.stats.conceded === 0 && selectedData.stats.minutes && selectedData.stats.minutes >= 55 && (
+                          <StatRow
+                            cantidad="Sí"
+                            estadistica="Portería a cero"
+                            puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Portería a cero')}
                           />
                         )}
                         {selectedData.stats.penaltySaved !== null && selectedData.stats.penaltySaved > 0 && (
                           <StatRow
                             cantidad={selectedData.stats.penaltySaved}
                             estadistica="Penaltis parados"
-                            puntos="-"
+                            puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis parados')}
                           />
                         )}
                       </>
+                    )}
+
+                    {/* Portería a cero para Defensores y Centrocampistas */}
+                    {(position === 'Defender' || position === 'Midfielder') && selectedData.stats.conceded !== null && selectedData.stats.conceded === 0 && selectedData.stats.minutes && selectedData.stats.minutes >= 55 && (
+                      <StatRow
+                        cantidad="Sí"
+                        estadistica="Portería a cero"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Portería a cero')}
+                      />
                     )}
 
                     {/* Tiros a puerta */}
@@ -808,7 +837,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.shotsOn}
                         estadistica="Tiros a puerta"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tiros a puerta')}
                       />
                     )}
 
@@ -817,7 +846,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.passesKey}
                         estadistica="Pases clave"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Pases clave')}
                       />
                     )}
 
@@ -826,7 +855,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.dribblesSuccess}
                         estadistica="Regates exitosos"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Regates exitosos')}
                       />
                     )}
 
@@ -835,7 +864,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.duelsWon}
                         estadistica="Duelos ganados"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Duelos ganados')}
                       />
                     )}
 
@@ -844,7 +873,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.tacklesInterceptions}
                         estadistica="Intercepciones"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Intercepciones')}
                       />
                     )}
 
@@ -853,7 +882,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.foulsDrawn}
                         estadistica="Faltas recibidas"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Faltas recibidas')}
                       />
                     )}
 
@@ -862,7 +891,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.yellowCards}
                         estadistica="Tarjetas amarillas"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tarjetas amarillas')}
                       />
                     )}
 
@@ -871,7 +900,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.redCards}
                         estadistica="Tarjetas rojas"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tarjetas rojas')}
                       />
                     )}
 
@@ -880,14 +909,14 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={selectedData.stats.penaltyScored}
                         estadistica="Penaltis marcados"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis marcados')}
                       />
                     )}
                     {selectedData.stats.penaltyMissed !== null && selectedData.stats.penaltyMissed > 0 && (
                       <StatRow
                         cantidad={selectedData.stats.penaltyMissed}
                         estadistica="Penaltis fallados"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis fallados')}
                       />
                     )}
 
@@ -896,13 +925,13 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       <StatRow
                         cantidad={parseFloat(selectedData.stats.rating).toFixed(1)}
                         estadistica="Valoración del partido"
-                        puntos="-"
+                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Valoración')}
                       />
                     )}
                   </>
                 )}
 
-                {/* Nota: Los puntos individuales ya no se muestran, solo el total calculado por el backend */}
+                {/* ✨ Los puntos individuales se obtienen del breakdown calculado por el backend */}
               </ScrollView>
             </View>
           )}

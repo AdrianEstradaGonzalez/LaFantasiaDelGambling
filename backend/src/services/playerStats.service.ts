@@ -346,10 +346,12 @@ export async function getPlayerStatsForJornada(
           fixtureId,
           teamId: playerTeamIds[0],
           totalPoints: 0,
+          pointsBreakdown: null, // ✨ Sin desglose cuando no jugó
           minutes: 0,
         },
         update: {
           totalPoints: 0,
+          pointsBreakdown: null, // ✨ Sin desglose cuando no jugó
           minutes: 0,
           updatedAt: new Date(),
         },
@@ -362,11 +364,12 @@ export async function getPlayerStatsForJornada(
     const role = normalizeRole(playerDB?.position ?? playerStats?.games?.position);
     const pointsResult = calculatePlayerPoints(playerStats, role);
     const totalPoints = pointsResult.total;
+    const pointsBreakdown = pointsResult.breakdown as any; // ✨ NUEVO: Obtener desglose (Prisma acepta any para Json)
 
     // 4. Extraer estadísticas reales
     const extractedStats = extractStats(playerStats);
 
-    // 5. Guardar en BD
+    // 5. Guardar en BD (incluyendo desglose de puntos)
     const savedStats = await prisma.playerStats.upsert({
       where: {
         playerId_jornada_season: { playerId, jornada, season },
@@ -378,10 +381,12 @@ export async function getPlayerStatsForJornada(
         fixtureId,
         teamId: playerTeamIds[0],
         totalPoints,
+        pointsBreakdown, // ✨ NUEVO: Guardar desglose como Json
         ...extractedStats,
       },
       update: {
         totalPoints,
+        pointsBreakdown, // ✨ NUEVO: Guardar desglose como Json
         ...extractedStats,
         updatedAt: new Date(),
       },
