@@ -210,15 +210,35 @@ export async function getPlayerStatsForJornada(
 
     // Paso 2: Buscar en la API todos los jugadores con ese nombre en la liga y temporada
     await delay(DEFAULT_REQUEST_DELAY_MS);
-    const playerSearchResponse = await api.get('/players', {
-      params: {
-        search: playerFromDb.name,
-        league: 140,
-        season: season,
-      },
-    });
+    let allPlayerVersions: any[] = [];
+    
+    // Intento 1: Búsqueda por nombre (para detectar transferencias)
+    try {
+      const playerSearchResponse = await api.get('/players', {
+        params: {
+          search: playerFromDb.name,
+          league: 140,
+          season: season,
+        },
+      });
+      allPlayerVersions = playerSearchResponse.data?.response || [];
+    } catch (error) {
+      console.warn(`[playerStats] Búsqueda por nombre falló para ${playerFromDb.name}, intentando por ID...`);
+    }
 
-    const allPlayerVersions = playerSearchResponse.data?.response || [];
+    // Intento 2: Si la búsqueda por nombre falla o no da resultados, buscar por ID directo
+    if (allPlayerVersions.length === 0) {
+      console.log(`[playerStats] Fallback: Buscando jugador ${playerId} por ID directo`);
+      await delay(DEFAULT_REQUEST_DELAY_MS);
+      const playerIdResponse = await api.get('/players', {
+        params: {
+          id: playerId,
+          season: season,
+        },
+      });
+      allPlayerVersions = playerIdResponse.data?.response || [];
+    }
+
     if (allPlayerVersions.length === 0) {
       throw new AppError(404, 'PLAYER_NOT_FOUND_IN_API', 'No se encontró ninguna versión del jugador en la API');
     }
@@ -239,6 +259,8 @@ export async function getPlayerStatsForJornada(
     if (teamIdsToQuery.length === 0) {
       throw new AppError(404, 'NO_TEAMS_FOR_PLAYER', 'No se encontraron equipos para el jugador en la API');
     }
+    
+    console.log(`[playerStats] Equipos encontrados para ${playerFromDb.name} (${playerId}): [${teamIdsToQuery.join(', ')}]`);
 
     let playerStats: any = null;
     let teamFixture: any = null;
