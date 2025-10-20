@@ -166,7 +166,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     setAmountInputs((prev) => ({ ...prev, [key]: sanitized }));
   };
 
-  const handlePlaceBet = async (key: string, params: { matchId: number; betType: string; betLabel: string; odd: number }) => {
+  const handlePlaceBet = async (key: string, params: { matchId: number; homeTeam: string; awayTeam: string; betType: string; betLabel: string; odd: number }) => {
     if (!ligaId) return;
     const raw = amountInputs[key] ?? '';
     const amount = parseFloat(raw);
@@ -188,6 +188,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       await BetService.placeBet({
         leagueId: ligaId,
         matchId: params.matchId,
+        homeTeam: params.homeTeam,
+        awayTeam: params.awayTeam,
         betType: params.betType,
         betLabel: params.betLabel,
         odd: params.odd,
@@ -698,10 +700,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   // Si falta fecha/hora, poner al final
                   if (!a.fecha || !a.hora) return 1;
                   if (!b.fecha || !b.hora) return -1;
-                  // Unir fecha y hora para comparar
-                  const dateA = new Date(`${a.fecha} ${a.hora}`);
-                  const dateB = new Date(`${b.fecha} ${b.hora}`);
-                  return dateA.getTime() - dateB.getTime();
+                  
+                  // Comparar primero por fecha, luego por hora (comparación de strings)
+                  const fechaCompare = a.fecha.localeCompare(b.fecha);
+                  if (fechaCompare !== 0) return fechaCompare;
+                  
+                  // Si las fechas son iguales, comparar por hora
+                  return a.hora.localeCompare(b.hora);
                 })
                 .map((b, index) => (
                 <View 
@@ -964,7 +969,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                               }}
                             />
                             <TouchableOpacity
-                              onPress={() => handlePlaceBet(betKey, { matchId: b.matchId, betType: b.type, betLabel: option.label, odd: option.odd })}
+                              onPress={() => handlePlaceBet(betKey, { 
+                                matchId: b.matchId, 
+                                homeTeam: b.local,
+                                awayTeam: b.visitante,
+                                betType: b.type, 
+                                betLabel: option.label, 
+                                odd: option.odd 
+                              })}
                               disabled={savingBet === betKey}
                               style={{
                                 backgroundColor: '#16a34a',

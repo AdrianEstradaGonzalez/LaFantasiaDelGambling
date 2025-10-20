@@ -56,6 +56,8 @@ export class BetController {
       Params: { leagueId: string };
       Body: {
         matchId: number;
+        homeTeam: string;
+        awayTeam: string;
         betType: string;
         betLabel: string;
         odd: number;
@@ -71,12 +73,14 @@ export class BetController {
       }
 
       const { leagueId } = request.params;
-      const { matchId, betType, betLabel, odd, amount } = request.body;
+      const { matchId, homeTeam, awayTeam, betType, betLabel, odd, amount } = request.body;
 
       const bet = await BetService.placeBet({
         userId,
         leagueId,
         matchId,
+        homeTeam,
+        awayTeam,
         betType,
         betLabel,
         odd,

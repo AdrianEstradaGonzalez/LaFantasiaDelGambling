@@ -259,19 +259,31 @@ model Bet {
   leagueId     String
   userId       String
   jornada      Int
-  matchId      Int
-  betType      String
-  betLabel     String
+  matchId      Int          // Fixture ID de la API
+  homeTeam     String       // Equipo local
+  awayTeam     String       // Equipo visitante
+  betType      String       // Tipo de apuesta (ej: "Goles totales", "Resultado")
+  betLabel     String       // Etiqueta de la opción (ej: "Más de 2.5 goles")
+  
+  // Campos para evaluación posterior consultando API-Football
+  apiBetId     Int?         // ID del tipo de apuesta en API-Football (ej: 5 para Goals O/U)
+  apiEndpoint  String?      // Endpoint a consultar: "odds", "statistics", "fixtures"
+  apiStatKey   String?      // Clave de estadística (ej: "goals.total", "corner_kicks", "yellow_cards")
+  apiOperator  String?      // Operador: "greater_than", "less_than", "equals", "odd", "even"
+  apiValue     String?      // Valor a comparar (ej: "2.5", "10", "Home", "Yes")
+  
   odd          Float
   amount       Int
   potentialWin Int
-  status       String       @default("pending")
+  status       String       @default("pending") // pending, won, lost
+  evaluatedAt  DateTime?    // Cuándo se evaluó la apuesta
   createdAt    DateTime     @default(now())
   leagueMember LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
 
   @@index([leagueId, userId])
   @@index([jornada])
   @@index([status])
+  @@index([matchId])
   @@map("bet")
 }
 

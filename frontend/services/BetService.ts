@@ -73,6 +73,8 @@ export class BetService {
   static async placeBet(params: {
     leagueId: string;
     matchId: number;
+    homeTeam: string;
+    awayTeam: string;
     betType: string;
     betLabel: string;
     odd: number;
@@ -88,6 +90,8 @@ export class BetService {
         `${API_URL}/bets/${params.leagueId}`,
         {
           matchId: params.matchId,
+          homeTeam: params.homeTeam,
+          awayTeam: params.awayTeam,
           betType: params.betType,
           betLabel: params.betLabel,
           odd: params.odd,

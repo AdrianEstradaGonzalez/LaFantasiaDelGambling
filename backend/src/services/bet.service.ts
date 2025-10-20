@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { AppError } from '../utils/errors.js';
+import { mapBetToApiConfig } from '../utils/apiBetMapping.js';
 
 const prisma = new PrismaClient();
 
@@ -133,12 +134,14 @@ export class BetService {
     userId: string;
     leagueId: string;
     matchId: number;
+    homeTeam: string;
+    awayTeam: string;
     betType: string;
     betLabel: string;
     odd: number;
     amount: number;
   }) {
-    const { userId, leagueId, matchId, betType, betLabel, odd, amount } = params;
+    const { userId, leagueId, matchId, homeTeam, awayTeam, betType, betLabel, odd, amount } = params;
 
     // Bloquear si la jornada está abierta (bloqueada)
     await this.assertBettingAllowed(leagueId);
@@ -193,19 +196,35 @@ export class BetService {
 
     const potentialWin = Math.round(amount * odd);
 
+    // Mapear automáticamente la configuración de la API
+    const apiConfig = mapBetToApiConfig(betType, betLabel, homeTeam, awayTeam);
+
     const bet = await prisma.bet.create({
       data: {
         leagueId,
         userId,
         jornada: currentJornada,
         matchId,
+        homeTeam,
+        awayTeam,
         betType,
         betLabel,
+        apiBetId: apiConfig.apiBetId,
+        apiEndpoint: apiConfig.apiEndpoint,
+        apiStatKey: apiConfig.apiStatKey,
+        apiOperator: apiConfig.apiOperator,
+        apiValue: apiConfig.apiValue,
         odd,
         amount,
         potentialWin,
         status: 'pending',
       },
+    });
+
+    console.log(`✅ Apuesta creada con configuración API:`, {
+      betType,
+      betLabel,
+      apiConfig
     });
 
     return bet;
