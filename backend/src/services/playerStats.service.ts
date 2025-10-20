@@ -181,8 +181,8 @@ export async function getPlayerStatsForJornada(
 ) {
   const season = options.season ?? Number(process.env.FOOTBALL_API_SEASON ?? 2025);
 
-  // ✨ NUEVO: Verificar si la jornada está abierta
-  // Si está abierta, SIEMPRE forzar refresh para obtener datos en tiempo real
+  // ✨ NUEVO: Verificar si la jornada está cerrada (partidos en curso)
+  // Si está cerrada (CLOSED = partidos jugándose), SIEMPRE forzar refresh para obtener datos en tiempo real
   let shouldForceRefresh = options.forceRefresh || false;
   
   if (!shouldForceRefresh) {
@@ -190,10 +190,10 @@ export async function getPlayerStatsForJornada(
       select: { currentJornada: true, jornadaStatus: true },
     });
     
-    // Si estamos consultando la jornada actual Y está abierta → forzar refresh
-    if (currentJornada && currentJornada.currentJornada === jornada && currentJornada.jornadaStatus === 'open') {
+    // Si estamos consultando la jornada actual Y está CLOSED (partidos en curso) → forzar refresh
+    if (currentJornada && currentJornada.currentJornada === jornada && currentJornada.jornadaStatus === 'CLOSED') {
       shouldForceRefresh = true;
-      console.log(`[playerStats] ⚡ Jornada ${jornada} está ABIERTA - forzando refresh desde API`);
+      console.log(`[playerStats] ⚡ Jornada ${jornada} está CERRADA (partidos en curso) - forzando refresh desde API Football`);
     }
   }
 
