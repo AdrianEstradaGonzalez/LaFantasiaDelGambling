@@ -23,8 +23,4 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   // Leagues management
   app.get("/leagues", { preHandler: adminAuth }, adminController.getAllLeagues.bind(adminController));
   app.delete("/leagues/:leagueId", { preHandler: adminAuth }, adminController.deleteLeague.bind(adminController));
-
-  // Actualizar puntuaciones de última jornada de todos los jugadores
-  app.post("/update-player-scores", { preHandler: adminAuth }, adminController.updatePlayerScores.bind(adminController));
-  app.post("/update-player-scores/current", { preHandler: adminAuth }, adminController.updatePlayerScoresFromCurrent.bind(adminController));
 };

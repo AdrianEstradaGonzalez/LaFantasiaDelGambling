@@ -14,46 +14,6 @@ export class AdminController {
     }
   }
 
-  // --- Actualizar puntuaciones de la última jornada ---
-  async updatePlayerScores(req: any, res: any) {
-    try {
-      const { jornada } = req.body;
-
-      if (!jornada || typeof jornada !== 'number') {
-        return res.code(400).send({
-          code: 'BAD_REQUEST',
-          message: 'Debes enviar un número de jornada válido en el body',
-        });
-      }
-
-      const result = await adminService.updateAllPlayersLastJornadaPoints(jornada);
-      res.send({
-        success: true,
-        message: `Puntuaciones actualizadas para la jornada ${result?.processedJornada ?? jornada}`,
-        requestedJornada: jornada,
-        processedJornada: result?.processedJornada ?? jornada,
-        updatedPlayers: result?.updatedPlayers ?? 0,
-      });
-    } catch (error) {
-      this.handleError(res, error, 'Error actualizando puntuaciones de jugadores');
-    }
-  }
-
-  async updatePlayerScoresFromCurrent(req: any, res: any) {
-    try {
-      const result = await adminService.updatePlayersPointsFromCurrentJornada();
-      res.send({
-        success: true,
-        message: `Puntuaciones actualizadas para la jornada ${result.processedJornada}`,
-        requestedJornada: result.requestedJornada,
-        processedJornada: result.processedJornada,
-        updatedPlayers: result.updatedPlayers,
-      });
-    } catch (error) {
-      this.handleError(res, error, 'Error actualizando puntuaciones de jugadores');
-    }
-  }
-
   // --- Eliminar un usuario ---
   async deleteUser(req: any, res: any) {
     try {

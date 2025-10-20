@@ -457,6 +457,7 @@ export async function getPlayerStatsForJornada(
 
 /**
  * Obtiene estadísticas de un jugador para múltiples jornadas
+ * OPTIMIZADO: Solo consulta API para jornada actual si está abierta
  */
 export async function getPlayerStatsForMultipleJornadas(
   playerId: number,
@@ -465,13 +466,37 @@ export async function getPlayerStatsForMultipleJornadas(
 ) {
   const results = [];
 
+  // ✨ OPTIMIZACIÓN: Obtener jornada actual y su estado UNA SOLA VEZ
+  const currentJornadaInfo = await prisma.league.findFirst({
+    select: { currentJornada: true, jornadaStatus: true },
+  });
+
+  const currentJornada = currentJornadaInfo?.currentJornada;
+  const isCurrentJornadaOpen = currentJornadaInfo?.jornadaStatus === 'open';
+
+  console.log(`[playerStats] Consultando ${jornadas.length} jornadas - Jornada actual: ${currentJornada} (${isCurrentJornadaOpen ? 'ABIERTA' : 'CERRADA'})`);
+
   for (const jornada of jornadas) {
     try {
-      const stats = await getPlayerStatsForJornada(playerId, jornada, options);
+      // ✨ DECISIÓN INTELIGENTE: Solo forzar refresh en jornada actual abierta
+      const shouldForceThisJornada = options.forceRefresh || 
+        (jornada === currentJornada && isCurrentJornadaOpen);
+
+      if (shouldForceThisJornada) {
+        console.log(`[playerStats] ⚡ Jornada ${jornada}: Consultando API (tiempo real)`);
+      } else {
+        console.log(`[playerStats] 💾 Jornada ${jornada}: Usando BD (cerrada)`);
+      }
+
+      const stats = await getPlayerStatsForJornada(playerId, jornada, {
+        ...options,
+        forceRefresh: shouldForceThisJornada,
+      });
+      
       results.push(stats);
       
-      // Respetar rate limit
-      if (DEFAULT_REQUEST_DELAY_MS > 0) {
+      // Respetar rate limit SOLO si consultamos API
+      if (shouldForceThisJornada && DEFAULT_REQUEST_DELAY_MS > 0) {
         await delay(DEFAULT_REQUEST_DELAY_MS);
       }
     } catch (error) {
