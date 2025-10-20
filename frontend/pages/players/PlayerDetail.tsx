@@ -793,166 +793,197 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                 {/* ✨ NUEVO: Mostrar estadísticas usando PlayerStats del backend */}
                 {selectedData.stats && (
                   <>
-                    {/* Minutos */}
-                    {selectedData.stats.minutes !== null && (
-                      <StatRow
-                        cantidad={selectedData.stats.minutes}
-                        estadistica="Minutos jugados"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Minutos')}
-                      />
-                    )}
+                    {/* ========== ESTADÍSTICAS COMUNES (TODAS LAS POSICIONES) ========== */}
+                    
+                    {/* Minutos jugados */}
+                    <StatRow
+                      cantidad={selectedData.stats.minutes ?? 0}
+                      estadistica="Minutos jugados"
+                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Minutos')}
+                    />
 
-                    {/* Goles */}
-                    {selectedData.stats.goals !== null && selectedData.stats.goals > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.goals}
-                        estadistica="Goles"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Goles marcados')}
-                      />
-                    )}
+                    {/* Goles marcados */}
+                    <StatRow
+                      cantidad={selectedData.stats.goals ?? 0}
+                      estadistica="Goles marcados"
+                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Goles marcados')}
+                    />
 
                     {/* Asistencias */}
-                    {selectedData.stats.assists !== null && selectedData.stats.assists > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.assists}
-                        estadistica="Asistencias"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Asistencias')}
-                      />
-                    )}
+                    <StatRow
+                      cantidad={selectedData.stats.assists ?? 0}
+                      estadistica="Asistencias"
+                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Asistencias')}
+                    />
 
-                    {/* Portero específico */}
+                    {/* ========== ESTADÍSTICAS ESPECÍFICAS POR POSICIÓN ========== */}
+                    
+                    {/* PORTERO */}
                     {position === 'Goalkeeper' && (
                       <>
-                        {selectedData.stats.saves !== null && selectedData.stats.saves > 0 && (
-                          <StatRow
-                            cantidad={selectedData.stats.saves}
-                            estadistica="Paradas"
-                            puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Paradas')}
-                          />
-                        )}
-                        {selectedData.stats.conceded !== null && (
-                          <StatRow
-                            cantidad={selectedData.stats.conceded}
-                            estadistica="Goles encajados"
-                            puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Goles encajados')}
-                          />
-                        )}
-                        {/* Portería a cero */}
-                        {selectedData.stats.conceded !== null && selectedData.stats.conceded === 0 && selectedData.stats.minutes && selectedData.stats.minutes >= 55 && (
-                          <StatRow
-                            cantidad="Sí"
-                            estadistica="Portería a cero"
-                            puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Portería a cero')}
-                          />
-                        )}
-                        {selectedData.stats.penaltySaved !== null && selectedData.stats.penaltySaved > 0 && (
-                          <StatRow
-                            cantidad={selectedData.stats.penaltySaved}
-                            estadistica="Penaltis parados"
-                            puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis parados')}
-                          />
-                        )}
+                        {/* Paradas */}
+                        <StatRow
+                          cantidad={selectedData.stats.saves ?? 0}
+                          estadistica="Paradas"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Paradas')}
+                        />
+                        
+                        {/* Goles encajados (incluye puntos de portería a cero si aplica) */}
+                        <StatRow
+                          cantidad={selectedData.stats.conceded ?? 0}
+                          estadistica="Goles encajados"
+                          puntos={
+                            (Number(getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Goles encajados')) || 0) +
+                            (Number(getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Portería a cero')) || 0)
+                          }
+                        />
+                        
+                        {/* Penaltis parados */}
+                        <StatRow
+                          cantidad={selectedData.stats.penaltySaved ?? 0}
+                          estadistica="Penaltis parados"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis parados')}
+                        />
+                        
+                        {/* Recuperaciones (Intercepciones) */}
+                        <StatRow
+                          cantidad={selectedData.stats.tacklesInterceptions ?? 0}
+                          estadistica="Recuperaciones"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Recuperaciones')}
+                        />
                       </>
                     )}
 
-                    {/* Portería a cero para Defensores y Centrocampistas */}
-                    {(position === 'Defender' || position === 'Midfielder') && selectedData.stats.conceded !== null && selectedData.stats.conceded === 0 && selectedData.stats.minutes && selectedData.stats.minutes >= 55 && (
-                      <StatRow
-                        cantidad="Sí"
-                        estadistica="Portería a cero"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Portería a cero')}
-                      />
+                    {/* DEFENSA */}
+                    {position === 'Defender' && (
+                      <>
+                        {/* Goles encajados del equipo (incluye puntos de portería a cero si aplica) */}
+                        <StatRow
+                          cantidad={selectedData.stats.conceded ?? 0}
+                          estadistica="Goles encajados"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Portería a cero')}
+                        />
+                        
+                        {/* Tiros a puerta */}
+                        <StatRow
+                          cantidad={selectedData.stats.shotsOn ?? 0}
+                          estadistica="Tiros a puerta"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tiros a puerta')}
+                        />
+                        
+                        {/* Duelos ganados */}
+                        <StatRow
+                          cantidad={selectedData.stats.duelsWon ?? 0}
+                          estadistica="Duelos ganados"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Duelos ganados')}
+                        />
+                        
+                        {/* Intercepciones */}
+                        <StatRow
+                          cantidad={selectedData.stats.tacklesInterceptions ?? 0}
+                          estadistica="Intercepciones"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Intercepciones')}
+                        />
+                      </>
                     )}
 
-                    {/* Tiros a puerta */}
-                    {selectedData.stats.shotsOn !== null && selectedData.stats.shotsOn > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.shotsOn}
-                        estadistica="Tiros a puerta"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tiros a puerta')}
-                      />
+                    {/* CENTROCAMPISTA */}
+                    {position === 'Midfielder' && (
+                      <>
+                        {/* Tiros a puerta */}
+                        <StatRow
+                          cantidad={selectedData.stats.shotsOn ?? 0}
+                          estadistica="Tiros a puerta"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tiros a puerta')}
+                        />
+                        
+                        {/* Pases clave */}
+                        <StatRow
+                          cantidad={selectedData.stats.passesKey ?? 0}
+                          estadistica="Pases clave"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Pases clave')}
+                        />
+                        
+                        {/* Regates exitosos */}
+                        <StatRow
+                          cantidad={selectedData.stats.dribblesSuccess ?? 0}
+                          estadistica="Regates exitosos"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Regates exitosos')}
+                        />
+                        
+                        {/* Faltas recibidas */}
+                        <StatRow
+                          cantidad={selectedData.stats.foulsDrawn ?? 0}
+                          estadistica="Faltas recibidas"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Faltas recibidas')}
+                        />
+                        
+                        {/* Intercepciones */}
+                        <StatRow
+                          cantidad={selectedData.stats.tacklesInterceptions ?? 0}
+                          estadistica="Intercepciones"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Intercepciones')}
+                        />
+                      </>
                     )}
 
-                    {/* Pases clave */}
-                    {selectedData.stats.passesKey !== null && selectedData.stats.passesKey > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.passesKey}
-                        estadistica="Pases clave"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Pases clave')}
-                      />
+                    {/* DELANTERO */}
+                    {position === 'Attacker' && (
+                      <>
+                        {/* Tiros a puerta */}
+                        <StatRow
+                          cantidad={selectedData.stats.shotsOn ?? 0}
+                          estadistica="Tiros a puerta"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tiros a puerta')}
+                        />
+                        
+                        {/* Pases clave */}
+                        <StatRow
+                          cantidad={selectedData.stats.passesKey ?? 0}
+                          estadistica="Pases clave"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Pases clave')}
+                        />
+                        
+                        {/* Regates exitosos */}
+                        <StatRow
+                          cantidad={selectedData.stats.dribblesSuccess ?? 0}
+                          estadistica="Regates exitosos"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Regates exitosos')}
+                        />
+                        
+                        {/* Faltas recibidas */}
+                        <StatRow
+                          cantidad={selectedData.stats.foulsDrawn ?? 0}
+                          estadistica="Faltas recibidas"
+                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Faltas recibidas')}
+                        />
+                      </>
                     )}
 
-                    {/* Regates exitosos */}
-                    {selectedData.stats.dribblesSuccess !== null && selectedData.stats.dribblesSuccess > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.dribblesSuccess}
-                        estadistica="Regates exitosos"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Regates exitosos')}
-                      />
-                    )}
-
-                    {/* Duelos ganados */}
-                    {selectedData.stats.duelsWon !== null && selectedData.stats.duelsWon > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.duelsWon}
-                        estadistica="Duelos ganados"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Duelos ganados')}
-                      />
-                    )}
-
-                    {/* Intercepciones */}
-                    {selectedData.stats.tacklesInterceptions !== null && selectedData.stats.tacklesInterceptions > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.tacklesInterceptions}
-                        estadistica="Intercepciones"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Intercepciones')}
-                      />
-                    )}
-
-                    {/* Faltas recibidas */}
-                    {selectedData.stats.foulsDrawn !== null && selectedData.stats.foulsDrawn > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.foulsDrawn}
-                        estadistica="Faltas recibidas"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Faltas recibidas')}
-                      />
-                    )}
-
+                    {/* ========== ESTADÍSTICAS COMUNES (CONTINUACIÓN) ========== */}
+                    
                     {/* Tarjetas amarillas */}
-                    {selectedData.stats.yellowCards !== null && selectedData.stats.yellowCards > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.yellowCards}
-                        estadistica="Tarjetas amarillas"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tarjetas amarillas')}
-                      />
-                    )}
+                    <StatRow
+                      cantidad={selectedData.stats.yellowCards ?? 0}
+                      estadistica="Tarjetas amarillas"
+                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tarjetas amarillas')}
+                    />
 
                     {/* Tarjetas rojas */}
-                    {selectedData.stats.redCards !== null && selectedData.stats.redCards > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.redCards}
-                        estadistica="Tarjetas rojas"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tarjetas rojas')}
-                      />
-                    )}
+                    <StatRow
+                      cantidad={selectedData.stats.redCards ?? 0}
+                      estadistica="Tarjetas rojas"
+                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tarjetas rojas')}
+                    />
+                    
+                    {/* Penaltis fallados */}
+                    <StatRow
+                      cantidad={selectedData.stats.penaltyMissed ?? 0}
+                      estadistica="Penaltis fallados"
+                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis fallados')}
+                    />
 
-                    {/* Penaltis */}
-                    {selectedData.stats.penaltyScored !== null && selectedData.stats.penaltyScored > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.penaltyScored}
-                        estadistica="Penaltis marcados"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis marcados')}
-                      />
-                    )}
-                    {selectedData.stats.penaltyMissed !== null && selectedData.stats.penaltyMissed > 0 && (
-                      <StatRow
-                        cantidad={selectedData.stats.penaltyMissed}
-                        estadistica="Penaltis fallados"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis fallados')}
-                      />
-                    )}
-
-                    {/* Rating */}
+                    {/* Valoración del partido */}
                     {selectedData.stats.rating && (
                       <StatRow
                         cantidad={parseFloat(selectedData.stats.rating).toFixed(1)}

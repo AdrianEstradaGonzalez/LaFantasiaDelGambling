@@ -157,23 +157,6 @@ async function fetchMatchdayFixtures(matchday: number) {
   return fixtures;
 }
 
-async function fetchPlayerSeasonInfo(playerId: number) {
-  const cacheKey = String(playerId);
-  const cached = getFromCache(playerInfoCache, cacheKey);
-  if (cached !== undefined) return cached;
-
-  const response = await api.get('/players', {
-    params: {
-      id: playerId,
-      season: process.env.FOOTBALL_API_SEASON ?? 2025,
-      league: 140,
-    },
-  });
-  const info = response.data?.response?.[0] ?? null;
-  setInCache(playerInfoCache, cacheKey, info);
-  return info;
-}
-
 async function fetchFixturePlayers(fixtureId: number) {
   const cacheKey = String(fixtureId);
   const cached = getFromCache(fixturePlayersCache, cacheKey);
@@ -215,184 +198,158 @@ export async function getPlayerStatsForJornada(
     }
   }
 
-  // 2. Consultar API Football
+  // 2. Consultar API Football con la nueva lógica
   try {
     const fixtures = await fetchMatchdayFixtures(jornada);
-    const playerInfo = await fetchPlayerSeasonInfo(playerId);
 
-    if (!playerInfo) {
-      throw new AppError(404, 'PLAYER_NOT_FOUND', 'Jugador no encontrado en la API');
+    // Paso 1: Obtener el nombre del jugador desde nuestra BD
+    const playerFromDb = await prisma.player.findUnique({ where: { id: playerId } });
+    if (!playerFromDb) {
+      throw new AppError(404, 'PLAYER_NOT_FOUND_IN_DB', 'Jugador no encontrado en la base de datos local');
     }
 
-    // Obtener información del jugador en BD para saber su posición registrada
-    const playerDB = await prisma.player.findUnique({
-      where: { id: playerId },
-      select: { position: true, teamId: true },
+    // Paso 2: Buscar en la API todos los jugadores con ese nombre en la liga y temporada
+    await delay(DEFAULT_REQUEST_DELAY_MS);
+    const playerSearchResponse = await api.get('/players', {
+      params: {
+        search: playerFromDb.name,
+        league: 140,
+        season: season,
+      },
     });
 
-    const statsArray = Array.isArray(playerInfo.statistics) ? playerInfo.statistics : [];
-    const preferredStats = statsArray.filter((s: any) => s?.league?.id === 140);
-    const statsSource = preferredStats.length ? preferredStats : statsArray;
-
-    const playerTeamIds = statsSource.map((s: any) => s?.team?.id).filter((id: any) => typeof id === 'number');
-    
-    // Fallback al teamId de BD si no hay en la API
-    if (!playerTeamIds.length && playerDB?.teamId) {
-      playerTeamIds.push(playerDB.teamId);
+    const allPlayerVersions = playerSearchResponse.data?.response || [];
+    if (allPlayerVersions.length === 0) {
+      throw new AppError(404, 'PLAYER_NOT_FOUND_IN_API', 'No se encontró ninguna versión del jugador en la API');
     }
 
-    if (!playerTeamIds.length) {
-      throw new AppError(404, 'TEAM_NOT_FOUND', 'No se encontró el equipo del jugador');
+    // Paso 3: Extraer TODOS los IDs de equipo únicos del array completo de statistics
+    const teamIds = new Set<number>();
+    allPlayerVersions.forEach((playerVersion: any) => {
+      if (playerVersion.statistics && Array.isArray(playerVersion.statistics)) {
+        playerVersion.statistics.forEach((stat: any) => {
+          if (stat?.team?.id) {
+            teamIds.add(stat.team.id);
+          }
+        });
+      }
+    });
+    const teamIdsToQuery = [...teamIds];
+
+    if (teamIdsToQuery.length === 0) {
+      throw new AppError(404, 'NO_TEAMS_FOR_PLAYER', 'No se encontraron equipos para el jugador en la API');
     }
 
-    // Buscar partido del jugador en esta jornada
+    let playerStats: any = null;
     let teamFixture: any = null;
-    for (const teamId of playerTeamIds) {
-      teamFixture = fixtures.find((f: any) => f?.teams?.home?.id === teamId || f?.teams?.away?.id === teamId);
-      if (teamFixture) break;
+    let playerTeamId: number | null = null;
+
+    // Paso 4: Iterar sobre los equipos para encontrar el partido de la jornada
+    for (const teamId of teamIdsToQuery) {
+      const fixtureForThisTeam = fixtures.find((f: any) => f?.teams?.home?.id === teamId || f?.teams?.away?.id === teamId);
+
+      if (fixtureForThisTeam) {
+        // Encontramos un partido, ahora buscamos las stats del jugador original (por ID)
+        const fixtureId = fixtureForThisTeam.fixture.id;
+        const teamsData = await fetchFixturePlayers(fixtureId);
+
+        for (const teamData of teamsData) {
+          const found = teamData?.players?.find((p: any) => p?.player?.id === playerId);
+          if (found?.statistics?.[0]) {
+            playerStats = found.statistics[0];
+            teamFixture = fixtureForThisTeam;
+            playerTeamId = teamId;
+            break;
+          }
+        }
+      }
+      if (playerStats) break;
     }
 
-    if (!teamFixture) {
-      // No jugó en esta jornada - guardar stats vacías con 0 puntos
+    if (!teamFixture || !playerTeamId) {
+      // No jugó en esta jornada con ninguno de sus equipos
       const emptyStats = await prisma.playerStats.upsert({
-        where: {
-          playerId_jornada_season: { playerId, jornada, season },
-        },
+        where: { playerId_jornada_season: { playerId, jornada, season } },
         create: {
           playerId,
           jornada,
           season,
           fixtureId: 0,
-          teamId: playerTeamIds[0],
+          teamId: playerFromDb.teamId ?? 0,
           totalPoints: 0,
           minutes: 0,
         },
-        update: {
-          totalPoints: 0,
-          minutes: 0,
-          updatedAt: new Date(),
-        },
+        update: { totalPoints: 0, minutes: 0, updatedAt: new Date() },
       });
-
       return emptyStats;
     }
 
     const fixtureId = teamFixture.fixture.id;
-    const teamsData = await fetchFixturePlayers(fixtureId);
-
-    // Buscar estadísticas del jugador en el partido
-    let playerStats: any = null;
-    for (const teamData of teamsData) {
-      const players = teamData?.players || [];
-      const found = players.find((p: any) => p?.player?.id === playerId);
-      if (found?.statistics?.[0]) {
-        playerStats = found.statistics[0];
-        break;
-      }
-    }
-
-    // Fallback por nombre
-    if (!playerStats && playerInfo?.player?.name) {
-      const target = String(playerInfo.player.name)
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase();
-      
-      for (const teamData of teamsData) {
-        const players = teamData?.players || [];
-        const foundByName = players.find((p: any) => {
-          const name = String(p?.player?.name || '')
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase();
-          return name && name === target && p?.statistics?.[0];
-        });
-        if (foundByName?.statistics?.[0]) {
-          playerStats = foundByName.statistics[0];
-          break;
-        }
-      }
-    }
-
-    // Fallback para porteros
-    const expectedRole = normalizeRole(playerDB?.position ?? playerStats?.games?.position);
-    if (!playerStats && expectedRole === 'Goalkeeper') {
-      for (const teamData of teamsData) {
-        const players = teamData?.players || [];
-        const gk = players.find((p: any) => {
-          const pos = String(p?.statistics?.[0]?.games?.position || '')
-            .trim()
-            .toLowerCase();
-          const mins = Number(p?.statistics?.[0]?.games?.minutes || 0);
-          return mins > 0 && (pos === 'g' || pos === 'gk' || pos.includes('goal'));
-        });
-        if (gk?.statistics?.[0]) {
-          playerStats = gk.statistics[0];
-          break;
-        }
-      }
-    }
+    
+    // Extraer goles del equipo desde el fixture
+    const isHome = teamFixture.teams?.home?.id === playerTeamId;
+    const teamGoalsConceded = isHome 
+      ? Number(teamFixture.goals?.away ?? 0) 
+      : Number(teamFixture.goals?.home ?? 0);
 
     if (!playerStats) {
-      // No se encontraron estadísticas - guardar vacío
+      // No se encontraron estadísticas del jugador en el partido
       const emptyStats = await prisma.playerStats.upsert({
-        where: {
-          playerId_jornada_season: { playerId, jornada, season },
-        },
+        where: { playerId_jornada_season: { playerId, jornada, season } },
         create: {
           playerId,
           jornada,
           season,
           fixtureId,
-          teamId: playerTeamIds[0],
+          teamId: playerTeamId,
           totalPoints: 0,
-          pointsBreakdown: Prisma.JsonNull, // ✨ Sin desglose cuando no jugó
+          pointsBreakdown: Prisma.JsonNull,
           minutes: 0,
         },
         update: {
           totalPoints: 0,
-          pointsBreakdown: Prisma.JsonNull, // ✨ Sin desglose cuando no jugó
+          pointsBreakdown: Prisma.JsonNull,
           minutes: 0,
           updatedAt: new Date(),
         },
       });
-
       return emptyStats;
     }
 
-    // 3. Calcular puntos usando el sistema centralizado
-    const role = normalizeRole(playerDB?.position ?? playerStats?.games?.position);
-    const pointsResult = calculatePlayerPoints(playerStats, role);
+    // Calcular puntos
+    const role = normalizeRole(playerFromDb?.position ?? playerStats?.games?.position);
+    const statsWithTeamGoals = {
+      ...playerStats,
+      goals: { ...playerStats.goals, conceded: teamGoalsConceded },
+    };
+    
+    const pointsResult = calculatePlayerPoints(statsWithTeamGoals, role);
     const totalPoints = pointsResult.total;
-    const pointsBreakdown = pointsResult.breakdown as any; // ✨ NUEVO: Obtener desglose (Prisma acepta any para Json)
+    const pointsBreakdown = pointsResult.breakdown as any;
 
-    // 4. Extraer estadísticas reales
-    const extractedStats = extractStats(playerStats);
-
-    // 5. Guardar en BD (incluyendo desglose de puntos)
+    // Extraer y guardar estadísticas
+    const extractedStats = extractStats(statsWithTeamGoals);
     const savedStats = await prisma.playerStats.upsert({
-      where: {
-        playerId_jornada_season: { playerId, jornada, season },
-      },
+      where: { playerId_jornada_season: { playerId, jornada, season } },
       create: {
         playerId,
         jornada,
         season,
         fixtureId,
-        teamId: playerTeamIds[0],
+        teamId: playerTeamId,
         totalPoints,
-        pointsBreakdown, // ✨ NUEVO: Guardar desglose como Json
+        pointsBreakdown,
         ...extractedStats,
       },
       update: {
         totalPoints,
-        pointsBreakdown, // ✨ NUEVO: Guardar desglose como Json
+        pointsBreakdown,
         ...extractedStats,
         updatedAt: new Date(),
       },
     });
 
-    // 6. Actualizar cache en Player
+    // Actualizar cache en Player
     await prisma.player.update({
       where: { id: playerId },
       data: {

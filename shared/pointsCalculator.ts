@@ -91,7 +91,7 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
   // Penaltis generales (todas las posiciones)
   if (penalty.won) add('Penaltis ganados', penalty.won, penalty.won * BASE_POINTS.PENALTY_WON);
   if (penalty.committed) add('Penaltis cometidos', penalty.committed, penalty.committed * BASE_POINTS.PENALTY_COMMITTED);
-  if (penalty.scored) add('Penaltis marcados', penalty.scored, penalty.scored * BASE_POINTS.PENALTY_SCORED);
+  // ✅ ELIMINADO: Penaltis marcados ya cuentan como goles normales
   if (penalty.missed) add('Penaltis fallados', penalty.missed, penalty.missed * BASE_POINTS.PENALTY_MISSED);
 
   // ========== PUNTOS ESPECÍFICOS POR POSICIÓN ==========
@@ -102,6 +102,8 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
     if (goalsScored) add('Goles marcados', goalsScored, goalsScored * GOALKEEPER_POINTS.GOAL_SCORED);
 
     // Goles encajados y portería a cero
+    // ⚠️ IMPORTANTE: Usamos 'conceded' del portero (stats.goalkeeper.conceded)
+    // NO los goles del equipo (goals.conceded)
     const conceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
     if (meetsCleanSheetMinutes && conceded === 0) {
       add('Portería a cero', 'Sí', GOALKEEPER_POINTS.CLEAN_SHEET);
@@ -128,14 +130,13 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
     const goalsScored = goals.total || 0;
     if (goalsScored) add('Goles marcados', goalsScored, goalsScored * DEFENDER_POINTS.GOAL_SCORED);
 
-    // Goles encajados y portería a cero
-    const conceded = Number(goals.conceded ?? stats.goalkeeper?.conceded ?? 0);
-    if (meetsCleanSheetMinutes && conceded === 0) {
+    // Portería a cero (SOLO si jugó >60 min y el equipo no recibió goles)
+    // ⚠️ NO usamos datos del portero, sino los del equipo completo
+    const teamConceded = Number(goals.conceded ?? 0);
+    if (meetsCleanSheetMinutes && teamConceded === 0) {
       add('Portería a cero', 'Sí', DEFENDER_POINTS.CLEAN_SHEET);
     }
-    if (conceded > 0) {
-      add('Goles encajados', conceded, conceded * DEFENDER_POINTS.GOAL_CONCEDED);
-    }
+    // ✅ Defensas YA NO restan por goles encajados
 
     // Tiros a puerta
     const shotsOn = Number(shots.on || 0);
@@ -156,17 +157,8 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
     const goalsScored = goals.total || 0;
     if (goalsScored) add('Goles marcados', goalsScored, goalsScored * MIDFIELDER_POINTS.GOAL_SCORED);
 
-    // Portería a cero
-    const conceded = Number(goals.conceded ?? 0);
-    if (meetsCleanSheetMinutes && conceded === 0) {
-      add('Portería a cero', 'Sí', MIDFIELDER_POINTS.CLEAN_SHEET);
-    }
-
-    // Goles encajados (cada 2 goles = -1 punto)
-    if (conceded > 0) {
-      const concededPoints = -Math.floor(conceded / MIDFIELDER_POINTS.GOALS_CONCEDED_PER_MINUS_POINT);
-      if (concededPoints) add('Goles encajados', conceded, concededPoints);
-    }
+    // ✅ Mediocampistas YA NO tienen puntos por portería a cero
+    // ✅ Mediocampistas YA NO restan por goles encajados
 
     // Tiros a puerta
     const shotsOn = Number(shots.on || 0);
@@ -224,12 +216,13 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
     const rating = Number(rawRating);
     if (!Number.isNaN(rating)) {
       let ratingPoints = 0;
-      if (rating >= 9) {
-        ratingPoints = BASE_POINTS.RATING_9_OR_MORE;
-      } else if (rating >= 8) {
-        ratingPoints = BASE_POINTS.RATING_8_TO_9;
-      } else if (rating >= 7) {
-        ratingPoints = BASE_POINTS.RATING_7_TO_8;
+      if (rating >= 8) {
+        ratingPoints = BASE_POINTS.RATING_8_OR_MORE;
+      } else if (rating >= 6.5 && rating < 8) {
+        ratingPoints = BASE_POINTS.RATING_65_TO_8;
+      } else if (rating >= 5 && rating < 6.5) {
+        ratingPoints = BASE_POINTS.RATING_5_TO_65;
+        ;
       }
       if (ratingPoints) add('Valoración del partido', rating.toFixed(1), ratingPoints);
     }

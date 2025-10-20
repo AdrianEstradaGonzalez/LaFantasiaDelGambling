@@ -28,9 +28,9 @@ export const BASE_POINTS = {
   PENALTY_MISSED: -2,
   
   // Valoración del partido
-  RATING_9_OR_MORE: 3,
-  RATING_8_TO_9: 2,
-  RATING_7_TO_8: 1,
+  RATING_8_OR_MORE: 3,
+  RATING_65_TO_8: 2,
+  RATING_5_TO_65: 1,
 } as const;
 
 // ========== PUNTOS ESPECÍFICOS POR POSICIÓN ==========

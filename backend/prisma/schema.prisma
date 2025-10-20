@@ -104,6 +104,7 @@ model Player {
   name                String
   position            String
   teamId              Int
+  teamHistory         Int[]                 @default([]) // Historial de equipos en los que ha estado
   teamName            String
   teamCrest           String?
   nationality         String?
