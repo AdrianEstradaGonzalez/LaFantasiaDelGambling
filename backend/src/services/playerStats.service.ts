@@ -8,7 +8,7 @@
  * - Proporcionar datos al frontend (sin cálculos)
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import axios from 'axios';
 import { AppError } from '../utils/errors.js';
 import {
@@ -346,12 +346,12 @@ export async function getPlayerStatsForJornada(
           fixtureId,
           teamId: playerTeamIds[0],
           totalPoints: 0,
-          pointsBreakdown: null, // ✨ Sin desglose cuando no jugó
+          pointsBreakdown: Prisma.JsonNull, // ✨ Sin desglose cuando no jugó
           minutes: 0,
         },
         update: {
           totalPoints: 0,
-          pointsBreakdown: null, // ✨ Sin desglose cuando no jugó
+          pointsBreakdown: Prisma.JsonNull, // ✨ Sin desglose cuando no jugó
           minutes: 0,
           updatedAt: new Date(),
         },
