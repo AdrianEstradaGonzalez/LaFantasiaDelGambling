@@ -7,7 +7,7 @@ import { BetService, BettingBudget, Bet as UserBet } from '../../services/BetSer
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon } from '../../components/VectorIcons';
+import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -388,9 +388,41 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                 )}
 
                 {leagueBets.length === 0 ? (
-                  <View style={{ padding: 20, alignItems: 'center' }}>
-                    <Text style={{ color: '#94a3b8', textAlign: 'center', fontSize: 16 }}>
-                      No hay apuestas registradas en esta liga.
+                  <View style={{ 
+                    flex: 1,
+                    alignItems: 'center',
+                    paddingVertical: 100,
+                    paddingHorizontal: 40,
+                  }}>
+                    <View style={{
+                      width: 120,
+                      height: 120,
+                      borderRadius: 60,
+                      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                      borderWidth: 2,
+                      borderColor: 'rgba(59, 130, 246, 0.3)',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 24,
+                    }}>
+                      <FileTextIcon size={50} color="#3b82f6" />
+                    </View>
+                    <Text style={{ 
+                      color: '#e2e8f0', 
+                      fontSize: 20,
+                      fontWeight: '700',
+                      marginBottom: 8,
+                      letterSpacing: 0.5,
+                    }}>
+                      Sin apuestas registradas
+                    </Text>
+                    <Text style={{ 
+                      color: '#64748b', 
+                      fontSize: 15,
+                      textAlign: 'center',
+                      lineHeight: 22,
+                    }}>
+                      No se realizaron apuestas durante esta jornada
                     </Text>
                   </View>
                 ) : (

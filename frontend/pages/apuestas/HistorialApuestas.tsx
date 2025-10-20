@@ -5,7 +5,7 @@ import { BetService, Bet as UserBet } from '../../services/BetService';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { MenuIcon, CalendarIcon, ClockIcon, DiceIcon } from '../../components/VectorIcons';
+import { MenuIcon, CalendarIcon, ClockIcon, FileTextIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import FootballService from '../../services/FutbolService';
@@ -197,28 +197,40 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
 
             {leagueBets.length === 0 ? (
               <View style={{ 
-                flex: 1, 
-                justifyContent: 'center', 
+                flex: 1,
                 alignItems: 'center',
+                paddingVertical: 100,
                 paddingHorizontal: 40,
-                paddingVertical: 80,
               }}>
-                <DiceIcon size={80} color="#64748b" />
-                <Text style={{ 
-                  color: '#cbd5e1', 
-                  fontSize: 18,
-                  fontWeight: '600',
-                  marginTop: 20,
-                  marginBottom: 8,
+                <View style={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: 60,
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  borderWidth: 2,
+                  borderColor: 'rgba(59, 130, 246, 0.3)',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 24,
                 }}>
-                  No hay apuestas
+                  <FileTextIcon size={50} color="#3b82f6" />
+                </View>
+                <Text style={{ 
+                  color: '#e2e8f0', 
+                  fontSize: 20,
+                  fontWeight: '700',
+                  marginBottom: 8,
+                  letterSpacing: 0.5,
+                }}>
+                  Sin apuestas registradas
                 </Text>
                 <Text style={{ 
-                  color: '#94a3b8', 
-                  fontSize: 14,
+                  color: '#64748b', 
+                  fontSize: 15,
                   textAlign: 'center',
+                  lineHeight: 22,
                 }}>
-                  Aún no has realizado ninguna apuesta en esta liga.
+                  Aún no has realizado ninguna apuesta en esta liga
                 </Text>
               </View>
             ) : (
