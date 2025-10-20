@@ -316,10 +316,14 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         playerIds.map(async (playerId) => {
           try {
             const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: true });
-            pointsMap[playerId] = stats?.totalPoints ?? 0;
+            // Solo agregar al map si existe stats (el jugador ya jugó o está jugando)
+            if (stats && stats.totalPoints !== null && stats.totalPoints !== undefined) {
+              pointsMap[playerId] = stats.totalPoints;
+            }
+            // Si no hay stats, no agregamos al map → se mostrará "-"
           } catch (error) {
             console.warn(`[MiPlantilla] Error cargando puntos de jugador ${playerId}:`, error);
-            pointsMap[playerId] = 0;
+            // No agregamos al map en caso de error → se mostrará "-"
           }
         })
       );
@@ -1533,7 +1537,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         }}
                       >
                         <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>
-                          {jornadaStatus === 'open' && playerCurrentPoints[player.id] !== undefined
+                          {jornadaStatus === 'closed' && playerCurrentPoints[player.id] !== undefined
                             ? (player.isCaptain ? playerCurrentPoints[player.id] * 2 : playerCurrentPoints[player.id])
                             : '-'
                           }
