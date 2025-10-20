@@ -5,7 +5,7 @@ import { BetService, Bet as UserBet } from '../../services/BetService';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { MenuIcon, CalendarIcon, ClockIcon } from '../../components/VectorIcons';
+import { MenuIcon, CalendarIcon, ClockIcon, DiceIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import FootballService from '../../services/FutbolService';
@@ -196,9 +196,29 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
             )}
 
             {leagueBets.length === 0 ? (
-              <View style={{ padding: 20, alignItems: 'center' }}>
-                <Text style={{ color: '#94a3b8', textAlign: 'center', fontSize: 16 }}>
-                  No hay apuestas registradas en esta liga.
+              <View style={{ 
+                flex: 1, 
+                justifyContent: 'center', 
+                alignItems: 'center',
+                paddingHorizontal: 40,
+                paddingVertical: 80,
+              }}>
+                <DiceIcon size={80} color="#64748b" />
+                <Text style={{ 
+                  color: '#cbd5e1', 
+                  fontSize: 18,
+                  fontWeight: '600',
+                  marginTop: 20,
+                  marginBottom: 8,
+                }}>
+                  No hay apuestas
+                </Text>
+                <Text style={{ 
+                  color: '#94a3b8', 
+                  fontSize: 14,
+                  textAlign: 'center',
+                }}>
+                  Aún no has realizado ninguna apuesta en esta liga.
                 </Text>
               </View>
             ) : (
