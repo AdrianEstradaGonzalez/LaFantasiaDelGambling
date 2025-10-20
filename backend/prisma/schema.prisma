@@ -43,7 +43,7 @@ model League {
   createdAt      DateTime       @default(now())
   code           String         @unique
   currentJornada Int            @default(1)
-  jornadaStatus  String         @default("open") // "open" o "closed"
+  jornadaStatus  String         @default("open")
   leader         User           @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
   members        LeagueMember[]
   squads         Squad[]
@@ -110,12 +110,10 @@ model Player {
   shirtNumber         Int?
   photo               String?
   price               Int
-  // Puntos calculados de la última jornada (cache)
-  lastJornadaPoints   Int                   @default(0)
-  // Jornada a la que pertenecen esos puntos
-  lastJornadaNumber   Int                   @default(0)
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
+  lastJornadaPoints   Int                   @default(0)
+  lastJornadaNumber   Int                   @default(0)
   PlayerJornadaPoints PlayerJornadaPoints[]
   stats               PlayerStats[]
 
@@ -126,75 +124,48 @@ model Player {
 }
 
 model PlayerStats {
-  id        String   @id @default(cuid())
-  playerId  Int
-  jornada   Int
-  season    Int      @default(2025)
-  
-  // Información del partido
-  fixtureId Int
-  teamId    Int
-  
-  // Puntos calculados según DreamLeague
-  totalPoints     Int    @default(0)
-  pointsBreakdown Json?  // Desglose detallado de puntos por estadística
-  
-  // Games
-  minutes     Int?
-  position    String?
-  rating      String?
-  captain     Boolean  @default(false)
-  substitute  Boolean  @default(false)
-  
-  // Goals
-  goals       Int?
-  assists     Int?
-  conceded    Int?
-  saves       Int?
-  
-  // Shots
-  shotsTotal  Int?
-  shotsOn     Int?
-  
-  // Passes
-  passesTotal Int?
-  passesKey   Int?
-  passesAccuracy Int?
-  
-  // Tackles
+  id                   String   @id @default(cuid())
+  playerId             Int
+  jornada              Int
+  season               Int      @default(2025)
+  fixtureId            Int
+  teamId               Int
+  totalPoints          Int      @default(0)
+  minutes              Int?
+  position             String?
+  rating               String?
+  captain              Boolean  @default(false)
+  substitute           Boolean  @default(false)
+  goals                Int?
+  assists              Int?
+  conceded             Int?
+  saves                Int?
+  shotsTotal           Int?
+  shotsOn              Int?
+  passesTotal          Int?
+  passesKey            Int?
+  passesAccuracy       Int?
   tacklesTotal         Int?
   tacklesBlocks        Int?
   tacklesInterceptions Int?
-  
-  // Duels
-  duelsTotal Int?
-  duelsWon   Int?
-  
-  // Dribbles
-  dribblesAttempts Int?
-  dribblesSuccess  Int?
-  dribblesPast     Int?
-  
-  // Fouls
-  foulsDrawn     Int?
-  foulsCommitted Int?
-  
-  // Cards
-  yellowCards Int?
-  redCards    Int?
-  
-  // Penalty
-  penaltyWon       Int?
-  penaltyCommitted Int?
-  penaltyScored    Int?
-  penaltyMissed    Int?
-  penaltySaved     Int?
-  
-  // Metadata
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  duelsTotal           Int?
+  duelsWon             Int?
+  dribblesAttempts     Int?
+  dribblesSuccess      Int?
+  dribblesPast         Int?
+  foulsDrawn           Int?
+  foulsCommitted       Int?
+  yellowCards          Int?
+  redCards             Int?
+  penaltyWon           Int?
+  penaltyCommitted     Int?
+  penaltyScored        Int?
+  penaltyMissed        Int?
+  penaltySaved         Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  pointsBreakdown      Json?
+  player               Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, jornada, season])
   @@index([playerId, jornada])
@@ -203,9 +174,8 @@ model PlayerStats {
 }
 
 model PlayerJornadaPoints {
-  playerId Int
-  season   Int @default(2025)
-
+  playerId  Int
+  season    Int      @default(2025)
   pointsJ1  Int?
   pointsJ2  Int?
   pointsJ3  Int?
@@ -244,11 +214,9 @@ model PlayerJornadaPoints {
   pointsJ36 Int?
   pointsJ37 Int?
   pointsJ38 Int?
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@id([playerId, season])
   @@map("player_jornada_points")
@@ -259,25 +227,22 @@ model Bet {
   leagueId     String
   userId       String
   jornada      Int
-  matchId      Int          // Fixture ID de la API
-  homeTeam     String       // Equipo local
-  awayTeam     String       // Equipo visitante
-  betType      String       // Tipo de apuesta (ej: "Goles totales", "Resultado")
-  betLabel     String       // Etiqueta de la opción (ej: "Más de 2.5 goles")
-  
-  // Campos para evaluación posterior consultando API-Football
-  apiBetId     Int?         // ID del tipo de apuesta en API-Football (ej: 5 para Goals O/U)
-  apiEndpoint  String?      // Endpoint a consultar: "odds", "statistics", "fixtures"
-  apiStatKey   String?      // Clave de estadística (ej: "goals.total", "corner_kicks", "yellow_cards")
-  apiOperator  String?      // Operador: "greater_than", "less_than", "equals", "odd", "even"
-  apiValue     String?      // Valor a comparar (ej: "2.5", "10", "Home", "Yes")
-  
+  matchId      Int
+  betType      String
+  betLabel     String
   odd          Float
   amount       Int
   potentialWin Int
-  status       String       @default("pending") // pending, won, lost
-  evaluatedAt  DateTime?    // Cuándo se evaluó la apuesta
+  status       String       @default("pending")
   createdAt    DateTime     @default(now())
+  homeTeam     String?
+  awayTeam     String?
+  apiBetId     Int?
+  apiEndpoint  String?
+  apiStatKey   String?
+  apiOperator  String?
+  apiValue     String?
+  evaluatedAt  DateTime?    @db.Timestamp(6)
   leagueMember LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
 
   @@index([leagueId, userId])
