@@ -22,4 +22,18 @@ export default async function betOptionRoutes(fastify: FastifyInstance) {
     { preHandler: [fastify.auth] },
     BetOptionController.checkOptionsExist
   );
+
+  // Generar opciones de apuesta automáticamente
+  fastify.post(
+    '/bet-options/:leagueId/:jornada/generate',
+    { preHandler: [fastify.auth] },
+    BetOptionController.generateBetOptions
+  );
+
+  // Obtener o generar opciones (endpoint principal para el frontend)
+  fastify.get(
+    '/bet-options/:leagueId/:jornada/get-or-generate',
+    { preHandler: [fastify.auth] },
+    BetOptionController.getOrGenerateBetOptions
+  );
 }
