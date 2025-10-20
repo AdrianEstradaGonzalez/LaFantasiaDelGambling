@@ -49,6 +49,33 @@ function buildHeaders() {
 const api = axios.create({ baseURL: API_BASE, timeout: 15000, headers: buildHeaders() });
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// ✨ NUEVO: Función auxiliar para reintentar peticiones a la API
+async function retryApiCall<T>(
+  callFn: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: any;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await callFn();
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`[playerStats] Intento ${attempt}/${maxRetries} falló:`, error.message);
+      
+      if (attempt < maxRetries) {
+        console.log(`[playerStats] Reintentando en ${delayMs}ms...`);
+        await delay(delayMs);
+        // Aumentar el delay para el siguiente intento (backoff exponencial)
+        delayMs *= 1.5;
+      }
+    }
+  }
+  
+  throw lastError;
+}
+
 type CacheEntry<T> = { data: T; expiresAt: number };
 
 function getFromCache<T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined {
@@ -241,19 +268,23 @@ export async function getPlayerStatsForJornada(
     
     // ✨ OPTIMIZACIÓN: Primero intentar búsqueda directa por ID (más rápido y preciso)
     try {
-      const playerIdResponse = await api.get('/players', {
-        params: {
-          id: playerId,
-          season: season,
-        },
-      });
+      const playerIdResponse = await retryApiCall(async () => {
+        await delay(DEFAULT_REQUEST_DELAY_MS);
+        return await api.get('/players', {
+          params: {
+            id: playerId,
+            season: season,
+          },
+        });
+      }, 3, 1000);
+      
       allPlayerVersions = playerIdResponse.data?.response || [];
       
       if (allPlayerVersions.length > 0) {
         console.log(`[playerStats] ✓ Jugador ${playerId} encontrado por ID directo`);
       }
     } catch (error) {
-      console.warn(`[playerStats] Búsqueda por ID falló para ${playerId}, intentando por nombre...`);
+      console.warn(`[playerStats] Búsqueda por ID falló para ${playerId} después de reintentos, intentando por nombre...`);
     }
 
     // Fallback: Si la búsqueda por ID falla, buscar por nombre (para casos edge)
@@ -265,14 +296,16 @@ export async function getPlayerStatsForJornada(
         const nameParts = playerFromDb.name.split(' ');
         const searchTerm = nameParts.length > 1 ? nameParts[nameParts.length - 1] : playerFromDb.name;
         
-        await delay(DEFAULT_REQUEST_DELAY_MS);
-        const playerSearchResponse = await api.get('/players', {
-          params: {
-            search: searchTerm,
-            league: 140,
-            season: season,
-          },
-        });
+        const playerSearchResponse = await retryApiCall(async () => {
+          await delay(DEFAULT_REQUEST_DELAY_MS);
+          return await api.get('/players', {
+            params: {
+              search: searchTerm,
+              league: 140,
+              season: season,
+            },
+          });
+        }, 3, 1000);
         
         const candidates = playerSearchResponse.data?.response || [];
         

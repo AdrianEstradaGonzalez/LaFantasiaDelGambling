@@ -340,32 +340,55 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       console.log('[MiPlantilla] Player IDs:', playerIds);
       
       const pointsMap: Record<number, number> = {};
+      const failedPlayers: number[] = [];
       
-      // Cargar puntos para cada jugador
+      // Cargar puntos para cada jugador con reintentos
       await Promise.all(
         playerIds.map(async (playerId) => {
-          try {
-            console.log(`[MiPlantilla] Cargando stats para jugador ${playerId}, jornada ${currentMatchday}`);
-            const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: true });
-            console.log(`[MiPlantilla] Stats recibidas para jugador ${playerId}:`, stats);
-            
-            // Solo agregar al map si existe stats (el jugador ya jugó o está jugando)
-            if (stats && stats.totalPoints !== null && stats.totalPoints !== undefined) {
-              pointsMap[playerId] = stats.totalPoints;
-              console.log(`[MiPlantilla] ✅ Jugador ${playerId} tiene ${stats.totalPoints} puntos`);
-            } else {
-              console.log(`[MiPlantilla] ⚠️ Jugador ${playerId} sin stats o sin puntos`);
+          let retries = 3;
+          let lastError: any = null;
+          
+          while (retries > 0) {
+            try {
+              console.log(`[MiPlantilla] Cargando stats para jugador ${playerId}, jornada ${currentMatchday} (intentos restantes: ${retries})`);
+              const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: true });
+              console.log(`[MiPlantilla] Stats recibidas para jugador ${playerId}:`, stats);
+              
+              // Solo agregar al map si existe stats (el jugador ya jugó o está jugando)
+              if (stats && stats.totalPoints !== null && stats.totalPoints !== undefined) {
+                pointsMap[playerId] = stats.totalPoints;
+                console.log(`[MiPlantilla] ✅ Jugador ${playerId} tiene ${stats.totalPoints} puntos`);
+                break; // Éxito, salir del loop de reintentos
+              } else {
+                console.log(`[MiPlantilla] ⚠️ Jugador ${playerId} sin stats (no ha jugado todavía)`);
+                // Si no hay stats, es porque no jugó, no es un error
+                break;
+              }
+            } catch (error) {
+              lastError = error;
+              retries--;
+              console.warn(`[MiPlantilla] ❌ Error cargando puntos de jugador ${playerId} (intentos restantes: ${retries}):`, error);
+              
+              if (retries > 0) {
+                // Esperar 1 segundo antes de reintentar
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              } else {
+                // Todos los reintentos fallaron
+                failedPlayers.push(playerId);
+                console.error(`[MiPlantilla] 💥 Jugador ${playerId} falló después de todos los reintentos`);
+              }
             }
-            // Si no hay stats, no agregamos al map → se mostrará "-"
-          } catch (error) {
-            console.warn(`[MiPlantilla] ❌ Error cargando puntos de jugador ${playerId}:`, error);
-            // No agregamos al map en caso de error → se mostrará "-"
           }
         })
       );
       
+      if (failedPlayers.length > 0) {
+        console.error(`[MiPlantilla] ⚠️ ${failedPlayers.length} jugadores no pudieron cargarse:`, failedPlayers);
+      }
+      
       setPlayerCurrentPoints(pointsMap);
       console.log('[MiPlantilla] 🎯 Puntos finales cargados:', pointsMap);
+      console.log(`[MiPlantilla] 📊 Resumen: ${Object.keys(pointsMap).length}/${playerIds.length} jugadores con datos`);
     } catch (error) {
       console.error('[MiPlantilla] Error al cargar puntos de jornada actual:', error);
     } finally {
