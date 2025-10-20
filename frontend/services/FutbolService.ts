@@ -726,11 +726,7 @@ export default class FootballService {
           if (valL.includes('draw')) return { type: 'Resultado', label: 'Empate' };
         }
 
-        if (nameL.includes('double chance')) {
-          if (valL.includes('home') && valL.includes('draw')) return { type: 'Doble oportunidad', label: `Victoria de ${homeName} o empate` };
-          if (valL.includes('home') && valL.includes('away')) return { type: 'Doble oportunidad', label: `Victoria de ${homeName} o de ${awayName}` };
-          if (valL.includes('draw') && valL.includes('away')) return { type: 'Doble oportunidad', label: `Empate o victoria de ${awayName}` };
-        }
+        // Double chance eliminado - redundante con 'Resultado'
 
         if (nameL.includes('both teams score')) {
           if (valL.includes('yes')) return { type: 'Ambos marcan', label: 'Ambos equipos marcarán' };
@@ -860,9 +856,8 @@ export default class FootballService {
               } else if (betId === 29) {
                 mapped = { type: 'Goles exactos', label: `Se marcarán exactamente ${v.value} goles` };
               } else if (betId === 12) {
-                if (v.value.includes('Home') && v.value.includes('Draw')) mapped = { type: 'Doble oportunidad', label: `Victoria de ${match.local} o empate` };
-                else if (v.value.includes('Home') && v.value.includes('Away')) mapped = { type: 'Doble oportunidad', label: `Victoria de ${match.local} o de ${match.visitante}` };
-                else if (v.value.includes('Draw') && v.value.includes('Away')) mapped = { type: 'Doble oportunidad', label: `Empate o victoria de ${match.visitante}` };
+                // Double chance eliminado - redundante con 'Resultado'
+                mapped = null;
               } else if (betId === 37) {
                 const number = extractNumber(v.value);
                 mapped = isOver(v.value)

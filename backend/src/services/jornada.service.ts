@@ -187,23 +187,7 @@ export class JornadaService {
         if (labelLower.includes('par')) return totalGoals % 2 === 0;
       }
 
-      if (type === 'Doble oportunidad') {
-        const homeWin = goalsHome > goalsAway;
-        const draw = goalsHome === goalsAway;
-        const awayWin = goalsAway > goalsHome;
-        const homeTeam = fixture.teams?.home?.name?.toLowerCase();
-        const awayTeam = fixture.teams?.away?.name?.toLowerCase();
-
-        if (labelLower.includes('empate') && labelLower.includes(homeTeam)) {
-          return homeWin || draw;
-        }
-        if (labelLower.includes('empate') && labelLower.includes(awayTeam)) {
-          return awayWin || draw;
-        }
-        if (labelLower.includes(homeTeam) && labelLower.includes(awayTeam)) {
-          return homeWin || awayWin;
-        }
-      }
+      // Doble oportunidad eliminado - redundante con 'Resultado'
 
       return false;
     } catch (error) {
@@ -394,9 +378,10 @@ export class JornadaService {
    */
   private static async calculateSquadPoints(userId: string, leagueId: string, jornadaObjetivo: number): Promise<number> {
     try {
-      // Buscar la última jornada con estadísticas disponibles
-      const jornada = await this.findLastCompletedJornada(jornadaObjetivo);
-      console.log(`    🔍 Calculando puntos para userId=${userId}, leagueId=${leagueId}, jornadaObjetivo=${jornadaObjetivo}, jornadaUsada=${jornada}`);
+      // ✅ USAR SIEMPRE LA JORNADA OBJETIVO (la que se está cerrando)
+      // No buscar hacia atrás - si el jugador no jugó, tendrá 0 puntos
+      const jornada = jornadaObjetivo;
+      console.log(`    🔍 Calculando puntos para userId=${userId}, leagueId=${leagueId}, jornada=${jornada}`);
       // Obtener jornada actual de la liga para decidir uso de cache
       const league = await prisma.league.findUnique({ where: { id: leagueId } });
       const leagueJornada = league?.currentJornada ?? jornada;
@@ -744,7 +729,7 @@ export class JornadaService {
             },
             data: {
               budget: newBudget,
-              initialBudget: 500,
+              initialBudget: newBudget,
               bettingBudget: 250, // Resetear presupuesto de apuestas
               points: newTotalPoints, // Actualizar puntos totales
             },

@@ -38,17 +38,37 @@ export class BetOptionService {
       odd: number;
     }>
   ) {
+    // Filtrar opciones de "Doble oportunidad" antes de guardar
+    const filteredOptions = options.filter(opt => opt.betType !== 'Doble oportunidad');
+    
+    if (filteredOptions.length < options.length) {
+      console.log(`⚠️  Filtradas ${options.length - filteredOptions.length} opciones de "Doble oportunidad"`);
+    }
+
     // Eliminar opciones existentes para esta liga/jornada
-    await prisma.bet_option.deleteMany({
+    const deleted = await prisma.bet_option.deleteMany({
       where: {
         leagueId,
         jornada,
       },
     });
 
-    // Crear nuevas opciones
+    if (deleted.count > 0) {
+      console.log(`🗑️  Eliminadas ${deleted.count} opciones antiguas de liga ${leagueId}, jornada ${jornada}`);
+    }
+
+    // Si no hay opciones después de filtrar, retornar
+    if (filteredOptions.length === 0) {
+      console.log(`⚠️  No hay opciones válidas para guardar`);
+      return {
+        success: true,
+        created: 0,
+      };
+    }
+
+    // Crear nuevas opciones con skipDuplicates por si acaso
     const created = await prisma.bet_option.createMany({
-      data: options.map((opt) => ({
+      data: filteredOptions.map((opt) => ({
         id: `${leagueId}_${jornada}_${opt.matchId}_${opt.betType}_${opt.betLabel}`.replace(/\s+/g, '_'),
         leagueId,
         jornada,
@@ -59,7 +79,10 @@ export class BetOptionService {
         betLabel: opt.betLabel,
         odd: opt.odd,
       })),
+      skipDuplicates: true, // Saltar duplicados en lugar de fallar
     });
+
+    console.log(`✅ Guardadas ${created.count} opciones de apuesta para liga ${leagueId}, jornada ${jornada}`);
 
     return {
       success: true,

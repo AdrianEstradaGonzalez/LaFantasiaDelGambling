@@ -178,20 +178,7 @@ export class ApuestasEvaluator {
         }
       }
 
-      // Doble oportunidad
-      if (type === "Doble oportunidad") {
-        const homeWin = goalsHome > goalsAway;
-        const draw = goalsHome === goalsAway;
-        const awayWin = goalsAway > goalsHome;
-
-        if (labelLower.includes("empate") && labelLower.includes(fixture.teams?.home?.name?.toLowerCase())) {
-          return homeWin || draw;
-        } else if (labelLower.includes("empate") && labelLower.includes(fixture.teams?.away?.name?.toLowerCase())) {
-          return awayWin || draw;
-        } else if (labelLower.includes(fixture.teams?.home?.name?.toLowerCase()) && labelLower.includes(fixture.teams?.away?.name?.toLowerCase())) {
-          return homeWin || awayWin;
-        }
-      }
+      // Doble oportunidad eliminado - redundante con 'Resultado'
 
       return false;
     } catch (error) {

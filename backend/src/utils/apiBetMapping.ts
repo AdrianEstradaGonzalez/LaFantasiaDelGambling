@@ -124,40 +124,8 @@ export function mapBetToApiConfig(
     }
   }
 
-  // ========== DOBLE OPORTUNIDAD ==========
-  // API Bet ID: 12 - Double Chance
-  if (typeNorm.includes('doble oportunidad')) {
-    if (labelNorm.includes('empate')) {
-      if (labelNorm.includes(homeTeam.toLowerCase())) {
-        return {
-          apiBetId: 12,
-          apiEndpoint: 'fixtures',
-          apiStatKey: 'teams.away.winner',
-          apiOperator: 'not_equals',
-          apiValue: 'true'
-        };
-      }
-      if (labelNorm.includes(awayTeam.toLowerCase())) {
-        return {
-          apiBetId: 12,
-          apiEndpoint: 'fixtures',
-          apiStatKey: 'teams.home.winner',
-          apiOperator: 'not_equals',
-          apiValue: 'true'
-        };
-      }
-    }
-    // Local o Visitante (sin empate)
-    if (!labelNorm.includes('empate')) {
-      return {
-        apiBetId: 12,
-        apiEndpoint: 'fixtures',
-        apiStatKey: 'teams.home.winner,teams.away.winner',
-        apiOperator: 'at_least_one_true',
-        apiValue: 'true'
-      };
-    }
-  }
+  // ========== DOBLE OPORTUNIDAD (ELIMINADO) ==========
+  // Double chance eliminado - redundante con 'Resultado'
 
   // ========== CÓRNERS ==========
   // API Bet ID: 61 - Corners Over/Under
