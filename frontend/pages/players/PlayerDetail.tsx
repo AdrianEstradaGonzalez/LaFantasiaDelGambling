@@ -100,6 +100,21 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
           setLoading(false);
           return;
         }
+
+        // 🆕 PASO 1: Obtener estado de la jornada de la liga
+        let jornadaStatus: string = 'open';
+        let currentJornada: number = 1;
+        
+        if (ligaId) {
+          try {
+            const status = await JornadaService.getJornadaStatus(ligaId);
+            jornadaStatus = status.status;
+            currentJornada = status.currentJornada;
+            console.log('[PlayerDetail] Estado de la jornada:', { status: jornadaStatus, currentJornada });
+          } catch (error) {
+            console.warn('[PlayerDetail] No se pudo obtener el estado de la jornada, asumiendo "open"');
+          }
+        }
         
         // Obtener jornadas disponibles
         const matchdays = await FootballService.getAvailableMatchdays();
@@ -115,14 +130,43 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
 
         const lastMatchday = matchdays[matchdays.length - 1];
 
-        // ✨ NUEVO: Usar PlayerStatsService para obtener estadísticas del backend
+        // 🆕 PASO 2: Determinar si debemos refrescar desde la API
+        // Si la jornada está CERRADA, refrescar la última jornada desde la API
+        const shouldRefreshLastJornada = jornadaStatus === 'closed';
+        
+        if (shouldRefreshLastJornada) {
+          console.log('[PlayerDetail] 🔄 Jornada CERRADA - Refrescando estadísticas de la última jornada desde API...');
+        }
+
+        // ✨ Usar PlayerStatsService para obtener estadísticas del backend
         try {
           console.log('[PlayerDetail] Solicitando estadísticas al backend...');
-          const statsArray = await PlayerStatsService.getPlayerMultipleJornadasStats(
+          
+          // Obtener todas las jornadas EXCEPTO la última (desde BD)
+          const previousMatchdays = matchdays.slice(0, -1);
+          let statsArray: (PlayerStats | null)[] = [];
+          
+          if (previousMatchdays.length > 0) {
+            const previousStats = await PlayerStatsService.getPlayerMultipleJornadasStats(
+              player.id,
+              previousMatchdays,
+              { refresh: false } // Jornadas anteriores desde BD
+            );
+            statsArray = [...previousStats];
+          }
+          
+          // 🆕 Obtener la ÚLTIMA jornada con refresh si está cerrada
+          const lastJornadaStats = await PlayerStatsService.getPlayerJornadaStats(
             player.id,
-            matchdays,
-            { refresh: false } // No forzar refresh en carga inicial
+            lastMatchday,
+            { refresh: shouldRefreshLastJornada } // refresh: true si cerrada
           );
+          
+          statsArray.push(lastJornadaStats);
+
+          if (shouldRefreshLastJornada) {
+            console.log('[PlayerDetail] ✅ Estadísticas de jornada cerrada actualizadas desde API');
+          }
 
           const pointsData: MatchdayPoints[] = matchdays.map((matchday, index) => {
             const stats = statsArray[index];
@@ -165,7 +209,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     };
 
     loadPlayerData();
-  }, [player.id]);
+  }, [player.id, ligaId]);
 
   useEffect(() => {
     if (selectedMatchday == null) return;
