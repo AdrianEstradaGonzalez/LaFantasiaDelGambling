@@ -102,14 +102,15 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
     if (goalsScored) add('Goles marcados', goalsScored, goalsScored * GOALKEEPER_POINTS.GOAL_SCORED);
 
     // Goles encajados y portería a cero
-    // ⚠️ IMPORTANTE: Usamos 'conceded' del portero (stats.goalkeeper.conceded)
-    // NO los goles del equipo (goals.conceded)
-    const conceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
-    if (meetsCleanSheetMinutes && conceded === 0) {
+    // ⚠️ IMPORTANTE: Para PORTEROS usamos sus goles encajados personales
+    // Primero intentamos stats.goalkeeper.conceded, luego stats.goals.conceded
+    // NO usamos teamGoalsConceded que es solo para defensas
+    const goalkeeperConceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
+    if (meetsCleanSheetMinutes && goalkeeperConceded === 0) {
       add('Portería a cero', 'Sí', GOALKEEPER_POINTS.CLEAN_SHEET);
     }
-    if (conceded > 0) {
-      add('Goles encajados', conceded, conceded * GOALKEEPER_POINTS.GOAL_CONCEDED);
+    if (goalkeeperConceded > 0) {
+      add('Goles encajados', goalkeeperConceded, goalkeeperConceded * GOALKEEPER_POINTS.GOAL_CONCEDED);
     }
 
     // Paradas

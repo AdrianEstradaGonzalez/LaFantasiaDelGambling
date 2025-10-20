@@ -208,28 +208,22 @@ export async function getPlayerStatsForJornada(
       throw new AppError(404, 'PLAYER_NOT_FOUND_IN_DB', 'Jugador no encontrado en la base de datos local');
     }
 
-    // Paso 2: Buscar en la API todos los jugadores con ese nombre en la liga y temporada
+    // Función para normalizar nombres (eliminar tildes, puntos, etc.)
+    const normalizeName = (name: string): string => {
+      return name
+        .normalize('NFD') // Descomponer caracteres con tildes
+        .replace(/[\u0300-\u036f]/g, '') // Eliminar diacríticos (tildes)
+        .replace(/[.]/g, '') // Eliminar puntos
+        .trim()
+        .toLowerCase();
+    };
+
+    // Paso 2: Buscar en la API - Estrategia optimizada
     await delay(DEFAULT_REQUEST_DELAY_MS);
     let allPlayerVersions: any[] = [];
     
-    // Intento 1: Búsqueda por nombre (para detectar transferencias)
+    // ✨ OPTIMIZACIÓN: Primero intentar búsqueda directa por ID (más rápido y preciso)
     try {
-      const playerSearchResponse = await api.get('/players', {
-        params: {
-          search: playerFromDb.name,
-          league: 140,
-          season: season,
-        },
-      });
-      allPlayerVersions = playerSearchResponse.data?.response || [];
-    } catch (error) {
-      console.warn(`[playerStats] Búsqueda por nombre falló para ${playerFromDb.name}, intentando por ID...`);
-    }
-
-    // Intento 2: Si la búsqueda por nombre falla o no da resultados, buscar por ID directo
-    if (allPlayerVersions.length === 0) {
-      console.log(`[playerStats] Fallback: Buscando jugador ${playerId} por ID directo`);
-      await delay(DEFAULT_REQUEST_DELAY_MS);
       const playerIdResponse = await api.get('/players', {
         params: {
           id: playerId,
@@ -237,6 +231,49 @@ export async function getPlayerStatsForJornada(
         },
       });
       allPlayerVersions = playerIdResponse.data?.response || [];
+      
+      if (allPlayerVersions.length > 0) {
+        console.log(`[playerStats] ✓ Jugador ${playerId} encontrado por ID directo`);
+      }
+    } catch (error) {
+      console.warn(`[playerStats] Búsqueda por ID falló para ${playerId}, intentando por nombre...`);
+    }
+
+    // Fallback: Si la búsqueda por ID falla, buscar por nombre (para casos edge)
+    if (allPlayerVersions.length === 0) {
+      console.log(`[playerStats] Fallback: Buscando por nombre "${playerFromDb.name}"`);
+      
+      try {
+        // Extraer el apellido principal para búsquedas más flexibles
+        const nameParts = playerFromDb.name.split(' ');
+        const searchTerm = nameParts.length > 1 ? nameParts[nameParts.length - 1] : playerFromDb.name;
+        
+        await delay(DEFAULT_REQUEST_DELAY_MS);
+        const playerSearchResponse = await api.get('/players', {
+          params: {
+            search: searchTerm,
+            league: 140,
+            season: season,
+          },
+        });
+        
+        const candidates = playerSearchResponse.data?.response || [];
+        
+        // Filtrar resultados por similitud de nombre normalizado
+        const normalizedPlayerName = normalizeName(playerFromDb.name);
+        allPlayerVersions = candidates.filter((candidate: any) => {
+          const candidateName = normalizeName(candidate.player?.name || '');
+          const candidateLastname = normalizeName(candidate.player?.lastname || '');
+          
+          // Coincidencia si el nombre completo o apellido coinciden
+          return candidateName === normalizedPlayerName || 
+                 normalizedPlayerName.includes(candidateLastname);
+        });
+        
+        console.log(`[playerStats] Búsqueda por nombre encontró ${allPlayerVersions.length} coincidencias`);
+      } catch (error) {
+        console.warn(`[playerStats] Búsqueda por nombre también falló para ${playerFromDb.name}`);
+      }
     }
 
     if (allPlayerVersions.length === 0) {
@@ -340,9 +377,16 @@ export async function getPlayerStatsForJornada(
 
     // Calcular puntos
     const role = normalizeRole(playerFromDb?.position ?? playerStats?.games?.position);
+    
+    // ✨ IMPORTANTE: Solo inyectar goles del equipo para DEFENSAS
+    // Los porteros usan sus propios goles encajados (goalkeeper.conceded o goals.conceded)
     const statsWithTeamGoals = {
       ...playerStats,
-      goals: { ...playerStats.goals, conceded: teamGoalsConceded },
+      goals: {
+        ...playerStats.goals,
+        // Solo sobrescribir para defensas, NO para porteros
+        conceded: role === 'Defender' ? teamGoalsConceded : playerStats.goals?.conceded,
+      },
     };
     
     const pointsResult = calculatePlayerPoints(statsWithTeamGoals, role);
