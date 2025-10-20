@@ -185,6 +185,15 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }
     try {
       setSavingBet(key);
+      console.log('📤 Frontend - Enviando apuesta con:', {
+        matchId: params.matchId,
+        homeTeam: params.homeTeam,
+        awayTeam: params.awayTeam,
+        betType: params.betType,
+        betLabel: params.betLabel,
+        odd: params.odd,
+        amount,
+      });
       await BetService.placeBet({
         leagueId: ligaId,
         matchId: params.matchId,

@@ -75,6 +75,16 @@ export class BetController {
       const { leagueId } = request.params;
       const { matchId, homeTeam, awayTeam, betType, betLabel, odd, amount } = request.body;
 
+      console.log('📥 BetController - Datos recibidos del frontend:', {
+        matchId,
+        homeTeam,
+        awayTeam,
+        betType,
+        betLabel,
+        odd,
+        amount
+      });
+
       const bet = await BetService.placeBet({
         userId,
         leagueId,
@@ -85,6 +95,13 @@ export class BetController {
         betLabel,
         odd,
         amount,
+      });
+
+      console.log('✅ BetController - Apuesta creada:', {
+        id: bet.id,
+        homeTeam: bet.homeTeam,
+        awayTeam: bet.awayTeam,
+        apiBetId: bet.apiBetId
       });
 
       return reply.status(201).send(bet);
