@@ -744,7 +744,7 @@ export class JornadaService {
             },
             data: {
               budget: newBudget,
-              initialBudget: newBudget,
+              initialBudget: 500,
               bettingBudget: 250, // Resetear presupuesto de apuestas
               points: newTotalPoints, // Actualizar puntos totales
             },
