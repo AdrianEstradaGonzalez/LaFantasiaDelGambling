@@ -181,8 +181,24 @@ export async function getPlayerStatsForJornada(
 ) {
   const season = options.season ?? Number(process.env.FOOTBALL_API_SEASON ?? 2025);
 
+  // ✨ NUEVO: Verificar si la jornada está abierta
+  // Si está abierta, SIEMPRE forzar refresh para obtener datos en tiempo real
+  let shouldForceRefresh = options.forceRefresh || false;
+  
+  if (!shouldForceRefresh) {
+    const currentJornada = await prisma.league.findFirst({
+      select: { currentJornada: true, jornadaStatus: true },
+    });
+    
+    // Si estamos consultando la jornada actual Y está abierta → forzar refresh
+    if (currentJornada && currentJornada.currentJornada === jornada && currentJornada.jornadaStatus === 'open') {
+      shouldForceRefresh = true;
+      console.log(`[playerStats] ⚡ Jornada ${jornada} está ABIERTA - forzando refresh desde API`);
+    }
+  }
+
   // 1. Buscar en BD si no es refresh forzado
-  if (!options.forceRefresh) {
+  if (!shouldForceRefresh) {
     const existing = await prisma.playerStats.findUnique({
       where: {
         playerId_jornada_season: {
@@ -194,6 +210,7 @@ export async function getPlayerStatsForJornada(
     });
 
     if (existing) {
+      console.log(`[playerStats] 💾 Usando datos de BD para jugador ${playerId} jornada ${jornada}`);
       return existing;
     }
   }
