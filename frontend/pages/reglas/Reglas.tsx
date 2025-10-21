@@ -1,10 +1,36 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeLayout } from '../../components/SafeLayout';
-import BottomNavBar from '../navBar/BottomNavBar';
-import TopNavBar from '../navBar/TopNavBar';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import {
+  TrophyIcon,
+  DiceIcon,
+  ShieldIcon,
+  TacticsIcon,
+  ChartBarIcon,
+  UsersIcon,
+  FootballIcon,
+  ClockIcon,
+  CalendarIcon,
+  CheckCircleIcon,
+  ErrorIcon,
+  FileTextIcon,
+  YellowCardIcon,
+  RedCardIcon,
+  TargetIcon,
+  SaveIcon,
+  CleanSheetIcon,
+  ShotOnTargetIcon,
+  DribbleIcon,
+  KeyPassIcon,
+  DuelIcon,
+  RecoveryIcon,
+  AssistIcon,
+  MinutesIcon,
+  AlertCircleIcon,
+  ChevronLeftIcon,
+} from '../../components/VectorIcons';
 
 type ReglasProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -15,6 +41,9 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
+  const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
+
+  const tabTitles = ['¿Cómo jugar?', '¿Cómo se puntúa?'];
 
   const handleTabPress = (index: number) => {
     setActiveTab(index);
@@ -22,11 +51,24 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
       x: index * SCREEN_WIDTH,
       animated: true,
     });
+    
+    // Animar el indicador
+    Animated.spring(tabIndicatorAnim, {
+      toValue: index,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 10,
+    }).start();
   };
 
   const handleScroll = (event: any) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(offsetX / SCREEN_WIDTH);
+    
+    // Actualizar la posición del indicador mientras se desliza
+    const progress = offsetX / SCREEN_WIDTH;
+    tabIndicatorAnim.setValue(progress);
+    
     if (index !== activeTab) {
       setActiveTab(index);
     }
@@ -40,52 +82,98 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
         end={{ x: 0, y: 1 }}
         style={{ flex: 1 }}
       >
-        <TopNavBar backTo="Home" />
-
-        {/* Tabs */}
+        {/* Header con botón de volver y tabs */}
         <View style={{
-          flexDirection: 'row',
+          backgroundColor: '#1a2332',
           borderBottomWidth: 1,
           borderBottomColor: '#334155',
-          backgroundColor: '#1a2332',
         }}>
-          <TouchableOpacity
-            onPress={() => handleTabPress(0)}
-            style={{
-              flex: 1,
-              paddingVertical: 16,
-              borderBottomWidth: 3,
-              borderBottomColor: activeTab === 0 ? '#0892D0' : 'transparent',
-            }}
-          >
+          {/* Botón de volver */}
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: 16,
+            paddingTop: 12,
+            paddingBottom: 8,
+          }}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Home')}
+              style={{
+                padding: 4,
+              }}
+              activeOpacity={0.8}
+            >
+              <ChevronLeftIcon size={28} color="#0892D0" />
+            </TouchableOpacity>
             <Text style={{
-              color: activeTab === 0 ? '#0892D0' : '#94a3b8',
-              fontSize: 16,
+              color: '#fff',
+              fontSize: 20,
               fontWeight: '700',
-              textAlign: 'center',
+              marginLeft: 12,
             }}>
-              ¿Cómo jugar?
+              Reglas del Juego
             </Text>
-          </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            onPress={() => handleTabPress(1)}
-            style={{
-              flex: 1,
-              paddingVertical: 16,
-              borderBottomWidth: 3,
-              borderBottomColor: activeTab === 1 ? '#0892D0' : 'transparent',
-            }}
-          >
-            <Text style={{
-              color: activeTab === 1 ? '#0892D0' : '#94a3b8',
-              fontSize: 16,
-              fontWeight: '700',
-              textAlign: 'center',
-            }}>
-              ¿Cómo se puntúa?
-            </Text>
-          </TouchableOpacity>
+          {/* Tabs */}
+          <View style={{
+            flexDirection: 'row',
+            position: 'relative',
+          }}>
+            <TouchableOpacity
+              onPress={() => handleTabPress(0)}
+              style={{
+                flex: 1,
+                paddingVertical: 16,
+              }}
+            >
+              <Text style={{
+                color: activeTab === 0 ? '#0892D0' : '#94a3b8',
+                fontSize: 16,
+                fontWeight: '700',
+                textAlign: 'center',
+              }}>
+                ¿Cómo jugar?
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => handleTabPress(1)}
+              style={{
+                flex: 1,
+                paddingVertical: 16,
+              }}
+            >
+              <Text style={{
+                color: activeTab === 1 ? '#0892D0' : '#94a3b8',
+                fontSize: 16,
+                fontWeight: '700',
+                textAlign: 'center',
+              }}>
+                ¿Cómo se puntúa?
+              </Text>
+            </TouchableOpacity>
+
+            {/* Indicador animado */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                width: '50%',
+                height: 3,
+                backgroundColor: '#0892D0',
+                transform: [
+                  {
+                    translateX: tabIndicatorAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, SCREEN_WIDTH / 2],
+                    }),
+                  },
+                ],
+              }}
+            />
+          </View>
         </View>
 
         {/* Content ScrollView Horizontal */}
@@ -94,7 +182,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handleScroll}
+          onScroll={handleScroll}
           scrollEventThrottle={16}
         >
           {/* Página 1: ¿Cómo jugar? */}
@@ -102,7 +190,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             style={{ width: SCREEN_WIDTH }}
             contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
           >
-            <Text style={styles.sectionTitle}>🏆 CREAR O UNIRSE A UNA LIGA</Text>
+            <View style={styles.sectionTitleContainer}>
+              <TrophyIcon size={24} color="#0892D0" />
+              <Text style={styles.sectionTitle}>CREAR O UNIRSE A UNA LIGA</Text>
+            </View>
             <Text style={styles.paragraph}>
               Para empezar, puedes <Text style={styles.bold}>crear tu propia liga</Text> introduciendo un nombre único, o{' '}
               <Text style={styles.bold}>unirte a una liga existente</Text> usando el código de 6 caracteres que tus amigos te compartirán.
@@ -113,51 +204,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>💰 PRESUPUESTO Y FICHAJES</Text>
-            <Text style={styles.paragraph}>
-              Cada jornada partirás de un <Text style={styles.bold}>presupuesto base</Text> que se calculará según tu rendimiento en la jornada anterior:
-            </Text>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>
-                <Text style={styles.highlight}>+1M por cada punto</Text> conseguido con tu plantilla
-              </Text>
+            <View style={styles.sectionTitleContainer}>
+              <ChartBarIcon size={24} color="#0892D0" />
+              <Text style={styles.sectionTitle}>PUNTUACIÓN Y CLASIFICACIÓN</Text>
             </View>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>
-                Ganancias o pérdidas de <Text style={styles.highlight}>apuestas</Text> (ver sección de apuestas)
-              </Text>
-            </View>
-
-            <Text style={styles.paragraph}>
-              Con este presupuesto podrás <Text style={styles.bold}>fichar jugadores del mercado</Text>, cada uno con un precio fijo que se verá reflejado en tu plantilla.
-            </Text>
-
-            <View style={styles.divider} />
-
-            <Text style={styles.sectionTitle}>⚽ FORMACIONES VÁLIDAS</Text>
-            <Text style={styles.paragraph}>
-              Debes completar un <Text style={styles.bold}>once titular completo</Text> con una de las 7 formaciones válidas:
-            </Text>
-            {[
-              '4-4-2 (1 POR, 4 DEF, 4 CEN, 2 DEL)',
-              '4-3-3 (1 POR, 4 DEF, 3 CEN, 3 DEL)',
-              '3-4-3 (1 POR, 3 DEF, 4 CEN, 3 DEL)',
-              '3-5-2 (1 POR, 3 DEF, 5 CEN, 2 DEL)',
-              '5-3-2 (1 POR, 5 DEF, 3 CEN, 2 DEL)',
-              '5-4-1 (1 POR, 5 DEF, 4 CEN, 1 DEL)',
-              '4-5-1 (1 POR, 4 DEF, 5 CEN, 1 DEL)',
-            ].map((formation, idx) => (
-              <View key={idx} style={styles.bulletPoint}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.bulletText}>{formation}</Text>
-              </View>
-            ))}
-
-            <View style={styles.divider} />
-
-            <Text style={styles.sectionTitle}>📊 PUNTUACIÓN Y CLASIFICACIÓN</Text>
             <Text style={styles.paragraph}>
               Tus jugadores obtendrán <Text style={styles.bold}>puntos según sus estadísticas reales</Text> en los partidos de la{' '}
               <Text style={styles.highlight}>Primera División Española</Text> durante la jornada actual.
@@ -180,7 +230,82 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>🎲 APUESTAS</Text>
+            <View style={styles.sectionTitleContainer}>
+              <DiceIcon size={24} color="#0892D0" />
+              <Text style={styles.sectionTitle}>PRESUPUESTO Y FICHAJES</Text>
+            </View>
+            <Text style={styles.paragraph}>
+              Cada jornada partirás de un <Text style={styles.bold}>presupuesto base</Text> que se calculará según tu rendimiento en la jornada anterior:
+            </Text>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>
+                <Text style={styles.highlight}>+1M por cada punto</Text> conseguido con tu plantilla
+              </Text>
+            </View>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>
+                Ganancias o pérdidas de <Text style={styles.highlight}>apuestas</Text> (ver sección de apuestas)
+              </Text>
+            </View>
+
+            <Text style={styles.paragraph}>
+              Con este presupuesto podrás <Text style={styles.bold}>fichar jugadores del mercado</Text>, cada uno con un precio fijo que se verá reflejado en tu plantilla.
+            </Text>
+
+            <View style={styles.divider} />
+
+            <View style={styles.sectionTitleContainer}>
+              <TacticsIcon size={24} color="#0892D0" />
+              <Text style={styles.sectionTitle}>FORMACIONES VÁLIDAS</Text>
+            </View>
+            <Text style={styles.paragraph}>
+              Debes completar un <Text style={styles.bold}>once titular completo</Text> con una de las 7 formaciones válidas:
+            </Text>
+            {[
+              '4-4-2 (1 POR, 4 DEF, 4 CEN, 2 DEL)',
+              '4-3-3 (1 POR, 4 DEF, 3 CEN, 3 DEL)',
+              '3-4-3 (1 POR, 3 DEF, 4 CEN, 3 DEL)',
+              '3-5-2 (1 POR, 3 DEF, 5 CEN, 2 DEL)',
+              '5-3-2 (1 POR, 5 DEF, 3 CEN, 2 DEL)',
+              '5-4-1 (1 POR, 5 DEF, 4 CEN, 1 DEL)',
+              '4-5-1 (1 POR, 4 DEF, 5 CEN, 1 DEL)',
+            ].map((formation, idx) => (
+              <View key={idx} style={styles.bulletPoint}>
+                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.bulletText}>{formation}</Text>
+              </View>
+            ))}
+
+            <View style={styles.divider} />
+
+            <View style={styles.sectionTitleContainer}>
+              <FileTextIcon size={24} color="#0892D0" />
+              <Text style={styles.sectionTitle}>CONSULTAR DETALLES</Text>
+            </View>
+            <Text style={styles.paragraph}>
+              Puedes acceder a los <Text style={styles.bold}>detalles de cualquier jugador</Text> tanto desde el mercado como desde tu plantilla para consultar:
+            </Text>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>Puntos obtenidos en cada jornada</Text>
+            </View>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>Estadísticas detalladas</Text>
+            </View>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>Desglose de puntuación</Text>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.sectionTitleContainer}>
+              <TargetIcon size={24} color="#0892D0" />
+              <Text style={styles.sectionTitle}>APUESTAS</Text>
+            </View>
             <Text style={styles.paragraph}>
               <Text style={styles.important}>⚠️ IMPORTANTE:</Text> El presupuesto de apuestas es{' '}
               <Text style={styles.highlight}>INDEPENDIENTE del presupuesto de fichajes</Text>.
@@ -241,36 +366,42 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
 
             <Text style={styles.subSectionTitle}>¿Cómo funcionan las ganancias?</Text>
             <View style={styles.exampleBox}>
-              <Text style={styles.exampleTitle}>📌 Ejemplo práctico:</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <TargetIcon size={20} color="#0892D0" />
+                <Text style={[styles.exampleTitle, { marginLeft: 8, marginBottom: 0 }]}>Ejemplo práctico:</Text>
+              </View>
               <Text style={styles.exampleText}>
-                • Apuestas <Text style={styles.bold}>20M</Text> a "Más de 2.5 goles" con cuota <Text style={styles.bold}>2.00</Text>
+                • Tienes <Text style={styles.bold}>250M de presupuesto de apuestas</Text> (fijo cada jornada)
               </Text>
               <Text style={styles.exampleText}>
-                • Tu presupuesto de apuestas pasa de 250M a <Text style={styles.highlight}>230M</Text> (se resta lo apostado)
+                • Apuestas <Text style={styles.bold}>20M</Text> a "Más de 2.5 goles" con cuota <Text style={styles.bold}>2.00</Text>
               </Text>
               <Text style={[styles.exampleText, { marginTop: 8 }]}>
                 <Text style={styles.bold}>Si PIERDES:</Text>
               </Text>
               <Text style={styles.exampleText}>
-                • Pierdes los 20M apostados (ya restados)
+                • Pierdes 20M que se <Text style={styles.important}>restarán de tu presupuesto inicial de fichajes</Text> en la próxima jornada
               </Text>
               <Text style={[styles.exampleText, { marginTop: 8 }]}>
                 <Text style={styles.bold}>Si GANAS:</Text>
               </Text>
               <Text style={styles.exampleText}>
-                • Recibes <Text style={styles.highlight}>40M</Text> (20M × 2.00 = ganancia completa)
+                • Ganas <Text style={styles.highlight}>40M</Text> (20M × 2.00 = ganancia completa)
               </Text>
               <Text style={styles.exampleText}>
-                • Tu presupuesto final: 230M + 40M = <Text style={styles.highlight}>270M</Text>
+                • Beneficio neto: +40M que se <Text style={styles.highlight}>sumarán a tu presupuesto inicial de fichajes</Text> en la próxima jornada
               </Text>
-              <Text style={[styles.exampleText, { marginTop: 8, color: '#10b981', fontWeight: '700' }]}>
-                ✅ Beneficio neto: +20M
+              <Text style={[styles.exampleText, { marginTop: 8, color: '#f59e0b', fontWeight: '700' }]}>
+                ⚠️ Tu presupuesto de apuestas siempre será 250M cada jornada
               </Text>
             </View>
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>🔄 FASES DE LA JORNADA</Text>
+            <View style={styles.sectionTitleContainer}>
+              <CalendarIcon size={24} color="#0892D0" />
+              <Text style={styles.sectionTitle}>FASES DE LA JORNADA</Text>
+            </View>
             
             <Text style={styles.subSectionTitle}>🟢 JORNADA ABIERTA (Antes del primer partido)</Text>
             <View style={styles.bulletPoint}>
@@ -315,10 +446,6 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             <Text style={styles.subSectionTitle}>⚪ CIERRE DE JORNADA (Tras el último partido)</Text>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Se calculan presupuestos para la siguiente jornada</Text>
-            </View>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>Se evalúan las apuestas (ganadas o perdidas)</Text>
             </View>
             <View style={styles.bulletPoint}>
@@ -327,34 +454,22 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             </View>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>Se calculan presupuestos iniciales para la siguiente jornada</Text>
+            </View>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>Se abre de nuevo para preparar la siguiente jornada</Text>
             </View>
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>👥 INVITAR AMIGOS</Text>
+            <View style={styles.sectionTitleContainer}>
+              <UsersIcon size={24} color="#0892D0" />
+              <Text style={styles.sectionTitle}>INVITAR AMIGOS</Text>
+            </View>
             <Text style={styles.paragraph}>
               Comparte el <Text style={styles.highlight}>código único de tu liga</Text> (6 caracteres) con tus amigos para que se unan y compitan contigo.
             </Text>
-
-            <View style={styles.divider} />
-
-            <Text style={styles.sectionTitle}>📱 CONSULTAR DETALLES</Text>
-            <Text style={styles.paragraph}>
-              Puedes acceder a los <Text style={styles.bold}>detalles de cualquier jugador</Text> tanto desde el mercado como desde tu plantilla para consultar:
-            </Text>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Puntos obtenidos en cada jornada</Text>
-            </View>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Estadísticas detalladas</Text>
-            </View>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Desglose de puntuación</Text>
-            </View>
           </ScrollView>
 
           {/* Página 2: ¿Cómo se puntúa? */}
@@ -362,17 +477,26 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             style={{ width: SCREEN_WIDTH }}
             contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
           >
-            <Text style={styles.sectionTitle}>📊 SISTEMA DE PUNTUACIÓN</Text>
+            <View style={styles.sectionTitleContainer}>
+              <ChartBarIcon size={24} color="#0892D0" />
+              <Text style={styles.sectionTitle}>SISTEMA DE PUNTUACIÓN</Text>
+            </View>
             <Text style={styles.paragraph}>
               Los jugadores obtienen puntos según sus <Text style={styles.bold}>estadísticas reales</Text> en los partidos de LaLiga.
             </Text>
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>⭐ PUNTOS BASE (TODAS LAS POSICIONES)</Text>
+            <View style={styles.sectionTitleContainer}>
+              <FootballIcon size={20} color="#0892D0" />
+              <Text style={styles.sectionTitle}>PUNTUACIÓN GENERAL</Text>
+            </View>
 
             <View style={styles.pointsBox}>
-              <Text style={styles.pointsCategory}>⏱️ Minutos jugados</Text>
+              <View style={styles.pointsCategory}>
+                <MinutesIcon size={18} color="#93c5fd" />
+                <Text style={styles.pointsCategoryText}>Minutos jugados</Text>
+              </View>
               <View style={styles.pointRow}>
                 <Text style={styles.pointLabel}>Menos de 45 minutos</Text>
                 <Text style={styles.pointValue}>+1</Text>
@@ -384,7 +508,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             </View>
 
             <View style={styles.pointsBox}>
-              <Text style={styles.pointsCategory}>🎯 Asistencias</Text>
+              <View style={styles.pointsCategory}>
+                <AssistIcon size={18} color="#93c5fd" />
+                <Text style={styles.pointsCategoryText}>Asistencias</Text>
+              </View>
               <View style={styles.pointRow}>
                 <Text style={styles.pointLabel}>Por asistencia</Text>
                 <Text style={styles.pointValue}>+3</Text>
@@ -392,7 +519,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             </View>
 
             <View style={styles.pointsBox}>
-              <Text style={styles.pointsCategory}>🟨🟥 Tarjetas</Text>
+              <View style={styles.pointsCategory}>
+                <YellowCardIcon size={18} color="#f59e0b" />
+                <Text style={styles.pointsCategoryText}>Tarjetas</Text>
+              </View>
               <View style={styles.pointRow}>
                 <Text style={styles.pointLabel}>Tarjeta amarilla</Text>
                 <Text style={[styles.pointValue, styles.negative]}>-1</Text>
@@ -404,9 +534,12 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             </View>
 
             <View style={styles.pointsBox}>
-              <Text style={styles.pointsCategory}>⚽ Penaltis</Text>
+              <View style={styles.pointsCategory}>
+                <TargetIcon size={18} color="#93c5fd" />
+                <Text style={styles.pointsCategoryText}>Penaltis</Text>
+              </View>
               <View style={styles.pointRow}>
-                <Text style={styles.pointLabel}>Penalti ganado</Text>
+                <Text style={styles.pointLabel}>Penalti recibido</Text>
                 <Text style={styles.pointValue}>+2</Text>
               </View>
               <View style={styles.pointRow}>
@@ -420,7 +553,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             </View>
 
             <View style={styles.pointsBox}>
-              <Text style={styles.pointsCategory}>⭐ Valoración del partido</Text>
+              <View style={styles.pointsCategory}>
+                <ChartBarIcon size={18} color="#93c5fd" />
+                <Text style={styles.pointsCategoryText}>Valoración del partido</Text>
+              </View>
               <View style={styles.pointRow}>
                 <Text style={styles.pointLabel}>Valoración 8.0 o más</Text>
                 <Text style={styles.pointValue}>+3</Text>
@@ -437,7 +573,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>🥅 PORTEROS (Goalkeeper)</Text>
+            <View style={styles.sectionTitleContainer}>
+              <SaveIcon size={20} color="#0892D0" />
+              <Text style={styles.sectionTitle}>PORTEROS</Text>
+            </View>
 
             <View style={styles.pointsBox}>
               <View style={styles.pointRow}>
@@ -468,7 +607,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>🛡️ DEFENSAS (Defender)</Text>
+            <View style={styles.sectionTitleContainer}>
+              <ShieldIcon size={20} color="#0892D0" />
+              <Text style={styles.sectionTitle}>DEFENSAS</Text>
+            </View>
 
             <View style={styles.pointsBox}>
               <View style={styles.pointRow}>
@@ -495,7 +637,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>⚙️ CENTROCAMPISTAS (Midfielder)</Text>
+            <View style={styles.sectionTitleContainer}>
+              <DribbleIcon size={20} color="#0892D0" />
+              <Text style={styles.sectionTitle}>CENTROCAMPISTAS</Text>
+            </View>
 
             <View style={styles.pointsBox}>
               <View style={styles.pointRow}>
@@ -526,7 +671,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>⚡ DELANTEROS (Attacker)</Text>
+            <View style={styles.sectionTitleContainer}>
+              <FootballIcon size={20} color="#0892D0" />
+              <Text style={styles.sectionTitle}>DELANTEROS</Text>
+            </View>
 
             <View style={styles.pointsBox}>
               <View style={styles.pointRow}>
@@ -553,11 +701,18 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
 
             <View style={styles.divider} />
 
-            <Text style={styles.sectionTitle}>📝 NOTAS IMPORTANTES</Text>
+            <View style={styles.sectionTitleContainer}>
+              <AlertCircleIcon size={20} color="#0892D0" />
+              <Text style={styles.sectionTitle}>NOTAS IMPORTANTES</Text>
+            </View>
             <View style={styles.noteBox}>
               <Text style={styles.noteText}>
-                • La <Text style={styles.bold}>portería a cero</Text> solo se otorga si el jugador estuvo en el campo al menos{' '}
-                <Text style={styles.highlight}>60 minutos</Text>
+                • La <Text style={styles.bold}>portería a cero para PORTEROS</Text>: Si el portero jugó al menos{' '}
+                <Text style={styles.highlight}>60 minutos</Text> sin recibir goles, cuenta aunque lo sustituyan y su equipo reciba goles después
+              </Text>
+              <Text style={styles.noteText}>
+                • La <Text style={styles.bold}>portería a cero para DEFENSAS</Text>: El defensa debe jugar al menos{' '}
+                <Text style={styles.highlight}>60 minutos</Text> y su <Text style={styles.highlight}>equipo NO debe recibir ningún gol en TODO el partido</Text>
               </Text>
               <Text style={styles.noteText}>
                 • Los <Text style={styles.bold}>goles de penalti</Text> cuentan como goles normales según la posición
@@ -571,20 +726,23 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             </View>
           </ScrollView>
         </ScrollView>
-
-        <BottomNavBar />
       </LinearGradient>
     </SafeLayout>
   );
 };
 
 const styles = {
-  sectionTitle: {
-    color: '#0892D0',
-    fontSize: 20,
-    fontWeight: '800' as const,
+  sectionTitleContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     marginBottom: 12,
     marginTop: 8,
+  },
+  sectionTitle: {
+    color: '#0892D0',
+    fontSize: 18,
+    fontWeight: '800' as const,
+    marginLeft: 8,
   },
   subSectionTitle: {
     color: '#93c5fd',
@@ -663,10 +821,15 @@ const styles = {
     borderColor: '#334155',
   },
   pointsCategory: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginBottom: 12,
+  },
+  pointsCategoryText: {
     color: '#93c5fd',
     fontSize: 16,
     fontWeight: '700' as const,
-    marginBottom: 12,
+    marginLeft: 8,
   },
   pointRow: {
     flexDirection: 'row' as const,
