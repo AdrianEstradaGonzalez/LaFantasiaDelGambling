@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated } from 'react-native';
+import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated, KeyboardAvoidingView, Platform } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
 import { JornadaService } from '../../services/JornadaService';
@@ -65,6 +65,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -326,8 +327,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       {loading ? (
         <LoadingScreen />
       ) : (
-        <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
-          {/* Top Header Bar - Estilo idéntico a LigaTopNavBar */}
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
+            {/* Top Header Bar - Estilo idéntico a LigaTopNavBar */}
           {/* Icono Drawer arriba absoluto */}
           <TouchableOpacity
             onPress={() => setIsDrawerOpen(true)}
@@ -378,7 +384,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             </View>
           )}
 
-          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
+          <ScrollView 
+            ref={scrollViewRef}
+            contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
             {/* MODO HISTORIAL - Cuando la jornada está cerrada */}
             {jornadaStatus === 'closed' ? (
               <>
@@ -941,9 +952,16 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     <TextInput
                                       value={amountInputs[betKey] ?? String(userBet.amount)}
                                       onChangeText={(t) => setAmountForKey(betKey, t)}
+                                      onFocus={(e) => {
+                                        // Pequeño delay para asegurar que el teclado esté visible
+                                        setTimeout(() => {
+                                          scrollViewRef.current?.scrollTo({ y: 200, animated: true });
+                                        }, 100);
+                                      }}
                                       keyboardType="decimal-pad"
                                       placeholder="Cantidad"
                                       placeholderTextColor="#64748b"
+                                      returnKeyType="done"
                                       style={{
                                         flex: 1,
                                         backgroundColor: '#0b1220',
@@ -994,9 +1012,16 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             <TextInput
                               value={amountInputs[betKey] ?? ''}
                               onChangeText={(t) => setAmountForKey(betKey, t)}
+                              onFocus={(e) => {
+                                // Pequeño delay para asegurar que el teclado esté visible
+                                setTimeout(() => {
+                                  scrollViewRef.current?.scrollTo({ y: 200, animated: true });
+                                }, 100);
+                              }}
                               keyboardType="decimal-pad"
                               placeholder="Cantidad"
                               placeholderTextColor="#64748b"
+                              returnKeyType="done"
                               style={{
                                 flex: 1,
                                 backgroundColor: '#0b1220',
@@ -1115,7 +1140,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               />
             </View>
           </Modal>
-        </LinearGradient>
+          </LinearGradient>
+        </KeyboardAvoidingView>
       )}
     </>
   );

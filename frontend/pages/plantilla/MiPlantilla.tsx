@@ -12,6 +12,8 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
+import { SafeLayout } from '../../components/SafeLayout';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // ✨ NUEVO: Importar servicio de estadísticas del backend
 import { PlayerStatsService } from '../../services/PlayerStatsService';
 
@@ -268,6 +270,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const route = useRoute<MiPlantillaRouteProps>();
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
+  const insets = useSafeAreaInsets();
   
   const [selectedFormation, setSelectedFormation] = useState<Formation>(formations[0]);
   const [selectedPlayers, setSelectedPlayers] = useState<Record<string, any>>({});
@@ -953,12 +956,12 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   };
 
   return (
-    <>
+    <SafeLayout backgroundColor="#181818ff">
       {isLoading || isLoadingPoints ? (
         <LoadingScreen />
       ) : (
         <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
-          {/* Top Header Bar - Estilo idÃ©ntico a LigaTopNavBar */}
+          {/* Top Header Bar - Estilo idéntico a LigaTopNavBar */}
           {ligaName && (
             <View style={{
               backgroundColor: '#181818',
@@ -1952,7 +1955,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           
         </LinearGradient>
       )}
-    </>
+    </SafeLayout>
   );
 };
 

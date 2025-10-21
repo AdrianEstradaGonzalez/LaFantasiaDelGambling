@@ -22,6 +22,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { LoginService } from '../../services/LoginService';
 import { MenuIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
+import { SafeLayout } from '../../components/SafeLayout';
 
 type Liga = { id: string; nombre: string };
 const { height } = Dimensions.get('window');
@@ -248,25 +249,26 @@ export const Home = ({ navigation, route }: HomeProps) => {
   };
 
   return (
-    <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
-      {(loading || loadingPartidos) && (
-        <LoadingScreen />
-      )}
-      {!loading && !loadingPartidos && (
-      <>
-        {/* Icono Drawer arriba absoluto */}
-        <TouchableOpacity
-          onPress={() => setIsDrawerOpen(true)}
-          activeOpacity={0.7}
-          style={{
-            position: 'absolute',
-            top: 20, 
-            left: 10,
-            zIndex: 100,
-            width: 48,
-            height: 48,
-            alignItems: 'center',
-            justifyContent: 'center',
+    <SafeLayout backgroundColor="#181818ff">
+      <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+        {(loading || loadingPartidos) && (
+          <LoadingScreen />
+        )}
+        {!loading && !loadingPartidos && (
+        <>
+          {/* Icono Drawer arriba absoluto */}
+          <TouchableOpacity
+            onPress={() => setIsDrawerOpen(true)}
+            activeOpacity={0.7}
+            style={{
+              position: 'absolute',
+              top: 10, 
+              left: 10,
+              zIndex: 100,
+              width: 48,
+              height: 48,
+              alignItems: 'center',
+              justifyContent: 'center',
             backgroundColor: '#181818ff',
             borderRadius: 24,
           }}
@@ -468,6 +470,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
       </Modal>
       </>
       )}
-    </LinearGradient>
+      </LinearGradient>
+    </SafeLayout>
   );
 };
