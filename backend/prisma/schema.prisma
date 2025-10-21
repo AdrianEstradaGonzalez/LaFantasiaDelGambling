@@ -38,7 +38,7 @@ model PasswordResetCode {
 
 model League {
   id             String         @id @default(cuid())
-  name           String         @unique
+  name           String
   leaderId       String
   createdAt      DateTime       @default(now())
   code           String         @unique
