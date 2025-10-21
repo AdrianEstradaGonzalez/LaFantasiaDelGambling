@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { LigaService } from '../../services/LigaService';
 import TopNavBar from '../navBar/TopNavBar';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { SafeLayout } from '../../components/SafeLayout';
+import { SmartTextInput } from '../../components/SmartTextInput';
 
 type CrearLigaProps = {
   navigation: NativeStackNavigationProp<ParamListBase>;
@@ -25,6 +26,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   const [codigoLiga, setCodigoLiga] = useState('');
   const [loadingCrear, setLoadingCrear] = useState(false);
   const [loadingUnirse, setLoadingUnirse] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const handleCrearLiga = async () => {
     if (!nombreLiga.trim()) {
@@ -103,7 +105,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         style={{ flex: 1 }}
       >
         <TopNavBar backTo="Home" />
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView ref={scrollViewRef} contentContainerStyle={styles.container}>
        
         {/* Crear liga privada */}
         <View style={styles.section}>
@@ -116,7 +118,9 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Nombre de la liga</Text>
-            <TextInput
+            <SmartTextInput
+              scrollViewRef={scrollViewRef}
+              extraScrollPadding={120}
               style={styles.input}
               placeholder="Ej: TormentaImperfecta"
               placeholderTextColor="#94a3b8"
@@ -155,7 +159,9 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Código de liga</Text>
-            <TextInput
+            <SmartTextInput
+              scrollViewRef={scrollViewRef}
+              extraScrollPadding={120}
               style={styles.input}
               placeholder="Ingresa el código"
               placeholderTextColor="#94a3b8"
