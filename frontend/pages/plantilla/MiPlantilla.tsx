@@ -1152,68 +1152,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           items={formations.map(f => ({ label: f.name, value: f.id }))}
         />
 
-        {/* PestaÃ±as: AlineaciÃ³n / PuntuaciÃ³n */}
-        <View style={{ flexDirection: 'row', marginBottom: 16, backgroundColor: '#1a2332', borderRadius: 12, padding: 4 }}>
-          {jornadaStatus === 'open' && (
-            <TouchableOpacity
-              onPress={() => switchTab('alineacion')}
-              style={{
-                flex: 1,
-                paddingVertical: 10,
-                borderRadius: 8,
-                backgroundColor: activeTab === 'alineacion' ? '#0892D0' : 'transparent',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-              }}
-            >
-              <TacticsIcon 
-                size={20} 
-                color={activeTab === 'alineacion' ? '#fff' : '#94a3b8'}
-                isActive={false}
-              />
-              <Text style={{
-                color: activeTab === 'alineacion' ? '#fff' : '#94a3b8',
-                fontWeight: '700',
-                textAlign: 'center',
-                fontSize: 14,
-              }}>
-                Alineación
-              </Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={() => switchTab('puntuacion')}
-            style={{
-              flex: jornadaStatus === 'open' ? 1 : 1,
-              paddingVertical: 10,
-              borderRadius: 8,
-              backgroundColor: activeTab === 'puntuacion' ? '#0892D0' : 'transparent',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-            }}
-          >
-            <ChartBarIcon 
-              size={20} 
-              color={activeTab === 'puntuacion' ? '#fff' : '#94a3b8'}
-              isActive={false}
-            />
-            <Text style={{
-              color: activeTab === 'puntuacion' ? '#fff' : '#94a3b8',
-              fontWeight: '700',
-              textAlign: 'center',
-              fontSize: 14,
-            }}>
-              Puntuación
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Total de puntos en tiempo real - Solo en modo Puntuación cuando la jornada está cerrada */}
-        {activeTab === 'puntuacion' && jornadaStatus === 'closed' && (
+        {/* Total de puntos en tiempo real - Solo cuando la jornada está cerrada */}
+        {jornadaStatus === 'closed' && (
           <View style={{
             backgroundColor: '#1e293b',
             borderRadius: 10,
@@ -1254,8 +1194,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           </View>
         )}
 
-        {/* Consejo para nombrar capitán - Solo en modo Alineación y cuando NO hay capitán */}
-        {jornadaStatus === 'open' && activeTab === 'alineacion' && !captainPosition && (
+        {/* Consejo para nombrar capitán - Solo cuando cambios están abiertos y NO hay capitán */}
+        {jornadaStatus === 'open' && !captainPosition && (
           <View style={{
             backgroundColor: 'rgba(255, 215, 0, 0.15)',
             borderLeftWidth: 4,
