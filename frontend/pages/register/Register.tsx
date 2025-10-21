@@ -75,19 +75,14 @@ const Register: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeLayout backgroundColor="#0f172a">
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 100}
-      >
-        <View style={LoginStyles.container}>
-          <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Header Section */}
-            <View style={LoginStyles.headerSection}>
+      <View style={LoginStyles.container}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={LoginStyles.headerSection}>
           <View style={LoginStyles.logoContainer}>
             <Image
               source={require('../../assets/logo.png')}
@@ -130,7 +125,7 @@ const Register: React.FC<Props> = ({ navigation }) => {
                   <View style={{ width: 12 }} />
                   <RNTextInput
                     style={LoginStyles.input}
-                    placeholder="Nombre de usuario"
+                    placeholder="tunombre"
                     placeholderTextColor="#64748b"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -325,9 +320,8 @@ const Register: React.FC<Props> = ({ navigation }) => {
             <Text style={LoginStyles.footerLink}>Inicia sesión</Text>
           </TouchableOpacity>
         </View>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+        </ScrollView>
+      </View>
     </SafeLayout>
   );
 };

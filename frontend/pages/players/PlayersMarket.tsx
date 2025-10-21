@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, FlatList, Modal, Animated, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, FlatList, Modal, Animated } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { PlayerService, PlayerWithPrice } from '../../services/PlayerService';
 import { SquadService } from '../../services/SquadService';
@@ -891,15 +891,10 @@ export const PlayersMarket = ({ navigation, route }: {
 
   return (
     <SafeLayout backgroundColor="#181818ff">
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 100}
-      >
-        <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
-          {loading && <LoadingScreen />}
-        {!loading && (
-          <>
+      <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
+        {loading && <LoadingScreen />}
+      {!loading && (
+        <>
           {/* Top NavBar con botÃ³n de volver */}
           <View
             style={{
@@ -1133,8 +1128,7 @@ export const PlayersMarket = ({ navigation, route }: {
           </Modal>
         </>
       )}
-        </LinearGradient>
-      </KeyboardAvoidingView>
+      </LinearGradient>
     </SafeLayout>
   );
 };
