@@ -17,6 +17,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ChevronLeftIcon, MenuIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import Svg, { Path } from 'react-native-svg';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { JornadaService } from '../../services/JornadaService';
 import { SafeLayout } from '../../components/SafeLayout';
 
@@ -752,7 +753,7 @@ export const PlayersMarket = ({ navigation, route }: {
     // En modo selección, envolver en TouchableOpacity
     const content = (
       <View style={{ flexDirection: 'column', gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 90 }}>
           <Image
             source={{ uri: photo }}
             style={{ width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#334155', marginRight: 12, backgroundColor: '#0b1220' }}
@@ -779,10 +780,12 @@ export const PlayersMarket = ({ navigation, route }: {
             </View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {/* Precio */}
+            {/* Precio y Puntos Totales */}
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={{ color: '#94a3b8', fontSize: 12 }}>Precio</Text>
               <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{p.price}M</Text>
+              <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 8 }}>Puntos</Text>
+              <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{p.totalPoints ?? 0}</Text>
             </View>
             
             {/* Botones de acción según estado */}
@@ -793,17 +796,21 @@ export const PlayersMarket = ({ navigation, route }: {
                 disabled={isSaving || jornadaStatus === 'closed'}
                 style={{ 
                   backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444', 
-                  paddingHorizontal: 12, 
-                  paddingVertical: 8, 
+                  paddingHorizontal: 16, 
+                  paddingVertical: 10, 
                   borderRadius: 8,
                   shadowColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.3,
                   shadowRadius: 4,
                   elevation: 4,
-                  opacity: (isSaving || jornadaStatus === 'closed') ? 0.6 : 1
+                  opacity: (isSaving || jornadaStatus === 'closed') ? 0.6 : 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6
                 }}
               >
+                <MaterialCommunityIcons name="cash-remove" size={16} color="#fff" />
                 <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>VENDER</Text>
               </TouchableOpacity>
             ) : (
@@ -813,17 +820,21 @@ export const PlayersMarket = ({ navigation, route }: {
                 disabled={isSaving || jornadaStatus === 'closed'}
                 style={{ 
                   backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#10b981', 
-                  paddingHorizontal: 12, 
-                  paddingVertical: 8, 
+                  paddingHorizontal: 16, 
+                  paddingVertical: 10, 
                   borderRadius: 8,
                   shadowColor: jornadaStatus === 'closed' ? '#64748b' : '#10b981',
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: 0.3,
                   shadowRadius: 4,
                   elevation: 4,
-                  opacity: isSaving || jornadaStatus === 'closed' ? 0.6 : 1
+                  opacity: isSaving || jornadaStatus === 'closed' ? 0.6 : 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6
                 }}
               >
+                <MaterialCommunityIcons name="account-plus" size={16} color="#fff" />
                 <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>FICHAR</Text>
               </TouchableOpacity>
             )}

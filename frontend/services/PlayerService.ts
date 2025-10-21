@@ -12,6 +12,7 @@ export interface PlayerWithPrice {
   photo?: string;
   price: number; // Precio en millones
   lastJornadaPoints?: number;
+  totalPoints?: number; // ✨ Puntuación total de todas las jornadas
   createdAt: string;
   updatedAt: string;
 }
