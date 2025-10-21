@@ -986,6 +986,10 @@ export class JornadaService {
           // Actualizar puntos totales
           const newTotalPoints = member.points + balance.squadPoints;
           
+          // Actualizar puntos por jornada
+          const pointsPerJornada = (member.pointsPerJornada as any) || {};
+          pointsPerJornada[jornada.toString()] = balance.squadPoints;
+          
           await prisma.leagueMember.update({
             where: { leagueId_userId: { leagueId, userId } },
             data: {
@@ -993,6 +997,7 @@ export class JornadaService {
               initialBudget: newBudget, // Actualizar initialBudget con el nuevo valor calculado
               bettingBudget: 250, // Siempre resetear a 250
               points: newTotalPoints,
+              pointsPerJornada: pointsPerJornada, // Guardar puntos de esta jornada
             },
           });
 
@@ -1003,6 +1008,7 @@ export class JornadaService {
             `     Apuestas: ${balance.wonBets}W/${balance.lostBets}L = ${budgetFromBets >= 0 ? '+' : ''}${budgetFromBets}M\n` +
             `     Plantilla: ${balance.squadPoints} puntos = +${budgetFromSquad}M\n` +
             `     Nuevo presupuesto: ${newBudget}M\n` +
+            `     Puntos J${jornada}: ${balance.squadPoints}\n` +
             `     Puntos totales: ${member.points} → ${newTotalPoints}`
           );
 

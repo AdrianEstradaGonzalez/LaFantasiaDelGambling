@@ -66,6 +66,13 @@ export const LeagueController = {
     }
   },
 
+  // Obtener TODAS las clasificaciones (Total + todas las jornadas) en una sola llamada
+  getAllClassifications: async (req: FastifyRequest, reply: FastifyReply) => {
+    const { leagueId } = deleteLeagueParams.parse((req as any).params);
+    const result = await LeagueService.getAllClassifications(leagueId);
+    reply.send(result);
+  },
+
 getByUser: async (req: any, reply: any) => {
 const { userId } = req.params as { userId: string };
 const leagues = await LeagueService.getLeaguesByUser(userId);

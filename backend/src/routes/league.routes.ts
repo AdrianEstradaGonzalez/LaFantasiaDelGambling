@@ -11,6 +11,7 @@ const leagueRoutes: FastifyPluginAsync = async (app) => {
   app.post("/join/:code", LeagueController.addMemberByCode);      // unirse por código
   app.delete("/:leagueId/members/:userId", LeagueController.removeMember); // quitar usuario
   app.get("/:leagueId/members", LeagueController.listMembers);    // listar miembros
+  app.get("/:leagueId/classifications", LeagueController.getAllClassifications); // obtener todas las clasificaciones
   app.get("/user/:userId", LeagueController.getByUser);
 
 };

@@ -2,6 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { LeagueRepo } from "../repositories/league.repo.js";
 import { LeagueMemberRepo } from "../repositories/leagueMember.js";
 
+const prisma = new PrismaClient();
+
 // Generar código único de 8 caracteres (letras mayúsculas y números)
 const generateUniqueCode = (): string => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -80,6 +82,83 @@ export const LeagueService = {
         code: league.code
       }
     }));
+  },
+
+  /**
+   * Obtiene TODAS las clasificaciones (Total + cada jornada) de una liga en una sola llamada
+   * Usa pointsPerJornada almacenado en la BD para evitar cálculos pesados
+   */
+  getAllClassifications: async (leagueId: string) => {
+    const league = await LeagueRepo.getById(leagueId);
+    if (!league) {
+      throw new Error('Liga no encontrada');
+    }
+
+    const members = await LeagueMemberRepo.listByLeague(leagueId);
+    
+    // Preparar estructura: { Total: [...], 1: [...], 2: [...], ... }
+    const classifications: any = {
+      Total: members.map(member => ({
+        userId: member.userId,
+        userName: member.user?.name || 'Usuario',
+        points: member.points || 0,
+        initialBudget: member.initialBudget || 500,
+        budget: member.budget || 500
+      })).sort((a, b) => b.points - a.points)
+    };
+
+    // Inicializar todas las jornadas (1-38) con todos los miembros en 0
+    for (let j = 1; j <= 38; j++) {
+      classifications[j] = members.map(member => ({
+        userId: member.userId,
+        userName: member.user?.name || 'Usuario',
+        points: 0, // Por defecto 0, se actualizará si tiene datos
+        initialBudget: member.initialBudget || 500,
+        budget: member.budget || 500
+      }));
+    }
+
+    // Actualizar puntos de jornadas específicas si existen datos
+    members.forEach(member => {
+      const pointsPerJornada = (member.pointsPerJornada as any) || {};
+      
+      // Si no tiene pointsPerJornada inicializado, inicializarlo ahora
+      if (Object.keys(pointsPerJornada).length === 0) {
+        // Inicializar en BD si no existe
+        const initialData: any = {};
+        for (let i = 1; i <= 38; i++) {
+          initialData[i.toString()] = 0;
+        }
+        // Actualizar en BD de forma asíncrona (no bloqueante)
+        prisma.leagueMember.update({
+          where: { leagueId_userId: { leagueId, userId: member.userId } },
+          data: { pointsPerJornada: initialData }
+        }).catch(err => console.warn('Error inicializando pointsPerJornada:', err));
+      } else {
+        // Actualizar clasificaciones con los puntos existentes
+        Object.keys(pointsPerJornada).forEach(jornadaStr => {
+          const jornada = parseInt(jornadaStr);
+          if (jornada >= 1 && jornada <= 38) {
+            const memberIndex = classifications[jornada].findIndex((m: any) => m.userId === member.userId);
+            if (memberIndex >= 0) {
+              classifications[jornada][memberIndex].points = pointsPerJornada[jornadaStr] || 0;
+            }
+          }
+        });
+      }
+    });
+
+    // Ordenar cada jornada por puntos
+    for (let j = 1; j <= 38; j++) {
+      classifications[j].sort((a: any, b: any) => b.points - a.points);
+    }
+
+    return {
+      leagueId: league.id,
+      leagueName: league.name,
+      leagueCode: league.code,
+      classifications
+    };
   },
 
   /**

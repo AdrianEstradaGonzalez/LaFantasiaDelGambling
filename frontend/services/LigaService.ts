@@ -245,7 +245,29 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
     }
   }
 
-  // 📜 Obtener ligas del usuario autenticado
+  // � Obtener TODAS las clasificaciones (Total + cada jornada) en una sola llamada
+  static async getAllClassifications(leagueId: string) {
+    try {
+      const token = await this.getAccessToken();
+      if (!token) throw new Error('Usuario no autenticado');
+
+      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/${leagueId}/classifications`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) throw new Error(json?.error || 'Error al obtener clasificaciones');
+
+      return json;
+    } catch (error: any) {
+      console.warn('LigaService.getAllClassifications:', error);
+      throw new Error(error?.message || 'No se pudieron cargar las clasificaciones');
+    }
+  }
+
+  // �📜 Obtener ligas del usuario autenticado
   static async obtenerLigasPorUsuario(userId: string) {
     try {
       const token = await this.getAccessToken();

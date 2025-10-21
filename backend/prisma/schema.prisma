@@ -51,16 +51,17 @@ model League {
 }
 
 model LeagueMember {
-  leagueId      String
-  userId        String
-  points        Int      @default(0)
-  joinedAt      DateTime @default(now())
-  budget        Int      @default(500)
-  initialBudget Int      @default(500)
-  bettingBudget Int      @default(250)
-  league        League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bets          Bet[]
+  leagueId        String
+  userId          String
+  points          Int      @default(0)
+  pointsPerJornada Json?   // {"1": 85, "2": 92, "3": 78, ...} - Puntos por jornada
+  joinedAt        DateTime @default(now())
+  budget          Int      @default(500)
+  initialBudget   Int      @default(500)
+  bettingBudget   Int      @default(250)
+  league          League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bets            Bet[]
 
   @@id([leagueId, userId])
   @@index([userId])

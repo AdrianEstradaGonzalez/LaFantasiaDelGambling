@@ -46,6 +46,9 @@ export const Clasificacion = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const isFirstLoad = useRef(true);
+  
+  // Cache de clasificaciones: { Total: [...], 1: [...], 2: [...], ... }
+  const [classificationsCache, setClassificationsCache] = useState<any>(null);
 
   // Resetear y forzar recarga cuando la pantalla recibe focus (al navegar desde Home u otra pantalla)
   useFocusEffect(
@@ -79,7 +82,10 @@ export const Clasificacion = () => {
   useEffect(() => {
     const fetchClasificacion = async () => {
       try {
-        setLoading(true);
+        // Siempre mostrar loading al inicio si no hay cache
+        if (!classificationsCache) {
+          setLoading(true);
+        }
 
         // Obtener userId del storage
         const userId = await EncryptedStorage.getItem('userId');
@@ -91,69 +97,79 @@ export const Clasificacion = () => {
         const matchdays = await FootballService.getAvailableMatchdays();
         setAvailableJornadas(matchdays);
         
-        // ✨ NUEVO: Determinar jornada por defecto según el estado de la liga (solo en primera carga)
-        let jornadaToUse: number | 'Total' = selectedJornada;
-        
-        if (isFirstLoad.current) {
-          try {
-            const status = await JornadaService.getJornadaStatus(ligaId);
-            const leagueJornada = status.currentJornada;
-            const leagueStatus = status.status as 'open' | 'closed';
-            
-            console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
-            
-            // Si la jornada está cerrada (partidos en curso), mostrar la jornada actual en tiempo real
-            // Si está abierta (se pueden hacer cambios), mostrar Total por defecto
-            if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
-              jornadaToUse = leagueJornada;
-              setSelectedJornada(leagueJornada);
-            } else if (leagueStatus === 'open') {
-              jornadaToUse = 'Total';
-              setSelectedJornada('Total');
+        // Si no hay cache o hay refreshKey, cargar TODAS las clasificaciones de una vez
+        if (!classificationsCache || refreshKey > 0) {
+          console.log('[Clasificacion] Cargando TODAS las clasificaciones en caché...');
+          const response = await LigaService.getAllClassifications(ligaId);
+          
+          console.log('📦 Clasificaciones cargadas:', Object.keys(response.classifications));
+          setClassificationsCache(response.classifications);
+          setCodigoLiga(response.leagueCode);
+          setLigaNombre(response.leagueName);
+          
+          // Determinar jornada por defecto según el estado de la liga (solo en primera carga)
+          let initialJornada: number | 'Total' = 'Total';
+          if (isFirstLoad.current) {
+            try {
+              const status = await JornadaService.getJornadaStatus(ligaId);
+              const leagueJornada = status.currentJornada;
+              const leagueStatus = status.status as 'open' | 'closed';
+              
+              console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
+              
+              // Si la jornada está cerrada (partidos en curso), mostrar la jornada actual
+              // Si está abierta (se pueden hacer cambios), mostrar Total por defecto
+              if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
+                initialJornada = leagueJornada;
+              }
+            } catch (error) {
+              console.log('No se pudo obtener la jornada de la liga, usando Total');
             }
-          } catch (error) {
-            console.log('No se pudo obtener la jornada de la liga, usando Total');
-            jornadaToUse = 'Total';
-            setSelectedJornada('Total');
+            isFirstLoad.current = false;
+          } else {
+            initialJornada = selectedJornada; // Mantener la jornada seleccionada
           }
-          isFirstLoad.current = false;
-        }
-
-        // ✨ NUEVO: Llamar al servicio con filtro de jornada determinada
-        console.log('[Clasificacion] Cargando clasificación para jornada:', jornadaToUse);
-        const response = await LigaService.listarMiembros(ligaId, jornadaToUse);
-        console.log('🔍 Clasificacion - Response completa:', JSON.stringify(response, null, 2));
-
-        const dataOrdenada = response
-          .sort((a: any, b: any) => b.points - a.points)
-          .map((u: any, index: number) => ({
-            id: u.user?.id || u.userId || `jugador-${index}`,
-            nombre: u.user?.name || 'Jugador desconocido',
+          
+          // Usar los datos recién cargados para mostrar
+          const jornadaKey = initialJornada === 'Total' ? 'Total' : initialJornada.toString();
+          const dataForJornada = response.classifications[jornadaKey] || [];
+          
+          const dataOrdenada = dataForJornada.map((u: any, index: number) => ({
+            id: u.userId || `jugador-${index}`,
+            nombre: u.userName || 'Jugador desconocido',
             puntos: u.points ?? 0,
             posicion: index + 1,
             presupuesto: u.initialBudget ?? 500,
           }));
-
-        setJugadores(dataOrdenada);
-        setLigaNombre(ligaNombre);
-        
-        // Obtener código de liga del primer miembro (todos tienen la misma liga)
-        if (response.length > 0 && response[0].league?.code) {
-          console.log('✅ Código de liga encontrado:', response[0].league.code);
-          setCodigoLiga(response[0].league.code);
+          
+          setJugadores(dataOrdenada);
+          setSelectedJornada(initialJornada);
+          
+          // Solo quitar loading DESPUÉS de tener los datos
+          setLoading(false);
         } else {
-          console.warn('❌ No se encontró código de liga en la respuesta');
-          console.log('Estructura del primer elemento:', response[0]);
+          // Usar el cache para mostrar la jornada seleccionada (instantáneo, sin loading)
+          const jornadaKey = selectedJornada === 'Total' ? 'Total' : selectedJornada.toString();
+          const dataForJornada = classificationsCache[jornadaKey] || [];
+          
+          const dataOrdenada = dataForJornada.map((u: any, index: number) => ({
+            id: u.userId || `jugador-${index}`,
+            nombre: u.userName || 'Jugador desconocido',
+            puntos: u.points ?? 0,
+            posicion: index + 1,
+            presupuesto: u.initialBudget ?? 500,
+          }));
+          
+          setJugadores(dataOrdenada);
         }
       } catch (err) {
         console.error('Error al obtener clasificación:', err);
-      } finally {
         setLoading(false);
       }
     };
 
     fetchClasificacion();
-  }, [ligaId, selectedJornada, jornadaStatus, refreshKey]); // ✨ refreshKey fuerza recarga al recibir focus
+  }, [ligaId, selectedJornada, refreshKey]); // Eliminar jornadaStatus de dependencias
 
   // Cargar estado de la jornada solo una vez al entrar
   useEffect(() => {
