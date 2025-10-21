@@ -10,7 +10,11 @@ export const ClasificacionStyles = StyleSheet.create({
   },
   header: {
     paddingVertical: 20,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    gap: 12,
   },
   headerTitle: {
   fontSize: 24,

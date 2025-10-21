@@ -90,7 +90,7 @@ export const LeagueService = {
 
   /**
    * Obtiene TODAS las clasificaciones (Total + cada jornada) de una liga en una sola llamada
-   * Usa pointsPerJornada almacenado en la BD para evitar cálculos pesados
+   * ✨ MODIFICADO: Calcula en tiempo real los puntos de la jornada actual si está cerrada
    */
   getAllClassifications: async (leagueId: string) => {
     const league = await LeagueRepo.getById(leagueId);
@@ -99,6 +99,12 @@ export const LeagueService = {
     }
 
     const members = await LeagueMemberRepo.listByLeague(leagueId);
+    
+    // Obtener el estado actual de la jornada de la liga
+    const currentJornada = league.currentJornada || 1;
+    const jornadaStatus = league.jornadaStatus || 'open';
+    
+    console.log(`[getAllClassifications] Liga ${leagueId}: Jornada ${currentJornada}, Estado: ${jornadaStatus}`);
     
     // Preparar estructura: { Total: [...], 1: [...], 2: [...], ... }
     const classifications: any = {
@@ -151,6 +157,81 @@ export const LeagueService = {
         });
       }
     });
+
+    // ✨ NUEVO: Si la jornada está cerrada, calcular puntos en tiempo real para la jornada actual
+    if (jornadaStatus === 'closed' && currentJornada >= 1 && currentJornada <= 38) {
+      console.log(`[getAllClassifications] 🔄 Calculando puntos en tiempo real para jornada ${currentJornada}`);
+      
+      // Calcular puntos en tiempo real para cada miembro
+      const realTimePoints = await Promise.all(
+        members.map(async (member) => {
+          try {
+            // Obtener la plantilla del usuario en esta liga
+            const squad = await prisma.squad.findUnique({
+              where: {
+                userId_leagueId: {
+                  userId: member.userId,
+                  leagueId: leagueId
+                }
+              },
+              include: {
+                players: true
+              }
+            });
+
+            if (!squad || squad.players.length === 0) {
+              return { userId: member.userId, points: 0 };
+            }
+
+            // Obtener las estadísticas de todos los jugadores de la plantilla para esta jornada
+            const playerIds = squad.players.map((p: any) => p.playerId);
+            const playerStats = await prisma.playerStats.findMany({
+              where: {
+                playerId: { in: playerIds },
+                jornada: currentJornada,
+                season: 2025
+              }
+            });
+
+            // Calcular puntos totales de la jornada
+            let totalPoints = 0;
+            let captainId: number | null = null;
+
+            // Encontrar el capitán
+            const captainPlayer = squad.players.find((p: any) => p.isCaptain);
+            if (captainPlayer) {
+              captainId = captainPlayer.playerId;
+            }
+
+            // Sumar puntos de cada jugador
+            playerStats.forEach((stats: any) => {
+              const points = stats.totalPoints || 0;
+              
+              // Si es el capitán, doblar los puntos
+              if (captainId && stats.playerId === captainId) {
+                totalPoints += points * 2;
+              } else {
+                totalPoints += points;
+              }
+            });
+
+            return { userId: member.userId, points: totalPoints };
+          } catch (error) {
+            console.error(`Error calculando puntos en tiempo real para usuario ${member.userId}:`, error);
+            return { userId: member.userId, points: 0 };
+          }
+        })
+      );
+
+      // Actualizar los puntos en tiempo real en la clasificación de la jornada actual
+      realTimePoints.forEach(({ userId, points }) => {
+        const memberIndex = classifications[currentJornada].findIndex((m: any) => m.userId === userId);
+        if (memberIndex >= 0) {
+          classifications[currentJornada][memberIndex].points = points;
+          console.log(`[getAllClassifications] 🎯 Usuario ${userId}: ${points} pts (tiempo real)`);
+        }
+      });
+    }
 
     // Ordenar cada jornada por puntos
     for (let j = 1; j <= 38; j++) {

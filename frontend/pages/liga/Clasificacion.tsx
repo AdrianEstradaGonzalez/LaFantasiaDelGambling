@@ -45,6 +45,7 @@ export const Clasificacion = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false); // ✨ NUEVO: Estado de actualización
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const isFirstLoad = useRef(true);
   
@@ -83,9 +84,13 @@ export const Clasificacion = () => {
   useEffect(() => {
     const fetchClasificacion = async () => {
       try {
-        // Siempre mostrar loading al inicio si no hay cache
-        if (!classificationsCache) {
-          setLoading(true);
+        // Si es una actualización en segundo plano, no mostrar loading completo
+        const isBackgroundRefresh = classificationsCache !== null && refreshKey > 0;
+        
+        if (isBackgroundRefresh) {
+          setIsRefreshing(true); // Mostrar indicador sutil
+        } else if (!classificationsCache) {
+          setLoading(true); // Mostrar loading completo solo si no hay cache
         }
 
         // Obtener userId del storage
@@ -146,8 +151,9 @@ export const Clasificacion = () => {
           setJugadores(dataOrdenada);
           setSelectedJornada(initialJornada);
           
-          // Solo quitar loading DESPUÉS de tener los datos
+          // Quitar loading después de tener los datos
           setLoading(false);
+          setIsRefreshing(false);
         } else {
           // Usar el cache para mostrar la jornada seleccionada (instantáneo, sin loading)
           const jornadaKey = selectedJornada === 'Total' ? 'Total' : selectedJornada.toString();
@@ -166,6 +172,7 @@ export const Clasificacion = () => {
       } catch (err) {
         console.error('Error al obtener clasificación:', err);
         setLoading(false);
+        setIsRefreshing(false);
       }
     };
 
@@ -219,6 +226,37 @@ export const Clasificacion = () => {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{'LIGA BETTASY ' + ligaNombre}</Text>
+            
+            {/* Botón de recarga manual - Solo visible cuando la jornada está cerrada */}
+            {jornadaStatus === 'closed' && (
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('[Clasificacion] 🔄 Recarga manual solicitada');
+                  setClassificationsCache(null);
+                  setRefreshKey(prev => prev + 1);
+                }}
+                disabled={isRefreshing}
+                style={{
+                  backgroundColor: isRefreshing ? '#0f172a' : '#1e293b',
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: isRefreshing ? '#475569' : '#0892D0',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  opacity: isRefreshing ? 0.6 : 1
+                }}
+              >
+                <Text style={{ color: isRefreshing ? '#94a3b8' : '#0892D0', fontSize: 20, fontWeight: '700' }}>
+                  {isRefreshing ? '⟳' : '⟳'}
+                </Text>
+                <Text style={{ color: isRefreshing ? '#94a3b8' : '#0892D0', fontSize: 12, fontWeight: '600' }}>
+                  {isRefreshing ? 'ACTUALIZANDO...' : 'ACTUALIZAR'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Selector de Jornada */}
