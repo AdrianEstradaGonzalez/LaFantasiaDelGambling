@@ -331,7 +331,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 100}
         >
           <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
             {/* Top Header Bar - Estilo idéntico a LigaTopNavBar */}
@@ -387,7 +387,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
           <ScrollView 
             ref={scrollViewRef}
-            contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+            contentContainerStyle={{ padding: 16, paddingBottom: 400 }}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
           >
@@ -956,8 +956,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       onFocus={(e) => {
                                         // Pequeño delay para asegurar que el teclado esté visible
                                         setTimeout(() => {
-                                          scrollViewRef.current?.scrollTo({ y: 200, animated: true });
-                                        }, 100);
+                                          scrollViewRef.current?.scrollToEnd({ animated: true });
+                                        }, 300);
                                       }}
                                       keyboardType="decimal-pad"
                                       placeholder="Cantidad"
@@ -1016,8 +1016,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                               onFocus={(e) => {
                                 // Pequeño delay para asegurar que el teclado esté visible
                                 setTimeout(() => {
-                                  scrollViewRef.current?.scrollTo({ y: 200, animated: true });
-                                }, 100);
+                                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                                }, 300);
                               }}
                               keyboardType="decimal-pad"
                               placeholder="Cantidad"
