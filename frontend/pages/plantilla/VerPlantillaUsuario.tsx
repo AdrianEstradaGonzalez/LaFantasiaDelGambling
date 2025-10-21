@@ -10,6 +10,7 @@ import { PlayerService } from '../../services/PlayerService';
 import { PlayerStatsService } from '../../services/PlayerStatsService';
 import LoadingScreen from '../../components/LoadingScreen';
 import { ChevronLeftIcon } from '../../components/VectorIcons';
+import { SafeLayout } from '../../components/SafeLayout';
 
 type VerPlantillaRoute = RouteProp<{ params: { ligaId: string; ligaName: string; userId: string; userName: string; jornada?: number } }, 'params'>;
 
@@ -187,7 +188,8 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
   if (loading) return <LoadingScreen />;
 
   return (
-    <LinearGradient colors={["#181818ff", "#181818ff"]} style={{ flex: 1 }}>
+    <SafeLayout backgroundColor="#181818ff">
+      <LinearGradient colors={["#181818ff", "#181818ff"]} style={{ flex: 1 }}>
       {/* Header */}
       <View
         style={{
@@ -285,7 +287,8 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
           </View>
         </View>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+    </SafeLayout>
   );
 };
 

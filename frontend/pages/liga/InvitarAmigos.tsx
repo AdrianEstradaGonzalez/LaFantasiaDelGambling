@@ -16,6 +16,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../../router/AppNavigator';
 import { CustomAlertManager } from '../../components/CustomAlert';
+import { SafeLayout } from '../../components/SafeLayout';
 
 // ✅ Usa RouteProp con tu lista de rutas y el nombre exacto de esta pantalla
 type InvitarRouteProp = RouteProp<RootStackParamList, 'InvitarAmigos'>;
@@ -49,14 +50,15 @@ export const InvitarAmigos: React.FC = () => {
   };
 
   return (
-    <LinearGradient
-      colors={['#181818ff', '#181818ff']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
-    >
-      {/* 🔝 Barra superior */}
-      <TopNavBar backTo="Clasificacion" ligaId={ligaId} ligaName={ligaNombre} />
+    <SafeLayout backgroundColor="#181818ff">
+      <LinearGradient
+        colors={['#181818ff', '#181818ff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        {/* 🔝 Barra superior */}
+        <TopNavBar backTo="Clasificacion" ligaId={ligaId} ligaName={ligaNombre} />
 
       <ScrollView
         contentContainerStyle={styles.container}
@@ -123,11 +125,12 @@ export const InvitarAmigos: React.FC = () => {
         <View style={styles.tipsContainer}>
           <Text style={styles.tipsTitle}>Consejo</Text>
           <Text style={styles.tipsText}>
-            Tus amigos pueden ingresar este código en la sección “Unirse a una liga”.
+            Tus amigos pueden ingresar este código en la sección "Unirse a una liga".
           </Text>
         </View>
       </ScrollView>
-    </LinearGradient>
+      </LinearGradient>
+    </SafeLayout>
   );
 };
 

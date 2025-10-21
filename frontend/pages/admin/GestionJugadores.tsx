@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { ChevronLeftIcon } from '../../components/VectorIcons';
 import Svg, { Path } from 'react-native-svg';
+import { SafeLayout } from '../../components/SafeLayout';
 
 // Función para normalizar texto (eliminar acentos y convertir a minúsculas)
 function normalizeText(text: string): string {
@@ -438,7 +439,8 @@ export const GestionJugadores = ({ navigation, route }: {
   }
 
   return (
-    <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+    <SafeLayout backgroundColor="#181818ff">
+      <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
       {/* Header */}
       <View style={{ backgroundColor: '#181818', borderBottomWidth: 0.5, borderBottomColor: '#334155', paddingTop: 12, paddingBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, justifyContent: 'space-between' }}>
@@ -672,6 +674,7 @@ export const GestionJugadores = ({ navigation, route }: {
           </TouchableOpacity>
         </View>
       )}
-    </LinearGradient>
+      </LinearGradient>
+    </SafeLayout>
   );
 };

@@ -17,6 +17,7 @@ import * as yup from 'yup';
 import { LoginStyles } from '../../styles/AuthStyles';
 import { RegisterData, RegisterService } from '../../services/RegisterService';
 import { EmailIcon, LockIcon } from '../../components/VectorIcons';
+import { SafeLayout } from '../../components/SafeLayout';
 
 type RegisterFormData = {
   username: string;
@@ -73,16 +74,15 @@ const Register: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={LoginStyles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
-      
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header Section */}
-        <View style={LoginStyles.headerSection}>
+    <SafeLayout backgroundColor="#0f172a">
+      <View style={LoginStyles.container}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={LoginStyles.headerSection}>
           <View style={LoginStyles.logoContainer}>
             <Image
               source={require('../../assets/logo.png')}
@@ -320,8 +320,9 @@ const Register: React.FC<Props> = ({ navigation }) => {
             <Text style={LoginStyles.footerLink}>Inicia sesión</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </SafeLayout>
   );
 };
 

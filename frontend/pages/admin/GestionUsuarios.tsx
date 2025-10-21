@@ -19,6 +19,7 @@ import {
   ShieldCheckIcon
 } from '../../components/VectorIcons';
 import { Typography } from '../../styles/DesignSystem';
+import { SafeLayout } from '../../components/SafeLayout';
 
 const GestionUsuarios: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
@@ -99,12 +100,13 @@ const GestionUsuarios: React.FC = () => {
   };
 
   return (
-    <LinearGradient
-      colors={['#0f172a', '#1e293b']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
-    >
+    <SafeLayout backgroundColor="#0f172a">
+      <LinearGradient
+        colors={['#0f172a', '#1e293b']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1 }}
+      >
       {/* Header */}
       <View
         style={{
@@ -327,7 +329,8 @@ const GestionUsuarios: React.FC = () => {
           </>
         )}
       </ScrollView>
-    </LinearGradient>
+      </LinearGradient>
+    </SafeLayout>
   );
 };
 

@@ -17,6 +17,7 @@ import * as yup from 'yup';
 import { LoginStyles } from '../../styles/AuthStyles';
 import { LoginData, LoginService } from '../../services/LoginService';
 import { EmailIcon, LockIcon } from '../../components/VectorIcons';
+import { SafeLayout } from '../../components/SafeLayout';
 
 type LoginFormData = { email: string; password: string };
 
@@ -60,16 +61,15 @@ const Login: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={LoginStyles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
-      
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header Section */}
-        <View style={LoginStyles.headerSection}>
+    <SafeLayout backgroundColor="#0f172a">
+      <View style={LoginStyles.container}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header Section */}
+          <View style={LoginStyles.headerSection}>
           <View style={LoginStyles.logoContainer}>
             <Image
               source={require('../../assets/logo.png')}
@@ -221,8 +221,9 @@ const Login: React.FC<Props> = ({ navigation }) => {
             <Text style={LoginStyles.footerLink}>Regístrate gratis</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </SafeLayout>
   );
 };
 

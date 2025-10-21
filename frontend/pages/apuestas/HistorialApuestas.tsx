@@ -9,6 +9,7 @@ import { MenuIcon, CalendarIcon, ClockIcon, FileTextIcon } from '../../component
 import { DrawerMenu } from '../../components/DrawerMenu';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import FootballService from '../../services/FutbolService';
+import { SafeLayout } from '../../components/SafeLayout';
 
 type Bet = {
   matchId: number;
@@ -136,7 +137,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
   }, [isDrawerOpen, slideAnim]);
 
   return (
-    <>
+    <SafeLayout backgroundColor="#181818ff">
       {loading ? (
         <LoadingScreen />
       ) : (
@@ -471,7 +472,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
           </Modal>
         </LinearGradient>
       )}
-    </>
+    </SafeLayout>
   );
 };
 

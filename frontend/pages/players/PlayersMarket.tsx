@@ -18,6 +18,7 @@ import { ChevronLeftIcon, MenuIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import Svg, { Path } from 'react-native-svg';
 import { JornadaService } from '../../services/JornadaService';
+import { SafeLayout } from '../../components/SafeLayout';
 
 // Función para decodificar JWT
 function decodeJwt(token: string): any {
@@ -889,8 +890,9 @@ export const PlayersMarket = ({ navigation, route }: {
   };
 
   return (
-    <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
-      {loading && <LoadingScreen />}
+    <SafeLayout backgroundColor="#181818ff">
+      <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
+        {loading && <LoadingScreen />}
       {!loading && (
         <>
           {/* Top NavBar con botÃ³n de volver */}
@@ -1126,7 +1128,8 @@ export const PlayersMarket = ({ navigation, route }: {
           </Modal>
         </>
       )}
-    </LinearGradient>
+      </LinearGradient>
+    </SafeLayout>
   );
 };
 
