@@ -218,6 +218,11 @@ export class BetOptionService {
   static async generateBetOptions(leagueId: string, jornada: number) {
     console.log(`\n🎲 Iniciando generación de apuestas para liga ${leagueId}, jornada ${jornada}`);
 
+    // Si es jornada 9, usar datos predefinidos para testing
+    if (jornada === 9) {
+      return this.generateJornada9Options(leagueId);
+    }
+
     try {
       // 1. Obtener partidos de la jornada desde la API
       const { data } = await axios.get(`${API_BASE}/fixtures`, {
@@ -446,5 +451,68 @@ export class BetOptionService {
     }
 
     return bets;
+  }
+
+  /**
+   * Generar opciones de apuesta predefinidas para la Jornada 9 (testing)
+   */
+  private static async generateJornada9Options(leagueId: string) {
+    console.log(`\n🎯 Generando opciones de apuesta predefinidas para Jornada 9`);
+
+    const allBets = [
+      // 1. Real Madrid vs Villarreal - Resultado
+      { matchId: 1211419, homeTeam: 'Real Madrid', awayTeam: 'Villarreal', betType: 'Resultado', betLabel: 'Ganará Real Madrid', odd: 1.4 },
+      { matchId: 1211419, homeTeam: 'Real Madrid', awayTeam: 'Villarreal', betType: 'Resultado', betLabel: 'Empate', odd: 4.5 },
+      { matchId: 1211419, homeTeam: 'Real Madrid', awayTeam: 'Villarreal', betType: 'Resultado', betLabel: 'Ganará Villarreal', odd: 7.0 },
+      
+      // 2. Real Madrid vs Villarreal - Goles totales
+      { matchId: 1211419, homeTeam: 'Real Madrid', awayTeam: 'Villarreal', betType: 'Goles totales', betLabel: 'Más de 2.5 goles', odd: 1.6 },
+      { matchId: 1211419, homeTeam: 'Real Madrid', awayTeam: 'Villarreal', betType: 'Goles totales', betLabel: 'Menos de 2.5 goles', odd: 2.3 },
+      
+      // 3. Barcelona vs Alavés - Resultado
+      { matchId: 1211415, homeTeam: 'Barcelona', awayTeam: 'Alavés', betType: 'Resultado', betLabel: 'Ganará Barcelona', odd: 1.2 },
+      { matchId: 1211415, homeTeam: 'Barcelona', awayTeam: 'Alavés', betType: 'Resultado', betLabel: 'Empate', odd: 6.5 },
+      { matchId: 1211415, homeTeam: 'Barcelona', awayTeam: 'Alavés', betType: 'Resultado', betLabel: 'Ganará Alavés', odd: 12.0 },
+      
+      // 4. Atlético Madrid vs Real Sociedad - Resultado
+      { matchId: 1211414, homeTeam: 'Atlético Madrid', awayTeam: 'Real Sociedad', betType: 'Resultado', betLabel: 'Ganará Atlético Madrid', odd: 1.7 },
+      { matchId: 1211414, homeTeam: 'Atlético Madrid', awayTeam: 'Real Sociedad', betType: 'Resultado', betLabel: 'Empate', odd: 3.8 },
+      { matchId: 1211414, homeTeam: 'Atlético Madrid', awayTeam: 'Real Sociedad', betType: 'Resultado', betLabel: 'Ganará Real Sociedad', odd: 4.5 },
+      
+      // 5. Sevilla vs Betis - Resultado (Derbi)
+      { matchId: 1211420, homeTeam: 'Sevilla', awayTeam: 'Betis', betType: 'Resultado', betLabel: 'Ganará Sevilla', odd: 2.4 },
+      { matchId: 1211420, homeTeam: 'Sevilla', awayTeam: 'Betis', betType: 'Resultado', betLabel: 'Empate', odd: 3.3 },
+      { matchId: 1211420, homeTeam: 'Sevilla', awayTeam: 'Betis', betType: 'Resultado', betLabel: 'Ganará Betis', odd: 2.9 },
+      
+      // 6. Sevilla vs Betis - Ambos marcan
+      { matchId: 1211420, homeTeam: 'Sevilla', awayTeam: 'Betis', betType: 'Ambos marcan', betLabel: 'Ambos equipos marcarán', odd: 1.7 },
+      { matchId: 1211420, homeTeam: 'Sevilla', awayTeam: 'Betis', betType: 'Ambos marcan', betLabel: 'Al menos un equipo no marcará', odd: 2.1 },
+      
+      // 7. Athletic Bilbao vs Espanyol - Resultado
+      { matchId: 1211413, homeTeam: 'Athletic Bilbao', awayTeam: 'Espanyol', betType: 'Resultado', betLabel: 'Ganará Athletic Bilbao', odd: 1.5 },
+      { matchId: 1211413, homeTeam: 'Athletic Bilbao', awayTeam: 'Espanyol', betType: 'Resultado', betLabel: 'Empate', odd: 4.2 },
+      { matchId: 1211413, homeTeam: 'Athletic Bilbao', awayTeam: 'Espanyol', betType: 'Resultado', betLabel: 'Ganará Espanyol', odd: 6.5 },
+      
+      // 8. Getafe vs Osasuna - Goles totales
+      { matchId: 1211417, homeTeam: 'Getafe', awayTeam: 'Osasuna', betType: 'Goles totales', betLabel: 'Más de 1.5 goles', odd: 1.9 },
+      { matchId: 1211417, homeTeam: 'Getafe', awayTeam: 'Osasuna', betType: 'Goles totales', betLabel: 'Menos de 1.5 goles', odd: 1.9 },
+      
+      // 9. Valencia vs Las Palmas - Resultado
+      { matchId: 1211421, homeTeam: 'Valencia', awayTeam: 'Las Palmas', betType: 'Resultado', betLabel: 'Ganará Valencia', odd: 2.0 },
+      { matchId: 1211421, homeTeam: 'Valencia', awayTeam: 'Las Palmas', betType: 'Resultado', betLabel: 'Empate', odd: 3.4 },
+      { matchId: 1211421, homeTeam: 'Valencia', awayTeam: 'Las Palmas', betType: 'Resultado', betLabel: 'Ganará Las Palmas', odd: 3.8 },
+      
+      // 10. Girona vs Athletic - Ambos marcan
+      { matchId: 1211416, homeTeam: 'Girona', awayTeam: 'Athletic Club', betType: 'Ambos marcan', betLabel: 'Ambos equipos marcarán', odd: 1.8 },
+      { matchId: 1211416, homeTeam: 'Girona', awayTeam: 'Athletic Club', betType: 'Ambos marcan', betLabel: 'Al menos un equipo no marcará', odd: 2.0 },
+    ];
+
+    console.log(`📊 Total de apuestas generadas para J9: ${allBets.length}`);
+
+    const result = await this.saveBetOptions(leagueId, 9, allBets);
+
+    console.log(`✅ Opciones de J9 guardadas: ${result.created}\n`);
+
+    return result;
   }
 }

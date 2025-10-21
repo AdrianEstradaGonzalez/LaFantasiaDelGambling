@@ -423,6 +423,7 @@ export class JornadaService {
           console.log(`         ID: ${squadPlayer.playerId}`);
           console.log(`         Rol: ${squadPlayer.role}`);
           console.log(`         Posición: ${squadPlayer.position}`);
+          console.log(`         Es Capitán: ${squadPlayer.isCaptain ? '⭐ SÍ' : 'No'}`);
           console.log(`         Jornada a buscar: ${jornada}`);
           
           let playerPoints = 0;
@@ -432,8 +433,14 @@ export class JornadaService {
           if (localPlayer && leagueJornada === jornada) {
             const cachedPoints = Math.trunc(Number((localPlayer as any).lastJornadaPoints ?? 0));
             playerPointsMap.set(squadPlayer.playerId, cachedPoints);
+            
+            // Aplicar doble si es capitán
+            const pointsToAdd = squadPlayer.isCaptain ? cachedPoints * 2 : cachedPoints;
             console.log(`         ♻️ Usando cache (liga.jornada=${leagueJornada}): ${cachedPoints} puntos`);
-            totalPoints += cachedPoints;
+            if (squadPlayer.isCaptain) {
+              console.log(`         ⭐ CAPITÁN - Puntos doblados: ${cachedPoints} × 2 = ${pointsToAdd}`);
+            }
+            totalPoints += pointsToAdd;
             console.log(`         💰 Total acumulado: ${totalPoints}`);
             console.log(`         ====================================\n`);
             await new Promise((r) => setTimeout(r, 50));
@@ -618,7 +625,13 @@ export class JornadaService {
           playerPointsMap.set(squadPlayer.playerId, roundedPoints);
           console.log(`         ⚽ PUNTOS: ${roundedPoints}`);
           
-          totalPoints += roundedPoints;
+          // Aplicar doble si es capitán
+          const pointsToAdd = squadPlayer.isCaptain ? roundedPoints * 2 : roundedPoints;
+          if (squadPlayer.isCaptain) {
+            console.log(`         ⭐ CAPITÁN - Puntos doblados: ${roundedPoints} × 2 = ${pointsToAdd}`);
+          }
+          
+          totalPoints += pointsToAdd;
           console.log(`         💰 Total acumulado: ${totalPoints}`);
           console.log(`         ====================================\n`);
 

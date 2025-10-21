@@ -130,7 +130,13 @@ const AdminPanel: React.FC = () => {
                 `• Hacer fichajes y ventas\n` +
                 `• Realizar apuestas\n\n` +
                 `📊 La jornada está en curso. Los puntos se actualizarán en tiempo real.`,
-                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                [{ 
+                  text: 'OK', 
+                  onPress: () => {
+                    navigation.navigate('Home');
+                  }, 
+                  style: 'default' 
+                }],
                 { icon: 'lock-closed', iconColor: '#ef4444' }
               );
             } catch (error: any) {
@@ -201,7 +207,13 @@ const AdminPanel: React.FC = () => {
                 `• Hacer fichajes y ventas\n` +
                 `• Realizar apuestas\n\n` +
                 `🎮 Los usuarios ya pueden prepararse para la próxima jornada.`,
-                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                [{ 
+                  text: 'OK', 
+                  onPress: () => {
+                    navigation.navigate('Home');
+                  }, 
+                  style: 'default' 
+                }],
                 { icon: 'check-circle', iconColor: '#10b981' }
               );
             } catch (error: any) {
