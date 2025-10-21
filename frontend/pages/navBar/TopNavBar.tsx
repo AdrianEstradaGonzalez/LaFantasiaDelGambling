@@ -59,7 +59,7 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
 
       {/* Título personalizado o título de liga */}
       {(title || ligaName) && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', zIndex: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', zIndex: 1, flex: 1, paddingHorizontal: 50 }}>
           {title ? (
             <Text
               style={{
@@ -67,13 +67,15 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
                 fontSize: Typography.sizes['2xl'],
                 fontWeight: '700',
                 textAlign: 'center',
+                flex: 1,
               }}
               numberOfLines={1}
+              ellipsizeMode="tail"
             >
               {title}
             </Text>
           ) : (
-            <>
+            <View style={{ flex: 1, alignItems: 'center' }}>
               <Text
                 style={{
                   color: '#fff',
@@ -81,21 +83,15 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
                   fontWeight: '700',
                   textAlign: 'center',
                 }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
                 LIGA{' '}
+                <Text style={{ color: '#0892D0' }}>
+                  {ligaName?.toUpperCase()}
+                </Text>
               </Text>
-              <Text
-                style={{
-                  color: '#0892D0',
-                  fontSize: Typography.sizes['2xl'],
-                  fontWeight: '700',
-                  textAlign: 'center',
-                }}
-                numberOfLines={1}
-              >
-                {ligaName?.toUpperCase()}
-              </Text>
-            </>
+            </View>
           )}
         </View>
       )}

@@ -223,42 +223,6 @@ export const Clasificacion = () => {
             })}
             onMenuPress={() => setIsDrawerOpen(true)}
           />
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>{'LIGA BETTASY ' + ligaNombre}</Text>
-            
-            {/* Botón de recarga manual - Solo visible cuando la jornada está cerrada */}
-            {jornadaStatus === 'closed' && (
-              <TouchableOpacity
-                onPress={() => {
-                  console.log('[Clasificacion] 🔄 Recarga manual solicitada');
-                  setClassificationsCache(null);
-                  setRefreshKey(prev => prev + 1);
-                }}
-                disabled={isRefreshing}
-                style={{
-                  backgroundColor: isRefreshing ? '#0f172a' : '#1e293b',
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: isRefreshing ? '#475569' : '#0892D0',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  opacity: isRefreshing ? 0.6 : 1
-                }}
-              >
-                <Text style={{ color: isRefreshing ? '#94a3b8' : '#0892D0', fontSize: 20, fontWeight: '700' }}>
-                  {isRefreshing ? '⟳' : '⟳'}
-                </Text>
-                <Text style={{ color: isRefreshing ? '#94a3b8' : '#0892D0', fontSize: 12, fontWeight: '600' }}>
-                  {isRefreshing ? 'ACTUALIZANDO...' : 'ACTUALIZAR'}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
           {/* Selector de Jornada */}
           <View style={{ 
             backgroundColor: '#181818ff', 

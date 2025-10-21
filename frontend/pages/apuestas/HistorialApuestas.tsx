@@ -173,20 +173,23 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Text
-                style={{
-                  color: '#fff',
-                  fontSize: 20,
-                  fontWeight: '700',
-                  textAlign: 'center',
-                }}
-                numberOfLines={1}
-              >
-                LIGA{' '}
-                <Text style={{ color: '#0892D0' }}>
-                  {ligaName.toUpperCase()}
+              <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 40 }}>
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 20,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                  }}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  LIGA{' '}
+                  <Text style={{ color: '#0892D0' }}>
+                    {ligaName.toUpperCase()}
+                  </Text>
                 </Text>
-              </Text>
+              </View>
             </View>
           )}
 

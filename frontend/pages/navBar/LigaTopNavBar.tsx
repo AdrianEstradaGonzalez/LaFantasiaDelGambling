@@ -41,33 +41,35 @@ const LigaTopNavBar: React.FC<Props> = ({ nombreLiga, onInvitePress, onMenuPress
             <TouchableOpacity
                 onPress={onMenuPress}
                 activeOpacity={0.8}
-                style={{ backgroundColor: 'transparent' }}
+                style={{ backgroundColor: 'transparent', paddingRight: 8 }}
             >
                 <MenuIcon size={24} color="#ffffff" />
             </TouchableOpacity>
 
-            {/* Título centrado */}
-            <Text
-                style={{
-                    color: '#fff',
-                    fontSize: Typography.sizes['2xl'],
-                    fontWeight: '700',
-                    textAlign: 'center',
-                    flex: 1,
-                }}
-                numberOfLines={1}
-            >
-                LIGA{' '}
-                <Text style={{ color: '#0892D0' }}>
-                    {nombreLiga?.toUpperCase()}
+            {/* Título centrado con flex limitado */}
+            <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8 }}>
+                <Text
+                    style={{
+                        color: '#fff',
+                        fontSize: Typography.sizes['2xl'],
+                        fontWeight: '700',
+                        textAlign: 'center',
+                    }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                >
+                    LIGA{' '}
+                    <Text style={{ color: '#0892D0' }}>
+                        {nombreLiga?.toUpperCase()}
+                    </Text>
                 </Text>
-            </Text>
+            </View>
 
 
             {/* Botón de invitar */}
             <TouchableOpacity
                 onPress={onInvitePress}
-                style={[styles.inviteIcon, { marginRight: 4 }]}
+                style={[styles.inviteIcon, { paddingLeft: 8 }]}
                 activeOpacity={0.8}
             >
                 <Image

@@ -922,22 +922,24 @@ export const PlayersMarket = ({ navigation, route }: {
               <MenuIcon size={24} color="#fff" />
             </TouchableOpacity>
 
-            {/* TÃ­tulo centrado */}
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 18,
-                fontWeight: '700',
-                textAlign: 'center',
-                flex: 1,
-              }}
-              numberOfLines={1}
-            >
-              LIGA{' '}
-              <Text style={{ color: '#0892D0' }}>
-                {ligaName?.toUpperCase() || 'BETTASY'}
+            {/* Título centrado */}
+            <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8 }}>
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: 18,
+                  fontWeight: '700',
+                  textAlign: 'center',
+                }}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                LIGA{' '}
+                <Text style={{ color: '#0892D0' }}>
+                  {ligaName?.toUpperCase() || 'BETTASY'}
+                </Text>
               </Text>
-            </Text>
+            </View>
 
             {/* Espacio vacío para balancear */}
             <View style={{ width: 32 }} />
