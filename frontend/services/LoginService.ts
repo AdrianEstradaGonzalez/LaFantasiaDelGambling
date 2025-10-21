@@ -31,8 +31,20 @@ export class LoginService {
     try { json = await res.json(); } catch {}
 
     if (!res.ok) {
-      if (res.status === 401) throw new Error('Credenciales inválidas');
-      throw new Error(json?.error || 'Error de servidor');
+      // Manejo específico de errores según el código de estado
+      if (res.status === 401) {
+        throw new Error(json?.message || json?.error || 'Correo o contraseña incorrectos');
+      }
+      if (res.status === 404) {
+        throw new Error('Usuario no registrado. Por favor, regístrate primero.');
+      }
+      if (res.status === 400) {
+        throw new Error(json?.message || json?.error || 'Datos inválidos');
+      }
+      if (res.status === 500) {
+        throw new Error('Error en el servidor. Inténtalo más tarde.');
+      }
+      throw new Error(json?.message || json?.error || 'Error al iniciar sesión');
     }
 
     const { accessToken, refreshToken, user } = json ?? {};

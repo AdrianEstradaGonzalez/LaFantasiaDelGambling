@@ -25,7 +25,24 @@ export const RegisterService = {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || `Error ${response.status}`);
+        
+        // Manejo específico de errores según el código de estado
+        if (response.status === 400) {
+          // Errores de validación
+          if (error.message) {
+            throw new Error(error.message);
+          }
+          throw new Error('Datos inválidos. Verifica los campos del formulario.');
+        }
+        if (response.status === 409) {
+          // Usuario ya existe
+          throw new Error(error.message || 'Este correo ya está registrado. Intenta iniciar sesión.');
+        }
+        if (response.status === 500) {
+          throw new Error('Error en el servidor. Inténtalo más tarde.');
+        }
+        
+        throw new Error(error.message || `Error al registrarse (${response.status})`);
       }
 
       const result = await response.json();

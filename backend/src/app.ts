@@ -94,9 +94,13 @@ export async function buildApp() {
     }
 
     if (error instanceof ZodError) {
+      // Extraer el primer error de validación con mensaje personalizado
+      const firstError = error.errors[0];
+      const message = firstError?.message || "Datos inválidos";
+      
       return reply.status(400).send({
         error: "VALIDATION_ERROR",
-        message: "Datos inválidos",
+        message: message,
         details: error.errors,
       });
     }
