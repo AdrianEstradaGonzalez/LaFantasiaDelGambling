@@ -231,7 +231,20 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       setAmountInputs((prev) => ({ ...prev, [key]: '' }));
       await refreshBets();
     } catch (err: any) {
-      showError(err?.message || 'Error al crear apuesta');
+      const errorMessage = err?.message || 'Error al crear apuesta';
+      
+      // Detectar error de presupuesto insuficiente
+      if (errorMessage.toLowerCase().includes('presupuesto insuficiente') || 
+          errorMessage.toLowerCase().includes('disponible:')) {
+        CustomAlertManager.alert(
+          'Presupuesto insuficiente',
+          `No tienes suficiente presupuesto para realizar esta apuesta.\n\n${errorMessage}`,
+          [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
+      } else {
+        showError(errorMessage);
+      }
     } finally {
       setSavingBet(null);
     }
@@ -260,7 +273,20 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       showSuccess('Apuesta actualizada');
       await refreshBets();
     } catch (err: any) {
-      showError(err?.message || 'Error al actualizar apuesta');
+      const errorMessage = err?.message || 'Error al actualizar apuesta';
+      
+      // Detectar error de presupuesto insuficiente
+      if (errorMessage.toLowerCase().includes('presupuesto insuficiente') || 
+          errorMessage.toLowerCase().includes('disponible:')) {
+        CustomAlertManager.alert(
+          'Presupuesto insuficiente',
+          `No tienes suficiente presupuesto para actualizar esta apuesta.\n\n${errorMessage}`,
+          [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
+      } else {
+        showError(errorMessage);
+      }
     } finally {
       setSavingBet(null);
     }
