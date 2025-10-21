@@ -27,12 +27,16 @@ export const LeagueService = {
         if (error?.code === 'P2002' && error?.meta?.target?.includes('code')) {
           code = generateUniqueCode();
           attempts++;
+          console.log(`Code collision detected, regenerating... (attempt ${attempts}/10)`);
         } else {
-          throw error;
+          // Error diferente, lanzar con mejor mensaje
+          console.error('Error creating league:', error);
+          const errorMessage = error?.message || 'Error al crear la liga';
+          throw new Error(errorMessage);
         }
       }
     }
-    throw new Error('No se pudo generar un código único');
+    throw new Error('No se pudo generar un código único después de 10 intentos');
   },
 
   deleteLeague: async (leagueId: string, leaderId: string) => {

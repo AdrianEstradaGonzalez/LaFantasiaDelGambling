@@ -8,12 +8,21 @@ import { AppError } from "../utils/errors.js";
 
 export const LeagueController = {
   create: async (req: FastifyRequest, reply: FastifyReply) => {
-    // líder = usuario autenticado
-    const leaderId = (req.user as any)?.sub || (req.user as any)?.id;
-    if (!leaderId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
-    const { name } = createLeagueBody.parse((req as any).body);
-    const league = await LeagueService.createLeague(name, leaderId);
-    reply.code(201).send(league);
+    try {
+      // líder = usuario autenticado
+      const leaderId = (req.user as any)?.sub || (req.user as any)?.id;
+      if (!leaderId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
+      const { name } = createLeagueBody.parse((req as any).body);
+      const league = await LeagueService.createLeague(name, leaderId);
+      reply.code(201).send(league);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      // Error inesperado
+      req.log.error('Error creating league:', error);
+      throw new AppError(500, "INTERNAL_ERROR", error.message || "Error al crear la liga");
+    }
   },
 
   remove: async (req: FastifyRequest, reply: FastifyReply) => {
