@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, FlatList, Modal } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, Image, FlatList, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { PlayerService, PlayerWithPrice } from '../../services/PlayerService';
 import FootballService, { TeamMinimal } from '../../services/FutbolService';
@@ -440,7 +440,12 @@ export const GestionJugadores = ({ navigation, route }: {
 
   return (
     <SafeLayout backgroundColor="#181818ff">
-      <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
       {/* Header */}
       <View style={{ backgroundColor: '#181818', borderBottomWidth: 0.5, borderBottomColor: '#334155', paddingTop: 12, paddingBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, justifyContent: 'space-between' }}>
@@ -674,7 +679,8 @@ export const GestionJugadores = ({ navigation, route }: {
           </TouchableOpacity>
         </View>
       )}
-      </LinearGradient>
+        </LinearGradient>
+      </KeyboardAvoidingView>
     </SafeLayout>
   );
 };

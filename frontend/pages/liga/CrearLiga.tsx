@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { CrearLigaStyles as styles } from '../../styles/CrearLigaStyles';
@@ -96,9 +98,14 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
 
   return (
     <SafeLayout backgroundColor="#181818ff">
-      <LinearGradient
-        colors={['#181818ff', '#181818ff']}
-        start={{ x: 0, y: 0 }}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <LinearGradient
+          colors={['#181818ff', '#181818ff']}
+          start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={{ flex: 1 }}
       >
@@ -184,7 +191,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           </View>
         </View>
         </ScrollView>
-      </LinearGradient>
+        </LinearGradient>
+      </KeyboardAvoidingView>
     </SafeLayout>
   );
 };

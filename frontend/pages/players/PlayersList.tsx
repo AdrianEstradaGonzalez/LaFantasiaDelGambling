@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TextInput, TouchableOpacity, Image, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService, { Player, TeamMinimal } from '../../services/FutbolService';
 import { PlayerService } from '../../services/PlayerService';
@@ -471,12 +471,20 @@ export const PlayersList = ({ navigation, route }: {
 
   return (
     <SafeLayout backgroundColor="#181818ff">
-      <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
-        {loading && (
-          <LoadingScreen />
-        )}
-        {!loading && (
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 200 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
+          {loading && (
+            <LoadingScreen />
+          )}
+          {!loading && (
+        <ScrollView 
+          contentContainerStyle={{ padding: 16, paddingBottom: 200 }}
+          keyboardShouldPersistTaps="handled"
+        >
         <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 12 }}>
           {selectMode ? `Seleccionar ${filterByRole || 'Jugador'}` : 'Jugadores LaLiga'}
         </Text>
@@ -665,7 +673,8 @@ export const PlayersList = ({ navigation, route }: {
       
         {/* Barra de navegación */}
         <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
-      </LinearGradient>
+        </LinearGradient>
+      </KeyboardAvoidingView>
     </SafeLayout>
   );
 };

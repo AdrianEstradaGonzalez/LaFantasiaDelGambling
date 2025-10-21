@@ -62,14 +62,19 @@ const Login: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeLayout backgroundColor="#0f172a">
-      <View style={LoginStyles.container}>
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header Section */}
-          <View style={LoginStyles.headerSection}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <View style={LoginStyles.container}>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Header Section */}
+            <View style={LoginStyles.headerSection}>
           <View style={LoginStyles.logoContainer}>
             <Image
               source={require('../../assets/logo.png')}
@@ -221,8 +226,9 @@ const Login: React.FC<Props> = ({ navigation }) => {
             <Text style={LoginStyles.footerLink}>Regístrate gratis</Text>
           </TouchableOpacity>
         </View>
-        </ScrollView>
-      </View>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
     </SafeLayout>
   );
 };
