@@ -247,19 +247,7 @@ export const DrawerMenu = ({ navigation }: DrawerMenuProps) => {
             label="Reglas del Juego"
             onPress={() => {
               navigation.closeDrawer();
-              // TODO: Navegar a pantalla de reglas cuando esté lista
-              CustomAlertManager.alert(
-                'Próximamente',
-                'Las reglas del juego estarán disponibles pronto.',
-                [
-                  {
-                    text: 'Ok',
-                    onPress: () => {},
-                    style: 'default',
-                  },
-                ],
-                { icon: 'information', iconColor: '#a78bfa' }
-              );
+              navigation.navigate('Reglas');
             }}
             iconColor="#a78bfa"
           />

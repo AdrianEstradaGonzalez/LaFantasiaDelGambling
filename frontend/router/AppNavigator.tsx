@@ -23,6 +23,7 @@ import AdminPanel from '../pages/admin/AdminPanel';
 import { GestionJugadores } from '../pages/admin/GestionJugadores';
 import GestionUsuarios from '../pages/admin/GestionUsuarios';
 import GestionLigas from '../pages/admin/GestionLigas';
+import { Reglas } from '../pages/reglas/Reglas';
 
 export type RootStackParamList = {
   Home: { refreshLigas?: boolean } | undefined;
@@ -43,6 +44,7 @@ export type RootStackParamList = {
   GestionJugadores: undefined;
   GestionUsuarios: undefined;
   GestionLigas: undefined;
+  Reglas: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -154,6 +156,9 @@ export const AppNavigator = () => {
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="GestionLigas" component={GestionLigas} options={{
+          animation: 'slide_from_right',
+        }} />
+        <Stack.Screen name="Reglas" component={Reglas} options={{
           animation: 'slide_from_right',
         }} />
       </Stack.Navigator>
