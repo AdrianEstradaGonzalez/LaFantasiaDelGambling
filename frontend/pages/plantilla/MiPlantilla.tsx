@@ -959,21 +959,23 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 <MenuIcon size={24} color="#fff" />
               </TouchableOpacity>
 
-              <Text
-                style={{
-                  color: '#fff',
-                  fontSize: 20,
-                  fontWeight: '700',
-                  textAlign: 'center',
-                  flex: 1,
-                }}
-                numberOfLines={1}
-              >
-                LIGA{' '}
-                <Text style={{ color: '#0892D0' }}>
-                  {ligaName.toUpperCase()}
+              <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 8 }}>
+                <Text
+                  style={{
+                    color: '#fff',
+                    fontSize: 20,
+                    fontWeight: '700',
+                    textAlign: 'center',
+                  }}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  LIGA{' '}
+                  <Text style={{ color: '#0892D0' }}>
+                    {ligaName.toUpperCase()}
+                  </Text>
                 </Text>
-              </Text>
+              </View>
 
               {/* Espacio para equilibrar el diseño */}
               <View style={{ width: 40 }} />
