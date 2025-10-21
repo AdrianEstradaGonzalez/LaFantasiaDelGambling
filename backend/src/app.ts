@@ -105,6 +105,14 @@ export async function buildApp() {
       });
     }
 
+    // Errores con statusCode personalizado (de auth.service por ejemplo)
+    if ((error as any).statusCode) {
+      return reply.status((error as any).statusCode).send({
+        error: error.message,
+        message: error.message,
+      });
+    }
+
     // Error genérico
     reply.status(500).send({
       error: "INTERNAL_SERVER_ERROR",

@@ -125,7 +125,7 @@ const Register: React.FC<Props> = ({ navigation }) => {
                   <View style={{ width: 12 }} />
                   <RNTextInput
                     style={LoginStyles.input}
-                    placeholder="tunombre"
+                    placeholder="Nombre de usuario"
                     placeholderTextColor="#64748b"
                     autoCapitalize="none"
                     autoCorrect={false}

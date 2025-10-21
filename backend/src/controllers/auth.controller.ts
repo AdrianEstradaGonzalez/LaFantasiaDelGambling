@@ -2,31 +2,15 @@ import { registerDTO, loginDTO, changePwdDTO, requestCodeDTO, verifyCodeDTO, set
 import * as AuthService from "../services/auth.service.js";
 
 export async function register(req: any, reply: any) {
-  try {
-    const input = registerDTO.parse(req.body);
-    const data = await AuthService.register(input);
-    reply.send(data);
-  } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    reply.code(statusCode).send({ 
-      error: error.message || 'Error al registrarse',
-      message: error.message || 'Error al registrarse'
-    });
-  }
+  const input = registerDTO.parse(req.body);
+  const data = await AuthService.register(input);
+  reply.send(data);
 }
 
 export async function login(req: any, reply: any) {
-  try {
-    const input = loginDTO.parse(req.body);
-    const data = await AuthService.login(input);
-    reply.send(data);
-  } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    reply.code(statusCode).send({ 
-      error: error.message || 'Error al iniciar sesión',
-      message: error.message || 'Error al iniciar sesión'
-    });
-  }
+  const input = loginDTO.parse(req.body);
+  const data = await AuthService.login(input);
+  reply.send(data);
 }
 
 export async function refresh(req: any, reply: any) {
@@ -41,19 +25,11 @@ export async function me(req: any) {
 }
 
 export async function changePassword(req: any, reply: any) {
-  try {
-    const input = changePwdDTO.parse(req.body);
-    const sub = (req.user as any).sub;
-    await AuthService.changePassword(sub, input);
-    const tokens = await AuthService.issueTokens(sub);
-    reply.send({ ok: true, ...tokens });
-  } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    reply.code(statusCode).send({ 
-      error: error.message || 'Error al cambiar contraseña',
-      message: error.message || 'Error al cambiar contraseña'
-    });
-  }
+  const input = changePwdDTO.parse(req.body);
+  const sub = (req.user as any).sub;
+  await AuthService.changePassword(sub, input);
+  const tokens = await AuthService.issueTokens(sub);
+  reply.send({ ok: true, ...tokens });
 }
 
 // Reset por código
