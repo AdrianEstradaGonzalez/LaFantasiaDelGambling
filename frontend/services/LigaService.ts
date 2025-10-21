@@ -42,7 +42,8 @@ export class LigaService {
       case 404:
         return 'La liga que buscas no existe';
       case 409:
-        return 'Ya existe una liga con ese nombre';
+        // Este error solo debería ocurrir si hay colisión de código (muy raro)
+        return 'Error al generar código único. Intenta de nuevo';
       case 500:
         return 'Error del servidor. Inténtalo de nuevo más tarde';
       default:
@@ -60,8 +61,8 @@ export class LigaService {
               return 'El nombre de la liga contiene caracteres no permitidos';
             }
           }
-          if (msg.includes('duplicate') || msg.includes('exists')) {
-            return 'Ya existe una liga con ese nombre';
+          if (msg.includes('código único') || msg.includes('code')) {
+            return 'Error al generar código único. Intenta de nuevo';
           }
           return error.message;
         }

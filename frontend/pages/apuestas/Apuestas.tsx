@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated, KeyboardAvoidingView, Platform, Keyboard, findNodeHandle } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
 import { JornadaService } from '../../services/JornadaService';
@@ -11,6 +11,7 @@ import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIc
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
+import { SmartTextInput } from '../../components/SmartTextInput';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Bet = {
@@ -950,15 +951,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   </>
                                 ) : (
                                   <>
-                                    <TextInput
+                                    <SmartTextInput
+                                      scrollViewRef={scrollViewRef}
+                                      extraScrollPadding={150}
                                       value={amountInputs[betKey] ?? String(userBet.amount)}
                                       onChangeText={(t) => setAmountForKey(betKey, t)}
-                                      onFocus={(e) => {
-                                        // Pequeño delay para asegurar que el teclado esté visible
-                                        setTimeout(() => {
-                                          scrollViewRef.current?.scrollTo({ y: 200, animated: true });
-                                        }, 100);
-                                      }}
                                       keyboardType="decimal-pad"
                                       placeholder="Cantidad"
                                       placeholderTextColor="#64748b"
@@ -1010,15 +1007,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         {/* Si no hay apuesta del usuario en este grupo y la jornada está abierta, permitir apostar */}
                         {!userBet && !isBlocked && ligaId && isJornadaOpen && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-                            <TextInput
+                            <SmartTextInput
+                              scrollViewRef={scrollViewRef}
+                              extraScrollPadding={150}
                               value={amountInputs[betKey] ?? ''}
                               onChangeText={(t) => setAmountForKey(betKey, t)}
-                              onFocus={(e) => {
-                                // Pequeño delay para asegurar que el teclado esté visible
-                                setTimeout(() => {
-                                  scrollViewRef.current?.scrollTo({ y: 200, animated: true });
-                                }, 100);
-                              }}
                               keyboardType="decimal-pad"
                               placeholder="Cantidad"
                               placeholderTextColor="#64748b"
