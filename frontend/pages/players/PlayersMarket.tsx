@@ -1027,37 +1027,35 @@ export const PlayersMarket = ({ navigation, route }: {
                   </View>
                   
                   {/* Botón de ordenación por precio */}
-                  {!selectMode && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        setSortOrder(prev => {
-                          if (prev === null) return 'desc';
-                          if (prev === 'desc') return 'asc';
-                          return null;
-                        });
-                      }}
-                      style={{
-                        backgroundColor: '#1a2332',
-                        borderWidth: 1,
-                        borderColor: '#334155',
-                        paddingHorizontal: 14,
-                        paddingVertical: 12,
-                        borderRadius: 10,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: 12,
-                        gap: 10
-                      }}
-                    >
-                      <Text style={{ color: sortOrder ? '#10b981' : '#fff', fontSize: 14, fontWeight: '600' }}>
-                        Ordenar por precio
-                      </Text>
-                      {sortOrder === null && <SortNeutralIcon />}
-                      {sortOrder === 'asc' && <SortAscIcon />}
-                      {sortOrder === 'desc' && <SortDescIcon />}
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSortOrder(prev => {
+                        if (prev === null) return 'desc';
+                        if (prev === 'desc') return 'asc';
+                        return null;
+                      });
+                    }}
+                    style={{
+                      backgroundColor: '#1a2332',
+                      borderWidth: 1,
+                      borderColor: '#334155',
+                      paddingHorizontal: 14,
+                      paddingVertical: 12,
+                      borderRadius: 10,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 12,
+                      gap: 10
+                    }}
+                  >
+                    <Text style={{ color: sortOrder ? '#10b981' : '#fff', fontSize: 14, fontWeight: '600' }}>
+                      Ordenar por precio
+                    </Text>
+                    {sortOrder === null && <SortNeutralIcon />}
+                    {sortOrder === 'asc' && <SortAscIcon />}
+                    {sortOrder === 'desc' && <SortDescIcon />}
+                  </TouchableOpacity>
                   
                   <View style={{ marginBottom: 12 }}>
                     <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Buscar jugador</Text>

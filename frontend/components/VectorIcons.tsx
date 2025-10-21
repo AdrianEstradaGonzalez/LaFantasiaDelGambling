@@ -302,6 +302,50 @@ export const DiceIcon = ({ size = 24, color = '#ffffff', isActive = false }: Ico
   </Svg>
 );
 
+// Icono de monedas (para apuestas/dinero)
+export const CoinsIcon = ({ size = 24, color = '#ffffff', isActive = false }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    {/* Moneda trasera */}
+    <Circle
+      cx="9"
+      cy="9"
+      r="6"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    {/* Símbolo $ en moneda trasera */}
+    <Path
+      d="M9 6v6M7.5 8a1.5 1.5 0 013 0c0 1.2-1.8 1.8-1.8 1.8s1.8.6 1.8 1.8a1.5 1.5 0 11-3 0"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2 : 1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    {/* Moneda delantera */}
+    <Circle
+      cx="15"
+      cy="15"
+      r="6"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2.5 : 2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    {/* Símbolo $ en moneda delantera */}
+    <Path
+      d="M15 12v6M13.5 14a1.5 1.5 0 013 0c0 1.2-1.8 1.8-1.8 1.8s1.8.6 1.8 1.8a1.5 1.5 0 11-3 0"
+      stroke={isActive ? '#3b82f6' : color}
+      strokeWidth={isActive ? 2 : 1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 // Icono de editar (lápiz)
 export const EditIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
