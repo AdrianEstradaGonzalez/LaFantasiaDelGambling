@@ -280,15 +280,14 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [isChangingFormation, setIsChangingFormation] = useState(false);
   const [budget, setBudget] = useState<number>(0);
   const [targetPosition, setTargetPosition] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'alineacion' | 'puntuacion'>('alineacion');
   
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const drawerSlideAnim = useRef(new Animated.Value(-300)).current;
   
-  // Estados para las pestaÃ±as (AlineaciÃ³n / PuntuaciÃ³n)
-  const [activeTab, setActiveTab] = useState<'alineacion' | 'puntuacion'>('alineacion');
+  // Estado de la jornada (open = cambios abiertos, closed = jornada en curso)
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
-  const slideAnim = useRef(new Animated.Value(0)).current;
   
   const [currentMatchday, setCurrentMatchday] = useState<number>(9); // Jornada actual
   
@@ -301,6 +300,14 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
   const isLoadingPointsRef = useRef(false); // Evitar múltiples cargas simultáneas
   const lastLoadedJornada = useRef<number | null>(null); // Tracking de última jornada cargada
+  
+  // PanResponder para gestos de swipe (vacío por ahora, puede extenderse)
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: () => false,
+    })
+  ).current;
   
   // ✨ NUEVO: Función para cargar puntos de la jornada actual
   const loadCurrentJornadaPoints = async (players: Record<string, any>, isInitialLoad = false) => {
@@ -547,38 +554,6 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   // ✨ ELIMINADO: calculatePlayerPoints()
   // Los puntos ahora vienen calculados del backend a través de PlayerStatsService
   // Ya no se calculan en el frontend
-
-  // PanResponder para detectar swipe horizontal
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > 20;
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx > 50) {
-          // Swipe derecha -> ir a AlineaciÃ³n
-          switchTab('alineacion');
-        } else if (gestureState.dx < -50) {
-          // Swipe izquierda -> ir a PuntuaciÃ³n
-          switchTab('puntuacion');
-        }
-      },
-    })
-  ).current;
-
-  // FunciÃ³n para cambiar de pestaÃ±a con animaciÃ³n
-  const switchTab = (tab: 'alineacion' | 'puntuacion') => {
-    // Bloquear la pestaña Alineación si la jornada está cerrada (bloqueada)
-    if (jornadaStatus === 'closed' && tab === 'alineacion') {
-      return;
-    }
-    setActiveTab(tab);
-    Animated.spring(slideAnim, {
-      toValue: tab === 'alineacion' ? 0 : 1,
-      useNativeDriver: true,
-      friction: 8,
-    }).start();
-  };
 
   // Función para abrir modal de estadísticas
   const openStatsModal = (player: any, role: string) => {
@@ -1345,7 +1320,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           }} />
 
           {/* Posiciones de jugadores - MODO ALINEACIÃ“N */}
-          {jornadaStatus === 'open' && activeTab === 'alineacion' && selectedFormation.positions.map(position => {
+          {jornadaStatus === 'open' && selectedFormation.positions.map(position => {
             const player = selectedPlayers[position.id];
             const photoUri = player?.photo || (player ? getAvatarUri(player) : undefined);
             const isCaptain = captainPosition === position.id;
@@ -1503,7 +1478,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           })}
           
           {/* Posiciones de jugadores - MODO PUNTUACIÃ“N */}
-          {activeTab === 'puntuacion' && selectedFormation.positions.map(position => {
+          {jornadaStatus === 'closed' && selectedFormation.positions.map(position => {
             const player = selectedPlayers[position.id];
             const photoUri = player?.photo || (player ? getAvatarUri(player) : undefined);
             
