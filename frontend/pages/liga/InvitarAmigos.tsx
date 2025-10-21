@@ -36,8 +36,24 @@ export const InvitarAmigos: React.FC = () => {
 
   const handleShare = async () => {
     try {
-      const message = `¡Únete a mi liga ${ligaNombre}! 🏆\nUsa este código de acceso: ${codigo}`;
-      await Share.share({ message });
+      // Deep link para unirse directamente a la liga
+      const deepLink = `lafantasiadelgambling://unirse-liga/${codigo}`;
+      const webLink = `https://lafantasiadelgambling.com/unirse/${codigo}`; // URL alternativa web (si tienes una)
+      
+      const message = `¡Únete a mi liga ${ligaNombre}! 🏆
+
+Código de acceso: ${codigo}
+
+📱 Únete directamente desde la app:
+${deepLink}
+
+🌐 O desde la web:
+${webLink}`;
+      
+      await Share.share({ 
+        message,
+        title: `Invitación a ${ligaNombre}`
+      });
     } catch (error) {
       console.error('Error al compartir:', error);
       CustomAlertManager.alert(

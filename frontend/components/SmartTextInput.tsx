@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { TextInput, TextInputProps, findNodeHandle, ScrollView, Keyboard } from 'react-native';
+import { TextInput, TextInputProps, ScrollView, Keyboard, Dimensions, Platform } from 'react-native';
 
 interface SmartTextInputProps extends TextInputProps {
   scrollViewRef?: React.RefObject<ScrollView | null>;
@@ -39,25 +39,45 @@ export const SmartTextInput = React.forwardRef<TextInput, SmartTextInputProps>(
 
       // Esperar a que el teclado esté visible
       const keyboardTimeout = setTimeout(() => {
-        inputRef.current?.measureLayout(
-          findNodeHandle(scrollViewRef.current) as any,
-          (x, y, width, height) => {
-            // Calcular la posición de scroll ideal
-            // Restamos el padding extra para asegurar que el input quede bien visible
-            const scrollY = Math.max(0, y - extraScrollPadding);
+        const screenHeight = Dimensions.get('window').height;
+        const keyboardHeight = Platform.OS === 'ios' ? 350 : 310;
+        
+        // Usar measureInWindow para obtener la posición actual en la ventana
+        inputRef.current?.measureInWindow((x: number, windowY: number, width: number, height: number) => {
+          const inputBottom = windowY + height;
+          const visibleBottom = screenHeight - keyboardHeight;
+          const margin = 80;
+          
+          console.log('[SmartTextInput] Window position:', {
+            windowY,
+            inputBottom,
+            visibleBottom,
+            needsScroll: inputBottom > (visibleBottom - margin)
+          });
+          
+          // Solo scrollear si está tapado
+          if (inputBottom > visibleBottom - margin) {
+            // Calcular cuánto hay que scrollear EXTRA
+            const scrollOffset = inputBottom - (visibleBottom - margin);
             
-            scrollViewRef.current?.scrollTo({
-              y: scrollY,
-              animated: true,
-            });
-          },
-          () => {
-            console.warn('[SmartTextInput] Error measuring input layout');
+            // Usar scrollResponderScrollNativeHandleToKeyboard si está disponible
+            const scrollResponder = (scrollViewRef.current as any).getScrollResponder?.();
+            if (scrollResponder?.scrollResponderScrollNativeHandleToKeyboard) {
+              const inputHandle = inputRef.current as any;
+              scrollResponder.scrollResponderScrollNativeHandleToKeyboard(
+                inputHandle,
+                margin, // additionalOffset
+                true // preventNegativeScrollOffset
+              );
+              console.log('[SmartTextInput] Using scrollResponderScrollNativeHandleToKeyboard');
+            } else {
+              // Fallback: usar scrollToEnd no, mejor no hacer nada
+              console.log('[SmartTextInput] ScrollResponder not available, skipping scroll');
+            }
           }
-        );
-      }, 150); // Delay para esperar animación del teclado
+        });
+      }, 350);
 
-      // Cleanup
       return () => clearTimeout(keyboardTimeout);
     };
 

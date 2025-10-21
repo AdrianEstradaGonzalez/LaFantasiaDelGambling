@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,24 +9,40 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { CrearLigaStyles as styles } from '../../styles/CrearLigaStyles';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { ParamListBase } from '@react-navigation/native';
+import type { ParamListBase, RouteProp } from '@react-navigation/native';
 import BottomNavBar from '../navBar/BottomNavBar';
 import { LigaService } from '../../services/LigaService';
 import TopNavBar from '../navBar/TopNavBar';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { SafeLayout } from '../../components/SafeLayout';
-import { SmartTextInput } from '../../components/SmartTextInput';
+import { useRoute } from '@react-navigation/native';
 
 type CrearLigaProps = {
   navigation: NativeStackNavigationProp<ParamListBase>;
 };
 
+type CrearLigaRouteProp = RouteProp<{ params: { codigo?: string } }, 'params'>;
+
 export const CrearLiga = ({ navigation }: CrearLigaProps) => {
+  const route = useRoute<CrearLigaRouteProp>();
   const [nombreLiga, setNombreLiga] = useState('');
   const [codigoLiga, setCodigoLiga] = useState('');
   const [loadingCrear, setLoadingCrear] = useState(false);
   const [loadingUnirse, setLoadingUnirse] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Manejar código de deep link
+  useEffect(() => {
+    if (route.params?.codigo) {
+      setCodigoLiga(route.params.codigo);
+      // Opcional: auto-scroll a la sección de unirse
+      CustomAlertManager.alert(
+        '¡Invitación recibida!',
+        `Código de liga detectado: ${route.params.codigo}. Pulsa "Unirse a liga" para continuar.`,
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'checkmark-circle', iconColor: '#10b981' }
+      );
+    }
+  }, [route.params?.codigo]);
 
   const handleCrearLiga = async () => {
     if (!nombreLiga.trim()) {
@@ -105,7 +121,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         style={{ flex: 1 }}
       >
         <TopNavBar backTo="Home" />
-        <ScrollView ref={scrollViewRef} contentContainerStyle={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
        
         {/* Crear liga privada */}
         <View style={styles.section}>
@@ -118,9 +134,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Nombre de la liga</Text>
-            <SmartTextInput
-              scrollViewRef={scrollViewRef}
-              extraScrollPadding={120}
+            <TextInput
               style={styles.input}
               placeholder="Ej: TormentaImperfecta"
               placeholderTextColor="#94a3b8"
@@ -159,9 +173,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
 
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Código de liga</Text>
-            <SmartTextInput
-              scrollViewRef={scrollViewRef}
-              extraScrollPadding={120}
+            <TextInput
               style={styles.input}
               placeholder="Ingresa el código"
               placeholderTextColor="#94a3b8"

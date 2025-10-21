@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Linking } from 'react-native';
 
 // 🧩 Importa tus pantallas
 import { Home } from '../pages/home/Home';
@@ -75,8 +76,23 @@ export const AppNavigator = () => {
     return null;
   }
 
+  // Configuración de deep linking
+  const linking = {
+    prefixes: ['lafantasiadelgambling://', 'https://lafantasiadelgambling.com'],
+    config: {
+      screens: {
+        CrearLiga: {
+          path: 'unirse-liga/:codigo',
+          parse: {
+            codigo: (codigo: string) => codigo,
+          },
+        },
+      },
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <Stack.Navigator
         initialRouteName={initialRoute}
         screenOptions={{

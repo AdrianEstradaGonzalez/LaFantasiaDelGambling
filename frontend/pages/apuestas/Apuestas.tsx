@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated, KeyboardAvoidingView, Platform, Keyboard, findNodeHandle } from 'react-native';
+import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated, Platform, Keyboard, findNodeHandle } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
 import { JornadaService } from '../../services/JornadaService';
@@ -11,7 +11,6 @@ import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIc
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
-import { SmartTextInput } from '../../components/SmartTextInput';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Bet = {
@@ -68,6 +67,26 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const scrollViewRef = useRef<ScrollView>(null);
+  
+  // Estado para controlar visibilidad de la barra de navegación
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Listener para el teclado
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => setIsKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => setIsKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -330,12 +349,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         <LoadingScreen />
       ) : (
         <View style={{ flex: 1 }}>
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-          >
-            <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
+          <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
             {/* Top Header Bar - Estilo idéntico a LigaTopNavBar */}
           {/* Icono Drawer arriba absoluto */}
           <TouchableOpacity
@@ -952,9 +966,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   </>
                                 ) : (
                                   <>
-                                    <SmartTextInput
-                                      scrollViewRef={scrollViewRef}
-                                      extraScrollPadding={150}
+                                    <TextInput
                                       value={amountInputs[betKey] ?? String(userBet.amount)}
                                       onChangeText={(t) => setAmountForKey(betKey, t)}
                                       keyboardType="decimal-pad"
@@ -1008,9 +1020,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         {/* Si no hay apuesta del usuario en este grupo y la jornada está abierta, permitir apostar */}
                         {!userBet && !isBlocked && ligaId && isJornadaOpen && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-                            <SmartTextInput
-                              scrollViewRef={scrollViewRef}
-                              extraScrollPadding={150}
+                            <TextInput
                               value={amountInputs[betKey] ?? ''}
                               onChangeText={(t) => setAmountForKey(betKey, t)}
                               keyboardType="decimal-pad"
@@ -1135,12 +1145,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             </View>
           </Modal>
           </LinearGradient>
-        </KeyboardAvoidingView>
-        
-        {/* Barra de navegación fija en la parte inferior, fuera del KeyboardAvoidingView */}
-        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-          <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
-        </View>
+        {/* Barra de navegación fija en la parte inferior, solo visible cuando NO hay teclado */}
+        {!isKeyboardVisible && (
+          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+            <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+          </View>
+        )}
       </View>
       )}
     </SafeLayout>
