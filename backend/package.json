@@ -4,10 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "prisma db push --accept-data-loss && prisma generate && tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "prisma:migrate": "prisma migrate deploy || prisma migrate dev --name init && prisma generate",
     "prisma:deploy": "prisma migrate deploy && prisma generate",
+    "prisma:push": "prisma db push --accept-data-loss && prisma generate",
     "sync-players": "tsx src/scripts/sync-players.ts"
   },
   "dependencies": {
