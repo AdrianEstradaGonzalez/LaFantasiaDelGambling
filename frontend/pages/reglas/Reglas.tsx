@@ -235,7 +235,11 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
               <Text style={styles.sectionTitle}>PRESUPUESTO Y FICHAJES</Text>
             </View>
             <Text style={styles.paragraph}>
-              Cada jornada partirás de un <Text style={styles.bold}>presupuesto base</Text> que se calculará según tu rendimiento en la jornada anterior:
+              <Text style={styles.important}>⚠️ IMPORTANTE:</Text> Cada jornada partes de un{' '}
+              <Text style={styles.bold}>presupuesto BASE de 500M</Text> (fijo).
+            </Text>
+            <Text style={styles.paragraph}>
+              A estos 500M base se le <Text style={styles.highlight}>suma o resta</Text> una cantidad según tu rendimiento en la jornada anterior:
             </Text>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
@@ -250,8 +254,28 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
               </Text>
             </View>
 
+            <View style={styles.exampleBox}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <DiceIcon size={20} color="#0892D0" />
+                <Text style={[styles.exampleTitle, { marginLeft: 8, marginBottom: 0 }]}>Ejemplo de cálculo:</Text>
+              </View>
+              <Text style={styles.exampleText}>
+                • <Text style={styles.bold}>Jornada 1:</Text> Consigues 85 puntos y ganas 30M en apuestas
+              </Text>
+              <Text style={styles.exampleText}>
+                • <Text style={styles.bold}>Presupuesto Jornada 2:</Text> 500M (base) + 85M (puntos) + 30M (apuestas) ={' '}
+                <Text style={styles.highlight}>615M</Text>
+              </Text>
+              <Text style={[styles.exampleText, { marginTop: 8, color: '#f59e0b', fontWeight: '700' }]}>
+                ⚠️ Si te sobran 100M sin gastar, NO se suman a la siguiente jornada
+              </Text>
+              <Text style={[styles.exampleText, { color: '#cbd5e1' }]}>
+                Siempre empiezas desde los <Text style={styles.bold}>500M base</Text>, no se acumula el dinero no usado
+              </Text>
+            </View>
+
             <Text style={styles.paragraph}>
-              Con este presupuesto podrás <Text style={styles.bold}>fichar jugadores del mercado</Text>, cada uno con un precio fijo que se verá reflejado en tu plantilla.
+              Con tu presupuesto podrás <Text style={styles.bold}>fichar jugadores del mercado</Text>, cada uno con un precio fijo que se verá reflejado en tu plantilla.
             </Text>
 
             <View style={styles.divider} />
