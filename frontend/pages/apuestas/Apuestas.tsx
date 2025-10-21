@@ -329,12 +329,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       {loading ? (
         <LoadingScreen />
       ) : (
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        >
-          <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
+        <View style={{ flex: 1 }}>
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          >
+            <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
             {/* Top Header Bar - Estilo idéntico a LigaTopNavBar */}
           {/* Icono Drawer arriba absoluto */}
           <TouchableOpacity
@@ -1097,7 +1098,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               </>
             )}
           </ScrollView>
-          <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
           
           {/* Drawer Modal */}
           <Modal
@@ -1136,6 +1136,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           </Modal>
           </LinearGradient>
         </KeyboardAvoidingView>
+        
+        {/* Barra de navegación fija en la parte inferior, fuera del KeyboardAvoidingView */}
+        <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+          <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+        </View>
+      </View>
       )}
     </SafeLayout>
   );
