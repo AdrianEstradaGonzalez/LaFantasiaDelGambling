@@ -40,13 +40,15 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
       zIndex: 10,
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      justifyContent: 'center',
       paddingHorizontal: 16,
     }]}>
       {/* Botón de volver */}
       <TouchableOpacity
         onPress={handleBackPress}
         style={{
+          position: 'absolute',
+          left: 16,
           padding: 4,
           zIndex: 20,
         }}
@@ -57,20 +59,45 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
 
       {/* Título personalizado o título de liga */}
       {(title || ligaName) && (
-        <Text
-          style={{
-            color: '#fff',
-            fontSize: Typography.sizes['2xl'],
-            fontWeight: '700',
-            textAlign: 'center',
-            flex: 1,
-            marginHorizontal: 8,
-            zIndex: 1,
-          }}
-          numberOfLines={1}
-        >
-          {title || `LIGA ${ligaName?.toUpperCase()}`}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', zIndex: 1 }}>
+          {title ? (
+            <Text
+              style={{
+                color: '#fff',
+                fontSize: Typography.sizes['2xl'],
+                fontWeight: '700',
+                textAlign: 'center',
+              }}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+          ) : (
+            <>
+              <Text
+                style={{
+                  color: '#fff',
+                  fontSize: Typography.sizes['2xl'],
+                  fontWeight: '700',
+                  textAlign: 'center',
+                }}
+              >
+                LIGA{' '}
+              </Text>
+              <Text
+                style={{
+                  color: '#0892D0',
+                  fontSize: Typography.sizes['2xl'],
+                  fontWeight: '700',
+                  textAlign: 'center',
+                }}
+                numberOfLines={1}
+              >
+                {ligaName?.toUpperCase()}
+              </Text>
+            </>
+          )}
+        </View>
       )}
 
       {/* Botón de menú en la derecha - solo se muestra si se pasa onMenuPress */}
@@ -78,6 +105,8 @@ const TopNavBar: React.FC<TopNavBarProps> = ({ title, backTo = 'goBack', ligaId,
         <TouchableOpacity
           onPress={onMenuPress}
           style={{
+            position: 'absolute',
+            right: 16,
             padding: 4,
             zIndex: 20,
           }}
