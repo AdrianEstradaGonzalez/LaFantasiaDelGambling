@@ -14,6 +14,7 @@ import BottomNavBar from '../navBar/BottomNavBar';
 import { LigaService } from '../../services/LigaService';
 import TopNavBar from '../navBar/TopNavBar';
 import { CustomAlertManager } from '../../components/CustomAlert';
+import { SafeLayout } from '../../components/SafeLayout';
 
 type CrearLigaProps = {
   navigation: NativeStackNavigationProp<ParamListBase>;
@@ -94,14 +95,15 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   };
 
   return (
-    <LinearGradient
-      colors={['#181818ff', '#181818ff']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
-    >
-      <TopNavBar backTo="Home" />
-      <ScrollView contentContainerStyle={styles.container}>
+    <SafeLayout backgroundColor="#181818ff">
+      <LinearGradient
+        colors={['#181818ff', '#181818ff']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        <TopNavBar backTo="Home" />
+        <ScrollView contentContainerStyle={styles.container}>
        
         {/* Crear liga privada */}
         <View style={styles.section}>
@@ -181,7 +183,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
             </Text>
           </View>
         </View>
-      </ScrollView>
-    </LinearGradient>
+        </ScrollView>
+      </LinearGradient>
+    </SafeLayout>
   );
 };

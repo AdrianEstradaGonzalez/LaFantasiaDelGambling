@@ -6,6 +6,7 @@ import { PlayerService } from '../../services/PlayerService';
 import { SquadService } from '../../services/SquadService';
 import LoadingScreen from '../../components/LoadingScreen';
 import LigaNavBar from '../navBar/LigaNavBar';
+import { SafeLayout } from '../../components/SafeLayout';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 
@@ -469,11 +470,12 @@ export const PlayersList = ({ navigation, route }: {
   }, [filtered, fetchWikiThumb, photoMap]);
 
   return (
-    <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
-      {loading && (
-        <LoadingScreen />
-      )}
-      {!loading && (
+    <SafeLayout backgroundColor="#181818ff">
+      <LinearGradient colors={['#181818ff','#181818ff']} start={{x:0,y:0}} end={{x:0,y:1}} style={{flex:1}}>
+        {loading && (
+          <LoadingScreen />
+        )}
+        {!loading && (
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 200 }}>
         <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 12 }}>
           {selectMode ? `Seleccionar ${filterByRole || 'Jugador'}` : 'Jugadores LaLiga'}
@@ -661,9 +663,10 @@ export const PlayersList = ({ navigation, route }: {
       </ScrollView>
       )}
       
-      {/* Barra de navegación */}
-      <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
-    </LinearGradient>
+        {/* Barra de navegación */}
+        <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+      </LinearGradient>
+    </SafeLayout>
   );
 };
 

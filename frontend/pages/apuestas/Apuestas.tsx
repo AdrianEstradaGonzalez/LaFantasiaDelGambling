@@ -10,6 +10,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
+import { SafeLayout } from '../../components/SafeLayout';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Bet = {
@@ -323,7 +324,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   }, [isDrawerOpen, slideAnim]);
 
   return (
-    <>
+    <SafeLayout backgroundColor="#181818ff">
       {loading ? (
         <LoadingScreen />
       ) : (
@@ -1143,7 +1144,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           </LinearGradient>
         </KeyboardAvoidingView>
       )}
-    </>
+    </SafeLayout>
   );
 };
 

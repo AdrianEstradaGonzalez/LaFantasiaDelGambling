@@ -14,6 +14,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import FootballService from '../../services/FutbolService';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { CustomAlertManager } from '../../components/CustomAlert';
+import { SafeLayout } from '../../components/SafeLayout';
 
 
 
@@ -196,7 +197,7 @@ export const Clasificacion = () => {
   }, [ligaId]);
 
   return (
-    <>
+    <SafeLayout backgroundColor="#181818ff">
       {loading ? (
         <LoadingScreen />
       ) : (
@@ -554,7 +555,7 @@ export const Clasificacion = () => {
           </Modal>
         </LinearGradient>
       )}
-    </>
+    </SafeLayout>
   );
 };
 

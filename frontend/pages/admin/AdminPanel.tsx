@@ -16,6 +16,7 @@ import { LigaService } from '../../services/LigaService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CustomAlertManager } from '../../components/CustomAlert';
+import { SafeLayout } from '../../components/SafeLayout';
 import { 
   JerseyIcon, 
   CalendarIcon, 
@@ -235,15 +236,16 @@ const AdminPanel: React.FC = () => {
   };
 
   return (
-    <LinearGradient
-      colors={['#0f172a', '#1e293b']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={{ flex: 1 }}
-    >
-      {/* TopNavBar estilo LigaTopNavBar */}
-      <View
-        style={{
+    <SafeLayout backgroundColor="#0f172a">
+      <LinearGradient
+        colors={['#0f172a', '#1e293b']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        {/* TopNavBar estilo LigaTopNavBar */}
+        <View
+          style={{
           position: 'absolute',
           top: 0,
           left: 0,
@@ -642,7 +644,8 @@ const AdminPanel: React.FC = () => {
           </View>
         </View>
       </ScrollView>
-    </LinearGradient>
+      </LinearGradient>
+    </SafeLayout>
   );
 };
 

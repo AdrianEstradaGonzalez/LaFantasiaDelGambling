@@ -7,6 +7,7 @@ import { SquadService } from '../../services/SquadService';
 import { JornadaService } from '../../services/JornadaService';
 import LoadingScreen from '../../components/LoadingScreen';
 import { CustomAlertManager } from '../../components/CustomAlert';
+import { SafeLayout } from '../../components/SafeLayout';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { ChevronLeftIcon } from '../../components/VectorIcons';
@@ -484,13 +485,14 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     : null;
 
   return (
-    <LinearGradient colors={['#0f172a', '#0f172a']} style={{ flex: 1 }}>
-      {loading ? (
-        <LoadingScreen />
-      ) : (
-        <>
-          <View
-            style={{
+    <SafeLayout backgroundColor="#0f172a">
+      <LinearGradient colors={['#0f172a', '#0f172a']} style={{ flex: 1 }}>
+        {loading ? (
+          <LoadingScreen />
+        ) : (
+          <>
+            <View
+              style={{
               position: 'absolute',
               top: 0,
               left: 0,
@@ -1043,9 +1045,10 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
             </View>
           )}
         </ScrollView>
-        </>
-      )}
-    </LinearGradient>
+          </>
+        )}
+      </LinearGradient>
+    </SafeLayout>
   );
 };
 
