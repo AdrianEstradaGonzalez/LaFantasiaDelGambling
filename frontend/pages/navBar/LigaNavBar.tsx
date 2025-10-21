@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, Text, Pressable } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../styles/NavBarStyles';
 import { HomeIcon, LeaderboardIcon, JerseyIcon, TrendingIcon, DiceIcon } from '../../components/VectorIcons';
 
@@ -13,6 +14,7 @@ type LigaNavBarProps = {
 const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
   
   // Determinar qué página está activa
   const currentRoute = route.name;
@@ -58,7 +60,7 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
   ];
 
   return (
-    <View style={styles.navBar}>
+    <View style={[styles.navBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {buttons.map((button, index) => {
         const IconComponent = button.icon;
         return (

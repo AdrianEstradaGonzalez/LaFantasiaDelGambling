@@ -23,6 +23,7 @@ import { LoginService } from '../../services/LoginService';
 import { MenuIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
+import LigaNavBar from '../navBar/LigaNavBar';
 
 type Liga = { id: string; nombre: string };
 const { height } = Dimensions.get('window');
@@ -279,7 +280,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
         <ScrollView
           ref={scrollRef}
           style={styles.container}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: ligas.length > 0 ? 120 : 100 }}
         >
           {/* Header con título y botón, en una línea más abajo */}
           <View style={[styles.header, { marginTop: 10 }]}> 
@@ -468,6 +469,11 @@ export const Home = ({ navigation, route }: HomeProps) => {
           />
         </View>
       </Modal>
+
+      {/* Barra de navegación inferior si hay ligas */}
+      {ligas.length > 0 && (
+        <LigaNavBar ligaId={ligas[0].id} ligaName={ligas[0].nombre} />
+      )}
       </>
       )}
       </LinearGradient>
