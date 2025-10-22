@@ -58,7 +58,7 @@ export class SquadService {
     }
   }
   
-  // Obtener plantilla del usuario para una liga específica
+  // 🚀 OPTIMIZADO: Obtener plantilla y enriquecer con datos de jugadores
   static async getUserSquad(userId: string, ligaId: string) {
     try {
       const squad = await prisma.squad.findUnique({
@@ -73,7 +73,31 @@ export class SquadService {
         }
       });
 
-      return squad;
+      if (!squad) {
+        return null;
+      }
+
+      // 🚀 Obtener datos completos de todos los jugadores en una sola query
+      const playerIds = squad.players.map(p => p.playerId);
+      const playersData = await prisma.player.findMany({
+        where: {
+          id: { in: playerIds }
+        }
+      });
+
+      // Crear mapa para acceso rápido
+      const playersMap = new Map(playersData.map(p => [p.id, p]));
+
+      // Enriquecer squad players con datos completos
+      const enrichedPlayers = squad.players.map(sp => ({
+        ...sp,
+        playerData: playersMap.get(sp.playerId) || null
+      }));
+
+      return {
+        ...squad,
+        players: enrichedPlayers
+      };
     } catch (error) {
       console.error('Error al obtener plantilla:', error);
       throw new Error('Error al obtener la plantilla');

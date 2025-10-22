@@ -442,7 +442,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     return () => { mounted = false; };
   }, [ligaId]);
   
-  // ✨ NUEVO: Cargar puntos cuando cambie a tab "puntuacion" y la jornada esté cerrada
+  // 🚀 OPTIMIZADO: Cargar puntos solo cuando sea necesario
   useEffect(() => {
     // Solo ejecutar cuando cambia a tab 'puntuacion'
     if (activeTab !== 'puntuacion') {
@@ -451,15 +451,6 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     
     const hasPlayers = Object.keys(selectedPlayers).length > 0;
     
-    console.log('[MiPlantilla] useEffect puntos ejecutado:', {
-      activeTab,
-      jornadaStatus,
-      hasPlayers,
-      currentMatchday,
-      numPlayers: Object.keys(selectedPlayers).length,
-      lastLoadedJornada: lastLoadedJornada.current
-    });
-    
     // Solo cargar si no hemos cargado esta jornada todavía o si cambió la jornada
     const shouldLoad = jornadaStatus === 'closed' && 
                        hasPlayers && 
@@ -467,15 +458,13 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                        lastLoadedJornada.current !== currentMatchday;
     
     if (shouldLoad) {
-      console.log(`[MiPlantilla] ✅ Condiciones cumplidas, cargando puntos para jornada ${currentMatchday}`);
+      console.log(`[MiPlantilla] ✅ Cargando puntos para jornada ${currentMatchday}`);
       lastLoadedJornada.current = currentMatchday;
       // Solo mostrar loading si no hay puntos cargados todavía
       const hasLoadedPoints = Object.keys(playerCurrentPoints).length > 0;
-      loadCurrentJornadaPoints(selectedPlayers, !hasLoadedPoints); // true solo si no hay puntos
-    } else {
-      console.log('[MiPlantilla] ⚠️ No se cumplen condiciones para cargar puntos o ya fue cargada');
+      loadCurrentJornadaPoints(selectedPlayers, !hasLoadedPoints);
     }
-  }, [activeTab, jornadaStatus, currentMatchday, selectedPlayers, playerCurrentPoints]); // ✨ Incluir playerCurrentPoints
+  }, [activeTab, jornadaStatus, currentMatchday]); // 🚀 Removido selectedPlayers y playerCurrentPoints para evitar re-renders innecesarios
   
   // Animación del drawer
   useEffect(() => {
@@ -645,23 +634,20 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             console.log('Formación original cargada:', formation.id);
           }
 
-          // Cargar jugadores existentes con datos completos
-          const allPlayers = await PlayerService.getAllPlayers(); // Cambio: ahora desde la BD
+          // 🚀 OPTIMIZACIÓN: Construir mapa de jugadores desde datos ya enriquecidos
           const playersMap: Record<string, any> = {};
           let captainPos: string | null = null;
           
-          existingSquad.players.forEach(squadPlayer => {
-            // Buscar el jugador completo en la lista
-            const fullPlayer = allPlayers.find(p => p.id === squadPlayer.playerId);
-            if (fullPlayer) {
-              // Agregar el pricePaid del squadPlayer al jugador completo
+          existingSquad.players.forEach((squadPlayer: any) => {
+            // Si el backend ya envió playerData enriquecido, usarlo
+            if (squadPlayer.playerData) {
               playersMap[squadPlayer.position] = {
-                ...fullPlayer,
-                pricePaid: squadPlayer.pricePaid, // IMPORTANTE: Preservar el precio pagado
-                isCaptain: squadPlayer.isCaptain // IMPORTANTE: Preservar el estado de capitán
+                ...squadPlayer.playerData,
+                pricePaid: squadPlayer.pricePaid,
+                isCaptain: squadPlayer.isCaptain
               };
             } else {
-              // Fallback si no se encuentra el jugador
+              // Fallback: datos básicos del squadPlayer
               playersMap[squadPlayer.position] = {
                 id: squadPlayer.playerId,
                 name: squadPlayer.playerName,
@@ -670,36 +656,34 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               };
             }
             
-            // Detectar el capitán
             if (squadPlayer.isCaptain) {
               captainPos = squadPlayer.position;
             }
           });
-          setSelectedPlayers(playersMap);
-          setOriginalPlayers(playersMap); // Guardar jugadores originales
-          setCaptainPosition(captainPos); // Establecer capitán
-          console.log('Jugadores originales cargados:', Object.keys(playersMap).length, 'jugadores');
-          if (captainPos) {
-            console.log('Capitán detectado en posición:', captainPos);
-          }
           
-          // ✨ NUEVO: Si la jornada está cerrada, calcular puntos en tiempo real para ESTOS jugadores
-          if (status.status === 'closed' && Object.keys(playersMap).length > 0) {
-            console.log('[MiPlantilla] 🔄 Jornada cerrada, calculando puntos en tiempo real para los jugadores de la plantilla...');
-            const currentJornada = status.currentJornada;
+          setSelectedPlayers(playersMap);
+          setOriginalPlayers(playersMap);
+          setCaptainPosition(captainPos);
+          console.log('✅ Jugadores cargados:', Object.keys(playersMap).length, 'jugadores');
+          
+          // 🚀 OPTIMIZACIÓN CRÍTICA: Calcular puntos en PARALELO en lugar de secuencial
+          const allPlayerIds = existingSquad.players.map((p: any) => p.playerId);
+          if (status.status === 'closed' && allPlayerIds.length > 0) {
+            console.log('[MiPlantilla] 🔄 Jornada cerrada, calculando puntos en paralelo...');
             
-            // Calcular puntos para cada jugador de la plantilla
-            for (const [position, player] of Object.entries(playersMap)) {
-              try {
-                await PlayerStatsService.getPlayerJornadaStats(player.id, currentJornada, {
-                  refresh: true // Forzar actualización desde API
-                });
-                console.log(`[MiPlantilla] ✅ Puntos calculados para jugador ${player.id}`);
-              } catch (error) {
-                console.log(`[MiPlantilla] ⚠️ Error calculando puntos para jugador ${player.id}`);
-              }
-            }
-            console.log('[MiPlantilla] ✅ Cálculo de puntos completado');
+            // Calcular TODOS los jugadores al mismo tiempo (mucho más rápido)
+            const statsPromises = allPlayerIds.map((playerId: number) =>
+              PlayerStatsService.getPlayerJornadaStats(playerId, status.currentJornada, {
+                refresh: true
+              }).catch(err => {
+                console.log(`⚠️ Error calculando jugador ${playerId}`);
+                return null;
+              })
+            );
+            
+            // Esperar a que terminen TODOS en paralelo
+            await Promise.all(statsPromises);
+            console.log('[MiPlantilla] ✅ Puntos calculados en paralelo');
           }
           
           // Los puntos se cargarán automáticamente por el useEffect cuando currentMatchday esté listo
