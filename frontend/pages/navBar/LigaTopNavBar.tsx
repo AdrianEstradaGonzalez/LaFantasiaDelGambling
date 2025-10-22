@@ -2,6 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, Image, Text } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import styles from '../../styles/NavBarStyles';
 import { Typography } from '../../styles/DesignSystem';
 import { MenuIcon } from '../../components/VectorIcons';
@@ -17,18 +18,18 @@ type Props = {
 
 const LigaTopNavBar: React.FC<Props> = ({ nombreLiga, onInvitePress, onMenuPress }) => {
     const navigation = useNavigation<NativeStackNavigationProp<any>>();
+    const insets = useSafeAreaInsets();
 
     return (
         <View
             style={[
                 styles.navBar,
                 {
-                    position: 'absolute',
-                    top: 0,
+                    paddingTop: insets.top,
                     backgroundColor: '#181818',
                     borderBottomWidth: 0.5,
                     borderBottomColor: '#333',
-                    paddingVertical: 10,
+                    paddingBottom: 10,
                     zIndex: 10,
                     flexDirection: 'row',
                     alignItems: 'center',
