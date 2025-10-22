@@ -227,7 +227,7 @@ export const Clasificacion = () => {
           />
           
           {/* Espaciador para que el contenido no quede debajo de la navbar fija */}
-          <View style={{ height: safePadding.paddingTop + 50 }} />
+          <View  />
           
           {/* Selector de Jornada */}
           <View style={{ 
