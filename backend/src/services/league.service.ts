@@ -404,9 +404,12 @@ getLeaguesByUser: (userId: string) =>
             }
           });
 
-          if (squad && squad.players.length > 0) {
+          // ✨ Solo agregar plantillas que tengan exactamente 11 jugadores
+          if (squad && squad.players.length === 11) {
             squadsByUser[member.userId] = squad;
             squad.players.forEach((p: any) => allPlayerIds.add(p.playerId));
+          } else if (squad) {
+            console.log(`[calculateRealTimePoints] ⚠️ Usuario ${member.userId} tiene ${squad.players.length} jugadores (necesita 11), se le asignará 0 puntos`);
           }
         })
       );
