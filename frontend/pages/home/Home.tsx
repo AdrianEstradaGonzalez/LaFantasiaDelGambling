@@ -23,7 +23,6 @@ import { LoginService } from '../../services/LoginService';
 import { MenuIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
-import LigaNavBar from '../navBar/LigaNavBar';
 
 type Liga = { id: string; nombre: string };
 const { height } = Dimensions.get('window');
@@ -319,7 +318,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                 key={liga.id}
                 style={styles.ligaCard}
                 activeOpacity={0.85}
-                onPress={() => navigation.navigate('Clasificacion', { ligaId: liga.id, ligaName: liga.nombre })}
+                onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre })}
               >
                 <Text
                   style={styles.ligaName}
@@ -488,10 +487,6 @@ export const Home = ({ navigation, route }: HomeProps) => {
         </View>
       </Modal>
 
-      {/* Barra de navegación inferior si hay ligas */}
-      {ligas.length > 0 && (
-        <LigaNavBar ligaId={ligas[0].id} ligaName={ligas[0].nombre} />
-      )}
       </>
       )}
       </LinearGradient>

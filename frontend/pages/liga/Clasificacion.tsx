@@ -97,17 +97,7 @@ export const Clasificacion = () => {
         const leagueJornada = status.currentJornada;
         setJornadaStatus(leagueStatus);
 
-        // ✨ Si la jornada está cerrada (partidos en curso), calcular puntos en tiempo real primero
-        if (leagueStatus === 'closed') {
-          console.log('[Clasificacion] 🔄 Jornada cerrada (partidos en curso), calculando puntos en tiempo real...');
-          try {
-            await LigaService.calculateRealTimePoints(ligaId);
-            console.log('[Clasificacion] ✅ Puntos en tiempo real calculados');
-          } catch (error: any) {
-            console.log('[Clasificacion] ⚠️ No se pudieron calcular puntos en tiempo real, continuando con datos existentes');
-            // Continuar silenciosamente para mostrar los datos existentes
-          }
-        }
+        // ✅ Los puntos ya están calculados porque ahora la pestaña por defecto es Mi Plantilla
 
         // Obtener jornadas disponibles
         const matchdays = await FootballService.getAvailableMatchdays();
