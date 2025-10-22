@@ -649,20 +649,22 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             console.log('Formación original cargada:', formation.id);
           }
 
-          // Cargar jugadores existentes con datos completos
-          const allPlayers = await PlayerService.getAllPlayers();
+          // Usar datos enriquecidos que vienen del backend (solo jugadores de la plantilla)
           const playersMap: Record<string, any> = {};
           let captainPos: string | null = null;
           
-          existingSquad.players.forEach(squadPlayer => {
-            const fullPlayer = allPlayers.find(p => p.id === squadPlayer.playerId);
-            if (fullPlayer) {
+          existingSquad.players.forEach((squadPlayer: any) => {
+            if (squadPlayer.playerData) {
+              // Usar playerData que viene del backend
+              console.log('[MiPlantilla] Player data:', squadPlayer.playerData);
               playersMap[squadPlayer.position] = {
-                ...fullPlayer,
+                ...squadPlayer.playerData,
                 pricePaid: squadPlayer.pricePaid,
                 isCaptain: squadPlayer.isCaptain
               };
             } else {
+              // Fallback: usar datos básicos si no hay playerData
+              console.warn('[MiPlantilla] No playerData para:', squadPlayer.playerName);
               playersMap[squadPlayer.position] = {
                 id: squadPlayer.playerId,
                 name: squadPlayer.playerName,
@@ -676,6 +678,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             }
           });
           
+          console.log('[MiPlantilla] Players map final:', playersMap);
           setSelectedPlayers(playersMap);
           setOriginalPlayers(playersMap);
           setCaptainPosition(captainPos);
@@ -714,20 +717,22 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               setOriginalFormation(formation);
             }
 
-            // Cargar jugadores existentes con datos completos
-            const allPlayers = await PlayerService.getAllPlayers();
+            // Usar datos enriquecidos que vienen del backend (solo jugadores de la plantilla)
             const playersMap: Record<string, any> = {};
             let captainPos: string | null = null;
             
-            existingSquad.players.forEach(squadPlayer => {
-              const fullPlayer = allPlayers.find(p => p.id === squadPlayer.playerId);
-              if (fullPlayer) {
+            existingSquad.players.forEach((squadPlayer: any) => {
+              if (squadPlayer.playerData) {
+                // Usar playerData que viene del backend
+                console.log('[MiPlantilla RELOAD] Player data:', squadPlayer.playerData);
                 playersMap[squadPlayer.position] = {
-                  ...fullPlayer,
+                  ...squadPlayer.playerData,
                   pricePaid: squadPlayer.pricePaid,
                   isCaptain: squadPlayer.isCaptain
                 };
               } else {
+                // Fallback: usar datos básicos si no hay playerData
+                console.warn('[MiPlantilla RELOAD] No playerData para:', squadPlayer.playerName);
                 playersMap[squadPlayer.position] = {
                   id: squadPlayer.playerId,
                   name: squadPlayer.playerName,
@@ -741,6 +746,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               }
             });
             
+            console.log('[MiPlantilla RELOAD] Players map final:', playersMap);
             setSelectedPlayers(playersMap);
             setOriginalPlayers(playersMap);
             setCaptainPosition(captainPos);

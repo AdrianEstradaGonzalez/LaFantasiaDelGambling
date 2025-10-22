@@ -85,6 +85,13 @@ export class SquadService {
         }
       });
 
+      console.log('[SquadService] Players data fetched:', playersData.map(p => ({
+        id: p.id,
+        name: p.name,
+        photo: p.photo,
+        hasPhoto: !!p.photo
+      })));
+
       // Crear mapa para acceso rápido
       const playersMap = new Map(playersData.map(p => [p.id, p]));
 
@@ -93,6 +100,8 @@ export class SquadService {
         ...sp,
         playerData: playersMap.get(sp.playerId) || null
       }));
+
+      console.log('[SquadService] Enriched players sample:', enrichedPlayers[0]);
 
       return {
         ...squad,
