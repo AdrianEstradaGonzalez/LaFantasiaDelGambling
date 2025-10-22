@@ -1,7 +1,10 @@
 import axios from 'axios';
+import { PrismaClient } from '@prisma/client';
 import { PlayerRepository, PlayerData } from '../repositories/player.repo.js';
 import { PlayerJornadaPointsRepo } from '../repositories/playerJornadaPoints.repo.js';
 import { getPlayerMatchdayStats } from './playerPoints.service.js';
+
+const prisma = new PrismaClient();
 
 const API_BASE = 'https://v3.football.api-sports.io';
 const LA_LIGA_LEAGUE_ID = 140;
@@ -232,10 +235,25 @@ export class PlayerService {
   }
 
   /**
-   * Obtener todos los jugadores de la base de datos
+   * Obtener todos los jugadores de la base de datos con puntuación total
    */
   static async getAllPlayers() {
     const players = await PlayerRepository.getAllPlayers();
+    
+    // Obtener puntuación total de cada jugador (suma de todas las jornadas)
+    const playersWithTotalPoints = await Promise.all(
+      players.map(async (player) => {
+        const stats = await prisma.playerStats.aggregate({
+          where: { playerId: player.id },
+          _sum: { totalPoints: true },
+        });
+        
+        return {
+          ...player,
+          totalPoints: stats._sum.totalPoints || 0,
+        };
+      })
+    );
     
     // Ordenar por equipo y luego por posición en el orden lógico
     const positionOrder: Record<string, number> = {
@@ -245,7 +263,7 @@ export class PlayerService {
       'Attacker': 4
     };
     
-    return players.sort((a, b) => {
+    return playersWithTotalPoints.sort((a, b) => {
       // Primero ordenar por equipo (alfabéticamente)
       const teamCompare = a.teamName.localeCompare(b.teamName);
       if (teamCompare !== 0) return teamCompare;

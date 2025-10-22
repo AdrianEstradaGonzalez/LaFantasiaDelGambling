@@ -221,9 +221,47 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
             shadowOpacity: 0.3,
             shadowRadius: 8,
             elevation: 8,
-            overflow: 'hidden',
+            overflow: 'visible',
             position: 'relative'
           }}>
+              {/* Badge de puntuación total - arriba derecha */}
+              {(() => {
+                const totalPoints = squad?.players.reduce((sum, player) => {
+                  const pid = player.playerId;
+                  const points = playerPoints[pid] ?? 0;
+                  return sum + (player.isCaptain ? points * 2 : points);
+                }, 0) ?? 0;
+                
+                return (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -12,
+                      right: -12,
+                      backgroundColor: '#10b981',
+                      borderRadius: 20,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderWidth: 3,
+                      borderColor: '#fff',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowOpacity: 0.5,
+                      shadowRadius: 6,
+                      elevation: 10,
+                      zIndex: 1000
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700', textAlign: 'center' }}>
+                      TOTAL
+                    </Text>
+                    <Text style={{ color: '#fff', fontSize: 20, fontWeight: '900', textAlign: 'center' }}>
+                      {totalPoints}
+                    </Text>
+                  </View>
+                );
+              })()}
+              
               {/* Línea central */}
               <View style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 2, backgroundColor: '#fff', opacity: 0.9 }} />
               {/* Círculo central */}
@@ -243,7 +281,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                 const crest = pid ? playerPhotos[pid]?.teamCrest : undefined;
                 const points = pid != null ? playerPoints[pid] : null;
                 return (
-                  <View key={position.id} style={{ position: 'absolute', left: `${position.x}%`, top: `${position.y}%`, width: 80, height: 105, marginLeft: -40, marginTop: -52, alignItems: 'center' }}>
+                  <View key={position.id} style={{ position: 'absolute', left: `${position.x}%`, top: `${position.y}%`, width: 80, height: 120, marginLeft: -40, marginTop: -60, alignItems: 'center', justifyContent: 'center' }}>
                     {player ? (
                       <View style={{ alignItems: 'center' }}>
                         <View style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 2, borderColor: player.isCaptain ? '#ffd700' : '#0892D0', backgroundColor: '#0b1220', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8, position: 'relative', overflow: 'visible' }}>

@@ -14,7 +14,7 @@ import { LoginService } from '../../services/LoginService';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { Buffer } from 'buffer';
 import { useFocusEffect } from '@react-navigation/native';
-import { ChevronLeftIcon, MenuIcon } from '../../components/VectorIcons';
+import { ChevronLeftIcon, MenuIcon, CheckIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import Svg, { Path } from 'react-native-svg';
 import { JornadaService } from '../../services/JornadaService';
@@ -252,6 +252,7 @@ export const PlayersMarket = ({ navigation, route }: {
   const [budget, setBudget] = useState<number>(0);
   const [squadPlayerIds, setSquadPlayerIds] = useState<Set<number>>(new Set());
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+  const [sortType, setSortType] = useState<'price' | 'points'>('price');
   
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -429,15 +430,21 @@ export const PlayersMarket = ({ navigation, route }: {
       list = list.filter(p => p.teamId === teamFilter);
     }
     
-    // Ordenamiento por precio
+    // Ordenamiento por precio o puntos
     if (sortOrder) {
       list = [...list].sort((a, b) => {
-        return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+        if (sortType === 'price') {
+          return sortOrder === 'asc' ? a.price - b.price : b.price - a.price;
+        } else {
+          const aPoints = a.totalPoints ?? 0;
+          const bPoints = b.totalPoints ?? 0;
+          return sortOrder === 'asc' ? aPoints - bPoints : bPoints - aPoints;
+        }
       });
     }
     
     return list;
-  }, [players, posFilter, teamFilter, query, selectMode, filterByRole, sortOrder]);
+  }, [players, posFilter, teamFilter, query, selectMode, filterByRole, sortOrder, sortType]);
 
   // Manejar compra de jugador (modo normal)
   const handleBuyPlayer = async (player: PlayerWithPrice) => {
@@ -751,83 +758,108 @@ export const PlayersMarket = ({ navigation, route }: {
 
     // En modo selección, envolver en TouchableOpacity
     const content = (
-      <View style={{ flexDirection: 'column', gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Image
-            source={{ uri: photo }}
-            style={{ width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#334155', marginRight: 12, backgroundColor: '#0b1220' }}
-            resizeMode="cover"
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#cbd5e1', fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{p.name}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <View style={{ 
-                backgroundColor: badgeColor, 
-                paddingHorizontal: 8, 
-                paddingVertical: 4, 
-                borderRadius: 8 
-              }}>
-                <Text style={{ color: '#0f1419', fontWeight: '800', fontSize: 11 }}>{badgeAbbr}</Text>
+      <View style={{ flexDirection: 'column' }}>
+        {/* Fila superior: Ficha del jugador + Precio y Puntos */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+          {/* Ficha del jugador */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <Image
+              source={{ uri: photo }}
+              style={{ width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#334155', marginRight: 12, backgroundColor: '#0b1220' }}
+              resizeMode="cover"
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#cbd5e1', fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{p.name}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                <View style={{ 
+                  backgroundColor: badgeColor, 
+                  paddingHorizontal: 8, 
+                  paddingVertical: 4, 
+                  borderRadius: 8 
+                }}>
+                  <Text style={{ color: '#0f1419', fontWeight: '800', fontSize: 11 }}>{badgeAbbr}</Text>
+                </View>
+                {p.teamCrest && (
+                  <Image
+                    source={{ uri: p.teamCrest }}
+                    style={{ width: 22, height: 22, marginLeft: 8, backgroundColor: 'transparent' }}
+                    resizeMode="contain"
+                  />
+                )}
               </View>
-              {p.teamCrest && (
-                <Image
-                  source={{ uri: p.teamCrest }}
-                  style={{ width: 22, height: 22, marginLeft: 8, backgroundColor: 'transparent' }}
-                  resizeMode="contain"
-                />
-              )}
             </View>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            {/* Precio */}
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ color: '#94a3b8', fontSize: 12 }}>Precio</Text>
-              <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginTop: 2 }}>{p.price}M</Text>
+          
+          {/* Precio y Puntos lado a lado */}
+          <View style={{ flexDirection: 'row', gap: 16, marginLeft: 8 }}>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PRECIO</Text>
+              <Text style={{ color: '#fbbf24', fontSize: 18, fontWeight: '800', marginTop: 2 }}>{p.price}M</Text>
             </View>
-            
-            {/* Botones de acción según estado */}
-            {isAlreadyInSquad ? (
-              // Botón de vender para jugadores fichados
-              <TouchableOpacity
-                onPress={() => handleSellPlayer(p)}
-                disabled={isSaving || jornadaStatus === 'closed'}
-                style={{ 
-                  backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444', 
-                  paddingHorizontal: 12, 
-                  paddingVertical: 8, 
-                  borderRadius: 8,
-                  shadowColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 4,
-                  elevation: 4,
-                  opacity: (isSaving || jornadaStatus === 'closed') ? 0.6 : 1
-                }}
-              >
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>VENDER</Text>
-              </TouchableOpacity>
-            ) : (
-              // Botón de fichar para jugadores NO fichados
-              <TouchableOpacity
-                onPress={() => selectMode ? handleSelectFromPlantilla(p) : handleBuyPlayer(p)}
-                disabled={isSaving || jornadaStatus === 'closed'}
-                style={{ 
-                  backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#10b981', 
-                  paddingHorizontal: 12, 
-                  paddingVertical: 8, 
-                  borderRadius: 8,
-                  shadowColor: jornadaStatus === 'closed' ? '#64748b' : '#10b981',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 4,
-                  elevation: 4,
-                  opacity: isSaving || jornadaStatus === 'closed' ? 0.6 : 1
-                }}
-              >
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>FICHAR</Text>
-              </TouchableOpacity>
-            )}
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PUNTOS</Text>
+              <Text style={{ color: '#10b981', fontSize: 18, fontWeight: '800', marginTop: 2 }}>{p.totalPoints ?? 0}</Text>
+            </View>
           </View>
+        </View>
+        
+        {/* Fila inferior: Botón a la derecha */}
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+          {isAlreadyInSquad ? (
+            // Botón de vender para jugadores fichados
+            <TouchableOpacity
+              onPress={() => handleSellPlayer(p)}
+              disabled={isSaving || jornadaStatus === 'closed'}
+              style={{ 
+                backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444', 
+                paddingHorizontal: 20, 
+                paddingVertical: 10, 
+                borderRadius: 10,
+                shadowColor: jornadaStatus === 'closed' ? '#64748b' : '#ef4444',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.4,
+                shadowRadius: 4,
+                elevation: 4,
+                opacity: (isSaving || jornadaStatus === 'closed') ? 0.6 : 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                minWidth: 110
+              }}
+            >
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path d="M18 6L6 18M6 6l12 12" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>VENDER</Text>
+            </TouchableOpacity>
+          ) : (
+            // Botón de fichar para jugadores NO fichados
+            <TouchableOpacity
+              onPress={() => selectMode ? handleSelectFromPlantilla(p) : handleBuyPlayer(p)}
+              disabled={isSaving || jornadaStatus === 'closed'}
+              style={{ 
+                backgroundColor: jornadaStatus === 'closed' ? '#64748b' : '#10b981', 
+                paddingHorizontal: 20, 
+                paddingVertical: 10, 
+                borderRadius: 10,
+                shadowColor: jornadaStatus === 'closed' ? '#64748b' : '#10b981',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.4,
+                shadowRadius: 4,
+                elevation: 4,
+                opacity: isSaving || jornadaStatus === 'closed' ? 0.6 : 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                minWidth: 110
+              }}
+            >
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                <Path d="M12 5v14M5 12h14" stroke="#fff" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+              </Svg>
+              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>FICHAR</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -1028,36 +1060,72 @@ export const PlayersMarket = ({ navigation, route }: {
                     </View>
                   </View>
                   
-                  {/* Botón de ordenación por precio */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSortOrder(prev => {
-                        if (prev === null) return 'desc';
-                        if (prev === 'desc') return 'asc';
-                        return null;
-                      });
-                    }}
-                    style={{
-                      backgroundColor: '#1a2332',
-                      borderWidth: 1,
-                      borderColor: '#334155',
-                      paddingHorizontal: 14,
-                      paddingVertical: 12,
-                      borderRadius: 10,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginBottom: 12,
-                      gap: 10
-                    }}
-                  >
-                    <Text style={{ color: sortOrder ? '#10b981' : '#fff', fontSize: 14, fontWeight: '600' }}>
-                      Ordenar por precio
-                    </Text>
-                    {sortOrder === null && <SortNeutralIcon />}
-                    {sortOrder === 'asc' && <SortAscIcon />}
-                    {sortOrder === 'desc' && <SortDescIcon />}
-                  </TouchableOpacity>
+                  {/* Botones de ordenación por precio y puntos */}
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                    {/* Ordenar por precio */}
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSortType('price');
+                        setSortOrder(prev => {
+                          if (prev === null || sortType !== 'price') return 'desc';
+                          if (prev === 'desc') return 'asc';
+                          return null;
+                        });
+                      }}
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#1a2332',
+                        borderWidth: 1,
+                        borderColor: sortType === 'price' && sortOrder ? '#10b981' : '#334155',
+                        paddingVertical: 12,
+                        borderRadius: 10,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8
+                      }}
+                    >
+                      <Text style={{ color: sortType === 'price' && sortOrder ? '#10b981' : '#fff', fontSize: 13, fontWeight: '600' }}>
+                        Precio
+                      </Text>
+                      {sortType === 'price' && sortOrder === null && <SortNeutralIcon />}
+                      {sortType === 'price' && sortOrder === 'asc' && <SortAscIcon />}
+                      {sortType === 'price' && sortOrder === 'desc' && <SortDescIcon />}
+                      {sortType !== 'price' && <SortNeutralIcon />}
+                    </TouchableOpacity>
+                    
+                    {/* Ordenar por puntos */}
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSortType('points');
+                        setSortOrder(prev => {
+                          if (prev === null || sortType !== 'points') return 'desc';
+                          if (prev === 'desc') return 'asc';
+                          return null;
+                        });
+                      }}
+                      style={{
+                        flex: 1,
+                        backgroundColor: '#1a2332',
+                        borderWidth: 1,
+                        borderColor: sortType === 'points' && sortOrder ? '#10b981' : '#334155',
+                        paddingVertical: 12,
+                        borderRadius: 10,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8
+                      }}
+                    >
+                      <Text style={{ color: sortType === 'points' && sortOrder ? '#10b981' : '#fff', fontSize: 13, fontWeight: '600' }}>
+                        Puntos
+                      </Text>
+                      {sortType === 'points' && sortOrder === null && <SortNeutralIcon />}
+                      {sortType === 'points' && sortOrder === 'asc' && <SortAscIcon />}
+                      {sortType === 'points' && sortOrder === 'desc' && <SortDescIcon />}
+                      {sortType !== 'points' && <SortNeutralIcon />}
+                    </TouchableOpacity>
+                  </View>
                   
                   <View style={{ marginBottom: 12 }}>
                     <Text style={{ color: '#94a3b8', marginBottom: 6 }}>Buscar jugador</Text>

@@ -14,7 +14,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import FootballService from '../../services/FutbolService';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { CustomAlertManager } from '../../components/CustomAlert';
-import { SafeLayout } from '../../components/SafeLayout';
+import { SafeLayout, useSafePadding } from '../../components/SafeLayout';
 
 
 
@@ -33,6 +33,7 @@ export const Clasificacion = () => {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { ligaId } = route.params;
   const { ligaName } = route.params;
+  const safePadding = useSafePadding();
 
   const [jugadores, setJugadores] = useState<UsuarioClasificacion[]>([]);
   const [ligaNombre, setLigaNombre] = useState<string>(ligaName);
@@ -202,6 +203,7 @@ export const Clasificacion = () => {
           end={{ x: 0, y: 1 }}
           style={{ flex: 1 }}
         >
+          {/* Top Nav Bar */}
           <LigaTopNavBar
             nombreLiga={ligaNombre}
             onInvitePress={() => navigation.navigate('InvitarAmigos', { 
@@ -211,13 +213,18 @@ export const Clasificacion = () => {
             })}
             onMenuPress={() => setIsDrawerOpen(true)}
           />
+          
+          {/* Espaciador para que el contenido no quede debajo de la navbar fija */}
+          <View  />
+          
           {/* Selector de Jornada */}
           <View style={{ 
             backgroundColor: '#181818ff', 
             paddingVertical: 12,
             paddingHorizontal: 16,
             borderBottomWidth: 1, 
-            borderBottomColor: '#334155' 
+            borderBottomColor: '#334155',
+            zIndex: showJornadaPicker ? 999 : 5
           }}>
             <TouchableOpacity
               onPress={() => setShowJornadaPicker(!showJornadaPicker)}
@@ -248,7 +255,13 @@ export const Clasificacion = () => {
                 marginTop: 8,
                 maxHeight: 300,
                 borderWidth: 2,
-                borderColor: '#334155'
+                borderColor: '#334155',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.5,
+                shadowRadius: 8,
+                elevation: 10,
+                zIndex: 999
               }}>
                 <ScrollView>
                   <TouchableOpacity

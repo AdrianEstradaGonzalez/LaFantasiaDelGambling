@@ -278,7 +278,7 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
       console.log('🔍 LigaService.obtenerLigasPorUsuario - Token:', !!token);
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 seconds timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout (aumentado desde 10s)
 
       const res = await fetch(`${ApiConfig.BASE_URL}/leagues/user/${userId}`, {
         method: 'GET',
@@ -299,7 +299,9 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
 
       return json as Liga[];
     } catch (error: any) {
-      console.warn('LigaService.obtenerLigasPorUsuario:', error);
+      if (__DEV__) {
+        console.warn('LigaService.obtenerLigasPorUsuario:', error);
+      }
       
       // Handle network-specific errors
       if (error.name === 'AbortError') {

@@ -259,7 +259,6 @@ const AdminPanel: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: 16,
-          paddingTop: 50,
         }}
       >
         {/* Botón de volver */}
@@ -274,7 +273,7 @@ const AdminPanel: React.FC = () => {
         <Text
           style={{
             color: '#fff',
-            fontSize: Typography.sizes['2xl'],
+            fontSize: Typography.sizes['xl'],
             fontWeight: '700',
             textAlign: 'center',
             flex: 1,

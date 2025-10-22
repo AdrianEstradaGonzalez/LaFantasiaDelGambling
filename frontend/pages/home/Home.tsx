@@ -69,38 +69,51 @@ export const Home = ({ navigation, route }: HomeProps) => {
     try {
       setLoading(true);
 
-      // 🔍 DEBUG: Ver todos los datos almacenados
-      const allStoredData = {
-        userId: await EncryptedStorage.getItem('userId'),
-        accessToken: await EncryptedStorage.getItem('accessToken'),
-        refreshToken: await EncryptedStorage.getItem('refreshToken'),
-        session: await EncryptedStorage.getItem('session'),
-        token: await EncryptedStorage.getItem('token'), // por si quedó del registro anterior
-      };
-      console.log('🔍 Home.tsx - Datos almacenados:', allStoredData);
+      // 🔍 DEBUG: Ver todos los datos almacenados (solo en desarrollo)
+      if (__DEV__) {
+        const allStoredData = {
+          userId: await EncryptedStorage.getItem('userId'),
+          accessToken: await EncryptedStorage.getItem('accessToken'),
+          refreshToken: await EncryptedStorage.getItem('refreshToken'),
+          session: await EncryptedStorage.getItem('session'),
+          token: await EncryptedStorage.getItem('token'), // por si quedó del registro anterior
+        };
+        console.log('🔍 Home.tsx - Datos almacenados:', allStoredData);
+      }
 
       // 1) intenta leer userId directo
       let userId = await EncryptedStorage.getItem('userId');
-      console.log('🔍 userId directo:', userId);
+      if (__DEV__) {
+        console.log('🔍 userId directo:', userId);
+      }
 
       // 2) fallback: session
       if (!userId) {
         const session = await EncryptedStorage.getItem('session');
-        console.log('🔍 session encontrada:', session);
+        if (__DEV__) {
+          console.log('🔍 session encontrada:', session);
+        }
         if (session) {
           const { user } = JSON.parse(session);
           userId = user?.id ?? null;
-          console.log('🔍 userId desde session:', userId);
+          if (__DEV__) {
+            console.log('🔍 userId desde session:', userId);
+          }
         }
       }
 
       if (!userId) {
-        console.warn('❌ No hay userId; redirige a Login si aplica');
+        if (__DEV__) {
+          console.warn('❌ No hay userId; redirige a Login si aplica');
+        }
         setLigas([]);
+        setLoading(false);
         return;
       }
 
-      console.log('✅ UserId encontrado:', userId);
+      if (__DEV__) {
+        console.log('✅ UserId encontrado:', userId);
+      }
 
       // 🔹 endpoint público por userId
       const ligasUsuario = await LigaService.obtenerLigasPorUsuario(userId);
@@ -111,12 +124,13 @@ export const Home = ({ navigation, route }: HomeProps) => {
       }));
 
       setLigas(ligasFormateadas);
+      setLoading(false); // ✅ Solo aquí se desactiva el loading después de cargar las ligas
     } catch (error) {
-      console.warn('Error al obtener ligas del usuario:', error);
-      // Show user-friendly error message but don't break the app
+      if (__DEV__) {
+        console.warn('Error al obtener ligas del usuario:', error);
+      }
+      // Si hay error, mostrar array vacío pero quitar loading
       setLigas([]);
-      // You could show a toast or error message here if you have a toast system
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -129,47 +143,49 @@ export const Home = ({ navigation, route }: HomeProps) => {
     fetchLigasUsuario();
 
     const fetchMatches = async () => {
-  try {
-    setLoadingPartidos(true); // 👈 solo marcamos loading de partidos
-    const allMatches = await FootballService.getAllMatchesCached();
-    setPartidos(allMatches);
+      try {
+        setLoadingPartidos(true);
+        const allMatches = await FootballService.getAllMatchesCached();
+        setPartidos(allMatches);
 
-    const jornadasDisponibles = Array.from(
-      new Set(allMatches.map((p) => p.jornada))
-    )
-      .filter((j) => j != null)
-      .sort((a, b) => a - b);
-    setJornadas(jornadasDisponibles);
+        const jornadasDisponibles = Array.from(
+          new Set(allMatches.map((p) => p.jornada))
+        )
+          .filter((j) => j != null)
+          .sort((a, b) => a - b);
+        setJornadas(jornadasDisponibles);
 
-    // 🔹 Determinar jornada por defecto
-    const upcoming = allMatches.find((p) => p.notStarted)?.jornada;
-    const fallback = jornadasDisponibles[0];
+        // 🔹 Determinar jornada por defecto
+        const upcoming = allMatches.find((p) => p.notStarted)?.jornada;
+        const fallback = jornadasDisponibles[0];
 
-    if (jornadaActual === 1) {
-      const nextJornada = upcoming ?? fallback;
-      if (nextJornada != null) {
-        setJornadaActual(nextJornada);
-        // Centrar el scroll después de un breve delay
-        setTimeout(() => {
-          scrollToJornada(nextJornada);
-        }, 500);
+        if (jornadaActual === 1) {
+          const nextJornada = upcoming ?? fallback;
+          if (nextJornada != null) {
+            setJornadaActual(nextJornada);
+            // Centrar el scroll después de un breve delay
+            setTimeout(() => {
+              scrollToJornada(nextJornada);
+            }, 500);
+          }
+        } else if (!jornadasDisponibles.includes(jornadaActual)) {
+          const nextJornada = upcoming ?? fallback;
+          if (nextJornada != null) {
+            setJornadaActual(nextJornada);
+            // Centrar el scroll después de un breve delay
+            setTimeout(() => {
+              scrollToJornada(nextJornada);
+            }, 500);
+          }
+        }
+        setLoadingPartidos(false);
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('Error al obtener partidos:', error);
+        }
+        setLoadingPartidos(false);
       }
-    } else if (!jornadasDisponibles.includes(jornadaActual)) {
-      const nextJornada = upcoming ?? fallback;
-      if (nextJornada != null) {
-        setJornadaActual(nextJornada);
-        // Centrar el scroll después de un breve delay
-        setTimeout(() => {
-          scrollToJornada(nextJornada);
-        }, 500);
-      }
-    }
-  } catch (error) {
-    console.warn('Error al obtener partidos:', error);
-  } finally {
-    setLoadingPartidos(false); // 👈 desactivamos solo el spinner de partidos
-  }
-};
+    };
 
     fetchMatches();
   }, [fetchLigasUsuario]);
@@ -181,7 +197,9 @@ export const Home = ({ navigation, route }: HomeProps) => {
     useCallback(() => {
       // Si viene con parámetro de refresh, recargar ligas
       if (route.params?.refreshLigas) {
-        console.log('🔄 Refrescando ligas por parámetro de navegación');
+        if (__DEV__) {
+          console.log('🔄 Refrescando ligas por parámetro de navegación');
+        }
         fetchLigasUsuario();
         // Limpiar el parámetro para evitar refresh innecesarios
         navigation.setParams({ refreshLigas: undefined });
