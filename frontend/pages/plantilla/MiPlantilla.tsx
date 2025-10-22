@@ -437,29 +437,49 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     return () => { mounted = false; };
   }, [ligaId]);
   
-  // 🚀 OPTIMIZADO: Cargar puntos solo cuando sea necesario
+  // Cargar puntos cuando se cambia a la pestaña de puntuación
   useEffect(() => {
-    // Solo ejecutar cuando cambia a tab 'puntuacion'
+    console.log('[MiPlantilla] useEffect puntuación disparado:', {
+      activeTab,
+      jornadaStatus,
+      currentMatchday,
+      hasPlayers: Object.keys(selectedPlayers).length,
+      lastLoaded: lastLoadedJornada.current
+    });
+    
+    // Solo ejecutar cuando estamos en tab 'puntuacion'
     if (activeTab !== 'puntuacion') {
+      console.log('[MiPlantilla] No estamos en tab puntuación, saltando');
       return;
     }
     
     const hasPlayers = Object.keys(selectedPlayers).length > 0;
     
-    // Solo cargar si no hemos cargado esta jornada todavía o si cambió la jornada
-    const shouldLoad = jornadaStatus === 'closed' && 
-                       hasPlayers && 
-                       currentMatchday && 
-                       lastLoadedJornada.current !== currentMatchday;
-    
-    if (shouldLoad) {
-      console.log(`[MiPlantilla] ✅ Cargando puntos para jornada ${currentMatchday}`);
-      lastLoadedJornada.current = currentMatchday;
-      // Solo mostrar loading si no hay puntos cargados todavía
-      const hasLoadedPoints = Object.keys(playerCurrentPoints).length > 0;
-      loadCurrentJornadaPoints(selectedPlayers, !hasLoadedPoints);
+    if (!hasPlayers) {
+      console.log('[MiPlantilla] No hay jugadores cargados todavía');
+      return;
     }
-  }, [activeTab, jornadaStatus, currentMatchday]); // 🚀 Removido selectedPlayers y playerCurrentPoints para evitar re-renders innecesarios
+    
+    if (jornadaStatus !== 'closed') {
+      console.log('[MiPlantilla] Jornada no está cerrada');
+      return;
+    }
+    
+    if (!currentMatchday) {
+      console.log('[MiPlantilla] No hay jornada actual');
+      return;
+    }
+    
+    // Solo cargar si no hemos cargado esta jornada todavía
+    if (lastLoadedJornada.current === currentMatchday) {
+      console.log('[MiPlantilla] Ya cargamos esta jornada:', currentMatchday);
+      return;
+    }
+    
+    console.log(`[MiPlantilla] ✅ Iniciando carga de puntos para jornada ${currentMatchday}`);
+    lastLoadedJornada.current = currentMatchday;
+    loadCurrentJornadaPoints(selectedPlayers, true);
+  }, [activeTab, jornadaStatus, currentMatchday, selectedPlayers]);
   
   // Animación del drawer
   useEffect(() => {
