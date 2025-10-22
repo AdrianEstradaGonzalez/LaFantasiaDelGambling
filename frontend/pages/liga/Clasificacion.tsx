@@ -14,7 +14,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import FootballService from '../../services/FutbolService';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { CustomAlertManager } from '../../components/CustomAlert';
-import { SafeLayout } from '../../components/SafeLayout';
+import { SafeLayout, useSafePadding } from '../../components/SafeLayout';
 
 
 
@@ -33,6 +33,7 @@ export const Clasificacion = () => {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { ligaId } = route.params;
   const { ligaName } = route.params;
+  const safePadding = useSafePadding();
 
   const [jugadores, setJugadores] = useState<UsuarioClasificacion[]>([]);
   const [ligaNombre, setLigaNombre] = useState<string>(ligaName);
@@ -225,6 +226,9 @@ export const Clasificacion = () => {
             onMenuPress={() => setIsDrawerOpen(true)}
           />
           
+          {/* Espaciador para que el contenido no quede debajo de la navbar fija */}
+          <View style={{ height: safePadding.paddingTop + 50 }} />
+          
           {/* Selector de Jornada */}
           <View style={{ 
             backgroundColor: '#181818ff', 
@@ -232,7 +236,7 @@ export const Clasificacion = () => {
             paddingHorizontal: 16,
             borderBottomWidth: 1, 
             borderBottomColor: '#334155',
-            zIndex: showJornadaPicker ? 1000 : 5
+            zIndex: showJornadaPicker ? 999 : 5
           }}>
             <TouchableOpacity
               onPress={() => setShowJornadaPicker(!showJornadaPicker)}
@@ -269,7 +273,7 @@ export const Clasificacion = () => {
                 shadowOpacity: 0.5,
                 shadowRadius: 8,
                 elevation: 10,
-                zIndex: 1000
+                zIndex: 999
               }}>
                 <ScrollView>
                   <TouchableOpacity

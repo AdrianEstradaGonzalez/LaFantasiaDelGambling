@@ -25,12 +25,16 @@ const LigaTopNavBar: React.FC<Props> = ({ nombreLiga, onInvitePress, onMenuPress
             style={[
                 styles.navBar,
                 {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
                     paddingTop: insets.top,
                     backgroundColor: '#181818',
                     borderBottomWidth: 0.5,
                     borderBottomColor: '#333',
                     paddingBottom: 10,
-                    zIndex: 10,
+                    zIndex: 1000,
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
