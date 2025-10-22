@@ -74,11 +74,6 @@ export const LeagueService = {
       throw new Error('Liga no encontrada');
     }
 
-    // No permitir que el líder abandone su propia liga
-    if (league.leaderId === userId) {
-      throw new Error('El líder no puede abandonar la liga. Debes eliminarla o transferir el liderazgo primero.');
-    }
-
     // Verificar que el usuario es miembro de la liga
     const membership = await prisma.leagueMember.findUnique({
       where: {
@@ -91,6 +86,35 @@ export const LeagueService = {
 
     if (!membership) {
       throw new Error('No eres miembro de esta liga');
+    }
+
+    // Obtener todos los miembros de la liga
+    const allMembers = await prisma.leagueMember.findMany({
+      where: { leagueId }
+    });
+
+    // Si es el único miembro, eliminar la liga completa
+    if (allMembers.length === 1) {
+      await prisma.league.delete({
+        where: { id: leagueId }
+      });
+      return { success: true, message: 'Liga eliminada (eras el único miembro)' };
+    }
+
+    // Si es el líder, transferir el liderazgo a otro miembro aleatorio
+    if (league.leaderId === userId) {
+      const otherMembers = allMembers.filter(m => m.userId !== userId);
+      if (otherMembers.length > 0) {
+        // Seleccionar un miembro aleatorio para ser el nuevo líder
+        const newLeader = otherMembers[Math.floor(Math.random() * otherMembers.length)];
+        
+        await prisma.league.update({
+          where: { id: leagueId },
+          data: { leaderId: newLeader.userId }
+        });
+        
+        console.log(`[LeagueService] Liderazgo transferido de ${userId} a ${newLeader.userId}`);
+      }
     }
 
     // Eliminar la plantilla del usuario en esta liga (si existe)

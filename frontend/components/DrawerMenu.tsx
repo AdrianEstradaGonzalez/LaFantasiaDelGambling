@@ -136,7 +136,7 @@ export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
 
     CustomAlertManager.alert(
       'Abandonar Liga',
-      '¿Estás seguro que deseas abandonar esta liga? Se eliminará tu plantilla y no podrás recuperarla.',
+      '¿Estás seguro que deseas abandonar esta liga? Se eliminará tu plantilla y no podrás recuperarla. Si eres el líder, se transferirá el liderazgo a otro miembro.',
       [
         {
           text: 'Cancelar',
@@ -166,9 +166,11 @@ export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
                 throw new Error(error.message || 'Error al abandonar la liga');
               }
 
+              const result = await response.json();
+
               CustomAlertManager.alert(
                 'Liga Abandonada',
-                'Has abandonado la liga exitosamente',
+                result.message || 'Has abandonado la liga exitosamente',
                 [
                   {
                     text: 'OK',
