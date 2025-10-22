@@ -358,5 +358,147 @@ export const LeagueService = {
 getLeaguesByUser: (userId: string) =>
   LeagueRepo.getByUserId(userId),
 
+  /**
+   * Calcula puntos en tiempo real para una liga consultando API-Football
+   * Actualiza las estadísticas de TODOS los jugadores de TODAS las plantillas de la liga
+   * Solo funciona si la jornada está abierta (en curso)
+   */
+  calculateRealTimePoints: async (leagueId: string) => {
+    const { PlayerStatsService } = await import('./playerStats.service.js');
+    
+    const league = await LeagueRepo.getById(leagueId);
+    if (!league) {
+      throw new Error('Liga no encontrada');
+    }
+
+    const currentJornada = league.currentJornada || 1;
+    const jornadaStatus = league.jornadaStatus || 'open';
+
+    // Solo calcular si la jornada está abierta
+    if (jornadaStatus !== 'open') {
+      throw new Error('Solo se puede calcular en tiempo real cuando la jornada está en curso');
+    }
+
+    console.log(`[calculateRealTimePoints] 🔄 Calculando puntos en tiempo real para liga ${leagueId}, jornada ${currentJornada}`);
+
+    // Obtener todos los miembros de la liga
+    const members = await LeagueMemberRepo.listByLeague(leagueId);
+
+    // Recopilar todos los jugadores únicos de todas las plantillas
+    const allPlayerIds = new Set<number>();
+    const squadsByUser: Record<string, any> = {};
+
+    await Promise.all(
+      members.map(async (member) => {
+        const squad = await prisma.squad.findUnique({
+          where: {
+            userId_leagueId: {
+              userId: member.userId,
+              leagueId: leagueId
+            }
+          },
+          include: {
+            players: true
+          }
+        });
+
+        if (squad && squad.players.length > 0) {
+          squadsByUser[member.userId] = squad;
+          squad.players.forEach((p: any) => allPlayerIds.add(p.playerId));
+        }
+      })
+    );
+
+    console.log(`[calculateRealTimePoints] 📊 ${allPlayerIds.size} jugadores únicos encontrados`);
+
+    // Calcular estadísticas de todos los jugadores para la jornada actual
+    // Esto consultará la API-Football para cada jugador
+    await Promise.all(
+      Array.from(allPlayerIds).map(async (playerId) => {
+        try {
+          await PlayerStatsService.getPlayerStatsForJornada(playerId, currentJornada, {
+            season: 2025,
+            forceRefresh: true // Forzar consulta a API para datos frescos
+          });
+          console.log(`[calculateRealTimePoints] ✅ Jugador ${playerId} actualizado`);
+        } catch (error) {
+          console.error(`[calculateRealTimePoints] ❌ Error actualizando jugador ${playerId}:`, error);
+        }
+      })
+    );
+
+    // Ahora calcular los puntos de cada usuario con sus plantillas
+    const userPoints = await Promise.all(
+      members.map(async (member) => {
+        const squad = squadsByUser[member.userId];
+        
+        if (!squad || squad.players.length === 0) {
+          return {
+            userId: member.userId,
+            userName: member.user?.name || 'Usuario',
+            points: 0,
+            players: []
+          };
+        }
+
+        const playerIds = squad.players.map((p: any) => p.playerId);
+        const playerStats = await prisma.playerStats.findMany({
+          where: {
+            playerId: { in: playerIds },
+            jornada: currentJornada,
+            season: 2025
+          },
+          include: {
+            player: {
+              select: {
+                id: true,
+                name: true,
+                position: true
+              }
+            }
+          }
+        });
+
+        let totalPoints = 0;
+        const captainId = squad.players.find((p: any) => p.isCaptain)?.playerId || null;
+
+        const playersWithPoints = playerStats.map((stats: any) => {
+          const points = stats.totalPoints || 0;
+          const isCaptain = stats.playerId === captainId;
+          const finalPoints = isCaptain ? points * 2 : points;
+          totalPoints += finalPoints;
+
+          return {
+            playerId: stats.playerId,
+            playerName: stats.player.name,
+            position: stats.player.position,
+            points,
+            isCaptain,
+            finalPoints
+          };
+        });
+
+        return {
+          userId: member.userId,
+          userName: member.user?.name || 'Usuario',
+          points: totalPoints,
+          players: playersWithPoints
+        };
+      })
+    );
+
+    // Ordenar por puntos
+    userPoints.sort((a, b) => b.points - a.points);
+
+    console.log(`[calculateRealTimePoints] ✅ Cálculo completado`);
+
+    return {
+      leagueId: league.id,
+      leagueName: league.name,
+      jornada: currentJornada,
+      status: jornadaStatus,
+      standings: userPoints
+    };
+  },
 
 };

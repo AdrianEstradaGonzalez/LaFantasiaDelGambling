@@ -88,4 +88,19 @@ const leagues = await LeagueService.getLeaguesByUser(userId);
 reply.send(leagues);
 },
 
+  // Calcular puntos en tiempo real consultando API-Football
+  calculateRealTimePoints: async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { leagueId } = deleteLeagueParams.parse((req as any).params);
+      const result = await LeagueService.calculateRealTimePoints(leagueId);
+      reply.send(result);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      req.log.error('Error calculating real-time points:', error);
+      throw new AppError(500, "INTERNAL_ERROR", error.message || "Error al calcular puntos en tiempo real");
+    }
+  },
+
 };

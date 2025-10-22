@@ -312,4 +312,48 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
       throw new Error(error?.message || 'No se pudieron obtener las ligas');
     }
   }
+
+  // 🔄 Calcular puntos en tiempo real consultando API-Football
+  // Solo funciona cuando la jornada está en curso (open)
+  static async calculateRealTimePoints(leagueId: string) {
+    try {
+      const token = await this.getAccessToken();
+      if (!token) throw new Error('Usuario no autenticado');
+
+      console.log('🔄 LigaService.calculateRealTimePoints - Calculando puntos en tiempo real...');
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutos timeout (puede tardar)
+
+      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/${leagueId}/calculate-realtime`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      console.log('🔄 LigaService.calculateRealTimePoints - Status:', res.status);
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const friendlyMessage = this.mapErrorToFriendlyMessage(json, res.status);
+        throw new Error(friendlyMessage);
+      }
+
+      console.log('✅ LigaService.calculateRealTimePoints - Cálculo completado');
+      return json;
+    } catch (error: any) {
+      console.warn('LigaService.calculateRealTimePoints:', error);
+      
+      if (error.name === 'AbortError') {
+        throw new Error('El cálculo tardó demasiado. Intenta de nuevo.');
+      }
+      
+      throw new Error(error?.message || 'No se pudieron calcular los puntos en tiempo real');
+    }
+  }
 }

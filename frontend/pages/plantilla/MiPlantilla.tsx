@@ -627,6 +627,21 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
       try {
         setIsLoading(true);
+        
+        // ✨ NUEVO: Calcular puntos en tiempo real si la jornada está en curso
+        const status = await JornadaService.getJornadaStatus(ligaId);
+        if (status.status === 'open') {
+          console.log('[MiPlantilla] 🔄 Jornada en curso, calculando puntos en tiempo real...');
+          try {
+            const { LigaService } = await import('../../services/LigaService');
+            await LigaService.calculateRealTimePoints(ligaId);
+            console.log('[MiPlantilla] ✅ Puntos en tiempo real calculados');
+          } catch (error) {
+            console.error('[MiPlantilla] ❌ Error calculando puntos en tiempo real:', error);
+            // Continuar de todos modos para mostrar los datos existentes
+          }
+        }
+        
         const [existingSquad, budgetData] = await Promise.all([
           SquadService.getUserSquad(ligaId),
           SquadService.getUserBudget(ligaId)

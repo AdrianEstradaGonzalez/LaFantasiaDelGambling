@@ -99,6 +99,23 @@ export const Clasificacion = () => {
           setCurrentUserId(userId);
         }
 
+        // Obtener estado de la jornada PRIMERO
+        const status = await JornadaService.getJornadaStatus(ligaId);
+        const leagueStatus = status.status as 'open' | 'closed';
+        setJornadaStatus(leagueStatus);
+
+        // ✨ Si la jornada está en curso (open), calcular puntos en tiempo real primero
+        if (leagueStatus === 'open' && (!classificationsCache || refreshKey > 0)) {
+          console.log('[Clasificacion] 🔄 Jornada en curso, calculando puntos en tiempo real...');
+          try {
+            await LigaService.calculateRealTimePoints(ligaId);
+            console.log('[Clasificacion] ✅ Puntos en tiempo real calculados');
+          } catch (error) {
+            console.error('[Clasificacion] ❌ Error calculando puntos en tiempo real:', error);
+            // Continuar de todos modos para mostrar los datos existentes
+          }
+        }
+
         // Obtener jornadas disponibles
         const matchdays = await FootballService.getAvailableMatchdays();
         setAvailableJornadas(matchdays);
@@ -116,21 +133,16 @@ export const Clasificacion = () => {
           // Determinar jornada por defecto según el estado de la liga (solo en primera carga)
           let initialJornada: number | 'Total' = 'Total';
           if (isFirstLoad.current) {
-            try {
-              const status = await JornadaService.getJornadaStatus(ligaId);
-              const leagueJornada = status.currentJornada;
-              const leagueStatus = status.status as 'open' | 'closed';
-              
-              console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
-              
-              // Si la jornada está cerrada (partidos en curso), mostrar la jornada actual
-              // Si está abierta (se pueden hacer cambios), mostrar Total por defecto
-              if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
-                initialJornada = leagueJornada;
-              }
-            } catch (error) {
-              console.log('No se pudo obtener la jornada de la liga, usando Total');
+            const leagueJornada = status.currentJornada;
+            
+            console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
+            
+            // Si la jornada está en curso (open), mostrar la jornada actual
+            // Si está cerrada (se pueden hacer cambios), mostrar Total por defecto
+            if (leagueStatus === 'open' && leagueJornada && matchdays.includes(leagueJornada)) {
+              initialJornada = leagueJornada;
             }
+            
             isFirstLoad.current = false;
           } else {
             initialJornada = selectedJornada; // Mantener la jornada seleccionada
@@ -177,31 +189,7 @@ export const Clasificacion = () => {
     };
 
     fetchClasificacion();
-  }, [ligaId, selectedJornada, refreshKey]); // Eliminar jornadaStatus de dependencias
-
-  // Cargar estado de la jornada solo una vez al entrar
-  useEffect(() => {
-    let mounted = true;
-    
-    const loadStatus = async () => {
-      try {
-        if (ligaId) {
-          const status = await JornadaService.getJornadaStatus(ligaId);
-          if (mounted) {
-            setJornadaStatus(status.status as 'open' | 'closed');
-          }
-        }
-      } catch (e) {
-        console.warn('No se pudo obtener estado de jornada:', e);
-      }
-    };
-    
-    loadStatus();
-    
-    return () => { 
-      mounted = false;
-    };
-  }, [ligaId]);
+  }, [ligaId, selectedJornada, refreshKey]);
 
   return (
     <SafeLayout backgroundColor="#181818ff">
