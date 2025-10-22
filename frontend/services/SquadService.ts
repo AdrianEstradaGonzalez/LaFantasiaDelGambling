@@ -23,18 +23,6 @@ export interface SquadPlayer {
   pricePaid: number;
   isCaptain: boolean;
   createdAt: string;
-  playerData?: {
-    id: number;
-    name: string;
-    position: string;
-    teamId: number;
-    teamName: string;
-    teamCrest?: string;
-    nationality?: string;
-    shirtNumber?: number;
-    photo?: string;
-    price: number;
-  };
 }
 
 export interface SaveSquadRequest {
