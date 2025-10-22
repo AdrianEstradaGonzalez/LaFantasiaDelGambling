@@ -28,6 +28,21 @@ export async function buildApp() {
         },
       } : undefined,
     },
+    // Permitir Content-Type: application/json en GET requests sin body
+    ignoreTrailingSlash: true,
+    disableRequestLogging: false,
+  });
+
+  // Configurar parser de JSON para permitir body vacío
+  app.removeContentTypeParser('application/json');
+  app.addContentTypeParser('application/json', { parseAs: 'string' }, function (req, body, done) {
+    try {
+      const json = body === '' ? {} : JSON.parse(body as string);
+      done(null, json);
+    } catch (err: any) {
+      err.statusCode = 400;
+      done(err, undefined);
+    }
   });
 
   // Plugins de seguridad
