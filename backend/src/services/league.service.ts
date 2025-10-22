@@ -413,6 +413,34 @@ getLeaguesByUser: (userId: string) =>
 
       console.log(`[calculateRealTimePoints] 📊 ${allPlayerIds.size} jugadores únicos encontrados`);
 
+      // ✨ NUEVO: Verificar que todos los jugadores estén en la BD, si no, cargarlos desde la API
+      const existingPlayers = await prisma.player.findMany({
+        where: {
+          id: { in: Array.from(allPlayerIds) }
+        },
+        select: { id: true }
+      });
+
+      const existingPlayerIds = new Set(existingPlayers.map(p => p.id));
+      const missingPlayerIds = Array.from(allPlayerIds).filter(id => !existingPlayerIds.has(id));
+
+      if (missingPlayerIds.length > 0) {
+        console.log(`[calculateRealTimePoints] ⚠️ ${missingPlayerIds.length} jugadores faltantes en BD, cargando desde API...`);
+        
+        // Importar PlayerService para cargar jugadores
+        const { PlayerService } = await import('./player.service.js');
+        
+        // Cargar jugadores faltantes desde la API
+        for (const playerId of missingPlayerIds) {
+          try {
+            await PlayerService.getPlayerById(playerId);
+            console.log(`[calculateRealTimePoints] ✅ Jugador ${playerId} cargado en BD`);
+          } catch (error) {
+            console.error(`[calculateRealTimePoints] ❌ Error cargando jugador ${playerId}:`, error);
+          }
+        }
+      }
+
       // Calcular estadísticas de todos los jugadores para la jornada actual
       // Esto consultará la API-Football para cada jugador
       await Promise.all(
