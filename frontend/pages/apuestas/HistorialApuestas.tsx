@@ -462,7 +462,8 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                       navigation.reset(state);
                       setIsDrawerOpen(false);
                     },
-                  }} 
+                  }}
+                  ligaId={ligaId}
                 />
               </Animated.View>
               {/* Overlay to close drawer */}

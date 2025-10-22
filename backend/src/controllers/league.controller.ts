@@ -56,6 +56,23 @@ export const LeagueController = {
     reply.code(204).send();
   },
 
+  leaveLeague: async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = (req.user as any)?.sub || (req.user as any)?.id;
+      if (!userId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
+      
+      const { leagueId } = (req as any).params;
+      const result = await LeagueService.leaveLeague(leagueId, userId);
+      reply.send(result);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      req.log.error('Error leaving league:', error);
+      throw new AppError(500, "INTERNAL_ERROR", error.message || "Error al abandonar la liga");
+    }
+  },
+
   listMembers: async (req: FastifyRequest, reply: FastifyReply) => {
     const { leagueId } = deleteLeagueParams.parse((req as any).params);
     const jornada = (req as any).query?.jornada;

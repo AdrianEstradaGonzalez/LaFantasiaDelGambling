@@ -1861,7 +1861,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                       navigation.reset(state);
                       setIsDrawerOpen(false);
                     },
-                  }} 
+                  }}
+                  ligaId={ligaId}
                 />
               </Animated.View>
               {/* Overlay to close drawer */}

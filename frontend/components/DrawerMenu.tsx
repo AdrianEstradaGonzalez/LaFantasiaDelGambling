@@ -15,15 +15,19 @@ import {
   HomeIcon, 
   LogoutIcon, 
   ShieldCheckIcon,
-  FileTextIcon 
+  FileTextIcon,
+  DeleteIcon,
+  ShieldIcon,
+  UsersIcon
 } from './VectorIcons';
 import { CustomAlertManager } from './CustomAlert';
 
 interface DrawerMenuProps {
   navigation: any;
+  ligaId?: string; // ID de la liga actual (opcional)
 }
 
-export const DrawerMenu = ({ navigation }: DrawerMenuProps) => {
+export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
   const [userName, setUserName] = useState<string>('Usuario');
   const [userEmail, setUserEmail] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -125,6 +129,73 @@ export const DrawerMenu = ({ navigation }: DrawerMenuProps) => {
     } catch (error) {
       console.error('Error al decodificar token:', error);
     }
+  };
+
+  const handleLeaveLeague = () => {
+    if (!ligaId) return;
+
+    CustomAlertManager.alert(
+      'Abandonar Liga',
+      '¿Estás seguro que deseas abandonar esta liga? Se eliminará tu plantilla y no podrás recuperarla.',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+          onPress: () => {},
+        },
+        {
+          text: 'Abandonar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const token = await EncryptedStorage.getItem('accessToken');
+              if (!token) {
+                throw new Error('No autenticado');
+              }
+
+              const response = await fetch(`${ApiConfig.BASE_URL}/leagues/${ligaId}/leave`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+
+              if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Error al abandonar la liga');
+              }
+
+              CustomAlertManager.alert(
+                'Liga Abandonada',
+                'Has abandonado la liga exitosamente',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Home' }],
+                      });
+                    },
+                  },
+                ],
+                { icon: 'checkmark-circle', iconColor: '#10b981' }
+              );
+            } catch (error: any) {
+              console.error('Error al abandonar liga:', error);
+              CustomAlertManager.alert(
+                'Error',
+                error.message || 'No se pudo abandonar la liga',
+                [{ text: 'OK', onPress: () => {} }],
+                { icon: 'alert-circle', iconColor: '#ef4444' }
+              );
+            }
+          },
+        },
+      ],
+      { icon: 'alert-circle', iconColor: '#ef4444' }
+    );
   };
 
   const handleLogout = () => {
@@ -251,6 +322,29 @@ export const DrawerMenu = ({ navigation }: DrawerMenuProps) => {
             }}
             iconColor="#a78bfa"
           />
+
+          {/* Divisor */}
+          <View style={styles.divider} />
+
+          <MenuItem
+            icon={<ShieldIcon size={24} color="#10b981" />}
+            label="Crear Liga"
+            onPress={() => {
+              navigation.closeDrawer();
+              navigation.navigate('CrearLiga');
+            }}
+            iconColor="#10b981"
+          />
+
+          <MenuItem
+            icon={<UsersIcon size={24} color="#3b82f6" />}
+            label="Unirse a Liga"
+            onPress={() => {
+              navigation.closeDrawer();
+              navigation.navigate('CrearLiga');
+            }}
+            iconColor="#3b82f6"
+          />
         </View>
 
         {/* Spacer */}
@@ -258,6 +352,16 @@ export const DrawerMenu = ({ navigation }: DrawerMenuProps) => {
 
         {/* Divisor */}
         <View style={styles.divider} />
+
+        {/* Abandonar Liga (solo si estamos en una liga) */}
+        {ligaId && (
+          <MenuItem
+            icon={<DeleteIcon size={24} color="#f59e0b" />}
+            label="Abandonar Liga"
+            onPress={handleLeaveLeague}
+            iconColor="#f59e0b"
+          />
+        )}
 
         {/* Logout button al final */}
         <MenuItem

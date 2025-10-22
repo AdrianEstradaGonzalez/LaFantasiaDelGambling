@@ -67,6 +67,46 @@ export const LeagueService = {
   removeMember: (leagueId: string, userId: string) =>
     LeagueMemberRepo.remove(leagueId, userId),
 
+  leaveLeague: async (leagueId: string, userId: string) => {
+    // Verificar que la liga existe
+    const league = await LeagueRepo.getById(leagueId);
+    if (!league) {
+      throw new Error('Liga no encontrada');
+    }
+
+    // No permitir que el líder abandone su propia liga
+    if (league.leaderId === userId) {
+      throw new Error('El líder no puede abandonar la liga. Debes eliminarla o transferir el liderazgo primero.');
+    }
+
+    // Verificar que el usuario es miembro de la liga
+    const membership = await prisma.leagueMember.findUnique({
+      where: {
+        leagueId_userId: {
+          leagueId,
+          userId
+        }
+      }
+    });
+
+    if (!membership) {
+      throw new Error('No eres miembro de esta liga');
+    }
+
+    // Eliminar la plantilla del usuario en esta liga (si existe)
+    await prisma.squad.deleteMany({
+      where: {
+        userId,
+        leagueId
+      }
+    });
+
+    // Eliminar la membresía del usuario
+    await LeagueMemberRepo.remove(leagueId, userId);
+
+    return { success: true, message: 'Has abandonado la liga exitosamente' };
+  },
+
   listMembers: async (leagueId: string) => {
     // Obtener información de la liga
     const league = await LeagueRepo.getById(leagueId);

@@ -536,7 +536,8 @@ export const Clasificacion = () => {
                       navigation.reset(state);
                       setIsDrawerOpen(false);
                     },
-                  }} 
+                  }}
+                  ligaId={ligaId}
                 />
               </Animated.View>
               <TouchableOpacity

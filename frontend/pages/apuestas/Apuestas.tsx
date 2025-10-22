@@ -1162,7 +1162,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       navigation.reset(state);
                       setIsDrawerOpen(false);
                     },
-                  }} 
+                  }}
+                  ligaId={ligaId}
                 />
               </Animated.View>
               {/* Overlay to close drawer */}
