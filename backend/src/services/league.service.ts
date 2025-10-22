@@ -194,7 +194,7 @@ export const LeagueService = {
 
     // Actualizar puntos de jornadas específicas si existen datos
     members.forEach(member => {
-      const pointsPerJornada = (member.pointsPerJornada as any) || {};
+      const pointsPerJornada = ((member as any).pointsPerJornada as any) || {};
       
       // Si no tiene pointsPerJornada inicializado, inicializarlo ahora
       if (Object.keys(pointsPerJornada).length === 0) {
@@ -203,11 +203,8 @@ export const LeagueService = {
         for (let i = 1; i <= 38; i++) {
           initialData[i.toString()] = 0;
         }
-        // Actualizar en BD de forma asíncrona (no bloqueante)
-        prisma.leagueMember.update({
-          where: { leagueId_userId: { leagueId, userId: member.userId } },
-          data: { pointsPerJornada: initialData }
-        }).catch(err => console.warn('Error inicializando pointsPerJornada:', err));
+        // Note: pointsPerJornada field needs to be added to the Prisma schema first
+        console.warn('pointsPerJornada field not found in schema, skipping initialization');
       } else {
         // Actualizar clasificaciones con los puntos existentes
         Object.keys(pointsPerJornada).forEach(jornadaStr => {
