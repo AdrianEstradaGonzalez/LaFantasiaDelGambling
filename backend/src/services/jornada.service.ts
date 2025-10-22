@@ -428,15 +428,15 @@ export class JornadaService {
           
           let playerPoints = 0;
 
-          // Preferir puntos cacheados si estamos calculando la jornada actual de la liga
+          // ✅ IMPORTANTE: Solo usar cache si lastJornadaNumber coincide con la jornada que estamos cerrando
           const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
-          if (localPlayer && leagueJornada === jornada) {
+          if (localPlayer && leagueJornada === jornada && localPlayer.lastJornadaNumber === jornada) {
             const cachedPoints = Math.trunc(Number((localPlayer as any).lastJornadaPoints ?? 0));
             playerPointsMap.set(squadPlayer.playerId, cachedPoints);
             
             // Aplicar doble si es capitán
             const pointsToAdd = squadPlayer.isCaptain ? cachedPoints * 2 : cachedPoints;
-            console.log(`         ♻️ Usando cache (liga.jornada=${leagueJornada}): ${cachedPoints} puntos`);
+            console.log(`         ♻️ Usando cache (jornada ${jornada}): ${cachedPoints} puntos`);
             if (squadPlayer.isCaptain) {
               console.log(`         ⭐ CAPITÁN - Puntos doblados: ${cachedPoints} × 2 = ${pointsToAdd}`);
             }
@@ -445,6 +445,11 @@ export class JornadaService {
             console.log(`         ====================================\n`);
             await new Promise((r) => setTimeout(r, 50));
             continue;
+          }
+          
+          // Si no hay cache válido, buscar en PlayerStats
+          if (localPlayer && localPlayer.lastJornadaNumber !== jornada) {
+            console.log(`         ⚠️ Cache obsoleto: lastJornadaNumber=${localPlayer.lastJornadaNumber}, buscando en PlayerStats...`);
           }
           
           // PASO 1: Obtener información del jugador para saber su equipo
