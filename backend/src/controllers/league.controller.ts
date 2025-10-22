@@ -103,4 +103,31 @@ reply.send(leagues);
     }
   },
 
+  // 🚀 Disparar cálculo de puntos para TODAS las ligas (background)
+  triggerPointsCalculation: async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      console.log('🚀 [triggerPointsCalculation] Usuario disparó cálculo de puntos');
+      
+      // Importar dinámicamente el servicio de cálculo
+      const { PointsCalculationService } = await import('../services/pointsCalculation.service.js');
+      
+      // Ejecutar en background sin bloquear la respuesta
+      PointsCalculationService.calculateAllPoints().catch(err => {
+        console.error('❌ Error en cálculo de puntos en background:', err);
+      });
+      
+      // Responder inmediatamente
+      reply.send({
+        success: true,
+        message: 'Cálculo de puntos iniciado en segundo plano'
+      });
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      req.log.error('Error triggering points calculation:', error);
+      throw new AppError(500, "INTERNAL_ERROR", "Error al iniciar cálculo de puntos");
+    }
+  },
+
 };

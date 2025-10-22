@@ -16,6 +16,7 @@ import { SafeLayout } from '../../components/SafeLayout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 // ✨ NUEVO: Importar servicio de estadísticas del backend
 import { PlayerStatsService } from '../../services/PlayerStatsService';
+import { LigaService } from '../../services/LigaService';
 
 type Formation = {
   id: string;
@@ -300,6 +301,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
   const isLoadingPointsRef = useRef(false); // Evitar múltiples cargas simultáneas
   const lastLoadedJornada = useRef<number | null>(null); // Tracking de última jornada cargada
+  const calculationTriggered = useRef(false); // 🚀 Evitar disparar cálculo múltiples veces
   
   // PanResponder para gestos de swipe (vacío por ahora, puede extenderse)
   const panResponder = useRef(
@@ -360,32 +362,28 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           
           while (retries > 0) {
             try {
-              console.log(`[MiPlantilla] Cargando stats para jugador ${playerId}, jornada ${currentMatchday} (intentos restantes: ${retries})`);
-              const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: true });
-              console.log(`[MiPlantilla] Stats recibidas para jugador ${playerId}:`, stats);
+              console.log(`[MiPlantilla] Leyendo stats para jugador ${playerId}, jornada ${currentMatchday}`);
+              // 🚀 OPTIMIZACIÓN: Solo leer de BD, NO refrescar desde API (ya fue calculado por el script backend)
+              const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: false });
               
               // Solo agregar al map si existe stats (el jugador ya jugó o está jugando)
               if (stats && stats.totalPoints !== null && stats.totalPoints !== undefined) {
                 pointsMap[playerId] = stats.totalPoints;
-                console.log(`[MiPlantilla] ✅ Jugador ${playerId} tiene ${stats.totalPoints} puntos`);
+                console.log(`[MiPlantilla] ✅ Jugador ${playerId}: ${stats.totalPoints} puntos`);
                 break; // Éxito, salir del loop de reintentos
               } else {
-                console.log(`[MiPlantilla] ⚠️ Jugador ${playerId} sin stats (no ha jugado todavía)`);
-                // Si no hay stats, es porque no jugó, no es un error
+                console.log(`[MiPlantilla] ⚠️ Jugador ${playerId} sin stats`);
                 break;
               }
             } catch (error) {
               lastError = error;
               retries--;
-              console.warn(`[MiPlantilla] ❌ Error cargando puntos de jugador ${playerId} (intentos restantes: ${retries}):`, error);
+              console.warn(`[MiPlantilla] ❌ Error cargando puntos de jugador ${playerId}:`, error);
               
               if (retries > 0) {
-                // Esperar 1 segundo antes de reintentar
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, 500));
               } else {
-                // Todos los reintentos fallaron
                 failedPlayers.push(playerId);
-                console.error(`[MiPlantilla] 💥 Jugador ${playerId} falló después de todos los reintentos`);
               }
             }
           }
@@ -625,6 +623,19 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         
         setBudget(budgetData);
         
+        // 🚀 Si la jornada está cerrada, disparar cálculo de puntos en background (solo una vez)
+        if (status.status === 'closed' && !calculationTriggered.current) {
+          calculationTriggered.current = true;
+          console.log('[MiPlantilla] 🚀 Jornada cerrada, disparando cálculo de puntos en background...');
+          LigaService.triggerPointsCalculation().then((success: boolean) => {
+            if (success) {
+              console.log('[MiPlantilla] ✅ Cálculo de puntos iniciado en background');
+            } else {
+              console.log('[MiPlantilla] ⚠️ No se pudo iniciar el cálculo');
+            }
+          });
+        }
+        
         if (existingSquad) {
           // Cargar formación existente
           const formation = formations.find(f => f.id === existingSquad.formation);
@@ -634,59 +645,75 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             console.log('Formación original cargada:', formation.id);
           }
 
-          // 🚀 OPTIMIZACIÓN: Construir mapa de jugadores desde datos ya enriquecidos
+          // 🚀 OPTIMIZACIÓN: Construir mapa de jugadores
           const playersMap: Record<string, any> = {};
           let captainPos: string | null = null;
           
-          existingSquad.players.forEach((squadPlayer: any) => {
-            // Si el backend ya envió playerData enriquecido, usarlo
-            if (squadPlayer.playerData) {
-              playersMap[squadPlayer.position] = {
-                ...squadPlayer.playerData,
-                pricePaid: squadPlayer.pricePaid,
-                isCaptain: squadPlayer.isCaptain
-              };
-            } else {
-              // Fallback: datos básicos del squadPlayer
-              playersMap[squadPlayer.position] = {
-                id: squadPlayer.playerId,
-                name: squadPlayer.playerName,
-                pricePaid: squadPlayer.pricePaid,
-                isCaptain: squadPlayer.isCaptain
-              };
-            }
+          // Verificar si tenemos playerData enriquecido del backend
+          const hasEnrichedData = existingSquad.players.some((p: any) => p.playerData);
+          
+          if (hasEnrichedData) {
+            // ✅ Usar datos enriquecidos del backend (más rápido)
+            console.log('✅ Usando datos enriquecidos del backend');
+            existingSquad.players.forEach((squadPlayer: any) => {
+              if (squadPlayer.playerData) {
+                playersMap[squadPlayer.position] = {
+                  ...squadPlayer.playerData,
+                  pricePaid: squadPlayer.pricePaid,
+                  isCaptain: squadPlayer.isCaptain
+                };
+              }
+              if (squadPlayer.isCaptain) {
+                captainPos = squadPlayer.position;
+              }
+            });
+          } else {
+            // 🔄 Fallback: Cargar jugadores en paralelo desde el servicio
+            console.log('🔄 Cargando jugadores individualmente...');
+            const playerIds = existingSquad.players.map((p: any) => p.playerId);
+            const playerPromises = playerIds.map((id: number) => 
+              PlayerService.getPlayerById(id).catch(err => {
+                console.warn(`No se pudo cargar jugador ${id}`);
+                return null;
+              })
+            );
             
-            if (squadPlayer.isCaptain) {
-              captainPos = squadPlayer.position;
-            }
-          });
+            const loadedPlayers = await Promise.all(playerPromises);
+            const playersById = new Map(
+              loadedPlayers.filter(p => p !== null).map(p => [p!.id, p])
+            );
+            
+            existingSquad.players.forEach((squadPlayer: any) => {
+              const fullPlayer = playersById.get(squadPlayer.playerId);
+              if (fullPlayer) {
+                playersMap[squadPlayer.position] = {
+                  ...fullPlayer,
+                  pricePaid: squadPlayer.pricePaid,
+                  isCaptain: squadPlayer.isCaptain
+                };
+              } else {
+                // Último fallback: datos básicos
+                playersMap[squadPlayer.position] = {
+                  id: squadPlayer.playerId,
+                  name: squadPlayer.playerName,
+                  pricePaid: squadPlayer.pricePaid,
+                  isCaptain: squadPlayer.isCaptain
+                };
+              }
+              
+              if (squadPlayer.isCaptain) {
+                captainPos = squadPlayer.position;
+              }
+            });
+          }
           
           setSelectedPlayers(playersMap);
           setOriginalPlayers(playersMap);
           setCaptainPosition(captainPos);
           console.log('✅ Jugadores cargados:', Object.keys(playersMap).length, 'jugadores');
           
-          // 🚀 OPTIMIZACIÓN CRÍTICA: Calcular puntos en PARALELO en lugar de secuencial
-          const allPlayerIds = existingSquad.players.map((p: any) => p.playerId);
-          if (status.status === 'closed' && allPlayerIds.length > 0) {
-            console.log('[MiPlantilla] 🔄 Jornada cerrada, calculando puntos en paralelo...');
-            
-            // Calcular TODOS los jugadores al mismo tiempo (mucho más rápido)
-            const statsPromises = allPlayerIds.map((playerId: number) =>
-              PlayerStatsService.getPlayerJornadaStats(playerId, status.currentJornada, {
-                refresh: true
-              }).catch(err => {
-                console.log(`⚠️ Error calculando jugador ${playerId}`);
-                return null;
-              })
-            );
-            
-            // Esperar a que terminen TODOS en paralelo
-            await Promise.all(statsPromises);
-            console.log('[MiPlantilla] ✅ Puntos calculados en paralelo');
-          }
-          
-          // Los puntos se cargarán automáticamente por el useEffect cuando currentMatchday esté listo
+          // ✅ Los puntos ya están calculados por el script backend
+          // Solo se cargarán cuando se abra la pestaña de puntuación
         }
       } catch (error) {
         console.error('Error al cargar plantilla existente:', error);
@@ -702,6 +729,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   // Recargar plantilla y presupuesto cuando la pantalla obtiene el foco
   useFocusEffect(
     useCallback(() => {
+      // Resetear flag de cálculo cuando vuelve a obtener foco
+      calculationTriggered.current = false;
+      
       const reloadSquadAndBudget = async () => {
         if (!ligaId) return;
         

@@ -358,4 +358,35 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
       throw new Error(error?.message || 'No se pudieron calcular los puntos en tiempo real');
     }
   }
+
+  // 🚀 Disparar cálculo de puntos para TODAS las ligas (en background)
+  // No bloquea, responde inmediatamente mientras el cálculo se ejecuta en el servidor
+  static async triggerPointsCalculation() {
+    try {
+      const token = await this.getAccessToken();
+      if (!token) throw new Error('Usuario no autenticado');
+
+      console.log('🚀 LigaService.triggerPointsCalculation - Disparando cálculo en background...');
+
+      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/trigger-points-calculation`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        console.warn('⚠️ No se pudo disparar cálculo:', json);
+        return false;
+      }
+
+      console.log('✅ LigaService.triggerPointsCalculation - Cálculo iniciado en background');
+      return true;
+    } catch (error: any) {
+      console.warn('⚠️ LigaService.triggerPointsCalculation error:', error);
+      return false;
+    }
+  }
 }

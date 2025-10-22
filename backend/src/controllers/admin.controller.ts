@@ -83,6 +83,29 @@ export class AdminController {
     }
   }
 
+  // --- Calcular puntos en tiempo real para TODAS las ligas ---
+  async calculateAllPoints(req: any, res: any) {
+    try {
+      console.log(`🚀 Iniciando cálculo de puntos para TODAS las ligas...`);
+      
+      // Importar dinámicamente el servicio de cálculo
+      const { PointsCalculationService } = await import('../services/pointsCalculation.service.js');
+      
+      // Ejecutar en background sin bloquear la respuesta
+      PointsCalculationService.calculateAllPoints().catch(err => {
+        console.error('Error en cálculo de puntos en background:', err);
+      });
+      
+      // Responder inmediatamente
+      res.send({
+        success: true,
+        message: 'Cálculo de puntos iniciado en segundo plano'
+      });
+    } catch (error) {
+      this.handleError(res, error, 'Error iniciando cálculo de puntos');
+    }
+  }
+
   // --- Manejador común de errores ---
   private handleError(res: any, error: any, defaultMsg: string) {
     if (error instanceof AppError) {
