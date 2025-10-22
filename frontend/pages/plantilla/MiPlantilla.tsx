@@ -628,10 +628,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       try {
         setIsLoading(true);
         
-        // ✨ NUEVO: Calcular puntos en tiempo real si la jornada está en curso
+        // ✨ NUEVO: Calcular puntos en tiempo real si la jornada está cerrada (partidos en curso)
         const status = await JornadaService.getJornadaStatus(ligaId);
-        if (status.status === 'open') {
-          console.log('[MiPlantilla] 🔄 Jornada en curso, calculando puntos en tiempo real...');
+        if (status.status === 'closed') {
+          console.log('[MiPlantilla] 🔄 Jornada cerrada (partidos en curso), calculando puntos en tiempo real...');
           try {
             const { LigaService } = await import('../../services/LigaService');
             await LigaService.calculateRealTimePoints(ligaId);

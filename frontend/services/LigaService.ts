@@ -316,7 +316,7 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
   }
 
   // 🔄 Calcular puntos en tiempo real consultando API-Football
-  // Solo funciona cuando la jornada está en curso (open)
+  // Solo funciona cuando la jornada está cerrada (partidos en curso)
   static async calculateRealTimePoints(leagueId: string) {
     try {
       const token = await this.getAccessToken();

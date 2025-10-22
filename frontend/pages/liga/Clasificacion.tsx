@@ -105,9 +105,9 @@ export const Clasificacion = () => {
         const leagueStatus = status.status as 'open' | 'closed';
         setJornadaStatus(leagueStatus);
 
-        // ✨ Si la jornada está en curso (open), calcular puntos en tiempo real primero
-        if (leagueStatus === 'open' && (!classificationsCache || refreshKey > 0)) {
-          console.log('[Clasificacion] 🔄 Jornada en curso, calculando puntos en tiempo real...');
+        // ✨ Si la jornada está cerrada (partidos en curso), calcular puntos en tiempo real primero
+        if (leagueStatus === 'closed' && (!classificationsCache || refreshKey > 0)) {
+          console.log('[Clasificacion] 🔄 Jornada cerrada (partidos en curso), calculando puntos en tiempo real...');
           try {
             await LigaService.calculateRealTimePoints(ligaId);
             console.log('[Clasificacion] ✅ Puntos en tiempo real calculados');
@@ -138,9 +138,9 @@ export const Clasificacion = () => {
             
             console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
             
-            // Si la jornada está en curso (open), mostrar la jornada actual
-            // Si está cerrada (se pueden hacer cambios), mostrar Total por defecto
-            if (leagueStatus === 'open' && leagueJornada && matchdays.includes(leagueJornada)) {
+            // Si la jornada está cerrada (partidos en curso), mostrar la jornada actual
+            // Si está abierta (se pueden hacer cambios), mostrar Total por defecto
+            if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
               initialJornada = leagueJornada;
             }
             

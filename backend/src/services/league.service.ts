@@ -361,7 +361,7 @@ getLeaguesByUser: (userId: string) =>
   /**
    * Calcula puntos en tiempo real para una liga consultando API-Football
    * Actualiza las estadísticas de TODOS los jugadores de TODAS las plantillas de la liga
-   * Solo funciona si la jornada está abierta (en curso)
+   * Solo funciona si la jornada está cerrada (partidos en curso)
    */
   calculateRealTimePoints: async (leagueId: string) => {
     const { PlayerStatsService } = await import('./playerStats.service.js');
@@ -374,9 +374,9 @@ getLeaguesByUser: (userId: string) =>
     const currentJornada = league.currentJornada || 1;
     const jornadaStatus = league.jornadaStatus || 'open';
 
-    // Solo calcular si la jornada está abierta
-    if (jornadaStatus !== 'open') {
-      throw new Error('Solo se puede calcular en tiempo real cuando la jornada está en curso');
+    // Solo calcular si la jornada está cerrada (partidos en curso)
+    if (jornadaStatus !== 'closed') {
+      throw new Error('Solo se puede calcular en tiempo real cuando la jornada está cerrada (partidos en curso)');
     }
 
     console.log(`[calculateRealTimePoints] 🔄 Calculando puntos en tiempo real para liga ${leagueId}, jornada ${currentJornada}`);
