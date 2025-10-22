@@ -628,34 +628,21 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       try {
         setIsLoading(true);
         
-        // ✨ NUEVO: Calcular puntos en tiempo real si la jornada está cerrada (partidos en curso)
-        const status = await JornadaService.getJornadaStatus(ligaId);
-        if (status.status === 'closed') {
-          console.log('[MiPlantilla] 🔄 Jornada cerrada (partidos en curso), calculando puntos en tiempo real...');
-          try {
-            const { LigaService } = await import('../../services/LigaService');
-            await LigaService.calculateRealTimePoints(ligaId);
-            console.log('[MiPlantilla] ✅ Puntos en tiempo real calculados');
-          } catch (error: any) {
-            console.log('[MiPlantilla] ⚠️ No se pudieron calcular puntos en tiempo real, continuando con datos existentes');
-            // Continuar silenciosamente para mostrar los datos existentes
-          }
-        }
-        
-        const [existingSquad, budgetData] = await Promise.all([
+        const [existingSquad, budgetData, status] = await Promise.all([
           SquadService.getUserSquad(ligaId),
-          SquadService.getUserBudget(ligaId)
+          SquadService.getUserBudget(ligaId),
+          JornadaService.getJornadaStatus(ligaId)
         ]);
         
         setBudget(budgetData);
         
         if (existingSquad) {
-          // Cargar formaciÃ³n existente
+          // Cargar formación existente
           const formation = formations.find(f => f.id === existingSquad.formation);
           if (formation) {
             setSelectedFormation(formation);
-            setOriginalFormation(formation); // Guardar formaciÃ³n original
-            console.log('FormaciÃ³n original cargada:', formation.id);
+            setOriginalFormation(formation); // Guardar formación original
+            console.log('Formación original cargada:', formation.id);
           }
 
           // Cargar jugadores existentes con datos completos
@@ -696,7 +683,26 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             console.log('Capitán detectado en posición:', captainPos);
           }
           
-          // ✨ Los puntos se cargarán automáticamente por el useEffect cuando currentMatchday esté listo
+          // ✨ NUEVO: Si la jornada está cerrada, calcular puntos en tiempo real para ESTOS jugadores
+          if (status.status === 'closed' && Object.keys(playersMap).length > 0) {
+            console.log('[MiPlantilla] 🔄 Jornada cerrada, calculando puntos en tiempo real para los jugadores de la plantilla...');
+            const currentJornada = status.currentJornada;
+            
+            // Calcular puntos para cada jugador de la plantilla
+            for (const [position, player] of Object.entries(playersMap)) {
+              try {
+                await PlayerStatsService.getPlayerJornadaStats(player.id, currentJornada, {
+                  refresh: true // Forzar actualización desde API
+                });
+                console.log(`[MiPlantilla] ✅ Puntos calculados para jugador ${player.id}`);
+              } catch (error) {
+                console.log(`[MiPlantilla] ⚠️ Error calculando puntos para jugador ${player.id}`);
+              }
+            }
+            console.log('[MiPlantilla] ✅ Cálculo de puntos completado');
+          }
+          
+          // Los puntos se cargarán automáticamente por el useEffect cuando currentMatchday esté listo
         }
       } catch (error) {
         console.error('Error al cargar plantilla existente:', error);
