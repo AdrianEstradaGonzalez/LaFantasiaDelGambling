@@ -364,68 +364,70 @@ getLeaguesByUser: (userId: string) =>
    * Solo funciona si la jornada está cerrada (partidos en curso)
    */
   calculateRealTimePoints: async (leagueId: string) => {
-    const { PlayerStatsService } = await import('./playerStats.service.js');
-    
-    const league = await LeagueRepo.getById(leagueId);
-    if (!league) {
-      throw new Error('Liga no encontrada');
-    }
+    try {
+      // Importar dinámicamente para evitar dependencias circulares
+      const { PlayerStatsService } = await import('./playerStats.service.js');
+      
+      const league = await LeagueRepo.getById(leagueId);
+      if (!league) {
+        throw new Error('Liga no encontrada');
+      }
 
-    const currentJornada = league.currentJornada || 1;
-    const jornadaStatus = league.jornadaStatus || 'open';
+      const currentJornada = league.currentJornada || 1;
+      const jornadaStatus = league.jornadaStatus || 'open';
 
-    // Solo calcular si la jornada está cerrada (partidos en curso)
-    if (jornadaStatus !== 'closed') {
-      throw new Error('Solo se puede calcular en tiempo real cuando la jornada está cerrada (partidos en curso)');
-    }
+      // Solo calcular si la jornada está cerrada (partidos en curso)
+      if (jornadaStatus !== 'closed') {
+        throw new Error('Solo se puede calcular en tiempo real cuando la jornada está cerrada (partidos en curso)');
+      }
 
-    console.log(`[calculateRealTimePoints] 🔄 Calculando puntos en tiempo real para liga ${leagueId}, jornada ${currentJornada}`);
+      console.log(`[calculateRealTimePoints] 🔄 Calculando puntos en tiempo real para liga ${leagueId}, jornada ${currentJornada}`);
 
-    // Obtener todos los miembros de la liga
-    const members = await LeagueMemberRepo.listByLeague(leagueId);
+      // Obtener todos los miembros de la liga
+      const members = await LeagueMemberRepo.listByLeague(leagueId);
 
-    // Recopilar todos los jugadores únicos de todas las plantillas
-    const allPlayerIds = new Set<number>();
-    const squadsByUser: Record<string, any> = {};
+      // Recopilar todos los jugadores únicos de todas las plantillas
+      const allPlayerIds = new Set<number>();
+      const squadsByUser: Record<string, any> = {};
 
-    await Promise.all(
-      members.map(async (member) => {
-        const squad = await prisma.squad.findUnique({
-          where: {
-            userId_leagueId: {
-              userId: member.userId,
-              leagueId: leagueId
+      await Promise.all(
+        members.map(async (member) => {
+          const squad = await prisma.squad.findUnique({
+            where: {
+              userId_leagueId: {
+                userId: member.userId,
+                leagueId: leagueId
+              }
+            },
+            include: {
+              players: true
             }
-          },
-          include: {
-            players: true
-          }
-        });
-
-        if (squad && squad.players.length > 0) {
-          squadsByUser[member.userId] = squad;
-          squad.players.forEach((p: any) => allPlayerIds.add(p.playerId));
-        }
-      })
-    );
-
-    console.log(`[calculateRealTimePoints] 📊 ${allPlayerIds.size} jugadores únicos encontrados`);
-
-    // Calcular estadísticas de todos los jugadores para la jornada actual
-    // Esto consultará la API-Football para cada jugador
-    await Promise.all(
-      Array.from(allPlayerIds).map(async (playerId) => {
-        try {
-          await PlayerStatsService.getPlayerStatsForJornada(playerId, currentJornada, {
-            season: 2025,
-            forceRefresh: true // Forzar consulta a API para datos frescos
           });
-          console.log(`[calculateRealTimePoints] ✅ Jugador ${playerId} actualizado`);
-        } catch (error) {
-          console.error(`[calculateRealTimePoints] ❌ Error actualizando jugador ${playerId}:`, error);
-        }
-      })
-    );
+
+          if (squad && squad.players.length > 0) {
+            squadsByUser[member.userId] = squad;
+            squad.players.forEach((p: any) => allPlayerIds.add(p.playerId));
+          }
+        })
+      );
+
+      console.log(`[calculateRealTimePoints] 📊 ${allPlayerIds.size} jugadores únicos encontrados`);
+
+      // Calcular estadísticas de todos los jugadores para la jornada actual
+      // Esto consultará la API-Football para cada jugador
+      await Promise.all(
+        Array.from(allPlayerIds).map(async (playerId) => {
+          try {
+            await PlayerStatsService.getPlayerStatsForJornada(playerId, currentJornada, {
+              season: 2025,
+              forceRefresh: true // Forzar consulta a API para datos frescos
+            });
+            console.log(`[calculateRealTimePoints] ✅ Jugador ${playerId} actualizado`);
+          } catch (error) {
+            console.error(`[calculateRealTimePoints] ❌ Error actualizando jugador ${playerId}:`, error);
+          }
+        })
+      );
 
     // Ahora calcular los puntos de cada usuario con sus plantillas
     const userPoints = await Promise.all(
@@ -499,6 +501,10 @@ getLeaguesByUser: (userId: string) =>
       status: jornadaStatus,
       standings: userPoints
     };
+    } catch (error: any) {
+      console.error('[calculateRealTimePoints] ❌ Error:', error);
+      throw new Error(error?.message || 'Error al calcular puntos en tiempo real');
+    }
   },
 
 };

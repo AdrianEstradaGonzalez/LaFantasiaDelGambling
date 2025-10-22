@@ -46,9 +46,7 @@ export const Clasificacion = () => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false); // ✨ NUEVO: Estado de actualización
   const slideAnim = useRef(new Animated.Value(-300)).current;
-  const isFirstLoad = useRef(true);
   
   // Cache de clasificaciones: { Total: [...], 1: [...], 2: [...], ... }
   const [classificationsCache, setClassificationsCache] = useState<any>(null);
@@ -57,7 +55,6 @@ export const Clasificacion = () => {
   useFocusEffect(
     React.useCallback(() => {
       console.log('[Clasificacion] Pantalla recibió focus, forzando recarga');
-      isFirstLoad.current = true;
       setRefreshKey(prev => prev + 1); // Forzar re-render del useEffect
       return () => {
         // Cleanup si es necesario
@@ -82,17 +79,11 @@ export const Clasificacion = () => {
     }
   }, [isDrawerOpen, slideAnim]);
 
+  // Cargar clasificaciones iniciales (solo una vez al entrar o al forzar refresh)
   useEffect(() => {
     const fetchClasificacion = async () => {
       try {
-        // Si es una actualización en segundo plano, no mostrar loading completo
-        const isBackgroundRefresh = classificationsCache !== null && refreshKey > 0;
-        
-        if (isBackgroundRefresh) {
-          setIsRefreshing(true); // Mostrar indicador sutil
-        } else if (!classificationsCache) {
-          setLoading(true); // Mostrar loading completo solo si no hay cache
-        }
+        setLoading(true);
 
         // Obtener userId del storage
         const userId = await EncryptedStorage.getItem('userId');
@@ -103,16 +94,28 @@ export const Clasificacion = () => {
         // Obtener estado de la jornada PRIMERO
         const status = await JornadaService.getJornadaStatus(ligaId);
         const leagueStatus = status.status as 'open' | 'closed';
+        const leagueJornada = status.currentJornada;
         setJornadaStatus(leagueStatus);
 
         // ✨ Si la jornada está cerrada (partidos en curso), calcular puntos en tiempo real primero
-        if (leagueStatus === 'closed' && (!classificationsCache || refreshKey > 0)) {
+        if (leagueStatus === 'closed') {
           console.log('[Clasificacion] 🔄 Jornada cerrada (partidos en curso), calculando puntos en tiempo real...');
           try {
             await LigaService.calculateRealTimePoints(ligaId);
             console.log('[Clasificacion] ✅ Puntos en tiempo real calculados');
-          } catch (error) {
+          } catch (error: any) {
             console.error('[Clasificacion] ❌ Error calculando puntos en tiempo real:', error);
+            // Si el error es porque la jornada no está cerrada, continuar sin mostrar error
+            const errorMsg = error?.message || '';
+            if (!errorMsg.includes('jornada está cerrada') && !errorMsg.includes('jornada está abierta')) {
+              // Solo mostrar errores reales (no de validación de estado)
+              CustomAlertManager.alert(
+                'Error calculando puntos',
+                'No se pudieron calcular los puntos en tiempo real. Se mostrarán los últimos datos disponibles.',
+                [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+                { icon: 'alert-circle', iconColor: '#f59e0b' }
+              );
+            }
             // Continuar de todos modos para mostrar los datos existentes
           }
         }
@@ -121,76 +124,74 @@ export const Clasificacion = () => {
         const matchdays = await FootballService.getAvailableMatchdays();
         setAvailableJornadas(matchdays);
         
-        // Si no hay cache o hay refreshKey, cargar TODAS las clasificaciones de una vez
-        if (!classificationsCache || refreshKey > 0) {
-          console.log('[Clasificacion] Cargando TODAS las clasificaciones en caché...');
-          const response = await LigaService.getAllClassifications(ligaId);
-          
-          console.log('📦 Clasificaciones cargadas:', Object.keys(response.classifications));
-          setClassificationsCache(response.classifications);
-          setCodigoLiga(response.leagueCode);
-          setLigaNombre(response.leagueName);
-          
-          // Determinar jornada por defecto según el estado de la liga (solo en primera carga)
-          let initialJornada: number | 'Total' = 'Total';
-          if (isFirstLoad.current) {
-            const leagueJornada = status.currentJornada;
-            
-            console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
-            
-            // Si la jornada está cerrada (partidos en curso), mostrar la jornada actual
-            // Si está abierta (se pueden hacer cambios), mostrar Total por defecto
-            if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
-              initialJornada = leagueJornada;
-            }
-            
-            isFirstLoad.current = false;
-          } else {
-            initialJornada = selectedJornada; // Mantener la jornada seleccionada
-          }
-          
-          // Usar los datos recién cargados para mostrar
-          const jornadaKey = initialJornada === 'Total' ? 'Total' : initialJornada.toString();
-          const dataForJornada = response.classifications[jornadaKey] || [];
-          
-          const dataOrdenada = dataForJornada.map((u: any, index: number) => ({
-            id: u.userId || `jugador-${index}`,
-            nombre: u.userName || 'Jugador desconocido',
-            puntos: u.points ?? 0,
-            posicion: index + 1,
-            presupuesto: u.initialBudget ?? 500,
-          }));
-          
-          setJugadores(dataOrdenada);
-          setSelectedJornada(initialJornada);
-          
-          // Quitar loading después de tener los datos
-          setLoading(false);
-          setIsRefreshing(false);
+        // Cargar TODAS las clasificaciones de una vez
+        console.log('[Clasificacion] Cargando TODAS las clasificaciones en caché...');
+        const response = await LigaService.getAllClassifications(ligaId);
+        
+        console.log('📦 Clasificaciones cargadas:', Object.keys(response.classifications));
+        setClassificationsCache(response.classifications);
+        setCodigoLiga(response.leagueCode);
+        setLigaNombre(response.leagueName);
+        
+        // Determinar jornada por defecto según el estado de la liga
+        let initialJornada: number | 'Total' = 'Total';
+        
+        console.log('[Clasificacion] Jornada de la liga:', leagueJornada, 'Estado:', leagueStatus);
+        
+        // Si la jornada está cerrada (partidos en curso), mostrar la jornada actual
+        // Si está abierta (se pueden hacer cambios), mostrar Total por defecto
+        if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
+          initialJornada = leagueJornada;
+          console.log('[Clasificacion] 📍 Mostrando jornada actual:', leagueJornada);
         } else {
-          // Usar el cache para mostrar la jornada seleccionada (instantáneo, sin loading)
-          const jornadaKey = selectedJornada === 'Total' ? 'Total' : selectedJornada.toString();
-          const dataForJornada = classificationsCache[jornadaKey] || [];
-          
-          const dataOrdenada = dataForJornada.map((u: any, index: number) => ({
-            id: u.userId || `jugador-${index}`,
-            nombre: u.userName || 'Jugador desconocido',
-            puntos: u.points ?? 0,
-            posicion: index + 1,
-            presupuesto: u.initialBudget ?? 500,
-          }));
-          
-          setJugadores(dataOrdenada);
+          console.log('[Clasificacion] 📍 Mostrando Total');
         }
+        
+        // Establecer la jornada seleccionada
+        setSelectedJornada(initialJornada);
+        
+        // Usar los datos recién cargados para mostrar
+        const jornadaKey = initialJornada === 'Total' ? 'Total' : initialJornada.toString();
+        const dataForJornada = response.classifications[jornadaKey] || [];
+        
+        const dataOrdenada = dataForJornada.map((u: any, index: number) => ({
+          id: u.userId || `jugador-${index}`,
+          nombre: u.userName || 'Jugador desconocido',
+          puntos: u.points ?? 0,
+          posicion: index + 1,
+          presupuesto: u.initialBudget ?? 500,
+        }));
+        
+        setJugadores(dataOrdenada);
+        setLoading(false);
       } catch (err) {
         console.error('Error al obtener clasificación:', err);
         setLoading(false);
-        setIsRefreshing(false);
       }
     };
 
     fetchClasificacion();
-  }, [ligaId, selectedJornada, refreshKey]);
+  }, [ligaId, refreshKey]); // Solo depende de ligaId y refreshKey
+
+  // Cambiar entre jornadas usando el cache (sin recargar todo)
+  useEffect(() => {
+    if (!classificationsCache) return; // Esperar a que haya cache
+    
+    console.log('[Clasificacion] 🔄 Cambiando a jornada:', selectedJornada);
+    
+    const jornadaKey = selectedJornada === 'Total' ? 'Total' : selectedJornada.toString();
+    const dataForJornada = classificationsCache[jornadaKey] || [];
+    
+    const dataOrdenada = dataForJornada.map((u: any, index: number) => ({
+      id: u.userId || `jugador-${index}`,
+      nombre: u.userName || 'Jugador desconocido',
+      puntos: u.points ?? 0,
+      posicion: index + 1,
+      presupuesto: u.initialBudget ?? 500,
+    }));
+    
+    setJugadores(dataOrdenada);
+  }, [selectedJornada, classificationsCache]); // Solo cuando cambia la jornada seleccionada manualmente
 
   return (
     <SafeLayout backgroundColor="#181818ff">

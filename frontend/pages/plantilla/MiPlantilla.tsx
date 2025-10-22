@@ -636,8 +636,19 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             const { LigaService } = await import('../../services/LigaService');
             await LigaService.calculateRealTimePoints(ligaId);
             console.log('[MiPlantilla] ✅ Puntos en tiempo real calculados');
-          } catch (error) {
+          } catch (error: any) {
             console.error('[MiPlantilla] ❌ Error calculando puntos en tiempo real:', error);
+            // Si el error es porque la jornada no está cerrada, continuar sin mostrar error
+            const errorMsg = error?.message || '';
+            if (!errorMsg.includes('jornada está cerrada') && !errorMsg.includes('jornada está abierta')) {
+              // Solo mostrar errores reales (no de validación de estado)
+              CustomAlertManager.alert(
+                'Error calculando puntos',
+                'No se pudieron calcular los puntos en tiempo real. Se mostrarán los últimos datos disponibles.',
+                [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+                { icon: 'alert-circle', iconColor: '#f59e0b' }
+              );
+            }
             // Continuar de todos modos para mostrar los datos existentes
           }
         }
