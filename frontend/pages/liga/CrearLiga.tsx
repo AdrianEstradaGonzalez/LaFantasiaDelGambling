@@ -177,8 +177,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
               style={styles.input}
               placeholder="Ingresa el código"
               placeholderTextColor="#94a3b8"
-              value={codigoLiga}
-              onChangeText={setCodigoLiga}
+              value={codigoLiga.toUpperCase()}
+              onChangeText={text => setCodigoLiga(text.toUpperCase())}
               autoCapitalize="characters"
             />
           </View>
