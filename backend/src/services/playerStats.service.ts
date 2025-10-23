@@ -309,16 +309,27 @@ export async function getPlayerStatsForJornada(
         
         const candidates = playerSearchResponse.data?.response || [];
         
-        // Filtrar resultados por similitud de nombre normalizado
+        // ✅ BÚSQUEDA MEJORADA: Por ID del jugador, excepto para Etta Eyong (búsqueda por nombre)
         const normalizedPlayerName = normalizeName(playerFromDb.name);
-        allPlayerVersions = candidates.filter((candidate: any) => {
-          const candidateName = normalizeName(candidate.player?.name || '');
-          const candidateLastname = normalizeName(candidate.player?.lastname || '');
-          
-          // Coincidencia si el nombre completo o apellido coinciden
-          return candidateName === normalizedPlayerName || 
-                 normalizedPlayerName.includes(candidateLastname);
-        });
+        const isEttaEyong = normalizedPlayerName.includes('eyong') || normalizedPlayerName.includes('etta');
+        
+        if (isEttaEyong) {
+          // Para Etta Eyong: búsqueda por nombre (como antes)
+          console.log(`[playerStats] 🔍 Búsqueda especial por nombre para ${playerFromDb.name}`);
+          allPlayerVersions = candidates.filter((candidate: any) => {
+            const candidateName = normalizeName(candidate.player?.name || '');
+            const candidateLastname = normalizeName(candidate.player?.lastname || '');
+            
+            return candidateName === normalizedPlayerName || 
+                   normalizedPlayerName.includes(candidateLastname);
+          });
+        } else {
+          // Para todos los demás: búsqueda por ID exacto
+          console.log(`[playerStats] 🔍 Búsqueda por ID exacto para ${playerFromDb.name} (${playerId})`);
+          allPlayerVersions = candidates.filter((candidate: any) => {
+            return candidate.player?.id === playerId;
+          });
+        }
         
         console.log(`[playerStats] Búsqueda por nombre encontró ${allPlayerVersions.length} coincidencias`);
       } catch (error) {
