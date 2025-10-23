@@ -53,35 +53,95 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
  */
 export async function getPlayerAvailabilityFromAPI(
   playerId: number,
-  season: number = 2024
+  season: number = 2025
 ): Promise<{ status: string; info: string | null }> {
   try {
-    // Primero verificar si el jugador está lesionado
-    const playerResponse = await api.get('/players', {
-      params: {
-        id: playerId,
-        season: season,
-      },
-    });
+    console.log(`🔍 Verificando estado del jugador ${playerId}...`);
+    
+    // Consultar endpoint /injuries de La Liga (league=140)
+    try {
+      const injuriesResponse = await api.get('/injuries', {
+        params: {
+          league: 140, // La Liga
+          season: season,
+        },
+      });
 
-    if (playerResponse.data.results > 0) {
-      const playerData = playerResponse.data.response[0];
-      
-      // Si el jugador está lesionado según la API
-      if (playerData.player.injured === true) {
-        return {
-          status: 'INJURED',
-          info: 'Lesionado',
-        };
+      if (injuriesResponse.data.results > 0) {
+        // Buscar el jugador específico en la lista de lesionados
+        const playerInjury = injuriesResponse.data.response.find(
+          (injury: any) => injury.player.id === playerId
+        );
+
+        if (playerInjury) {
+          const reason = playerInjury.player.reason || 'Lesionado';
+          const type = playerInjury.player.type?.toLowerCase() || '';
+          
+          console.log(`   🏥 Jugador ${playerId} encontrado en injuries: type=${type}, reason=${reason}`);
+          
+          // Verificar si es suspensión o lesión
+          if (type.includes('red card') || type.includes('suspension') || reason.toLowerCase().includes('suspension')) {
+            console.log(`   � Jugador ${playerId} SUSPENDIDO`);
+            return {
+              status: 'SUSPENDED',
+              info: reason,
+            };
+          } else {
+            console.log(`   🏥 Jugador ${playerId} LESIONADO`);
+            return {
+              status: 'INJURED',
+              info: reason,
+            };
+          }
+        }
+      }
+    } catch (err: any) {
+      console.log(`   ⚠️  Error consultando /injuries:`, err.response?.data?.message || err.message);
+    }
+
+    // Fallback: Verificar con endpoint /players para el campo injured
+    const seasons = season === 2025 ? [2025, 2024] : [2024, 2025];
+    
+    for (const s of seasons) {
+      try {
+        const playerResponse = await api.get('/players', {
+          params: {
+            id: playerId,
+            season: s,
+          },
+        });
+
+        if (playerResponse.data.results > 0) {
+          const playerData = playerResponse.data.response[0];
+          
+          console.log(`   ℹ️  Jugador ${playerId} - Season ${s}: injured=${playerData.player.injured}`);
+          
+          // Si el jugador está lesionado según la API
+          if (playerData.player.injured === true) {
+            console.log(`   🏥 Jugador ${playerId} LESIONADO (campo injured)`);
+            return {
+              status: 'INJURED',
+              info: 'Lesionado',
+            };
+          }
+          
+          // Si encontramos datos, no probar con otra temporada
+          break;
+        }
+      } catch (err: any) {
+        console.log(`   ⚠️  Error con temporada ${s}:`, err.message);
+        continue;
       }
     }
 
-    // Verificar si tiene suspensión activa por tarjeta roja
+    // Verificar si tiene suspensión activa por tarjeta roja en BD
     const suspension = await checkRedCardSuspension(playerId, season);
     if (suspension) {
+      console.log(`   🟥 Jugador ${playerId} SUSPENDIDO (BD)`);
       return suspension;
     }
 
+    console.log(`   ✅ Jugador ${playerId} DISPONIBLE`);
     // Si no está lesionado ni suspendido, está disponible
     return {
       status: 'AVAILABLE',
@@ -89,7 +149,7 @@ export async function getPlayerAvailabilityFromAPI(
     };
 
   } catch (error: any) {
-    console.error(`Error al obtener estado del jugador ${playerId}:`, error.message);
+    console.error(`❌ Error al obtener estado del jugador ${playerId}:`, error.message);
     // En caso de error, asumir que está disponible
     return {
       status: 'AVAILABLE',

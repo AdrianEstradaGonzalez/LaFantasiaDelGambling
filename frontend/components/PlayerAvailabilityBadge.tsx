@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface PlayerAvailabilityBadgeProps {
   status?: string;
@@ -15,8 +14,8 @@ export const PlayerAvailabilityBadge: React.FC<PlayerAvailabilityBadgeProps> = (
   size = 'small'
 }) => {
   const isSmall = size === 'small';
-  const iconSize = isSmall ? 12 : 16;
-  const fontSize = isSmall ? 9 : 11;
+  const iconSize = isSmall ? 14 : 16;
+  const fontSize = isSmall ? 9 : 10;
   const paddingV = isSmall ? 3 : 4;
   const paddingH = isSmall ? 6 : 8;
 
@@ -25,20 +24,20 @@ export const PlayerAvailabilityBadge: React.FC<PlayerAvailabilityBadgeProps> = (
       <View style={{ 
         flexDirection: 'row', 
         alignItems: 'center', 
-        backgroundColor: '#fef2f2',
+        backgroundColor: 'rgba(239, 68, 68, 0.15)', // Rojo translúcido acorde a la app
         paddingVertical: paddingV,
         paddingHorizontal: paddingH,
-        borderRadius: 6,
+        borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#fecaca',
+        borderColor: 'rgba(239, 68, 68, 0.3)',
         gap: 4
       }}>
-        <MaterialCommunityIcons name="hospital-box" size={iconSize} color="#dc2626" />
+        <Ionicons name="medical" size={iconSize} color="#ef4444" />
         <Text style={{ 
-          color: '#dc2626', 
-          fontWeight: '700', 
+          color: '#ef4444', 
+          fontWeight: '800', 
           fontSize: fontSize,
-          letterSpacing: 0.3
+          letterSpacing: 0.5
         }}>
           LESIONADO
         </Text>
@@ -51,20 +50,20 @@ export const PlayerAvailabilityBadge: React.FC<PlayerAvailabilityBadgeProps> = (
       <View style={{ 
         flexDirection: 'row', 
         alignItems: 'center', 
-        backgroundColor: '#fef3c7',
+        backgroundColor: 'rgba(251, 191, 36, 0.15)', // Amarillo translúcido
         paddingVertical: paddingV,
         paddingHorizontal: paddingH,
-        borderRadius: 6,
+        borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#fde047',
+        borderColor: 'rgba(251, 191, 36, 0.3)',
         gap: 4
       }}>
-        <Ionicons name="card" size={iconSize} color="#dc2626" />
+        <Ionicons name="ban" size={iconSize} color="#fbbf24" />
         <Text style={{ 
-          color: '#b91c1c', 
-          fontWeight: '700', 
+          color: '#fbbf24', 
+          fontWeight: '800', 
           fontSize: fontSize,
-          letterSpacing: 0.3
+          letterSpacing: 0.5
         }}>
           SANCIONADO
         </Text>
@@ -77,20 +76,20 @@ export const PlayerAvailabilityBadge: React.FC<PlayerAvailabilityBadgeProps> = (
     <View style={{ 
       flexDirection: 'row', 
       alignItems: 'center', 
-      backgroundColor: '#f0fdf4',
+      backgroundColor: 'rgba(16, 185, 129, 0.15)', // Verde translúcido acorde a la app
       paddingVertical: paddingV,
       paddingHorizontal: paddingH,
-      borderRadius: 6,
+      borderRadius: 8,
       borderWidth: 1,
-      borderColor: '#bbf7d0',
+      borderColor: 'rgba(16, 185, 129, 0.3)',
       gap: 4
     }}>
-      <Ionicons name="checkmark-circle" size={iconSize} color="#16a34a" />
+      <Ionicons name="checkmark-circle" size={iconSize} color="#10b981" />
       <Text style={{ 
-        color: '#16a34a', 
-        fontWeight: '700', 
+        color: '#10b981', 
+        fontWeight: '800', 
         fontSize: fontSize,
-        letterSpacing: 0.3
+        letterSpacing: 0.5
       }}>
         DISPONIBLE
       </Text>

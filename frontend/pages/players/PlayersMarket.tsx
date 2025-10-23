@@ -759,7 +759,7 @@ export const PlayersMarket = ({ navigation, route }: {
 
     // En modo selección, envolver en TouchableOpacity
     const content = (
-      <View style={{ flexDirection: 'column' }}>
+      <View style={{ flexDirection: 'column', position: 'relative' }}>
         {/* Fila superior: Ficha del jugador + Precio y Puntos */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
           {/* Ficha del jugador */}
@@ -771,7 +771,7 @@ export const PlayersMarket = ({ navigation, route }: {
             />
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#cbd5e1', fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{p.name}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 8, flexWrap: 'wrap' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 8 }}>
                 <View style={{ 
                   backgroundColor: badgeColor, 
                   paddingHorizontal: 8, 
@@ -787,11 +787,6 @@ export const PlayersMarket = ({ navigation, route }: {
                     resizeMode="contain"
                   />
                 )}
-                <PlayerAvailabilityBadge 
-                  status={p.availabilityStatus} 
-                  info={p.availabilityInfo}
-                  size="small"
-                />
               </View>
             </View>
           </View>
@@ -866,6 +861,15 @@ export const PlayersMarket = ({ navigation, route }: {
               <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>FICHAR</Text>
             </TouchableOpacity>
           )}
+        </View>
+        
+        {/* Badge de disponibilidad - Posición absoluta abajo izquierda */}
+        <View style={{ position: 'absolute', bottom: 0, left: 0 }}>
+          <PlayerAvailabilityBadge 
+            status={p.availabilityStatus} 
+            info={p.availabilityInfo}
+            size="small"
+          />
         </View>
       </View>
     );
