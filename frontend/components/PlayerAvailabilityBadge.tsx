@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { CheckCircleIcon, InjuryIcon, SuspendedIcon } from './VectorIcons';
 
 interface PlayerAvailabilityBadgeProps {
   status?: string;
@@ -32,7 +32,7 @@ export const PlayerAvailabilityBadge: React.FC<PlayerAvailabilityBadgeProps> = (
         borderColor: 'rgba(239, 68, 68, 0.3)',
         gap: 4
       }}>
-        <Ionicons name="medical" size={iconSize} color="#ef4444" />
+        <InjuryIcon size={iconSize} color="#ef4444" />
         <Text style={{ 
           color: '#ef4444', 
           fontWeight: '800', 
@@ -58,7 +58,7 @@ export const PlayerAvailabilityBadge: React.FC<PlayerAvailabilityBadgeProps> = (
         borderColor: 'rgba(251, 191, 36, 0.3)',
         gap: 4
       }}>
-        <Ionicons name="ban" size={iconSize} color="#fbbf24" />
+        <SuspendedIcon size={iconSize} color="#fbbf24" />
         <Text style={{ 
           color: '#fbbf24', 
           fontWeight: '800', 
@@ -84,7 +84,7 @@ export const PlayerAvailabilityBadge: React.FC<PlayerAvailabilityBadgeProps> = (
       borderColor: 'rgba(16, 185, 129, 0.3)',
       gap: 4
     }}>
-      <Ionicons name="checkmark-circle" size={iconSize} color="#10b981" />
+      <CheckCircleIcon size={iconSize} color="#10b981" />
       <Text style={{ 
         color: '#10b981', 
         fontWeight: '800', 

@@ -1161,3 +1161,29 @@ export const MenuIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
     />
   </Svg>
 );
+
+// Icono de lesión (cruz médica)
+export const InjuryIcon = ({ size = 16, color = '#ef4444' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 5v14M5 12h14"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+    />
+    <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+  </Svg>
+);
+
+// Icono de suspensión (señal de prohibido)
+export const SuspendedIcon = ({ size = 16, color = '#fbbf24' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={2} fill="none" />
+    <Path
+      d="M6 6l12 12"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
