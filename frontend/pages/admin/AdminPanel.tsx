@@ -17,6 +17,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { SafeLayout } from '../../components/SafeLayout';
+import LoadingScreen from '../../components/LoadingScreen';
 import { 
   JerseyIcon, 
   CalendarIcon, 
@@ -244,7 +245,7 @@ const AdminPanel: React.FC = () => {
               setIsSyncingPlayers(true);
               console.log('🚀 Iniciando sincronización de jugadores...');
               
-              const token = await EncryptedStorage.getItem('userToken');
+              const token = await EncryptedStorage.getItem('accessToken');
               if (!token) {
                 throw new Error('No hay token de autenticación');
               }
@@ -291,6 +292,11 @@ const AdminPanel: React.FC = () => {
       { icon: 'information-circle', iconColor: '#0892D0' }
     );
   };
+
+  // Mostrar pantalla de carga mientras se sincroniza
+  if (isSyncingPlayers) {
+    return <LoadingScreen />;
+  }
 
   return (
     <SafeLayout backgroundColor="#0f172a">
