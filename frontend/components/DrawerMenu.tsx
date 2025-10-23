@@ -333,7 +333,8 @@ export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
             label="Crear Liga"
             onPress={() => {
               navigation.closeDrawer();
-              navigation.navigate('CrearLiga');
+              // Abrir CrearLiga en modo 'create' para mostrar solo la sección de crear
+              navigation.navigate('CrearLiga', { mode: 'create' });
             }}
             iconColor="#10b981"
           />
@@ -343,7 +344,8 @@ export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
             label="Unirse a Liga"
             onPress={() => {
               navigation.closeDrawer();
-              navigation.navigate('CrearLiga');
+              // Abrir CrearLiga en modo 'join' para mostrar solo la sección de unirse
+              navigation.navigate('CrearLiga', { mode: 'join' });
             }}
             iconColor="#3b82f6"
           />

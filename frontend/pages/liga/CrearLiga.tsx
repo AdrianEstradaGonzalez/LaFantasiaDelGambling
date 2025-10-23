@@ -23,8 +23,10 @@ type CrearLigaProps = {
 
 type CrearLigaRouteProp = RouteProp<{ params: { codigo?: string } }, 'params'>;
 
+type CrearLigaRouteWithMode = RouteProp<{ params: { codigo?: string; mode?: 'create' | 'join' } }, 'params'>;
+
 export const CrearLiga = ({ navigation }: CrearLigaProps) => {
-  const route = useRoute<CrearLigaRouteProp>();
+  const route = useRoute<CrearLigaRouteWithMode>();
   const [nombreLiga, setNombreLiga] = useState('');
   const [codigoLiga, setCodigoLiga] = useState('');
   const [loadingCrear, setLoadingCrear] = useState(false);
@@ -124,7 +126,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         <ScrollView contentContainerStyle={styles.container}>
        
         {/* Crear liga privada */}
-        <View style={styles.section}>
+        {route.params?.mode !== 'join' && (
+          <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Crear Liga Privada</Text>
           </View>
@@ -160,10 +163,12 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
               Una vez creada, podrás compartir el código de la liga con tus amigos para que se unan.
             </Text>
           </View>
-        </View>
+          </View>
+        )}
 
         {/* Unirse a liga */}
-        <View style={styles.section}>
+        {route.params?.mode !== 'create' && (
+          <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Unirse a Liga</Text>
           </View>
@@ -200,7 +205,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
               Pide a tu amigo el código de la liga para poder participar en la competición.
             </Text>
           </View>
-        </View>
+          </View>
+        )}
         </ScrollView>
       </LinearGradient>
     </SafeLayout>
