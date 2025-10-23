@@ -238,7 +238,7 @@ async function checkRedCardSuspension(
  */
 export async function updatePlayerAvailability(
   playerId: number,
-  season: number = 2024
+  season: number = 2025
 ): Promise<void> {
   try {
     const availability = await getPlayerAvailabilityFromAPI(playerId, season);
@@ -260,7 +260,7 @@ export async function updatePlayerAvailability(
 /**
  * Actualiza el estado de todos los jugadores
  */
-export async function updateAllPlayersAvailability(season: number = 2024): Promise<void> {
+export async function updateAllPlayersAvailability(season: number = 2025): Promise<void> {
   try {
     console.log('🔄 Iniciando sincronización de estado de jugadores...\n');
 

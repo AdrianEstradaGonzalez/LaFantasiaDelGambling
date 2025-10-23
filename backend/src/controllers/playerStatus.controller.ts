@@ -40,7 +40,7 @@ export async function syncPlayersAvailability(
   reply: FastifyReply
 ) {
   try {
-    const { season = 2024 } = request.body || {};
+    const { season = 2025 } = request.body || {};
     
     // Ejecutar sincronización en background
     updateAllPlayersAvailability(season).catch(err => {
@@ -73,7 +73,7 @@ export async function syncPlayerAvailability(
 ) {
   try {
     const playerId = parseInt(request.params.id);
-    const { season = 2024 } = request.body || {};
+    const { season = 2025 } = request.body || {};
 
     if (isNaN(playerId)) {
       return reply.status(400).send({ error: 'ID de jugador inválido' });
