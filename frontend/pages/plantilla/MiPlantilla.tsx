@@ -361,7 +361,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           while (retries > 0) {
             try {
               console.log(`[MiPlantilla] Cargando stats para jugador ${playerId}, jornada ${currentMatchday}`);
-              const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: true });
+              // ✅ Pedir refresh solo si la jornada está cerrada (partidos en curso)
+              const shouldRefresh = jornadaStatus === 'closed';
+              const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: shouldRefresh });
               
               // Solo agregar al map si existe stats (el jugador ya jugó o está jugando)
               if (stats && stats.totalPoints !== null && stats.totalPoints !== undefined) {

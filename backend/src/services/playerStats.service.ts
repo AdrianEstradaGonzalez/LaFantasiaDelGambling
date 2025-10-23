@@ -208,38 +208,34 @@ export async function getPlayerStatsForJornada(
 ) {
   const season = options.season ?? Number(process.env.FOOTBALL_API_SEASON ?? 2025);
 
-  // ✨ NUEVO: Verificar si la jornada está cerrada (partidos en curso)
-  // Si está cerrada (CLOSED = partidos jugándose), SIEMPRE forzar refresh para obtener datos en tiempo real
+  // ✨ MEJORADO: Solo forzar refresh si es explícitamente solicitado
+  // NO forzar automáticamente por el estado de la jornada para evitar sobrescribir datos buenos
   let shouldForceRefresh = options.forceRefresh || false;
-  
-  if (!shouldForceRefresh) {
-    const currentJornada = await prisma.league.findFirst({
-      select: { currentJornada: true, jornadaStatus: true },
-    });
-    
-    // Si estamos consultando la jornada actual Y está CLOSED (partidos en curso) → forzar refresh
-    if (currentJornada && currentJornada.currentJornada === jornada && currentJornada.jornadaStatus === 'CLOSED') {
-      shouldForceRefresh = true;
-      console.log(`[playerStats] ⚡ Jornada ${jornada} está CERRADA (partidos en curso) - forzando refresh desde API Football`);
-    }
-  }
 
-  // 1. Buscar en BD si no es refresh forzado
-  if (!shouldForceRefresh) {
-    const existing = await prisma.playerStats.findUnique({
-      where: {
-        playerId_jornada_season: {
-          playerId,
-          jornada,
-          season,
-        },
+  // 1. Buscar en BD primero (incluso si la jornada está cerrada)
+  const existing = await prisma.playerStats.findUnique({
+    where: {
+      playerId_jornada_season: {
+        playerId,
+        jornada,
+        season,
       },
-    });
+    },
+  });
 
-    if (existing) {
-      console.log(`[playerStats] 💾 Usando datos de BD para jugador ${playerId} jornada ${jornada}`);
-      return existing;
-    }
+  // Si existe en BD y NO se fuerza refresh explícitamente, usar datos de BD
+  if (existing && !shouldForceRefresh) {
+    console.log(`[playerStats] 💾 Usando datos de BD para jugador ${playerId} jornada ${jornada} (${existing.totalPoints} puntos)`);
+    return existing;
+  }
+  
+  // Si se fuerza refresh o no hay datos, consultar API
+  if (shouldForceRefresh && existing) {
+    console.log(`[playerStats] 🔄 Refresh solicitado para jugador ${playerId} jornada ${jornada} - intentando actualizar desde API`);
+  } else if (shouldForceRefresh) {
+    console.log(`[playerStats] 🔄 Refresh solicitado para jugador ${playerId} jornada ${jornada} (sin datos previos)`);
+  } else {
+    console.log(`[playerStats] 🆕 No hay datos en BD para jugador ${playerId} jornada ${jornada}, consultando API`);
   }
 
   // 2. Consultar API Football con la nueva lógica
@@ -388,6 +384,14 @@ export async function getPlayerStatsForJornada(
 
     if (!teamFixture || !playerTeamId) {
       // No jugó en esta jornada con ninguno de sus equipos
+      // ✅ PROTECCIÓN: Si hay datos previos y fue refresh, NO sobrescribir con 0
+      if (shouldForceRefresh && existing) {
+        console.log(`[playerStats] ⚠️ Jugador ${playerId} no encontrado en API, pero hay datos previos (${existing.totalPoints} pts) - manteniendo datos anteriores`);
+        return existing;
+      }
+      
+      // Solo guardar 0 si es primera vez (no hay datos previos)
+      console.log(`[playerStats] ℹ️ Jugador ${playerId} no jugó en jornada ${jornada} - guardando 0 puntos`);
       const emptyStats = await prisma.playerStats.upsert({
         where: { playerId_jornada_season: { playerId, jornada, season } },
         create: {
@@ -414,6 +418,14 @@ export async function getPlayerStatsForJornada(
 
     if (!playerStats) {
       // No se encontraron estadísticas del jugador en el partido
+      // ✅ PROTECCIÓN: Si hay datos previos y fue refresh, NO sobrescribir con 0
+      if (shouldForceRefresh && existing) {
+        console.log(`[playerStats] ⚠️ Jugador ${playerId} sin stats en partido pero hay datos previos (${existing.totalPoints} pts) - manteniendo datos anteriores`);
+        return existing;
+      }
+      
+      // Solo guardar 0 si es primera vez
+      console.log(`[playerStats] ℹ️ Jugador ${playerId} sin participación en partido - guardando 0 puntos`);
       const emptyStats = await prisma.playerStats.upsert({
         where: { playerId_jornada_season: { playerId, jornada, season } },
         create: {

@@ -506,13 +506,13 @@ getLeaguesByUser: (userId: string) =>
       }
 
       // Calcular estadísticas de todos los jugadores para la jornada actual
-      // Esto consultará la API-Football para cada jugador
+      // Esto consultará la API-Football para datos actualizados en tiempo real
       await Promise.all(
         Array.from(allPlayerIds).map(async (playerId) => {
           try {
             await PlayerStatsService.getPlayerStatsForJornada(playerId, currentJornada, {
               season: 2025,
-              forceRefresh: true // Forzar consulta a API para datos frescos
+              forceRefresh: true // ✅ SÍ forzar - pero protegido contra sobrescritura con 0s
             });
             console.log(`[calculateRealTimePoints] ✅ Jugador ${playerId} actualizado`);
           } catch (error) {
