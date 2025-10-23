@@ -429,9 +429,9 @@ export class JornadaService {
           let playerPoints = 0;
 
           // Preferir puntos cacheados si estamos calculando la jornada actual de la liga
-          const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
+          const localPlayer = await prisma.playerStats.findFirst({ where: {playerId: squadPlayer.playerId, jornada: jornada} });
           if (localPlayer && leagueJornada === jornada) {
-            const cachedPoints = Math.trunc(Number((localPlayer as any).lastJornadaPoints ?? 0));
+            const cachedPoints = Math.trunc(Number((localPlayer as any).totalPoints ?? 0));
             playerPointsMap.set(squadPlayer.playerId, cachedPoints);
             
             // Aplicar doble si es capitán
