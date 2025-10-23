@@ -6,10 +6,8 @@ import { AppNavigator } from './router/AppNavigator';
 import { CustomAlertProvider } from './components/CustomAlert';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-const Stack = createNativeStackNavigator();
 
 const App = () => {
-  const isDarkMode = useColorScheme() === 'dark';
 
   // Suppress the specific SafeAreaView deprecation warning from React Native
   // We intentionally ignore only this exact message to avoid hiding other warnings.

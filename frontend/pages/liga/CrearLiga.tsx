@@ -10,7 +10,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import { CrearLigaStyles as styles } from '../../styles/CrearLigaStyles';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase, RouteProp } from '@react-navigation/native';
-import BottomNavBar from '../navBar/BottomNavBar';
 import { LigaService } from '../../services/LigaService';
 import TopNavBar from '../navBar/TopNavBar';
 import { CustomAlertManager } from '../../components/CustomAlert';
