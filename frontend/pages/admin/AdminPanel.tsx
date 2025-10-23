@@ -123,14 +123,10 @@ const AdminPanel: React.FC = () => {
               
               CustomAlertManager.alert(
                 '✅ Cambios Bloqueados',
-                `Las plantillas y apuestas han sido bloqueadas.\n\n` +
-                `📊 RESUMEN:\n` +
-                `• Ligas bloqueadas: ${result.leaguesProcessed}\n\n` +
-                `🔒 BLOQUEADO:\n` +
-                `• Modificar plantillas\n` +
-                `• Hacer fichajes y ventas\n` +
-                `• Realizar apuestas\n\n` +
-                `📊 La jornada está en curso. Los puntos se actualizarán en tiempo real.`,
+                `Plantillas y apuestas bloqueadas.\n\n` +
+                `Ligas: ${result.leaguesProcessed}\n\n` +
+                `🔒 Bloqueado: Plantillas, fichajes y apuestas\n` +
+                `📊 Puntos en tiempo real activos`,
                 [{ 
                   text: 'OK', 
                   onPress: () => {
@@ -161,20 +157,13 @@ const AdminPanel: React.FC = () => {
   const handleAbrirJornada = async () => {
     CustomAlertManager.alert(
       '🔓 Abrir Cambios',
-      `¿Estás seguro de que quieres abrir los cambios para TODAS las ligas?\n\n` +
-      `Esto ejecutará el siguiente proceso:\n\n` +
-      `📊 EVALUACIÓN Y CÁLCULOS:\n` +
-      `• Evaluará todas las apuestas con resultados reales\n` +
-      `• Calculará puntos de plantillas\n` +
-      `• Actualizará presupuestos (500M base + puntos + apuestas)\n` +
-      `• Actualizará clasificación total\n\n` +
-      `🗑️ LIMPIEZA:\n` +
-      `• Vaciará todas las plantillas\n` +
-      `• Eliminará opciones de apuestas antiguas\n\n` +
-      `⏭️ AVANCE:\n` +
-      `• Incrementará jornada en +1\n` +
-      `• Desbloqueará modificaciones para nueva jornada\n\n` +
-      `⚠️ Este proceso puede tardar varios minutos.`,
+      `¿Cerrar jornada y abrir cambios?\n\n` +
+      `Proceso:\n` +
+      `• Evaluar apuestas y plantillas\n` +
+      `• Actualizar presupuestos\n` +
+      `• Vaciar plantillas\n` +
+      `• Avanzar a próxima jornada\n\n` +
+      `⚠️ Puede tardar varios minutos`,
       [
         {
           text: 'Cancelar',
@@ -197,17 +186,12 @@ const AdminPanel: React.FC = () => {
               
               CustomAlertManager.alert(
                 '✅ Cambios Abiertos',
-                `El proceso ha finalizado correctamente.\n\n` +
-                `📊 RESUMEN GLOBAL:\n` +
-                `• Ligas procesadas: ${result.leaguesProcessed}\n` +
-                `• Apuestas evaluadas: ${result.totalEvaluations}\n` +
-                `• Miembros actualizados: ${result.totalUpdatedMembers}\n` +
-                `• Plantillas vaciadas: ${result.totalClearedSquads}\n\n` +
-                `✅ PERMITIDO:\n` +
-                `• Modificar plantillas\n` +
-                `• Hacer fichajes y ventas\n` +
-                `• Realizar apuestas\n\n` +
-                `🎮 Los usuarios ya pueden prepararse para la próxima jornada.`,
+                `Proceso completado.\n\n` +
+                `Ligas: ${result.leaguesProcessed}\n` +
+                `Apuestas: ${result.totalEvaluations}\n` +
+                `Miembros: ${result.totalUpdatedMembers}\n` +
+                `Plantillas: ${result.totalClearedSquads}\n\n` +
+                `✅ Usuarios pueden preparar nueva jornada`,
                 [{ 
                   text: 'OK', 
                   onPress: () => {

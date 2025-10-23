@@ -1,12 +1,13 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { 
   AlertIcon, 
   AlertCircleIcon, 
   InformationIcon, 
   CheckCircleLargeIcon, 
-  ErrorCircleIcon 
+  ErrorCircleIcon,
+  LockIcon 
 } from './VectorIcons';
 
 interface CustomAlertButton {
@@ -61,7 +62,12 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
           </LinearGradient>
 
           {/* Content */}
-          <View style={styles.content}>
+          <ScrollView 
+            style={styles.contentScroll}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={true}
+            bounces={false}
+          >
             {/* Icon */}
             {icon && (
               <View style={styles.iconContainer}>
@@ -70,6 +76,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
                 {icon === 'information' && <InformationIcon size={48} color={iconColor} />}
                 {icon === 'check-circle' && <CheckCircleLargeIcon size={48} color={iconColor} />}
                 {icon === 'error-circle' && <ErrorCircleIcon size={48} color={iconColor} />}
+                {icon === 'lock-closed' && <LockIcon size={48} color={iconColor} />}
               </View>
             )}
 
@@ -80,7 +87,7 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
 
             {/* Message */}
             <Text style={styles.message}>{message}</Text>
-          </View>
+          </ScrollView>
 
           {/* Buttons */}
           <View style={styles.buttonsContainer}>
@@ -157,6 +164,9 @@ const styles = StyleSheet.create({
   },
   headerTextBlue: {
     color: '#0892D0',
+  },
+  contentScroll: {
+    maxHeight: 320, // Limitar altura máxima para activar scroll
   },
   content: {
     padding: 24,
