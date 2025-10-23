@@ -4,14 +4,15 @@ import { PlayerStatsService } from '../src/services/playerStats.service.js';
 const prisma = new PrismaClient();
 
 /**
- * Script para cargar las puntuaciones de TODOS los jugadores desde la API
- * y guardarlas en la base de datos.
+ * Script para cargar las puntuaciones de TODOS los jugadores para TODAS las jornadas
+ * desde la API y guardarlas en la base de datos.
  * 
- * Carga todos los jugadores que no tengan stats en BD para la jornada actual.
+ * Carga todas las jornadas (1 hasta la actual) para cada jugador que esté en Player
+ * pero no tenga stats en PlayerStats.
  */
 async function loadAllPlayerStats() {
   try {
-    console.log('🚀 Iniciando carga de puntuaciones de todos los jugadores...\n');
+    console.log('🚀 Iniciando carga de puntuaciones de todos los jugadores para todas las jornadas...\n');
 
     // Obtener la jornada actual de la liga
     const league = await prisma.league.findFirst({
@@ -23,8 +24,11 @@ async function loadAllPlayerStats() {
     }
 
     const currentJornada = league.currentJornada;
+    const season = Number(process.env.FOOTBALL_API_SEASON ?? 2025);
+    
     console.log(`📅 Jornada actual: ${currentJornada}`);
-    console.log(`🔒 Estado: ${league.jornadaStatus}\n`);
+    console.log(`🔒 Estado: ${league.jornadaStatus}`);
+    console.log(`⚽ Temporada: ${season}\n`);
 
     // Obtener todos los jugadores
     const allPlayers = await prisma.player.findMany({
@@ -33,68 +37,97 @@ async function loadAllPlayerStats() {
 
     console.log(`👥 Total de jugadores en BD: ${allPlayers.length}\n`);
 
-    // Obtener jugadores que YA tienen stats para esta jornada
-    const existingStats = await prisma.playerStats.findMany({
-      where: {
-        jornada: currentJornada,
-        season: Number(process.env.FOOTBALL_API_SEASON ?? 2025)
-      },
-      select: { playerId: true }
-    });
+    // Para cada jugador, verificar qué jornadas le faltan
+    let totalStatsToLoad = 0;
+    const playersWithMissingStats: Array<{
+      player: { id: number; name: string; teamName: string };
+      missingJornadas: number[];
+    }> = [];
 
-    const playersWithStats = new Set(existingStats.map(s => s.playerId));
-    console.log(`✅ Jugadores con stats ya cargadas: ${playersWithStats.size}`);
+    console.log('🔍 Analizando jornadas faltantes por jugador...\n');
 
-    // Filtrar jugadores que NO tienen stats
-    const playersToLoad = allPlayers.filter(p => !playersWithStats.has(p.id));
-    console.log(`📥 Jugadores a cargar: ${playersToLoad.length}\n`);
+    for (const player of allPlayers) {
+      // Obtener stats existentes para este jugador
+      const existingStats = await prisma.playerStats.findMany({
+        where: {
+          playerId: player.id,
+          season: season
+        },
+        select: { jornada: true }
+      });
 
-    if (playersToLoad.length === 0) {
-      console.log('✨ Todos los jugadores ya tienen stats cargadas para esta jornada');
+      const existingJornadas = new Set(existingStats.map(s => s.jornada));
+      const missingJornadas: number[] = [];
+
+      // Verificar qué jornadas faltan (de 1 hasta la actual)
+      for (let j = 1; j <= currentJornada; j++) {
+        if (!existingJornadas.has(j)) {
+          missingJornadas.push(j);
+        }
+      }
+
+      if (missingJornadas.length > 0) {
+        playersWithMissingStats.push({ player, missingJornadas });
+        totalStatsToLoad += missingJornadas.length;
+      }
+    }
+
+    console.log(`📊 Resumen del análisis:`);
+    console.log(`   - Jugadores con stats completas: ${allPlayers.length - playersWithMissingStats.length}`);
+    console.log(`   - Jugadores con stats faltantes: ${playersWithMissingStats.length}`);
+    console.log(`   - Total de stats a cargar: ${totalStatsToLoad}\n`);
+
+    if (totalStatsToLoad === 0) {
+      console.log('✨ Todos los jugadores tienen stats completas para todas las jornadas');
       return;
     }
 
-    // Cargar stats para cada jugador
+    // Cargar stats para cada jugador y cada jornada faltante
     let loaded = 0;
     let failed = 0;
     let skipped = 0;
+    let processed = 0;
 
     console.log('━'.repeat(60));
     console.log('Iniciando carga de estadísticas...');
     console.log('━'.repeat(60));
 
-    for (let i = 0; i < playersToLoad.length; i++) {
-      const player = playersToLoad[i];
-      const progress = `[${i + 1}/${playersToLoad.length}]`;
+    for (const { player, missingJornadas } of playersWithMissingStats) {
+      console.log(`\n👤 ${player.name} (${player.teamName}) - ${missingJornadas.length} jornadas faltantes`);
+      console.log(`   Jornadas: ${missingJornadas.join(', ')}`);
 
-      try {
-        console.log(`${progress} 🔄 Cargando: ${player.name} (${player.teamName})`);
+      for (const jornada of missingJornadas) {
+        processed++;
+        const progress = `[${processed}/${totalStatsToLoad}]`;
 
-        // Llamar al servicio para obtener y guardar las stats
-        const stats = await PlayerStatsService.getPlayerStatsForJornada(
-          player.id,
-          currentJornada,
-          { forceRefresh: true }
-        );
+        try {
+          console.log(`   ${progress} J${jornada}: Cargando...`);
 
-        if (stats && stats.totalPoints !== null) {
-          loaded++;
-          console.log(`${progress} ✅ ${player.name}: ${stats.totalPoints} puntos`);
-        } else {
-          skipped++;
-          console.log(`${progress} ⚠️  ${player.name}: Sin datos (no jugó)`);
-        }
+          // Llamar al servicio para obtener y guardar las stats
+          const stats = await PlayerStatsService.getPlayerStatsForJornada(
+            player.id,
+            jornada,
+            { season, forceRefresh: true }
+          );
 
-        // Pequeño delay para no saturar la API
-        if (i < playersToLoad.length - 1) {
+          if (stats && stats.totalPoints !== null) {
+            loaded++;
+            console.log(`   ${progress} J${jornada}: ✅ ${stats.totalPoints} puntos`);
+          } else {
+            skipped++;
+            console.log(`   ${progress} J${jornada}: ⚠️  Sin datos (no jugó)`);
+          }
+
+          // Pequeño delay para no saturar la API
           await new Promise(resolve => setTimeout(resolve, 300));
+
+        } catch (error: any) {
+          failed++;
+          console.error(`   ${progress} J${jornada}: ❌ Error: ${error.message}`);
+          
+          // Delay más largo en caso de error (posible rate limit)
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
-      } catch (error: any) {
-        failed++;
-        console.error(`${progress} ❌ Error en ${player.name}:`, error.message);
-        
-        // Delay más largo en caso de error (posible rate limit)
-        await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
@@ -104,7 +137,8 @@ async function loadAllPlayerStats() {
     console.log(`✅ Cargados exitosamente: ${loaded}`);
     console.log(`⚠️  Sin datos (no jugaron): ${skipped}`);
     console.log(`❌ Errores: ${failed}`);
-    console.log(`📈 Total procesados: ${loaded + skipped + failed}/${playersToLoad.length}`);
+    console.log(`📈 Total procesados: ${loaded + skipped + failed}/${totalStatsToLoad}`);
+    console.log(`👥 Jugadores procesados: ${playersWithMissingStats.length}/${allPlayers.length}`);
     console.log('━'.repeat(60));
 
   } catch (error) {
