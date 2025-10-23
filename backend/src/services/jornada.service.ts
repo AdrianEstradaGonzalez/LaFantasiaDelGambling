@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { calculatePlayerPointsTotal as calculatePlayerPointsService, normalizeRole } from '../shared/pointsCalculator.js';
+import { getPlayerStatsForJornada } from './playerStats.service.js';
 import { PlayerService } from './player.service.js';
 
 const prisma = new PrismaClient();
@@ -426,264 +427,25 @@ export class JornadaService {
           console.log(`         Es Capitán: ${squadPlayer.isCaptain ? '⭐ SÍ' : 'No'}`);
           console.log(`         Jornada a buscar: ${jornada}`);
           
-          let playerPoints = 0;
-
-          // ✅ IMPORTANTE: Solo usar cache si lastJornadaNumber coincide con la jornada que estamos cerrando
-          const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
-          if (localPlayer && leagueJornada === jornada && localPlayer.lastJornadaNumber === jornada) {
-            const cachedPoints = Math.trunc(Number((localPlayer as any).lastJornadaPoints ?? 0));
-            playerPointsMap.set(squadPlayer.playerId, cachedPoints);
-            
-            // Aplicar doble si es capitán
-            const pointsToAdd = squadPlayer.isCaptain ? cachedPoints * 2 : cachedPoints;
-            console.log(`         ♻️ Usando cache (jornada ${jornada}): ${cachedPoints} puntos`);
-            if (squadPlayer.isCaptain) {
-              console.log(`         ⭐ CAPITÁN - Puntos doblados: ${cachedPoints} × 2 = ${pointsToAdd}`);
-            }
-            totalPoints += pointsToAdd;
-            console.log(`         💰 Total acumulado: ${totalPoints}`);
-            console.log(`         ====================================\n`);
-            await new Promise((r) => setTimeout(r, 50));
-            continue;
-          }
-          
-          // ✅ PASO 1: Buscar en PlayerStats (igual que hace el frontend)
-          // Esto asegura que usamos exactamente los mismos puntos que se muestran en la plantilla
-          console.log(`         🔍 Buscando en PlayerStats para jornada ${jornada}...`);
-          
-          try {
-            const playerStatsRecord = await prisma.playerStats.findUnique({
-              where: {
-                playerId_jornada_season: {
-                  playerId: squadPlayer.playerId,
-                  jornada: jornada,
-                  season: this.SEASON,
-                },
-              },
-            });
-
-            if (playerStatsRecord) {
-              // ✅ Encontrado en PlayerStats - usar estos puntos
-              const roundedPoints = Math.trunc(Number(playerStatsRecord.totalPoints) || 0);
-              playerPointsMap.set(squadPlayer.playerId, roundedPoints);
-              console.log(`         ✅ Encontrado en PlayerStats: ${roundedPoints} puntos`);
-              
-              // Aplicar doble si es capitán
-              const pointsToAdd = squadPlayer.isCaptain ? roundedPoints * 2 : roundedPoints;
-              if (squadPlayer.isCaptain) {
-                console.log(`         ⭐ CAPITÁN - Puntos doblados: ${roundedPoints} × 2 = ${pointsToAdd}`);
-              }
-              
-              totalPoints += pointsToAdd;
-              console.log(`         💰 Total acumulado: ${totalPoints}`);
-              console.log(`         ====================================\n`);
-              
-              // Actualizar cache para próxima vez
-              try {
-                await PlayerService.updateLastJornadaPoints(squadPlayer.playerId, roundedPoints, jornada);
-              } catch (error) {
-                console.warn(`    ⚠️ No se pudo actualizar cache para jugador ${squadPlayer.playerId}`);
-              }
-              
-              await new Promise((r) => setTimeout(r, 50));
-              continue; // Ir al siguiente jugador
-            }
-            
-            console.log(`         ⚠️ No encontrado en PlayerStats, buscando en API...`);
-          } catch (error) {
-            console.warn(`         ⚠️ Error al buscar en PlayerStats:`, error);
-          }
-          
-          // PASO 2: Si no está en PlayerStats, obtener información del jugador para saber su equipo
-          // Preferimos nuestra BD local (más fiable y sin rate-limit)
-          let playerTeamId: number | undefined;
-          let playerTeamName: string | undefined;
-          try {
-            const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
-            if (localPlayer?.teamId) {
-              playerTeamId = localPlayer.teamId as unknown as number;
-              playerTeamName = localPlayer.teamName || undefined;
-              console.log(`         🗂️ Equipo (BD local): ${playerTeamName ?? 'desconocido'} (ID: ${playerTeamId})`);
-            }
-          } catch (e) {
-            console.log(`         ⚠️ No se pudo leer el equipo desde BD local`);
-          }
-
-          // Si no lo tenemos en BD, intentamos API (fallback)
-          if (!playerTeamId) {
-            try {
-              const playerInfoResponse = await axios.get(`${this.API_BASE}/players`, {
-                headers: {
-                  'x-rapidapi-key': this.API_KEY,
-                  'x-rapidapi-host': 'v3.football.api-sports.io',
-                },
-                params: { 
-                  id: squadPlayer.playerId, 
-                  season: this.SEASON,
-                  league: 140
-                },
-                timeout: 10000,
-              });
-              const playerInfo = playerInfoResponse.data?.response?.[0];
-              if (playerInfo?.statistics?.[0]?.team?.id) {
-                playerTeamId = playerInfo.statistics[0].team.id;
-                playerTeamName = playerInfo.statistics[0].team.name;
-                console.log(`         🌐 Equipo (API): ${playerTeamName} (ID: ${playerTeamId})`);
-              }
-            } catch (e: any) {
-              console.log(`         ⚠️ Error consultando API de jugador: ${e?.message || e}`);
-            }
-          }
-
-          if (!playerTeamId) {
-            console.log(`         ❌ No se pudo determinar el equipo del jugador. Saltando.`);
-            continue;
-          }
-
-          console.log(`         🏟️ Equipo usado: ${playerTeamName ?? 'desconocido'} (ID: ${playerTeamId})`);
-          
-          // PASO 3: Obtener partidos de la jornada
-          // Intentar fixtures con season actual y fallback a anterior
-          let fixtures: any[] = [];
-          let usedSeason: number | null = null;
-          for (const season of [this.SEASON, this.SEASON - 1]) {
-            const fixturesResponse = await axios.get(`${this.API_BASE}/fixtures`, {
-              headers: {
-                'x-rapidapi-key': this.API_KEY,
-                'x-rapidapi-host': 'v3.football.api-sports.io',
-              },
-              params: {
-                league: 140,
-                season,
-                round: `Regular Season - ${jornada}`,
-              },
-            });
-            fixtures = fixturesResponse.data?.response || [];
-            if (Array.isArray(fixtures) && fixtures.length > 0) { usedSeason = season; break; }
-            await new Promise(r => setTimeout(r, 120));
-          }
-          if (!Array.isArray(fixtures) || fixtures.length === 0) {
-            console.log(`         ⚠️ No hay fixtures para la jornada ${jornada} (tried seasons: ${this.SEASON}, ${this.SEASON - 1})`);
-            continue;
-          }
-          console.log(`         📅 ${fixtures.length} partidos en jornada ${jornada} (season ${usedSeason ?? this.SEASON})`);
-          
-          // PASO 4: Buscar el partido donde jugó su equipo
-          const teamFixture = fixtures.find((f: any) => 
-            f.teams?.home?.id === playerTeamId || f.teams?.away?.id === playerTeamId
-          );
-
-          if (!teamFixture) {
-            console.log(`         ⚠️ ${playerTeamName ?? 'Equipo'} no tiene partido en jornada ${jornada}`);
-            continue;
-          }
-
-          const isHomeTeam = teamFixture.teams?.home?.id === playerTeamId;
-          console.log(`         🔎 Partido: ${teamFixture.teams?.home?.name} vs ${teamFixture.teams?.away?.name}`);
-          console.log(`         📊 Estado: ${teamFixture.fixture?.status?.short} | Fixture ID: ${teamFixture.fixture.id}`);
-          const statusShort = teamFixture.fixture?.status?.short as string | undefined;
-          // Opcional: solo contar si el partido al menos ha empezado
-          if (!statusShort || ['CANC','PST','TBD','NS'].includes(statusShort)) {
-            console.log(`         ⏭️ Partido no iniciado o inválido para puntos (status: ${statusShort})`);
-            continue;
-          }
-          
-          // PASO 5: Obtener estadísticas del partido
-          const statsResponse = await axios.get(`${this.API_BASE}/fixtures/players`, {
-            headers: {
-              'x-rapidapi-key': this.API_KEY,
-              'x-rapidapi-host': 'v3.football.api-sports.io',
-            },
-            params: { fixture: teamFixture.fixture.id },
-          });
-
-          const teamsData = statsResponse.data?.response || [];
-          if (!Array.isArray(teamsData) || teamsData.length === 0) {
-            console.log(`         ⚠️ Sin estadísticas disponibles para este partido`);
-            continue;
-          }
-
-          // PASO 6: Buscar las estadísticas del jugador
-          let playerStats: any = null;
-          for (const teamData of teamsData) {
-            const teamName = teamData?.team?.name;
-            const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
-            const found = playersArr.find((p: any) => p?.player?.id === squadPlayer.playerId);
-            if (found?.statistics?.[0]) {
-              playerStats = found.statistics[0];
-              console.log(`         ✅ ¡Encontrado en ${teamName}!`);
-              console.log(`         ⏱️ Minutos: ${playerStats?.games?.minutes || 0}`);
-              break;
-            }
-          }
-
-          
-          if (!playerStats) {
-            // Fallbacks específicos para porteros: algunos partidos no devuelven el ID esperado
-            const roleExpected = mapSquadRole(squadPlayer.role);
-            if (roleExpected === 'Goalkeeper') {
-              const normalizeName = (value: string) =>
-                value
-                  .normalize('NFD')
-                  .replace(/\p{Diacritic}+/gu, '')
-                  .toLowerCase();
-              const targetName = normalizeName(String(squadPlayer.playerName || ''));
-              for (const teamData of teamsData) {
-                const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
-                const byName = playersArr.find((p: any) => {
-                  const nm = normalizeName(String(p?.player?.name || ''));
-                  return nm && nm === targetName && p?.statistics?.[0];
-                });
-                if (byName?.statistics?.[0]) {
-                  playerStats = byName.statistics[0];
-                  break;
-                }
-              }
-              if (!playerStats) {
-                for (const teamData of teamsData) {
-                  const playersArr = Array.isArray(teamData?.players) ? teamData.players : [];
-                  const gk = playersArr.find((p: any) => {
-                    const pos = String(p?.statistics?.[0]?.games?.position || '')
-                      .trim()
-                      .toLowerCase();
-                    const mins = Number(p?.statistics?.[0]?.games?.minutes || 0);
-                    return mins > 0 && (pos === 'g' || pos === 'gk' || pos.includes('goal'));
-                  });
-                  if (gk?.statistics?.[0]) {
-                    playerStats = gk.statistics[0];
-                    break;
-                  }
-                }
-              }
-            }
-
-            if (!playerStats) {
-              console.log(
-                `         ⚠️ No participó en el partido (no convocado/lesionado/suplente sin jugar)`
-              );
-              continue;
-            }
-          }
-
-
-          // PASO 7: Calcular puntos
-          playerPoints = calculatePlayerPointsService(playerStats, mapSquadRole(squadPlayer.role));
-          const roundedPoints = Math.trunc(Number(playerPoints) || 0);
+          // Unificar cálculo con Mi Plantilla: SIEMPRE usar el servicio de PlayerStats
+          // Esto calcula y persiste los puntos de la jornada (0 si no jugó) y actualiza el cache del jugador
+          const stats = await getPlayerStatsForJornada(squadPlayer.playerId, jornada, { forceRefresh: true });
+          const roundedPoints = Math.trunc(Number(stats?.totalPoints ?? 0));
           playerPointsMap.set(squadPlayer.playerId, roundedPoints);
-          console.log(`         ⚽ PUNTOS: ${roundedPoints}`);
-          
+          console.log(`         ✅ Puntos (PlayerStats): ${roundedPoints}`);
+
           // Aplicar doble si es capitán
           const pointsToAdd = squadPlayer.isCaptain ? roundedPoints * 2 : roundedPoints;
           if (squadPlayer.isCaptain) {
             console.log(`         ⭐ CAPITÁN - Puntos doblados: ${roundedPoints} × 2 = ${pointsToAdd}`);
           }
-          
+
           totalPoints += pointsToAdd;
           console.log(`         💰 Total acumulado: ${totalPoints}`);
           console.log(`         ====================================\n`);
 
-          // Pequeña pausa para evitar rate limit
-          await new Promise((r) => setTimeout(r, 150));
+          // Pequeña pausa para evitar rate limit general
+          await new Promise((r) => setTimeout(r, 120));
         } catch (error: any) {
           console.error(`      ❌ Error con ${squadPlayer.playerName}:`, error.message);
         }
