@@ -1,4 +1,5 @@
--- Migration: Add options field to bet_option table
+-- This is an empty migration.-- Migration: Add options field to bet_option table
+
 -- This migration adds a JSON column to store multiple betting options
 -- while preserving existing data
 

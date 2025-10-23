@@ -19,6 +19,7 @@ import { DrawerMenu } from '../../components/DrawerMenu';
 import Svg, { Path } from 'react-native-svg';
 import { JornadaService } from '../../services/JornadaService';
 import { SafeLayout } from '../../components/SafeLayout';
+import { PlayerAvailabilityBadge } from '../../components/PlayerAvailabilityBadge';
 
 // Función para decodificar JWT
 function decodeJwt(token: string): any {
@@ -770,7 +771,7 @@ export const PlayersMarket = ({ navigation, route }: {
             />
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#cbd5e1', fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{p.name}</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 8, flexWrap: 'wrap' }}>
                 <View style={{ 
                   backgroundColor: badgeColor, 
                   paddingHorizontal: 8, 
@@ -782,10 +783,15 @@ export const PlayersMarket = ({ navigation, route }: {
                 {p.teamCrest && (
                   <Image
                     source={{ uri: p.teamCrest }}
-                    style={{ width: 22, height: 22, marginLeft: 8, backgroundColor: 'transparent' }}
+                    style={{ width: 22, height: 22, backgroundColor: 'transparent' }}
                     resizeMode="contain"
                   />
                 )}
+                <PlayerAvailabilityBadge 
+                  status={p.availabilityStatus} 
+                  info={p.availabilityInfo}
+                  size="small"
+                />
               </View>
             </View>
           </View>

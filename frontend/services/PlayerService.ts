@@ -13,6 +13,8 @@ export interface PlayerWithPrice {
   price: number; // Precio en millones
   lastJornadaPoints?: number;
   totalPoints?: number; // ✨ Puntuación total de todas las jornadas
+  availabilityStatus?: string; // 'AVAILABLE', 'INJURED', 'SUSPENDED'
+  availabilityInfo?: string | null; // Información adicional
   createdAt: string;
   updatedAt: string;
 }

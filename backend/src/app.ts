@@ -17,6 +17,7 @@ import betRoutes from "./routes/bet.routes.js";
 import betOptionRoutes from "./routes/betOption.routes.js";
 import jornadaRoutes from "./routes/jornada.routes.js";
 import { playerStatsRoutes } from "./routes/playerStats.routes.js";
+import playerStatusRoutes from "./routes/playerStatus.routes.js";
 export async function buildApp() {
   const app = Fastify({
     logger: {
@@ -142,6 +143,7 @@ export async function buildApp() {
   await app.register(betOptionRoutes, { prefix: "/" });
   await app.register(jornadaRoutes, { prefix: "/jornada" });
   await app.register(playerStatsRoutes, { prefix: "/" });
+  await app.register(playerStatusRoutes, { prefix: "/players" });
 
   return app;
 }
