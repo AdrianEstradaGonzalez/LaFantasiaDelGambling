@@ -264,6 +264,27 @@ export class PlayerService {
   }
 
   /**
+   * Eliminar un jugador por ID
+   */
+  static async deletePlayer(id: number): Promise<void> {
+    try {
+      const response = await fetch(`${this.BASE_URL}/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const json = await response.json().catch(() => ({}));
+        throw new Error(json?.message || `Error ${response.status}`);
+      }
+
+      return;
+    } catch (error) {
+      console.error('Error eliminando jugador:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Sincronizar jugadores desde la API de LaLiga
    */
   static async syncPlayers(): Promise<{

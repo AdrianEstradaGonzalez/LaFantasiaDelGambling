@@ -7,7 +7,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { ChevronLeftIcon } from '../../components/VectorIcons';
+import { ChevronLeftIcon, TrashIcon } from '../../components/VectorIcons';
 import Svg, { Path } from 'react-native-svg';
 import { SafeLayout } from '../../components/SafeLayout';
 
@@ -431,6 +431,28 @@ export const GestionJugadores = ({ navigation, route }: {
     }
   };
 
+  // Eliminar jugador (con confirmación)
+  const handleDeletePlayer = async (playerId: number) => {
+    CustomAlertManager.alert(
+      'Confirmar eliminación',
+      '¿Eliminar este jugador de la base de datos? Esta acción no se puede deshacer.',
+      [
+        { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
+        { text: 'Eliminar', onPress: async () => {
+            try {
+              await PlayerService.deletePlayer(playerId);
+              CustomAlertManager.alert('Éxito', 'Jugador eliminado correctamente', [{ text: 'OK', onPress: () => {} }], { icon: 'check-circle', iconColor: '#10b981' });
+              await loadPlayers();
+            } catch (e: any) {
+              console.error('Error eliminando jugador:', e);
+              CustomAlertManager.alert('Error', e?.message || 'No se pudo eliminar el jugador', [{ text: 'OK', onPress: () => {} }], { icon: 'alert-circle', iconColor: '#ef4444' });
+            }
+          }, style: 'destructive' }
+      ],
+      { icon: 'alert-circle', iconColor: '#ef4444' }
+    );
+  };
+
   // Verificar si hay cambios pendientes
   const hasChanges = Object.keys(editedPrices).length > 0 || Object.keys(editedPositions).length > 0;
 
@@ -628,6 +650,9 @@ export const GestionJugadores = ({ navigation, route }: {
                     <Text style={{ color: '#cbd5e1', fontSize: 16, fontWeight: '700' }}>M</Text>
                   </View>
                 </View>
+                <TouchableOpacity onPress={() => handleDeletePlayer(p.id)} style={{ marginLeft: 12 }}>
+                  <TrashIcon size={22} color="#ef4444" />
+                </TouchableOpacity>
               </View>
 
               {/* Dropdown de posición editable */}

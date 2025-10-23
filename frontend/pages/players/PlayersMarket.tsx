@@ -6,20 +6,16 @@ import { SquadService } from '../../services/SquadService';
 import FootballService, { TeamMinimal } from '../../services/FutbolService';
 import LoadingScreen from '../../components/LoadingScreen';
 import LigaNavBar from '../navBar/LigaNavBar';
-import LigaTopNavBar from '../navBar/LigaTopNavBar';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { LoginService } from '../../services/LoginService';
-import EncryptedStorage from 'react-native-encrypted-storage';
 import { Buffer } from 'buffer';
 import { useFocusEffect } from '@react-navigation/native';
-import { ChevronLeftIcon, MenuIcon, CheckIcon } from '../../components/VectorIcons';
+import { MenuIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import Svg, { Path } from 'react-native-svg';
 import { JornadaService } from '../../services/JornadaService';
 import { SafeLayout } from '../../components/SafeLayout';
-import { PlayerAvailabilityBadge } from '../../components/PlayerAvailabilityBadge';
 
 // Función para decodificar JWT
 function decodeJwt(token: string): any {
@@ -861,15 +857,6 @@ export const PlayersMarket = ({ navigation, route }: {
               <Text style={{ color: '#fff', fontSize: 13, fontWeight: '800' }}>FICHAR</Text>
             </TouchableOpacity>
           )}
-        </View>
-        
-        {/* Badge de disponibilidad - Posición absoluta abajo izquierda */}
-        <View style={{ position: 'absolute', bottom: 0, left: 0 }}>
-          <PlayerAvailabilityBadge 
-            status={p.availabilityStatus} 
-            info={p.availabilityInfo}
-            size="small"
-          />
         </View>
       </View>
     );

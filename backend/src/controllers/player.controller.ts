@@ -181,6 +181,27 @@ export class PlayerController {
     }
   }
 
+  /**
+   * Eliminar jugador
+   * DELETE /api/players/:id
+   */
+  static async deletePlayer(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const params = req.params as any;
+      const { id } = params;
+
+      await PlayerService.deletePlayer(Number(id));
+
+      return reply.status(200).send({ success: true, message: 'Jugador eliminado correctamente' });
+    } catch (error: any) {
+      console.error('Error eliminando jugador:', error);
+      if (error?.message && error.message.includes('plantilla')) {
+        return reply.status(400).send({ success: false, message: error.message });
+      }
+      return reply.status(500).send({ success: false, message: error?.message || 'Error al eliminar jugador' });
+    }
+  }
+
   static async getJornadaPoints(req: FastifyRequest, reply: FastifyReply) {
     try {
       const { id } = req.params as { id: string };

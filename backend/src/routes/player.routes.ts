@@ -62,4 +62,10 @@ export default async function playerRoutes(app: FastifyInstance) {
    * @access Private
    */
   app.patch('/:id/last-points', PlayerController.updateLastPoints);
+
+  /**
+   * @route DELETE /api/players/:id
+   * @desc Eliminar un jugador (admin)
+   */
+  app.delete('/:id', PlayerController.deletePlayer);
 }

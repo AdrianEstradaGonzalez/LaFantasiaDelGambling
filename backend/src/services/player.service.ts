@@ -429,4 +429,18 @@ export class PlayerService {
   static async getStats() {
     return PlayerRepository.getPriceStats();
   }
+
+  /**
+   * Eliminar un jugador de la base de datos
+   * - Verifica si el jugador está asignado a alguna plantilla (SquadPlayer) antes de eliminar
+   */
+  static async deletePlayer(id: number) {
+    // Verificar referencias en SquadPlayer (no permitir eliminación si está en una plantilla)
+    const inSquad = await prisma.squadPlayer.findFirst({ where: { playerId: id } });
+    if (inSquad) {
+      throw new Error('El jugador está asignado a alguna plantilla. Eliminar primero de las plantillas.');
+    }
+
+    return PlayerRepository.deletePlayer(id);
+  }
 }
