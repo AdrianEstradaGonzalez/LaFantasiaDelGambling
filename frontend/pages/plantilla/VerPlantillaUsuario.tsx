@@ -316,7 +316,31 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                       <View style={{ alignItems: 'center' }}>
                         <View style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 2, borderColor: player.isCaptain ? '#ffd700' : '#0892D0', backgroundColor: '#0b1220', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8, position: 'relative', overflow: 'visible' }}>
                           <View style={{ overflow: 'hidden', borderRadius: 33, width: 66, height: 66 }}>
-                            <Image source={{ uri: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2` }} style={{ width: 66, height: 66, borderRadius: 33 }} resizeMode="cover" />
+                            <TouchableOpacity
+                              activeOpacity={0.8}
+                              onPress={() => {
+                                // Navegar a detalles del jugador. Construimos un objeto "player" mínimo
+                                // con los campos que PlayerDetail espera (id, name, photo, position, price).
+                                const pid = player.playerId;
+                                const playerForNav = {
+                                  id: pid,
+                                  name: player.playerName,
+                                  photo: photo,
+                                  position: (player.position as any) || undefined,
+                                  price: (player.pricePaid as any) || undefined,
+                                };
+
+                                navigation.navigate('PlayerDetail', {
+                                  player: playerForNav,
+                                  ligaId,
+                                  ligaName,
+                                  isAlreadyInSquad: true,
+                                  currentFormation: squad?.formation,
+                                });
+                              }}
+                            >
+                              <Image source={{ uri: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2` }} style={{ width: 66, height: 66, borderRadius: 33 }} resizeMode="cover" />
+                            </TouchableOpacity>
                           </View>
                           {/* Escudo del equipo */}
                           {crest && (
