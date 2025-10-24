@@ -22,9 +22,9 @@ async function createSquadForAdrian() {
     const league = await prisma.league.findFirst({
       where: {
         OR: [
-          { name: { contains: 'Test2', mode: 'insensitive' } },
-          { name: { contains: 'Test2', mode: 'insensitive' } },
-          { code: { contains: 'Test2', mode: 'insensitive' } }
+          { name: { contains: 'Test1', mode: 'insensitive' } },
+          { name: { contains: 'Test1', mode: 'insensitive' } },
+          { code: { contains: 'Test1', mode: 'insensitive' } }
         ]
       }
     });
