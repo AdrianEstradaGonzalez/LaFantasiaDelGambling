@@ -395,16 +395,6 @@ export const Home = ({ navigation, route }: HomeProps) => {
                     >
                       {liga.nombre}
                     </Text>
-                    <Text
-                      style={{
-                        color: '#9ca3af',
-                        fontWeight: '500',
-                        fontSize: 13,
-                        letterSpacing: 0.2,
-                      }}
-                    >
-                      Toca para ver detalles
-                    </Text>
                   </View>
                   
                   {/* Flecha indicadora */}
