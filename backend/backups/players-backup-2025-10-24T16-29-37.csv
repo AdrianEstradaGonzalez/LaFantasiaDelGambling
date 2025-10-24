@@ -1,0 +1,612 @@
+id,name,position,teamName,price,availabilityStatus,availabilityInfo,teamId
+20,"A. Witsel","Defender","Girona",20,"AVAILABLE","",547
+23,"Sergio Gómez","Attacker","Real Sociedad",25,"AVAILABLE","",548
+29,"J. Oblak","Goalkeeper","Atletico Madrid",50,"AVAILABLE","",530
+31,"J. Giménez","Defender","Atletico Madrid",30,"AVAILABLE","",530
+45,"T. Lemar","Midfielder","Girona",15,"AVAILABLE","",547
+49,"T. Partey","Midfielder","Villarreal",15,"AVAILABLE","",533
+50,"Koke","Midfielder","Atletico Madrid",30,"AVAILABLE","",530
+52,"Sergio Camello","Attacker","Rayo Vallecano",5,"AVAILABLE","",728
+56,"A. Griezmann","Attacker","Atletico Madrid",70,"AVAILABLE","",530
+74,"S. Amrabat","Midfielder","Real Betis",30,"AVAILABLE","",543
+83,"A. Danjuma","Attacker","Valencia",45,"AVAILABLE","",532
+126,"Iñaki Peña","Goalkeeper","Elche",40,"AVAILABLE","",797
+127,"M. ter Stegen","Goalkeeper","Barcelona",40,"AVAILABLE","",529
+133,"C. Lenglet","Defender","Atletico Madrid",50,"AVAILABLE","",530
+143,"Carles Aleñá","Midfielder","Alaves",35,"AVAILABLE","",542
+155,"Abel Ruiz","Attacker","Girona",10,"AVAILABLE","",547
+158,"P. Gazzaniga","Goalkeeper","Girona",30,"AVAILABLE","",547
+166,"J. Foyth","Defender","Villarreal",15,"AVAILABLE","",533
+278,"Kylian Mbappé","Attacker","Real Madrid",200,"AVAILABLE","",541
+283,"T. Alexander-Arnold","Defender","Real Madrid",40,"AVAILABLE","",541
+372,"Éder Militão","Defender","Real Madrid",60,"AVAILABLE","",541
+414,"Omar Mascarell","Midfielder","Mallorca",1,"AVAILABLE","",798
+433,"Marcão","Defender","Sevilla",10,"AVAILABLE","",536
+505,"D. Alaba","Defender","Real Madrid",35,"AVAILABLE","",541
+521,"R. Lewandowski","Attacker","Barcelona",130,"AVAILABLE","",529
+531,"D. Blind","Defender","Girona",25,"AVAILABLE","",547
+538,"F. de Jong","Midfielder","Barcelona",60,"AVAILABLE","",529
+547,"D. van de Beek","Midfielder","Girona",10,"AVAILABLE","",547
+557,"O. Vlachodimos","Goalkeeper","Sevilla",30,"AVAILABLE","",536
+570,"F. Cervi","Midfielder","Celta Vigo",15,"AVAILABLE","",538
+608,"L. Boyé","Attacker","Alaves",25,"AVAILABLE","",542
+619,"Eric García","Defender","Barcelona",60,"AVAILABLE","",529
+622,"Aymeric Laporte","Defender","Athletic Club",50,"AVAILABLE","",531
+653,"F. Mendy","Defender","Real Madrid",10,"AVAILABLE","",541
+697,"M. Solomon","Attacker","Villarreal",20,"AVAILABLE","",533
+730,"T. Courtois","Goalkeeper","Real Madrid",80,"AVAILABLE","",541
+733,"Dani Carvajal","Defender","Real Madrid",40,"AVAILABLE","",541
+734,"Dela","Defender","Levante",10,"AVAILABLE","",539
+736,"Fran García","Defender","Real Madrid",20,"AVAILABLE","",541
+737,"Odriozola","Defender","Real Sociedad",1,"AVAILABLE","",548
+744,"Brahim Díaz","Midfielder","Real Madrid",50,"AVAILABLE","",541
+745,"Isco","Midfielder","Real Betis",80,"AVAILABLE","",543
+748,"Dani Ceballos","Midfielder","Real Madrid",20,"AVAILABLE","",541
+753,"Marcos Llorente","Defender","Atletico Madrid",90,"AVAILABLE","",530
+755,"Jaime Seoane","Midfielder","Oviedo",5,"AVAILABLE","",718
+756,"F. Valverde","Midfielder","Real Madrid",60,"AVAILABLE","",541
+760,"M. Díaz","Attacker","Alaves",20,"AVAILABLE","",542
+762,"Vinícius Júnior","Attacker","Real Madrid",170,"AVAILABLE","",541
+851,"W. Szczęsny","Goalkeeper","Barcelona",60,"AVAILABLE","",529
+885,"E. Bailly","Defender","Oviedo",15,"AVAILABLE","",718
+909,"M. Rashford","Attacker","Barcelona",100,"AVAILABLE","",529
+910,"A. Sánchez","Attacker","Sevilla",10,"AVAILABLE","",536
+913,"Cristian Rivero","Goalkeeper","Valencia",1,"AVAILABLE","",532
+916,"M. Diakhaby","Defender","Valencia",25,"AVAILABLE","",532
+918,"José Gayà","Defender","Valencia",15,"AVAILABLE","",532
+919,"Hugo Guillamón","Midfielder","Valencia",5,"AVAILABLE","",532
+920,"Toni Lato","Defender","Mallorca",1,"AVAILABLE","",798
+925,"Gonçalo Guedes","Attacker","Real Sociedad",25,"AVAILABLE","",548
+928,"Dani Parejo","Midfielder","Villarreal",10,"AVAILABLE","",533
+930,"Carlos Soler","Midfielder","Real Sociedad",20,"AVAILABLE","",548
+931,"Ferran Torres","Attacker","Barcelona",60,"AVAILABLE","",529
+957,"D. Sow","Midfielder","Sevilla",10,"AVAILABLE","",536
+1118,"J. Toljan","Defender","Levante",10,"AVAILABLE","",539
+1257,"J. Koundé","Defender","Barcelona",80,"AVAILABLE","",529
+1271,"A. Tchouaméni","Midfielder","Real Madrid",40,"AVAILABLE","",541
+1305,"D. Livaković","Goalkeeper","Girona",20,"AVAILABLE","",547
+1323,"Dani Olmo","Midfielder","Barcelona",70,"AVAILABLE","",529
+1439,"Héctor Bellerín","Defender","Real Betis",25,"AVAILABLE","",543
+1461,"Denis Suárez","Midfielder","Alaves",1,"AVAILABLE","",542
+1482,"Thierry Correia","Defender","Valencia",10,"AVAILABLE","",532
+1489,"N. Gudelj","Midfielder","Sevilla",10,"AVAILABLE","",536
+1496,"Raphinha","Attacker","Barcelona",130,"AVAILABLE","",529
+1557,"Pau López","Goalkeeper","Real Betis",30,"AVAILABLE","",543
+1561,"Marc Bartra","Defender","Real Betis",35,"AVAILABLE","",543
+1564,"Junior Firpo","Defender","Real Betis",15,"AVAILABLE","",543
+1578,"G. Lo Celso","Midfielder","Real Betis",90,"AVAILABLE","",543
+1631,"R. Rodríguez","Defender","Real Betis",20,"AVAILABLE","",543
+1695,"Santi Cazorla","Midfielder","Oviedo",10,"AVAILABLE","",718
+1697,"Pablo Fornals","Midfielder","Real Betis",60,"AVAILABLE","",543
+1700,"Iván Martín","Midfielder","Girona",40,"AVAILABLE","",547
+1701,"Manu Morlanes","Midfielder","Mallorca",15,"AVAILABLE","",798
+1702,"Pedraza","Defender","Villarreal",5,"AVAILABLE","",533
+1703,"A. Rațiu","Defender","Rayo Vallecano",40,"AVAILABLE","",728
+1707,"Gerard Moreno","Attacker","Villarreal",35,"AVAILABLE","",533
+1708,"Dani Raba","Attacker","Valencia",10,"AVAILABLE","",532
+1825,"Lucas Torró","Midfielder","Osasuna",15,"AVAILABLE","",727
+1847,"Luiz Felipe","Defender","Rayo Vallecano",1,"AVAILABLE","",728
+1902,"D. Ćaleta-Car","Defender","Real Sociedad",20,"AVAILABLE","",548
+2001,"C. Larin","Attacker","Mallorca",5,"AVAILABLE","",798
+2039,"Juan Berrocal","Defender","Getafe",1,"AVAILABLE","",546
+2061,"Bryan Gil","Attacker","Girona",20,"AVAILABLE","",547
+2063,"André Silva","Attacker","Elche",35,"AVAILABLE","",797
+2182,"V. Tsygankov","Attacker","Girona",25,"AVAILABLE","",547
+2202,"H. Traoré","Defender","Real Sociedad",10,"AVAILABLE","",548
+2207,"E. Camavinga","Midfielder","Real Madrid",20,"AVAILABLE","",541
+2278,"Marcos Alonso","Defender","Celta Vigo",60,"AVAILABLE","",538
+2280,"César Azpilicueta","Defender","Sevilla",15,"AVAILABLE","",536
+2282,"A. Christensen","Defender","Barcelona",40,"AVAILABLE","",529
+2285,"A. Rüdiger","Defender","Real Madrid",50,"AVAILABLE","",541
+2449,"Y. Herrera","Midfielder","Real Sociedad",30,"AVAILABLE","",548
+2461,"S. Rondón","Attacker","Oviedo",20,"AVAILABLE","",718
+2465,"J. Musso","Goalkeeper","Atletico Madrid",20,"AVAILABLE","",530
+2617,"C. Stuani","Attacker","Girona",15,"AVAILABLE","",547
+2741,"M. Ryan","Goalkeeper","Levante",20,"AVAILABLE","",539
+2762,"J. Brekalo","Midfielder","Oviedo",1,"AVAILABLE","",718
+2813,"M. Dmitrović","Goalkeeper","Espanyol",30,"AVAILABLE","",540
+2922,"L. Dendoncker","Midfielder","Oviedo",15,"AVAILABLE","",718
+2924,"A. Januzaj","Midfielder","Sevilla",10,"AVAILABLE","",536
+3033,"C. Bakambu","Attacker","Real Betis",5,"AVAILABLE","",543
+3246,"N. Pépé","Attacker","Villarreal",70,"AVAILABLE","",533
+3608,"K. Sibo","Midfielder","Oviedo",5,"AVAILABLE","",718
+6009,"J. Álvarez","Attacker","Atletico Madrid",180,"AVAILABLE","",530
+6010,"L. Beltrán","Midfielder","Valencia",1,"AVAILABLE","",532
+6067,"T. Almada","Midfielder","Atletico Madrid",40,"AVAILABLE","",530
+6085,"C. Benavídez","Midfielder","Alaves",1,"AVAILABLE","",542
+6233,"N. Tenaglia","Defender","Alaves",30,"AVAILABLE","",542
+6503,"N. Molina","Defender","Atletico Madrid",30,"AVAILABLE","",530
+7332,"L. Sučić","Midfielder","Real Sociedad",10,"AVAILABLE","",548
+8492,"A. Sørloth","Attacker","Atletico Madrid",70,"AVAILABLE","",530
+8746,"Bambo Diaby","Defender","Elche",5,"AVAILABLE","",797
+9971,"Antony","Attacker","Real Betis",80,"AVAILABLE","",543
+10009,"Rodrygo","Attacker","Real Madrid",60,"AVAILABLE","",541
+11346,"M. Dituro","Goalkeeper","Elche",40,"AVAILABLE","",797
+11379,"A. Batalla","Goalkeeper","Rayo Vallecano",30,"AVAILABLE","",728
+11421,"G. Suazo","Defender","Sevilla",10,"AVAILABLE","",536
+15900,"A. Mumin","Defender","Rayo Vallecano",5,"AVAILABLE","",728
+18740,"Jonny","Defender","Alaves",10,"AVAILABLE","",542
+18794,"Kiko Femenía","Defender","Getafe",20,"AVAILABLE","",546
+18812,"Adrián","Goalkeeper","Real Betis",1,"AVAILABLE","",543
+18821,"G. Diangana","Attacker","Elche",1,"AVAILABLE","",797
+18867,"Diego Rico","Defender","Getafe",20,"AVAILABLE","",546
+18895,"F. Lejeune","Defender","Rayo Vallecano",40,"AVAILABLE","",728
+18906,"Ayoze Pérez","Attacker","Villarreal",60,"AVAILABLE","",533
+19172,"Ø. Nyland","Goalkeeper","Sevilla",20,"AVAILABLE","",536
+19352,"Sergi Canós","Midfielder","Valencia",1,"AVAILABLE","",532
+19613,"O. Ejaria","Midfielder","Oviedo",1,"AVAILABLE","",718
+20520,"I. Balliu","Defender","Rayo Vallecano",1,"AVAILABLE","",728
+20696,"P. Gueye","Midfielder","Villarreal",25,"AVAILABLE","",533
+20817,"G. Koyalipou","Attacker","Levante",1,"AVAILABLE","",539
+20844,"H. Hassan","Midfielder","Oviedo",25,"AVAILABLE","",718
+21004,"L. Agoumé","Midfielder","Sevilla",20,"AVAILABLE","",536
+21087,"B. Mendy","Midfielder","Sevilla",15,"AVAILABLE","",536
+21153,"B. Santamaría","Midfielder","Valencia",15,"AVAILABLE","",532
+21584,"M. Ristić","Midfielder","Celta Vigo",1,"AVAILABLE","",538
+21701,"V. Rosier","Defender","Osasuna",25,"AVAILABLE","",727
+21997,"Logan Costa","Defender","Villarreal",1,"AVAILABLE","",533
+25375,"T. Asano","Attacker","Mallorca",30,"AVAILABLE","",798
+26302,"Pablo Maffeo","Defender","Mallorca",20,"AVAILABLE","",798
+26315,"N. González","Attacker","Atletico Madrid",30,"AVAILABLE","",530
+30399,"D. Hancko","Defender","Atletico Madrid",60,"AVAILABLE","",530
+30510,"Álex Berenguer","Midfielder","Athletic Club",50,"AVAILABLE","",531
+30543,"G. Raspadori","Attacker","Atletico Madrid",25,"AVAILABLE","",530
+30765,"I. Radu","Goalkeeper","Celta Vigo",35,"AVAILABLE","",538
+30924,"M. Kumbulla","Defender","Mallorca",15,"AVAILABLE","",798
+30927,"S. Colombatto","Midfielder","Oviedo",5,"AVAILABLE","",718
+31406,"U. Sadiq","Attacker","Real Sociedad",10,"AVAILABLE","",548
+32862,"T. Kubo","Midfielder","Real Sociedad",50,"AVAILABLE","",548
+37938,"S. Becker","Attacker","Osasuna",15,"AVAILABLE","",727
+38699,"L. Ilić","Midfielder","Oviedo",15,"AVAILABLE","",718
+39121,"C. Ejuke","Attacker","Sevilla",15,"AVAILABLE","",536
+41157,"André Almeida","Midfielder","Valencia",10,"AVAILABLE","",532
+41208,"Fábio Cardoso","Defender","Sevilla",1,"AVAILABLE","",536
+41412,"N. Maraš","Defender","Alaves",1,"AVAILABLE","",542
+41552,"P. Ciss","Midfielder","Rayo Vallecano",1,"AVAILABLE","",728
+41970,"David Carmo","Defender","Oviedo",10,"AVAILABLE","",718
+41976,"Y. Neyou","Defender","Getafe",5,"AVAILABLE","",546
+42642,"H. Moldovan","Goalkeeper","Oviedo",10,"AVAILABLE","",718
+46646,"Sergio Herrera","Goalkeeper","Osasuna",35,"AVAILABLE","",727
+46657,"Nacho Vidal","Defender","Oviedo",10,"AVAILABLE","",718
+46658,"Rubén García","Attacker","Osasuna",20,"AVAILABLE","",727
+46662,"Moncayola","Midfielder","Osasuna",25,"AVAILABLE","",727
+46667,"Kike Barja","Attacker","Osasuna",1,"AVAILABLE","",727
+46673,"Aarón Escandell","Goalkeeper","Oviedo",40,"AVAILABLE","",718
+46711,"Aleix Febas","Midfielder","Elche",20,"AVAILABLE","",797
+46733,"Raíllo","Defender","Mallorca",40,"AVAILABLE","",798
+46734,"Pablo Ramón","Defender","Espanyol",1,"AVAILABLE","",540
+46738,"M. Valjent","Defender","Mallorca",25,"AVAILABLE","",798
+46742,"Dani Rodríguez","Midfielder","Mallorca",25,"AVAILABLE","",798
+46746,"A. Budimir","Attacker","Osasuna",50,"AVAILABLE","",727
+46751,"Abdón Prats","Attacker","Mallorca",1,"AVAILABLE","",798
+46759,"A. Espino","Defender","Rayo Vallecano",5,"AVAILABLE","",728
+46771,"Jairo Izquierdo","Defender","Elche",1,"AVAILABLE","",797
+46790,"Víctor García","Midfielder","Levante",1,"AVAILABLE","",539
+46795,"Domingos Duarte","Defender","Getafe",40,"AVAILABLE","",546
+46799,"Edu Expósito","Midfielder","Espanyol",40,"AVAILABLE","",540
+46813,"A. Abqar","Defender","Getafe",30,"AVAILABLE","",546
+46860,"Javi Muñoz","Midfielder","Getafe",10,"AVAILABLE","",546
+46862,"Borja Sánchez","Midfielder","Oviedo",1,"AVAILABLE","",718
+46887,"Pedro Díaz","Midfielder","Rayo Vallecano",10,"AVAILABLE","",728
+46933,"Luis Rioja","Midfielder","Valencia",35,"AVAILABLE","",532
+46941,"Unai Elgezabal","Defender","Levante",5,"AVAILABLE","",539
+46966,"Dani Calvo","Defender","Oviedo",5,"AVAILABLE","",718
+46967,"Juan Cruz","Defender","Osasuna",1,"AVAILABLE","",727
+46973,"Josan","Midfielder","Elche",5,"AVAILABLE","",797
+46987,"Raúl Fernández","Goalkeeper","Alaves",1,"AVAILABLE","",542
+46990,"Álvaro Vallés","Goalkeeper","Real Betis",30,"AVAILABLE","",543
+46996,"Álvaro Lemos","Defender","Oviedo",1,"AVAILABLE","",718
+47007,"Ruíz de Galarreta","Midfielder","Athletic Club",35,"AVAILABLE","",531
+47013,"Rafa Mir","Attacker","Elche",40,"AVAILABLE","",797
+47016,"Álvaro Fernández","Goalkeeper","Sevilla",1,"AVAILABLE","",536
+47085,"Luis Milla","Midfielder","Getafe",70,"AVAILABLE","",546
+47109,"Óscar Valentín","Midfielder","Rayo Vallecano",1,"AVAILABLE","",728
+47119,"Aitor Ruibal","Midfielder","Real Betis",5,"AVAILABLE","",543
+47153,"Juan Carlos","Goalkeeper","Girona",1,"AVAILABLE","",547
+47181,"Toni Martínez","Attacker","Alaves",20,"AVAILABLE","",542
+47225,"Brugui","Midfielder","Levante",10,"AVAILABLE","",539
+47247,"David Soria","Goalkeeper","Getafe",40,"AVAILABLE","",546
+47249,"L. Cabrera","Defender","Espanyol",30,"AVAILABLE","",540
+47250,"D. Dakonam","Defender","Getafe",1,"AVAILABLE","",546
+47251,"D. Foulquier","Defender","Valencia",10,"AVAILABLE","",532
+47256,"Miguel Rubio","Defender","Espanyol",1,"AVAILABLE","",540
+47258,"M. Arambarri","Midfielder","Getafe",40,"AVAILABLE","",546
+47264,"Hugo Duro","Attacker","Valencia",30,"AVAILABLE","",532
+47269,"Álex Remiro","Goalkeeper","Real Sociedad",30,"AVAILABLE","",548
+47270,"Unai Simón","Goalkeeper","Athletic Club",50,"AVAILABLE","",531
+47271,"Yeray","Defender","Athletic Club",10,"AVAILABLE","",531
+47273,"Yuri","Defender","Athletic Club",30,"AVAILABLE","",531
+47276,"Lekue","Defender","Athletic Club",5,"AVAILABLE","",531
+47277,"Unai Núñez","Defender","Celta Vigo",10,"AVAILABLE","",538
+47278,"Dani Vivian","Defender","Athletic Club",50,"AVAILABLE","",531
+47285,"Unai López","Midfielder","Rayo Vallecano",10,"AVAILABLE","",728
+47291,"Gorka Guruzeta","Attacker","Athletic Club",40,"AVAILABLE","",531
+47294,"I. Williams","Attacker","Athletic Club",80,"AVAILABLE","",531
+47298,"Elustondo","Defender","Real Sociedad",5,"AVAILABLE","",548
+47299,"Gorosabel","Defender","Athletic Club",20,"AVAILABLE","",531
+47301,"Robin Le Normand","Defender","Atletico Madrid",70,"AVAILABLE","",530
+47302,"Diego Llorente","Defender","Real Betis",20,"AVAILABLE","",543
+47303,"Aihen Muñoz","Defender","Real Sociedad",1,"AVAILABLE","",548
+47306,"Álex Sola","Midfielder","Getafe",1,"AVAILABLE","",546
+47309,"Guevara","Midfielder","Alaves",5,"AVAILABLE","",542
+47314,"Zubeldia","Defender","Real Sociedad",25,"AVAILABLE","",548
+47317,"Barrenetxea","Midfielder","Real Sociedad",40,"AVAILABLE","",548
+47320,"Juanmi","Attacker","Getafe",10,"AVAILABLE","",546
+47323,"Mikel Oyarzabal","Attacker","Real Sociedad",50,"AVAILABLE","",548
+47329,"Adrià Pedrosa","Midfielder","Elche",10,"AVAILABLE","",797
+47334,"David López","Defender","Girona",10,"AVAILABLE","",547
+47336,"Darder","Midfielder","Mallorca",35,"AVAILABLE","",798
+47341,"Marc Roca","Midfielder","Real Betis",20,"AVAILABLE","",543
+47348,"Borja Iglesias","Attacker","Celta Vigo",40,"AVAILABLE","",538
+47349,"Javi Puado","Midfielder","Espanyol",50,"AVAILABLE","",540
+47353,"Sivera","Goalkeeper","Alaves",30,"AVAILABLE","",542
+47378,"Bigas","Defender","Elche",15,"AVAILABLE","",797
+47396,"Kike García","Attacker","Espanyol",15,"AVAILABLE","",540
+47398,"Pere Milla","Midfielder","Espanyol",30,"AVAILABLE","",540
+47399,"Iván Cuéllar","Goalkeeper","Mallorca",1,"AVAILABLE","",798
+47400,"A. Lunin","Goalkeeper","Real Madrid",30,"AVAILABLE","",541
+47407,"A. Nyom","Defender","Getafe",10,"AVAILABLE","",546
+47414,"Gumbau","Midfielder","Rayo Vallecano",1,"AVAILABLE","",728
+47418,"Mikel Vesga","Midfielder","Athletic Club",10,"AVAILABLE","",531
+47427,"Iván Villar","Goalkeeper","Celta Vigo",20,"AVAILABLE","",538
+47429,"David Costas","Defender","Oviedo",5,"AVAILABLE","",718
+47435,"Fran Beltrán","Midfielder","Celta Vigo",10,"AVAILABLE","",538
+47440,"Brais Méndez","Midfielder","Real Sociedad",35,"AVAILABLE","",548
+47445,"Iago Aspas","Attacker","Celta Vigo",50,"AVAILABLE","",538
+47448,"Aitor Fernández","Goalkeeper","Osasuna",1,"AVAILABLE","",727
+47463,"Pepelu","Midfielder","Valencia",20,"AVAILABLE","",532
+47467,"José Luis Morales","Attacker","Levante",10,"AVAILABLE","",539
+47472,"Borja Mayoral","Attacker","Getafe",40,"AVAILABLE","",546
+47478,"Fernando Calero","Defender","Espanyol",5,"AVAILABLE","",540
+47520,"Portu","Attacker","Girona",15,"AVAILABLE","",547
+47527,"S. Dimitrievski","Goalkeeper","Valencia",10,"AVAILABLE","",532
+47533,"Catena","Defender","Osasuna",40,"AVAILABLE","",727
+47541,"Santi Comesaña","Midfielder","Villarreal",20,"AVAILABLE","",533
+47543,"Álvaro García","Midfielder","Rayo Vallecano",35,"AVAILABLE","",728
+47547,"Álex Moreno","Defender","Girona",15,"AVAILABLE","",547
+47557,"Ó. Trejo","Midfielder","Rayo Vallecano",1,"AVAILABLE","",728
+47566,"Javi Galán","Defender","Atletico Madrid",20,"AVAILABLE","",530
+47574,"Moi Gómez","Midfielder","Osasuna",20,"AVAILABLE","",727
+47579,"E. Ávila","Attacker","Real Betis",5,"AVAILABLE","",543
+47582,"C. Hernández","Attacker","Real Betis",30,"AVAILABLE","",543
+47988,"C. Starfelt","Defender","Celta Vigo",40,"AVAILABLE","",538
+48372,"E. Cömert","Defender","Valencia",1,"AVAILABLE","",532
+48465,"F. Ugrinic","Midfielder","Valencia",1,"AVAILABLE","",532
+48471,"R. Vargas","Midfielder","Sevilla",40,"AVAILABLE","",536
+48555,"C. Pickel","Midfielder","Espanyol",1,"AVAILABLE","",540
+50048,"V. Muriqi","Attacker","Mallorca",40,"AVAILABLE","",798
+51016,"T. Buchanan","Attacker","Villarreal",15,"AVAILABLE","",533
+51530,"F. Viñas","Attacker","Oviedo",10,"AVAILABLE","",718
+57446,"A. Adams","Attacker","Sevilla",5,"AVAILABLE","",536
+61142,"D. Greif","Goalkeeper","Mallorca",20,"AVAILABLE","",798
+61774,"O. Óskarsson","Attacker","Real Sociedad",10,"AVAILABLE","",548
+64268,"J. Mojica","Defender","Mallorca",25,"AVAILABLE","",798
+64309,"Manu Sánchez","Defender","Levante",20,"AVAILABLE","",539
+66407,"L. Krejčí","Defender","Girona",10,"AVAILABLE","",547
+66491,"J. Letáček","Goalkeeper","Getafe",1,"AVAILABLE","",546
+67939,"Aimar Oroz","Attacker","Osasuna",15,"AVAILABLE","",727
+67972,"C. Gallagher","Midfielder","Atletico Madrid",40,"AVAILABLE","",530
+70476,"M. Diarra","Defender","Alaves",1,"AVAILABLE","",542
+70500,"Sergi Cardona","Defender","Villarreal",30,"AVAILABLE","",533
+84086,"Robert Navarro","Midfielder","Athletic Club",25,"AVAILABLE","",531
+91745,"Alemão","Attacker","Rayo Vallecano",15,"AVAILABLE","",728
+101814,"R. Araújo","Defender","Barcelona",50,"AVAILABLE","",529
+104821,"Jon Guridi","Midfielder","Alaves",20,"AVAILABLE","",542
+104832,"Diego Pampín","Defender","Levante",1,"AVAILABLE","",539
+104949,"Pablo Martínez","Midfielder","Levante",1,"AVAILABLE","",539
+106727,"Oriol Rey","Midfielder","Levante",1,"AVAILABLE","",539
+107140,"Oier Luengo","Defender","Oviedo",1,"AVAILABLE","",718
+107194,"Antonio Sánchez","Midfielder","Mallorca",10,"AVAILABLE","",798
+108519,"Mateu Morey","Defender","Mallorca",1,"AVAILABLE","",798
+109564,"B. Miovski","Attacker","Girona",10,"AVAILABLE","",547
+119213,"Alfon González","Midfielder","Sevilla",10,"AVAILABLE","",536
+119223,"Mourad","Attacker","Elche",5,"AVAILABLE","",797
+119742,"Juan Iglesias","Defender","Getafe",10,"AVAILABLE","",546
+122657,"R. Nteka","Midfielder","Rayo Vallecano",1,"AVAILABLE","",728
+122734,"Ferran Jutglà","Attacker","Celta Vigo",10,"AVAILABLE","",538
+122956,"Diego Conde","Goalkeeper","Villarreal",10,"AVAILABLE","",533
+125239,"K. Arriaga","Midfielder","Levante",10,"AVAILABLE","",539
+126640,"D. Affengruber","Defender","Elche",40,"AVAILABLE","",797
+127426,"Pol Lozano","Midfielder","Espanyol",10,"AVAILABLE","",540
+128398,"Oihan Sancet","Midfielder","Athletic Club",90,"AVAILABLE","",531
+128582,"Jorge de Frutos","Attacker","Rayo Vallecano",40,"AVAILABLE","",728
+128951,"Víctor Parada","Defender","Alaves",1,"AVAILABLE","",542
+128985,"Iker Losada","Attacker","Levante",1,"AVAILABLE","",539
+129678,"A. Ounahi","Midfielder","Girona",25,"AVAILABLE","",547
+129718,"J. Bellingham","Midfielder","Real Madrid",80,"AVAILABLE","",541
+131546,"Isi Palazón","Midfielder","Rayo Vallecano",45,"AVAILABLE","",728
+131548,"Lucas Ahijado","Defender","Oviedo",1,"AVAILABLE","",718
+133110,"T. Nianzou","Defender","Sevilla",5,"AVAILABLE","",536
+133185,"J. Cardoso","Midfielder","Atletico Madrid",50,"AVAILABLE","",530
+133609,"Pedri","Midfielder","Barcelona",100,"AVAILABLE","",529
+136117,"Rodrigo Riquelme","Midfielder","Real Betis",25,"AVAILABLE","",543
+138776,"L. Ramazani","Attacker","Valencia",1,"AVAILABLE","",532
+139001,"Pablo Ibáñez","Midfielder","Alaves",10,"AVAILABLE","",542
+146751,"Raúl García","Attacker","Osasuna",10,"AVAILABLE","",727
+152955,"L. Bergström","Goalkeeper","Mallorca",1,"AVAILABLE","",798
+156488,"Dani Cárdenas","Goalkeeper","Rayo Vallecano",1,"AVAILABLE","",728
+157146,"L. Pétrot","Defender","Elche",5,"AVAILABLE","",797
+157988,"Sergio Carreira","Defender","Celta Vigo",20,"AVAILABLE","",538
+161670,"V. Vanat","Attacker","Girona",25,"AVAILABLE","",547
+161928,"Alejandro Balde","Defender","Barcelona",70,"AVAILABLE","",529
+161963,"Germán Valera","Attacker","Elche",20,"AVAILABLE","",797
+162012,"M. Ruggeri","Defender","Atletico Madrid",20,"AVAILABLE","",530
+162032,"Miguel Gutiérrez","Defender","Girona",50,"AVAILABLE","",547
+162058,"Víctor Chust","Defender","Elche",10,"AVAILABLE","",797
+162122,"Adrià Alti","Defender","Villarreal",1,"AVAILABLE","",533
+162123,"I. Moriba","Midfielder","Celta Vigo",25,"AVAILABLE","",538
+162126,"Peque Fernández","Attacker","Sevilla",15,"AVAILABLE","",536
+162127,"Diego López","Midfielder","Valencia",35,"AVAILABLE","",532
+162170,"Hugo Novoa","Attacker","Alaves",1,"AVAILABLE","",542
+162175,"Jesús Vázquez","Defender","Valencia",5,"AVAILABLE","",532
+162434,"Alejandro Francés","Defender","Girona",1,"AVAILABLE","",547
+162473,"Arnau Tenas","Goalkeeper","Villarreal",25,"AVAILABLE","",533
+162585,"Pol Tristán","Goalkeeper","Espanyol",1,"AVAILABLE","",540
+162686,"Antonio Blanco","Midfielder","Alaves",10,"AVAILABLE","",542
+162712,"Óscar Mingueza","Midfielder","Celta Vigo",60,"AVAILABLE","",538
+162931,"Fran Pérez","Midfielder","Rayo Vallecano",1,"AVAILABLE","",728
+163630,"Alfonso Pastor","Goalkeeper","Levante",1,"AVAILABLE","",539
+179139,"Leo Román","Goalkeeper","Mallorca",35,"AVAILABLE","",798
+179955,"Javi Rueda","Defender","Celta Vigo",30,"AVAILABLE","",538
+180496,"G. Mikautadze","Attacker","Villarreal",60,"AVAILABLE","",533
+181259,"Abel Bretones","Midfielder","Osasuna",20,"AVAILABLE","",727
+181421,"A. Ezzalzouli","Attacker","Real Betis",35,"AVAILABLE","",543
+181582,"Copete","Defender","Valencia",15,"AVAILABLE","",532
+181701,"Gerard Martín","Defender","Barcelona",20,"AVAILABLE","",529
+181734,"Pep Chavarría","Defender","Rayo Vallecano",20,"AVAILABLE","",728
+182150,"Sergio Lozano","Midfielder","Levante",1,"AVAILABLE","",539
+182181,"Jesús Areso","Defender","Athletic Club",30,"AVAILABLE","",531
+182219,"Álex Baena","Midfielder","Atletico Madrid",100,"AVAILABLE","",530
+182486,"Alberto Reina","Midfielder","Oviedo",10,"AVAILABLE","",718
+182519,"Alberto Moleiro","Midfielder","Villarreal",25,"AVAILABLE","",533
+182546,"Jon Pacheco","Defender","Alaves",15,"AVAILABLE","",542
+182592,"Jorge Herrando","Defender","Osasuna",1,"AVAILABLE","",727
+182603,"Jon Ander Olasagasti","Midfielder","Levante",5,"AVAILABLE","",539
+182617,"Beñat Prados","Midfielder","Athletic Club",10,"AVAILABLE","",531
+182621,"Iker Muñoz","Midfielder","Osasuna",1,"AVAILABLE","",727
+182636,"Javi López","Defender","Oviedo",5,"AVAILABLE","",718
+182638,"Manu Fernández","Defender","Celta Vigo",10,"AVAILABLE","",538
+182639,"Unai Vencedor","Midfielder","Levante",15,"AVAILABLE","",539
+182661,"Álvaro Núñez","Defender","Elche",20,"AVAILABLE","",797
+182674,"Jofre Carreras","Midfielder","Espanyol",1,"AVAILABLE","",540
+182718,"Joan García","Goalkeeper","Barcelona",80,"AVAILABLE","",529
+182730,"Marc Vidal","Goalkeeper","Celta Vigo",1,"AVAILABLE","",538
+182735,"Ángel Fortuño","Goalkeeper","Espanyol",1,"AVAILABLE","",540
+182770,"Carlos Álvarez","Midfielder","Levante",40,"AVAILABLE","",539
+182772,"Juanlu Sánchez","Defender","Sevilla",10,"AVAILABLE","",536
+183699,"Urko González","Midfielder","Espanyol",10,"AVAILABLE","",540
+183744,"Beñat Turrientes","Midfielder","Real Sociedad",10,"AVAILABLE","",548
+183748,"Jon Karrikaburu","Attacker","Real Sociedad",1,"AVAILABLE","",548
+183751,"A. Rebbach","Attacker","Alaves",15,"AVAILABLE","",542
+183776,"Urko Izeta","Attacker","Athletic Club",5,"AVAILABLE","",531
+183799,"Nico Williams","Attacker","Athletic Club",120,"AVAILABLE","",531
+183848,"Julen Agirrezabala","Goalkeeper","Valencia",30,"AVAILABLE","",532
+183849,"Aitor Paredes","Defender","Athletic Club",40,"AVAILABLE","",531
+184194,"Álex Forés","Attacker","Villarreal",1,"AVAILABLE","",533
+184226,"Yeremy Pino","Midfielder","Villarreal",20,"AVAILABLE","",533
+184407,"José Salinas","Defender","Espanyol",1,"AVAILABLE","",540
+184420,"Carlos Romero","Defender","Espanyol",30,"AVAILABLE","",540
+184459,"Álex Sancris","Attacker","Getafe",1,"AVAILABLE","",546
+185398,"Isaac","Attacker","Sevilla",25,"AVAILABLE","",536
+187214,"Carlos Vicente","Midfielder","Alaves",40,"AVAILABLE","",542
+187318,"Marc Aguado","Midfielder","Elche",10,"AVAILABLE","",797
+189832,"Unai Marrero","Goalkeeper","Real Sociedad",1,"AVAILABLE","",548
+189866,"John Nwankwo","Defender","Elche",1,"AVAILABLE","",797
+190485,"Samú Costa","Midfielder","Mallorca",10,"AVAILABLE","",798
+190489,"Álvaro Djaló","Attacker","Athletic Club",10,"AVAILABLE","",531
+191184,"B. Dominguès","Midfielder","Oviedo",1,"AVAILABLE","",718
+192032,"Iván Romero","Attacker","Levante",40,"AVAILABLE","",539
+195100,"Natan","Defender","Real Betis",30,"AVAILABLE","",543
+195923,"José Ángel Carmona","Defender","Sevilla",15,"AVAILABLE","",536
+197196,"Ramón Martínez","Defender","Sevilla",1,"AVAILABLE","",536
+199044,"J. Aramburu","Defender","Real Sociedad",15,"AVAILABLE","",548
+199824,"Rubén Sánchez","Defender","Espanyol",1,"AVAILABLE","",540
+237066,"Rafa Marín","Defender","Villarreal",20,"AVAILABLE","",533
+266202,"I. Chaira","Midfielder","Oviedo",20,"AVAILABLE","",718
+266658,"Calebe","Midfielder","Alaves",1,"AVAILABLE","",542
+268960,"A. Zakharyan","Midfielder","Real Sociedad",5,"AVAILABLE","",548
+269163,"W. Swedberg","Attacker","Celta Vigo",30,"AVAILABLE","",538
+270516,"Peter","Attacker","Getafe",5,"AVAILABLE","",546
+271580,"Martim Neto","Midfielder","Elche",20,"AVAILABLE","",797
+273732,"T. Dolan","Attacker","Espanyol",30,"AVAILABLE","",540
+278619,"Luíz Júnior","Goalkeeper","Villarreal",25,"AVAILABLE","",533
+279822,"F. Boyomo","Defender","Osasuna",25,"AVAILABLE","",727
+281795,"Y. Asprilla","Midfielder","Girona",20,"AVAILABLE","",547
+282054,"C. Riedel","Defender","Espanyol",30,"AVAILABLE","",540
+283668,"Arnau Martínez","Defender","Girona",20,"AVAILABLE","",547
+284300,"Álvaro Fernández","Defender","Real Madrid",55,"AVAILABLE","",541
+284415,"Yago Alonso","Attacker","Elche",1,"AVAILABLE","",797
+284441,"A. Kamara","Attacker","Getafe",1,"AVAILABLE","",546
+285505,"Juanpe","Goalkeeper","Rayo Vallecano",1,"AVAILABLE","",728
+285909,"Pablo Torre","Midfielder","Mallorca",20,"AVAILABLE","",798
+286084,"Sergi Altimira","Midfielder","Real Betis",10,"AVAILABLE","",543
+286559,"Carlos Domínguez","Defender","Celta Vigo",10,"AVAILABLE","",538
+286564,"Álex Cardero","Midfielder","Oviedo",1,"AVAILABLE","",718
+286593,"Nico Serrano","Attacker","Athletic Club",10,"AVAILABLE","",531
+286601,"O. El Hilali","Defender","Espanyol",10,"AVAILABLE","",540
+286611,"Pablo Cuñat","Goalkeeper","Levante",1,"AVAILABLE","",539
+286639,"Bryan Zaragoza","Attacker","Celta Vigo",50,"AVAILABLE","",538
+286796,"Damián Rodríguez","Midfielder","Celta Vigo",10,"AVAILABLE","",538
+287654,"Jon Gorrotxategi","Midfielder","Real Sociedad",20,"AVAILABLE","",548
+287680,"Maroan Sannadi","Attacker","Athletic Club",40,"AVAILABLE","",531
+288074,"Alberto Marí","Attacker","Valencia",1,"AVAILABLE","",532
+288112,"Willy Kambwala Ndengushi","Defender","Villarreal",1,"AVAILABLE","",533
+288384,"Mikel Goti","Midfielder","Real Sociedad",1,"AVAILABLE","",548
+288800,"Iker Benito","Attacker","Osasuna",1,"AVAILABLE","",727
+289554,"D. Bladi","Defender","Real Betis",1,"AVAILABLE","",543
+290106,"Pablo Marín","Midfielder","Real Sociedad",5,"AVAILABLE","",548
+290686,"Rafael Romero","Goalkeeper","Sevilla",1,"AVAILABLE","",536
+290740,"Ilias Akhomach","Attacker","Villarreal",25,"AVAILABLE","",533
+291964,"A. Güler","Midfielder","Real Madrid",100,"AVAILABLE","",541
+293604,"Javi Llabrés","Attacker","Mallorca",1,"AVAILABLE","",798
+295223,"R. Alhassane","Defender","Oviedo",10,"AVAILABLE","",718
+295793,"Marc Pubill","Defender","Atletico Madrid",1,"AVAILABLE","",530
+296667,"Gavi","Midfielder","Barcelona",30,"AVAILABLE","",529
+297235,"Marc Vilaplana","Defender","Getafe",1,"AVAILABLE","",546
+297243,"Miguel Narváez","Goalkeeper","Oviedo",1,"AVAILABLE","",718
+297304,"D. Camara","Attacker","Girona",1,"AVAILABLE","",547
+297311,"Kike Salas","Defender","Sevilla",20,"AVAILABLE","",536
+297646,"D. Luna","Midfielder","Mallorca",1,"AVAILABLE","",798
+297742,"Antoniu Roca","Attacker","Espanyol",1,"AVAILABLE","",540
+297743,"Javier Navarro Girona","Midfielder","Valencia",1,"AVAILABLE","",532
+300885,"N. Deossa","Midfielder","Real Betis",15,"AVAILABLE","",543
+302277,"Rubén Gómez","Goalkeeper","Villarreal",1,"AVAILABLE","",533
+306727,"J. Solis","Midfielder","Girona",20,"AVAILABLE","",547
+308346,"Alberto Flores","Goalkeeper","Sevilla",1,"AVAILABLE","",536
+309364,"Coba","Attacker","Getafe",10,"AVAILABLE","",546
+311345,"F. Redondo","Midfielder","Elche",1,"AVAILABLE","",797
+311773,"S. Mouriño","Defender","Villarreal",20,"AVAILABLE","",533
+312468,"Álex Padilla","Goalkeeper","Athletic Club",1,"AVAILABLE","",531
+312990,"Roberto Fernández","Attacker","Espanyol",30,"AVAILABLE","",540
+313025,"Hugo Rincón","Defender","Girona",1,"AVAILABLE","",547
+313059,"M. Joseph","Attacker","Mallorca",10,"AVAILABLE","",798
+313651,"Hugo Sotelo","Midfielder","Celta Vigo",30,"AVAILABLE","",538
+314006,"J. Vertrouwd","Defender","Rayo Vallecano",5,"AVAILABLE","",728
+315586,"Lander Pinillos","Midfielder","Alaves",1,"AVAILABLE","",542
+315604,"Alejandro Iturbe","Goalkeeper","Elche",1,"AVAILABLE","",797
+315699,"Javi Guerra","Midfielder","Valencia",20,"AVAILABLE","",532
+315701,"Rubo Iranzo","Defender","Valencia",1,"AVAILABLE","",532
+316517,"A. Matturro","Defender","Levante",1,"AVAILABLE","",539
+320517,"Pablo Durán","Attacker","Celta Vigo",20,"AVAILABLE","",538
+323935,"G. Simeone","Midfielder","Atletico Madrid",60,"AVAILABLE","",530
+324750,"Carlos Martín","Attacker","Atletico Madrid",10,"AVAILABLE","",530
+329720,"Hugo Álvarez","Midfielder","Celta Vigo",15,"AVAILABLE","",538
+329722,"Yoel Lago","Defender","Celta Vigo",1,"AVAILABLE","",538
+329728,"Marc Casadó","Midfielder","Barcelona",30,"AVAILABLE","",529
+330436,"David Jiménez","Defender","Real Madrid",1,"AVAILABLE","",541
+330443,"Isma Sierra","Defender","Villarreal",1,"AVAILABLE","",533
+331607,"Manu Bueno","Midfielder","Sevilla",1,"AVAILABLE","",536
+332304,"Raúl Chasco","Defender","Osasuna",1,"AVAILABLE","",727
+332308,"Unai Gómez","Midfielder","Athletic Club",5,"AVAILABLE","",531
+332309,"Alejandro Rego","Midfielder","Athletic Club",1,"AVAILABLE","",531
+333292,"Pelayo Fernández","Defender","Rayo Vallecano",1,"AVAILABLE","",728
+333369,"Joselu","Attacker","Getafe",1,"AVAILABLE","",546
+333378,"Diego Méndez","Midfielder","Rayo Vallecano",1,"AVAILABLE","",728
+333502,"Miguel Román","Midfielder","Celta Vigo",1,"AVAILABLE","",538
+333672,"César Tárrega","Defender","Valencia",35,"AVAILABLE","",532
+334574,"Ángel Ortiz","Attacker","Real Betis",1,"AVAILABLE","",543
+335490,"Jon de Luis","Defender","Athletic Club",1,"AVAILABLE","",531
+335697,"David López","Defender","Mallorca",1,"AVAILABLE","",798
+336594,"Pablo Barrios","Midfielder","Atletico Madrid",50,"AVAILABLE","",530
+336671,"Renato Veiga","Midfielder","Villarreal",25,"AVAILABLE","",533
+336674,"G. Misehouy","Midfielder","Girona",15,"AVAILABLE","",547
+336711,"Gonzalo García","Attacker","Real Madrid",10,"AVAILABLE","",541
+336998,"A. Boiro","Defender","Athletic Club",10,"AVAILABLE","",531
+337843,"Aitor Fraga","Goalkeeper","Real Sociedad",1,"AVAILABLE","",548
+338295,"Primo","Goalkeeper","Levante",1,"AVAILABLE","",539
+338508,"I. Kostis","Defender","Atletico Madrid",1,"AVAILABLE","",530
+338751,"Víctor Muñoz","Attacker","Osasuna",25,"AVAILABLE","",727
+338871,"Joan Ruiz","Midfielder","Levante",1,"AVAILABLE","",539
+338902,"Andrés Castrín","Defender","Sevilla",1,"AVAILABLE","",536
+338958,"R. Bardghji","Midfielder","Barcelona",20,"AVAILABLE","",529
+339105,"Joel Roca","Midfielder","Girona",10,"AVAILABLE","",547
+340152,"S. Idumbo-Muzambo","Midfielder","Sevilla",1,"AVAILABLE","",536
+340626,"Fermín","Midfielder","Barcelona",70,"AVAILABLE","",529
+341371,"Rodrigo Mendoza","Attacker","Elche",30,"AVAILABLE","",797
+341453,"Oso","Defender","Sevilla",1,"AVAILABLE","",536
+341640,"Raúl Asencio","Defender","Real Madrid",30,"AVAILABLE","",541
+343202,"Á. Rodríguez","Attacker","Elche",15,"AVAILABLE","",797
+343205,"Mario Martín","Midfielder","Getafe",30,"AVAILABLE","",546
+347885,"Marcos Fernández","Attacker","Espanyol",1,"AVAILABLE","",540
+348029,"D. Stamatakis","Goalkeeper","Osasuna",1,"AVAILABLE","",727
+349063,"Luken Beitia","Defender","Real Sociedad",1,"AVAILABLE","",548
+351131,"Dani Pérez","Midfielder","Real Betis",1,"AVAILABLE","",543
+351587,"T. Oluwaseyi","Attacker","Villarreal",15,"AVAILABLE","",533
+351913,"J. El Abdellaoui","Attacker","Celta Vigo",1,"AVAILABLE","",538
+353634,"A. Lebarbier","Midfielder","Real Sociedad",1,"AVAILABLE","",548
+355004,"V. Gómez","Defender","Real Betis",15,"AVAILABLE","",543
+358431,"N. Mendy","Defender","Rayo Vallecano",1,"AVAILABLE","",728
+359603,"L. Koleosho","Attacker","Espanyol",1,"AVAILABLE","",540
+361384,"Yusi","Defender","Alaves",10,"AVAILABLE","",542
+361497,"D. Huijsen","Defender","Real Madrid",60,"AVAILABLE","",541
+377122,"Endrick","Attacker","Real Madrid",10,"AVAILABLE","",541
+377215,"G. Swiderski","Goalkeeper","Alaves",1,"AVAILABLE","",542
+378284,"Etta Eyong","Attacker","Levante",70,"AVAILABLE","",539
+381197,"Asier Osambela","Midfielder","Osasuna",1,"AVAILABLE","",727
+383647,"D. Kochen","Goalkeeper","Barcelona",1,"AVAILABLE","",529
+383780,"Mikel Jauregizar","Midfielder","Athletic Club",30,"AVAILABLE","",531
+384135,"Javi Rodríguez","Defender","Celta Vigo",15,"AVAILABLE","",538
+385405,"Omar Falah","Defender","Oviedo",1,"AVAILABLE","",718
+386828,"Lamine Yamal","Attacker","Barcelona",200,"AVAILABLE","",529
+386859,"Héctor Fort","Defender","Elche",10,"AVAILABLE","",797
+386872,"Sergio Mestre","Goalkeeper","Real Madrid",1,"AVAILABLE","",541
+387530,"Carlos Ballestero García","Defender","Alaves",1,"AVAILABLE","",542
+388495,"Javier Hernandez","Midfielder","Espanyol",1,"AVAILABLE","",540
+391819,"Martin Pedroarena","Attacker","Osasuna",1,"AVAILABLE","",727
+392455,"Germán García","Goalkeeper","Real Betis",1,"AVAILABLE","",543
+393198,"Salvador Esquivel","Goalkeeper","Atletico Madrid",1,"AVAILABLE","",530
+394573,"Adrian Liso","Attacker","Getafe",25,"AVAILABLE","",546
+396475,"Fran González","Goalkeeper","Real Madrid",1,"AVAILABLE","",541
+396623,"Pau Cubarsí Paredes","Defender","Barcelona",70,"AVAILABLE","",529
+402168,"Arkaitz Mariezkurrena","Attacker","Real Sociedad",1,"AVAILABLE","",548
+402580,"Marco Esteban","Defender","Oviedo",1,"AVAILABLE","",718
+405073,"Jon Martín","Defender","Real Sociedad",1,"AVAILABLE","",548
+406043,"Lucas Nuñez","Midfielder","Valencia",1,"AVAILABLE","",532
+406045,"Aimar Blázquez","Attacker","Valencia",1,"AVAILABLE","",532
+406046,"Pablo López","Attacker","Valencia",1,"AVAILABLE","",532
+407597,"M. Krug","Defender","Levante",1,"AVAILABLE","",539
+407677,"Iker Monreal","Defender","Athletic Club",1,"AVAILABLE","",531
+408320,"Jorge Cabello","Defender","Levante",1,"AVAILABLE","",539
+411424,"Miquel Salas","Midfielder","Mallorca",1,"AVAILABLE","",798
+411702,"Pau Cabanes","Attacker","Villarreal",1,"AVAILABLE","",533
+414359,"Vitor Nunes","Defender","Girona",25,"AVAILABLE","",547
+418188,"M. Barry","Attacker","Villarreal",1,"AVAILABLE","",533
+421807,"M. Moreno","Defender","Levante",10,"AVAILABLE","",539
+429553,"Mauro Echegoyen","Midfielder","Osasuna",1,"AVAILABLE","",727
+431160,"T. Folgado","Goalkeeper","Real Sociedad",1,"AVAILABLE","",548
+432080,"Jorge Benito","Goalkeeper","Getafe",1,"AVAILABLE","",546
+432476,"V. Krapyvtsov","Goalkeeper","Girona",1,"AVAILABLE","",547
+433396,"Marc Bernal","Midfielder","Barcelona",10,"AVAILABLE","",529
+435552,"Pau Navarro","Defender","Villarreal",10,"AVAILABLE","",533
+437594,"Alex Costa","Attacker","Sevilla",1,"AVAILABLE","",536
+437637,"Mikel Santos","Goalkeeper","Athletic Club",1,"AVAILABLE","",531
+438123,"Lamine Gueye","Attacker","Oviedo",1,"AVAILABLE","",718
+438263,"Miguel Ángel","Attacker","Sevilla",1,"AVAILABLE","",536
+438284,"Rafel Bauzà","Midfielder","Espanyol",1,"AVAILABLE","",540
+439032,"Rubén Montero","Goalkeeper","Alaves",1,"AVAILABLE","",542
+439293,"Adam Boayar","Attacker","Elche",1,"AVAILABLE","",797
+439305,"L. Kourouma","Midfielder","Girona",1,"AVAILABLE","",547
+439578,"David Otorbi","Attacker","Valencia",1,"AVAILABLE","",532
+439617,"Z. Tassounte","Defender","Getafe",1,"AVAILABLE","",546
+439633,"Samu Becerra","Defender","Rayo Vallecano",1,"AVAILABLE","",728
+441232,"Guille Fernández","Midfielder","Barcelona",1,"AVAILABLE","",529
+442861,"A. Andreev","Goalkeeper","Girona",1,"AVAILABLE","",547
+443152,"Cheli","Midfielder","Oviedo",1,"AVAILABLE","",718
+443163,"Pablo García","Attacker","Real Betis",15,"AVAILABLE","",543
+443593,"Eduardo Altozano Agudo","Midfielder","Sevilla",1,"AVAILABLE","",536
+443668,"Rayane Belid","Attacker","Atletico Madrid",1,"AVAILABLE","",530
+443748,"Taufik Seidu","Midfielder","Atletico Madrid",1,"AVAILABLE","",530
+445025,"Víctor Fernández","Midfielder","Levante",1,"AVAILABLE","",539
+445973,"Toni Fernández","Midfielder","Barcelona",10,"AVAILABLE","",529
+448243,"Ali Houary","Midfielder","Elche",1,"AVAILABLE","",797
+449249,"Franco Mastantuono","Attacker","Real Madrid",60,"AVAILABLE","",541
+450497,"Carlos Espí","Attacker","Levante",1,"AVAILABLE","",539
+450562,"Cayetano","Goalkeeper","Levante",1,"AVAILABLE","",539
+450714,"Ivan Corralejo","Midfielder","Real Betis",1,"AVAILABLE","",543
+450716,"Roger Hinojo","Defender","Espanyol",1,"AVAILABLE","",540
+451594,"Alejandro Monserrate","Midfielder","Atletico Madrid",1,"AVAILABLE","",530
+455366,"P. Ba","Attacker","Girona",1,"AVAILABLE","",547
+456619,"Manu González","Goalkeeper","Real Betis",1,"AVAILABLE","",543
+462277,"I. Salhi","Defender","Mallorca",1,"AVAILABLE","",798
+463279,"Paco Cortés","Attacker","Levante",1,"AVAILABLE","",539
+465838,"Alberto Risco","Midfielder","Getafe",1,"AVAILABLE","",546
+471478,"Davinchi","Defender","Getafe",5,"AVAILABLE","",546
+477231,"E. Mensah","Midfielder","Real Betis",1,"AVAILABLE","",543
+478243,"Marco de las Sías","Defender","Rayo Vallecano",1,"AVAILABLE","",728
+478244,"Adrián Molina","Goalkeeper","Rayo Vallecano",1,"AVAILABLE","",728
+482071,"Diego Ferrer","Goalkeeper","Getafe",1,"AVAILABLE","",546
+482473,"Marc Domenech","Attacker","Mallorca",15,"AVAILABLE","",798
+484474,"J. Valou","Defender","Villarreal",1,"AVAILABLE","",533
+491087,"Pedro Fernández","Midfielder","Barcelona",10,"AVAILABLE","",529
+491106,"Gibert Jordana","Defender","Girona",1,"AVAILABLE","",547
+491248,"Jan Virgili","Attacker","Mallorca",10,"AVAILABLE","",798
+491250,"Jofre Torrents","Defender","Barcelona",10,"AVAILABLE","",529
+497515,"A. Niculăesei","Defender","Elche",1,"AVAILABLE","",797
+504605,"Nacho Pérez","Defender","Levante",1,"AVAILABLE","",539
+508284,"Antonio Martinez","Midfielder","Elche",1,"AVAILABLE","",797
+509470,"Thiago Pitarch","Midfielder","Real Madrid",1,"AVAILABLE","",541
+514913,"Hugo López","Attacker","Villarreal",1,"AVAILABLE","",533
+543466,"Ibon Sánchez","Midfielder","Athletic Club",1,"AVAILABLE","",531
+543468,"Eder Aller","Goalkeeper","Barcelona",1,"AVAILABLE","",529
+551463,"J. Olaizola","Defender","Mallorca",1,"AVAILABLE","",798
+553313,"Javier Sarasa","Attacker","Girona",1,"AVAILABLE","",547
