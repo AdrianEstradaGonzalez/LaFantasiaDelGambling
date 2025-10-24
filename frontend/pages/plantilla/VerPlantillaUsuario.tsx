@@ -9,7 +9,7 @@ import FootballService from '../../services/FutbolService';
 import { PlayerService } from '../../services/PlayerService';
 import { PlayerStatsService } from '../../services/PlayerStatsService';
 import LoadingScreen from '../../components/LoadingScreen';
-import { ChevronLeftIcon } from '../../components/VectorIcons';
+import { ChevronLeftIcon, AlertIcon } from '../../components/VectorIcons';
 import { SafeLayout } from '../../components/SafeLayout';
 
 type VerPlantillaRoute = RouteProp<{ params: { ligaId: string; ligaName: string; userId: string; userName: string; jornada?: number } }, 'params'>;
@@ -207,7 +207,33 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         <View style={{ width: 28 }} />
       </View>
 
-      <View style={{ flex: 1, paddingTop: 60 }}>
+      {/* Warning de plantilla incompleta */}
+      {squad && squad.players && squad.players.length < 11 && (
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginTop: 60,
+            marginBottom: 8,
+            backgroundColor: '#451a03',
+            borderRadius: 12,
+            padding: 16,
+            borderLeftWidth: 4,
+            borderLeftColor: '#f59e0b',
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <AlertIcon size={24} color="#fbbf24" />
+            <Text style={{ color: '#fbbf24', fontSize: 16, fontWeight: '700', marginLeft: 12 }}>
+              Plantilla Incompleta
+            </Text>
+          </View>
+          <Text style={{ color: '#fcd34d', fontSize: 14, lineHeight: 20 }}>
+              Se requiere plantilla completa para puntuar.
+          </Text>
+        </View>
+      )}
+
+      <View style={{ flex: 1, paddingTop: squad && squad.players && squad.players.length < 11 ? 0 : 60 }}>
         {/* Campo de fútbol a pantalla completa */}
         <View style={{ flex: 1, padding: 16 }}>
           <View style={{
@@ -226,11 +252,15 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
           }}>
               {/* Badge de puntuación total - arriba derecha */}
               {(() => {
-                const totalPoints = squad?.players.reduce((sum, player) => {
+                // Calcular puntos individuales
+                const sumPoints = squad?.players.reduce((sum, player) => {
                   const pid = player.playerId;
                   const points = playerPoints[pid] ?? 0;
                   return sum + (player.isCaptain ? points * 2 : points);
                 }, 0) ?? 0;
+                
+                // ⚠️ Si hay menos de 11 jugadores, el total es 0
+                const totalPoints = (squad && squad.players && squad.players.length < 11) ? 0 : sumPoints;
                 
                 return (
                   <View

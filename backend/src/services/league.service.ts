@@ -526,7 +526,8 @@ getLeaguesByUser: (userId: string) =>
       members.map(async (member) => {
         const squad = squadsByUser[member.userId];
         
-        if (!squad || squad.players.length === 0) {
+        // ⚠️ Si no tiene plantilla, devolver 0 puntos y sin jugadores
+        if (!squad) {
           return {
             userId: member.userId,
             userName: member.user?.name || 'Usuario',
@@ -553,14 +554,14 @@ getLeaguesByUser: (userId: string) =>
           }
         });
 
-        let totalPoints = 0;
+        let sumPoints = 0;
         const captainId = squad.players.find((p: any) => p.isCaptain)?.playerId || null;
 
         const playersWithPoints = playerStats.map((stats: any) => {
           const points = stats.totalPoints || 0;
           const isCaptain = stats.playerId === captainId;
           const finalPoints = isCaptain ? points * 2 : points;
-          totalPoints += finalPoints;
+          sumPoints += finalPoints;
 
           return {
             playerId: stats.playerId,
@@ -571,6 +572,9 @@ getLeaguesByUser: (userId: string) =>
             finalPoints
           };
         });
+
+        // ⚠️ Si tiene menos de 11 jugadores, mostrar los jugadores con puntos pero el total es 0
+        const totalPoints = squad.players.length < 11 ? 0 : sumPoints;
 
         return {
           userId: member.userId,

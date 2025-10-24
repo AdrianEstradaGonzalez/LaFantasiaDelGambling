@@ -9,7 +9,7 @@ import { JornadaService } from '../../services/JornadaService';
 import { PlayerService } from '../../services/PlayerService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon } from '../../components/VectorIcons';
+import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon, AlertIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -1161,13 +1161,20 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               gap: 4
             }}>
               <Text style={{ color: '#10b981', fontSize: 28, fontWeight: '800', letterSpacing: -1 }}>
-                {Object.keys(selectedPlayers).reduce((total, positionId) => {
-                  const player = selectedPlayers[positionId];
-                  if (!player) return total;
-                  const points = playerCurrentPoints[player.id] ?? 0;
-                  const isCaptain = captainPosition === positionId;
-                  return total + (isCaptain ? points * 2 : points);
-                }, 0)}
+                {(() => {
+                  // Calcular suma de puntos individuales
+                  const sumPoints = Object.keys(selectedPlayers).reduce((total, positionId) => {
+                    const player = selectedPlayers[positionId];
+                    if (!player) return total;
+                    const points = playerCurrentPoints[player.id] ?? 0;
+                    const isCaptain = captainPosition === positionId;
+                    return total + (isCaptain ? points * 2 : points);
+                  }, 0);
+                  
+                  // ⚠️ Si hay menos de 11 jugadores, el total es 0
+                  const totalPoints = Object.keys(selectedPlayers).length < 11 ? 0 : sumPoints;
+                  return totalPoints;
+                })()}
               </Text>
               <Text style={{ color: '#64748b', fontSize: 14, fontWeight: '600' }}>
                 pts
@@ -1210,6 +1217,30 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 Mantén presionado un jugador para nombrarlo capitán. Puntuará el doble.
               </Text>
             </View>
+          </View>
+        )}
+
+        {/* Warning de plantilla incompleta - cuando jornada está cerrada */}
+        {jornadaStatus === 'closed' && Object.keys(selectedPlayers).length < 11 && (
+          <View
+            style={{
+              backgroundColor: '#451a03',
+              borderRadius: 12,
+              padding: 16,
+              marginBottom: 16,
+              borderLeftWidth: 4,
+              borderLeftColor: '#f59e0b',
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <AlertIcon size={24} color="#fbbf24" />
+              <Text style={{ color: '#fbbf24', fontSize: 16, fontWeight: '700', marginLeft: 12 }}>
+                Plantilla Incompleta
+              </Text>
+            </View>
+            <Text style={{ color: '#fcd34d', fontSize: 14, lineHeight: 20 }}>
+              Se requiere plantilla completa para puntuar. {'\n'}
+            </Text>
           </View>
         )}
 
