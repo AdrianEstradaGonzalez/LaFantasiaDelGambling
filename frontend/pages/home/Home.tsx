@@ -20,7 +20,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { LigaService } from '../../services/LigaService';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { LoginService } from '../../services/LoginService';
-import { MenuIcon } from '../../components/VectorIcons';
+import { MenuIcon, ShieldIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
 
@@ -320,13 +320,101 @@ export const Home = ({ navigation, route }: HomeProps) => {
                 activeOpacity={0.85}
                 onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre })}
               >
-                <Text
-                  style={styles.ligaName}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {liga.nombre}
-                </Text>
+                {/* Fondo con gradiente sutil */}
+                <LinearGradient
+                  colors={['#1c2635ff', '#1d2841ff']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    borderRadius: 16,
+                  }}
+                />
+                
+                {/* Barra lateral de color */}
+                <View style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 6,
+                  backgroundColor: '#3b82f6',
+                  borderTopLeftRadius: 16,
+                  borderBottomLeftRadius: 16,
+                }} />
+                
+                {/* Brillo sutil en el borde */}
+                <View style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: 'rgba(59, 130, 246, 0.2)',
+                }} />
+                
+                {/* Contenido */}
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'flex-start',
+                  width: '100%',
+                  paddingVertical: 4,
+                  paddingLeft: 12,
+                  backgroundColor: 'transparent',
+                }}>
+                  {/* Icono de escudo */}
+                  <View style={{
+                    width: 48,
+                    height: 48,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 16,
+                  }}>
+                    <ShieldIcon size={34} color="#3b82f6" />
+                  </View>
+                  
+                  {/* Nombre de la liga */}
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        color: '#ffffff',
+                        fontWeight: '800',
+                        fontSize: 18,
+                        letterSpacing: 0.3,
+                        marginBottom: 2,
+                      }}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {liga.nombre}
+                    </Text>
+                    <Text
+                      style={{
+                        color: '#9ca3af',
+                        fontWeight: '500',
+                        fontSize: 13,
+                        letterSpacing: 0.2,
+                      }}
+                    >
+                      Toca para ver detalles
+                    </Text>
+                  </View>
+                  
+                  {/* Flecha indicadora */}
+                  <View style={{
+                    marginRight: 8,
+                    marginLeft: 8,
+                  }}>
+                    <Text style={{ color: '#3b82f6', fontSize: 24, fontWeight: '600' }}>›</Text>
+                  </View>
+                </View>
               </TouchableOpacity>
             ))
           ) : (

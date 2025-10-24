@@ -183,8 +183,17 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   };
 
   const setAmountForKey = (key: string, value: string) => {
-    // Solo números y punto
-    let sanitized = value.replace(/[^0-9.]/g, '');
+    // Verificar si contiene punto o coma (decimales)
+    if (value.includes('.') || value.includes(',')) {
+      CustomAlertManager.alert(
+        'Cantidad no válida',
+        'Solo se permiten cantidades enteras. No puedes usar decimales.',
+        [{ text: 'Entendido', style: 'default', onPress: () => {} }]
+      );
+      return;
+    }
+    // Solo números enteros
+    let sanitized = value.replace(/[^0-9]/g, '');
     setAmountInputs((prev) => ({ ...prev, [key]: sanitized }));
   };
 
@@ -998,7 +1007,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     <TextInput
                                       value={amountInputs[betKey] ?? String(userBet.amount)}
                                       onChangeText={(t) => setAmountForKey(betKey, t)}
-                                      keyboardType="decimal-pad"
+                                      keyboardType="number-pad"
                                       placeholder="Cantidad"
                                       placeholderTextColor="#64748b"
                                       returnKeyType="done"
@@ -1052,7 +1061,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             <TextInput
                               value={amountInputs[betKey] ?? ''}
                               onChangeText={(t) => setAmountForKey(betKey, t)}
-                              keyboardType="decimal-pad"
+                              keyboardType="number-pad"
                               placeholder="Cantidad"
                               placeholderTextColor="#64748b"
                               returnKeyType="done"
