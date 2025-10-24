@@ -240,6 +240,7 @@ export const LeagueService = {
               }
             });
 
+            // ⚠️ Si no tiene plantilla, devolver 0 puntos
             if (!squad || squad.players.length === 0) {
               return { userId: member.userId, points: 0 };
             }
@@ -255,7 +256,7 @@ export const LeagueService = {
             });
 
             // Calcular puntos totales de la jornada
-            let totalPoints = 0;
+            let sumPoints = 0;
             let captainId: number | null = null;
 
             // Encontrar el capitán
@@ -270,11 +271,14 @@ export const LeagueService = {
               
               // Si es el capitán, doblar los puntos
               if (captainId && stats.playerId === captainId) {
-                totalPoints += points * 2;
+                sumPoints += points * 2;
               } else {
-                totalPoints += points;
+                sumPoints += points;
               }
             });
+
+            // ⚠️ Si tiene menos de 11 jugadores, el total es 0
+            const totalPoints = squad.players.length < 11 ? 0 : sumPoints;
 
             return { userId: member.userId, points: totalPoints };
           } catch (error) {
@@ -364,7 +368,7 @@ export const LeagueService = {
             });
 
             // Calcular puntos totales de la jornada
-            let totalPoints = 0;
+            let sumPoints = 0;
             let captainId: number | null = null;
 
             // Encontrar el capitán
@@ -379,11 +383,14 @@ export const LeagueService = {
               
               // Si es el capitán, doblar los puntos
               if (captainId && stats.playerId === captainId) {
-                totalPoints += points * 2;
+                sumPoints += points * 2;
               } else {
-                totalPoints += points;
+                sumPoints += points;
               }
             });
+
+            // ⚠️ Si tiene menos de 11 jugadores, el total es 0
+            const totalPoints = squad.players.length < 11 ? 0 : sumPoints;
 
             return {
               ...member,
