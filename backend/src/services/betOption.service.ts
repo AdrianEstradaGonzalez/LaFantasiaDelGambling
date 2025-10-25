@@ -413,40 +413,41 @@ export class BetOptionService {
     awayTeam: string,
     type: string
   ) {
-    const baseOdd = 1.5 + Math.random() * 1.0;
+    // Generar cuotas aleatorias simples entre 1.5 y 2.5
+    const randomOdd = () => parseFloat((1.5 + Math.random() * 1.0).toFixed(2));
     const bets: any[] = [];
 
     if (type === 'Resultado') {
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Ganará ${homeTeam}`, odd: parseFloat(baseOdd.toFixed(2)) },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Empate', odd: parseFloat((baseOdd + 0.3).toFixed(2)) },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Ganará ${awayTeam}`, odd: parseFloat((baseOdd + 0.2).toFixed(2)) }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Ganará ${homeTeam}`, odd: randomOdd() },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Empate', odd: randomOdd() },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Ganará ${awayTeam}`, odd: randomOdd() }
       );
     } else if (type === 'Goles totales') {
       const thresholds = [0.5, 1.5, 2.5, 3.5];
       const n = thresholds[Math.floor(Math.random() * thresholds.length)];
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} goles`, odd: parseFloat(baseOdd.toFixed(2)) },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} goles`, odd: parseFloat((2.5 - (baseOdd - 1.5)).toFixed(2)) }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} goles`, odd: randomOdd() },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} goles`, odd: randomOdd() }
       );
     } else if (type === 'Ambos marcan') {
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Ambos equipos marcarán', odd: parseFloat(baseOdd.toFixed(2)) },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Al menos un equipo no marcará', odd: parseFloat((2.5 - (baseOdd - 1.5)).toFixed(2)) }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Ambos equipos marcarán', odd: randomOdd() },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Al menos un equipo no marcará', odd: randomOdd() }
       );
     } else if (type === 'Córners') {
       const thresholds = [6.5, 8.5, 9.5, 10.5];
       const n = thresholds[Math.floor(Math.random() * thresholds.length)];
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} córners`, odd: parseFloat(baseOdd.toFixed(2)) },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} córners`, odd: parseFloat((2.5 - (baseOdd - 1.5)).toFixed(2)) }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} córners`, odd: randomOdd() },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} córners`, odd: randomOdd() }
       );
     } else if (type === 'Tarjetas') {
       const thresholds = [3.5, 4.5, 5.5, 6.5];
       const n = thresholds[Math.floor(Math.random() * thresholds.length)];
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} tarjetas`, odd: parseFloat(baseOdd.toFixed(2)) },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} tarjetas`, odd: parseFloat((2.5 - (baseOdd - 1.5)).toFixed(2)) }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} tarjetas`, odd: randomOdd() },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} tarjetas`, odd: randomOdd() }
       );
     }
 
