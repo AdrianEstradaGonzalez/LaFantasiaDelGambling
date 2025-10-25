@@ -85,8 +85,13 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
   if (goals.assists) add('Asistencias', goals.assists, goals.assists * BASE_POINTS.ASSIST);
 
   // Tarjetas (todas las posiciones)
-  if (cards.yellow) add('Tarjetas amarillas', cards.yellow, cards.yellow * BASE_POINTS.YELLOW_CARD);
-  if (cards.red) add('Tarjetas rojas', cards.red, cards.red * BASE_POINTS.RED_CARD);
+  // ⚠️ Si hay tarjeta roja, NO restar por amarillas (la roja ya incluye la penalización)
+  if (cards.red) {
+    add('Tarjeta roja', cards.red, cards.red * BASE_POINTS.RED_CARD);
+  } else if (cards.yellow) {
+    // Solo restar por amarillas si NO hay roja
+    add('Tarjetas amarillas', cards.yellow, cards.yellow * BASE_POINTS.YELLOW_CARD);
+  }
 
   // Penaltis generales (todas las posiciones)
   if (penalty.won) add('Penaltis ganados', penalty.won, penalty.won * BASE_POINTS.PENALTY_WON);

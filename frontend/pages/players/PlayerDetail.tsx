@@ -1029,14 +1029,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                       puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis fallados')}
                     />
 
-                    {/* Valoración del partido */}
-                    {selectedData.stats.rating && (
-                      <StatRow
-                        cantidad={parseFloat(selectedData.stats.rating).toFixed(1)}
-                        estadistica="Valoración del partido"
-                        puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Valoración')}
-                      />
-                    )}
                   </>
                 )}
 

@@ -27,10 +27,10 @@ export const BASE_POINTS = {
   PENALTY_SCORED: 3,
   PENALTY_MISSED: -2,
   
-  // Valoración del partido
-  RATING_8_OR_MORE: 3,
-  RATING_65_TO_8: 2,
-  RATING_5_TO_65: 1,
+  // Valoración del partido (desactivada)
+  RATING_8_OR_MORE: 0,
+  RATING_65_TO_8: 0,
+  RATING_5_TO_65: 0,
 } as const;
 
 // ========== PUNTOS ESPECÍFICOS POR POSICIÓN ==========
