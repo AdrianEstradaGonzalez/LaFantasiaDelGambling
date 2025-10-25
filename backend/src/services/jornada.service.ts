@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
 import { calculatePlayerPointsTotal as calculatePlayerPointsService, normalizeRole } from '../shared/pointsCalculator.js';
 import { PlayerService } from './player.service.js';
+import { generateBetOptionsForAllLeagues } from '../utils/betOptionsGenerator.js';
 
 const prisma = new PrismaClient();
 
@@ -1067,6 +1068,15 @@ export class JornadaService {
         },
       });
       console.log(`✅ Liga avanzada a jornada ${nextJornada} con estado "open"\n`);
+
+      // 9. Generar opciones de apuesta para la nueva jornada
+      console.log(`🎲 9. Generando opciones de apuesta para jornada ${nextJornada}...`);
+      try {
+        const betResult = await generateBetOptionsForAllLeagues(nextJornada);
+        console.log(`✅ Apuestas generadas: ${betResult.totalOptions} opciones para ${betResult.leaguesUpdated} ligas\n`);
+      } catch (error: any) {
+        console.error(`⚠️  Error generando apuestas (continuando): ${error.message}\n`);
+      }
 
       console.log(`\n🎉 JORNADA ${jornada} CERRADA EXITOSAMENTE\n`);
       console.log(`📊 Resumen:`);
