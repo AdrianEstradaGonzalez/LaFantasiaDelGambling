@@ -387,8 +387,8 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginTop: 8 }} numberOfLines={1}>
                           {player.playerName}
                         </Text>
-                        <View style={{ backgroundColor: roleColor(player.role), paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginTop: 4 }}>
-                          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>{player.role}</Text>
+                        <View style={{ backgroundColor: roleColor(player.role || position.role), paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginTop: 4 }}>
+                          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>{player.role || position.role}</Text>
                         </View>
                       </View>
                     ) : (
