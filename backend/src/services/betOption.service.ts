@@ -413,41 +413,62 @@ export class BetOptionService {
     awayTeam: string,
     type: string
   ) {
-    // Generar cuotas aleatorias simples entre 1.5 y 2.5
-    const randomOdd = () => parseFloat((1.5 + Math.random() * 1.0).toFixed(2));
     const bets: any[] = [];
 
     if (type === 'Resultado') {
+      // Cuotas típicas para resultados: Local (1.8-2.5), Empate (3.0-3.8), Visitante (2.0-3.2)
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Ganará ${homeTeam}`, odd: randomOdd() },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Empate', odd: randomOdd() },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Ganará ${awayTeam}`, odd: randomOdd() }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Ganará ${homeTeam}`, odd: parseFloat((1.8 + Math.random() * 0.7).toFixed(2)) },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Empate', odd: parseFloat((3.0 + Math.random() * 0.8).toFixed(2)) },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Ganará ${awayTeam}`, odd: parseFloat((2.0 + Math.random() * 1.2).toFixed(2)) }
       );
     } else if (type === 'Goles totales') {
       const thresholds = [0.5, 1.5, 2.5, 3.5];
       const n = thresholds[Math.floor(Math.random() * thresholds.length)];
+      
+      // Cuotas según el umbral de goles
+      let overOdd, underOdd;
+      if (n === 0.5) {
+        overOdd = parseFloat((1.15 + Math.random() * 0.1).toFixed(2)); // Más de 0.5: 1.15-1.25
+        underOdd = parseFloat((4.5 + Math.random() * 1.5).toFixed(2)); // Menos de 0.5: 4.5-6.0
+      } else if (n === 1.5) {
+        overOdd = parseFloat((1.3 + Math.random() * 0.2).toFixed(2)); // Más de 1.5: 1.3-1.5
+        underOdd = parseFloat((3.0 + Math.random() * 1.0).toFixed(2)); // Menos de 1.5: 3.0-4.0
+      } else if (n === 2.5) {
+        overOdd = parseFloat((1.6 + Math.random() * 0.3).toFixed(2)); // Más de 2.5: 1.6-1.9
+        underOdd = parseFloat((2.1 + Math.random() * 0.4).toFixed(2)); // Menos de 2.5: 2.1-2.5
+      } else { // 3.5
+        overOdd = parseFloat((2.3 + Math.random() * 0.5).toFixed(2)); // Más de 3.5: 2.3-2.8
+        underOdd = parseFloat((1.5 + Math.random() * 0.3).toFixed(2)); // Menos de 3.5: 1.5-1.8
+      }
+      
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} goles`, odd: randomOdd() },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} goles`, odd: randomOdd() }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} goles`, odd: overOdd },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} goles`, odd: underOdd }
       );
     } else if (type === 'Ambos marcan') {
+      // Cuotas típicas: Sí (1.7-2.0), No (1.8-2.2)
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Ambos equipos marcarán', odd: randomOdd() },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Al menos un equipo no marcará', odd: randomOdd() }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Ambos equipos marcarán', odd: parseFloat((1.7 + Math.random() * 0.3).toFixed(2)) },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: 'Al menos un equipo no marcará', odd: parseFloat((1.8 + Math.random() * 0.4).toFixed(2)) }
       );
     } else if (type === 'Córners') {
       const thresholds = [6.5, 8.5, 9.5, 10.5];
       const n = thresholds[Math.floor(Math.random() * thresholds.length)];
+      
+      // Cuotas para córners (generalmente más equilibradas)
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} córners`, odd: randomOdd() },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} córners`, odd: randomOdd() }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} córners`, odd: parseFloat((1.7 + Math.random() * 0.5).toFixed(2)) },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} córners`, odd: parseFloat((1.8 + Math.random() * 0.5).toFixed(2)) }
       );
     } else if (type === 'Tarjetas') {
       const thresholds = [3.5, 4.5, 5.5, 6.5];
       const n = thresholds[Math.floor(Math.random() * thresholds.length)];
+      
+      // Cuotas para tarjetas (similar a córners)
       bets.push(
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} tarjetas`, odd: randomOdd() },
-        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} tarjetas`, odd: randomOdd() }
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Más de ${n} tarjetas`, odd: parseFloat((1.75 + Math.random() * 0.45).toFixed(2)) },
+        { matchId, homeTeam, awayTeam, betType: type, betLabel: `Menos de ${n} tarjetas`, odd: parseFloat((1.85 + Math.random() * 0.45).toFixed(2)) }
       );
     }
 
