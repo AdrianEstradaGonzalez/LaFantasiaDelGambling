@@ -123,7 +123,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
   const { ligaId, ligaName, userId, userName } = route.params;
   const [loading, setLoading] = useState(true);
   const [squad, setSquad] = useState<Squad | null>(null);
-  const [playerPhotos, setPlayerPhotos] = useState<Record<number, { photo?: string; teamCrest?: string }>>({});
+  const [playerPhotos, setPlayerPhotos] = useState<Record<number, { photo?: string; teamCrest?: string; position?: string }>>({});
   const [playerPoints, setPlayerPoints] = useState<Record<number, { points: number | null; minutes: number | null }>>({});
   const [currentJornada, setCurrentJornada] = useState<number | null>(null);
 
@@ -146,9 +146,10 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
             const details = await Promise.all(ids.map(async (id) => {
               try {
                 const det = await PlayerService.getPlayerById(id);
-                return { id, photo: det.photo, teamCrest: det.teamCrest };
+                // Include canonical position from PlayerService so PlayerDetail can normalize it
+                return { id, photo: det.photo, teamCrest: det.teamCrest, position: det.position };
               } catch {
-                return { id, photo: undefined, teamCrest: undefined };
+                return { id, photo: undefined, teamCrest: undefined, position: undefined };
               }
             }));
             const photosMap: Record<number, { photo?: string; teamCrest?: string }> = {};
@@ -325,11 +326,13 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                                 // Navegar a detalles del jugador. Construimos un objeto "player" mínimo
                                 // con los campos que PlayerDetail espera (id, name, photo, position, price).
                                 const pid = player.playerId;
+                                // Prefer canonical position from the PlayerService lookup; fall back to squad role if needed
+                                const canonicalPos = pid ? playerPhotos[pid]?.position : undefined;
                                 const playerForNav = {
                                   id: pid,
                                   name: player.playerName,
                                   photo: photo,
-                                  position: (player.position as any) || undefined,
+                                  position: canonicalPos || player.role || undefined,
                                   price: (player.pricePaid as any) || undefined,
                                 };
 
