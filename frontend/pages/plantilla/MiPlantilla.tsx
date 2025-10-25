@@ -1597,7 +1597,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         </View>
                       ) : (
                         player.teamCrest && (
-                          <View style={{ position: 'absolute', top: -8, left: -8, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
+                          <View style={{ position: 'absolute', top: -4, left: -4, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
                             <Image source={{ uri: player.teamCrest }} style={{ width: 20, height: 20, borderRadius: 10 }} resizeMode="contain" />
                           </View>
                         )
@@ -1640,12 +1640,6 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                           );
                         })()}
                       </View>
-                      {/* Escudo del equipo - abajo derecha */}
-                      {player.teamCrest && (
-                        <View style={{ position: 'absolute', bottom: -2, right: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
-                          <Image source={{ uri: player.teamCrest }} style={{ width: 20, height: 20, borderRadius: 10 }} resizeMode="contain" />
-                        </View>
-                      )}
                     </View>
                     <Text
                       style={{
