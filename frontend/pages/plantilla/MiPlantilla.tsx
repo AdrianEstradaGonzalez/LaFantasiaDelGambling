@@ -1417,64 +1417,63 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         />
                       </View>
                       
-                      {/* Brazalete de capitán en esquina superior izquierda */}
-                      {isCaptain && (
+                      {/* Indicador x2 (capitán) o escudo (no capitán) - arriba izquierda */}
+                      {isCaptain ? (
                         <View
                           style={{
                             position: 'absolute',
-                            top: -4,
-                            left: -4,
+                            top: -8,
+                            left: -8,
                             width: 28,
                             height: 28,
                             borderRadius: 14,
                             backgroundColor: '#ffd700',
-                            borderWidth: 2,
-                            borderColor: '#fff',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            shadowColor: '#ffd700',
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.8,
-                            shadowRadius: 4,
-                            elevation: 6
-                          }}
-                        >
-                          <CaptainIcon size={18} color="#000" />
-                        </View>
-                      )}
-                      
-                      {/* Escudo del equipo en esquina superior derecha */}
-                      {player.teamCrest && (
-                        <View
-                          style={{
-                            position: 'absolute',
-                            top: -2,
-                            right: -2,
-                            width: 24,
-                            height: 24,
-                            borderRadius: 12,
-                            backgroundColor: '#fff',
                             borderWidth: 1.5,
                             borderColor: '#fff',
                             justifyContent: 'center',
                             alignItems: 'center',
                             shadowColor: '#000',
                             shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.3,
+                            shadowOpacity: 0.25,
                             shadowRadius: 3,
-                            elevation: 4
+                            elevation: 6
                           }}
                         >
-                          <Image
-                            source={{ uri: player.teamCrest }}
-                            style={{
-                              width: 20,
-                              height: 20,
-                              borderRadius: 10
-                            }}
-                            resizeMode="contain"
-                          />
+                          <Text style={{ color: '#1f2937', fontWeight: '900', fontSize: 10 }}>x2</Text>
                         </View>
+                      ) : (
+                        player.teamCrest && (
+                          <View
+                            style={{
+                              position: 'absolute',
+                              top: -8,
+                              left: -8,
+                              width: 24,
+                              height: 24,
+                              borderRadius: 12,
+                              backgroundColor: '#fff',
+                              borderWidth: 1.5,
+                              borderColor: '#fff',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              shadowColor: '#000',
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.3,
+                              shadowRadius: 3,
+                              elevation: 4
+                            }}
+                          >
+                            <Image
+                              source={{ uri: player.teamCrest }}
+                              style={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: 10
+                              }}
+                              resizeMode="contain"
+                            />
+                          </View>
+                        )
                       )}
                     </View>
                     <Text
@@ -1572,8 +1571,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         />
                       </View>
                       
-                      {/* Badge de capitán - top left */}
-                      {player.isCaptain && (
+                      {/* Indicador x2 (capitán) o escudo (no capitán) - arriba izquierda */}
+                      {player.isCaptain ? (
                         <View
                           style={{
                             position: 'absolute',
@@ -1594,10 +1593,16 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                             elevation: 6
                           }}
                         >
-                          <CaptainIcon size={16} color="#000" />
+                          <Text style={{ color: '#1f2937', fontWeight: '900', fontSize: 10 }}>x2</Text>
                         </View>
+                      ) : (
+                        player.teamCrest && (
+                          <View style={{ position: 'absolute', top: -8, left: -8, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
+                            <Image source={{ uri: player.teamCrest }} style={{ width: 20, height: 20, borderRadius: 10 }} resizeMode="contain" />
+                          </View>
+                        )
                       )}
-                      
+
                       {/* Badge de puntuación - top right */}
                       <View
                         style={{
@@ -1619,18 +1624,28 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                           elevation: 5
                         }}
                       >
-                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>
-                          {(() => {
-                            const ptsObj = playerCurrentPoints[player.id];
-                            const showDash = !ptsObj || ptsObj.minutes == null || ptsObj.minutes === 0;
-                            if (jornadaStatus === 'closed' && !showDash) {
-                              const ptsNum = ptsObj!.points ?? 0;
-                              return player.isCaptain ? ptsNum * 2 : ptsNum;
-                            }
-                            return '-';
-                          })()}
-                        </Text>
+                        {(() => {
+                          const ptsObj = playerCurrentPoints[player.id];
+                          const showDash = !ptsObj || ptsObj.minutes == null || ptsObj.minutes === 0;
+                          if (jornadaStatus === 'closed' && !showDash) {
+                            const ptsNum = ptsObj!.points ?? 0;
+                            const displayNum = player.isCaptain ? ptsNum * 2 : ptsNum;
+                            return (
+                              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>{displayNum}</Text>
+                            );
+                          }
+
+                          return (
+                            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>-</Text>
+                          );
+                        })()}
                       </View>
+                      {/* Escudo del equipo - abajo derecha */}
+                      {player.teamCrest && (
+                        <View style={{ position: 'absolute', bottom: -2, right: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
+                          <Image source={{ uri: player.teamCrest }} style={{ width: 20, height: 20, borderRadius: 10 }} resizeMode="contain" />
+                        </View>
+                      )}
                     </View>
                     <Text
                       style={{

@@ -346,26 +346,40 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                             </TouchableOpacity>
                           </View>
                           {/* Escudo del equipo */}
-                          {crest && (
-                            <View style={{ position: 'absolute', top: -2, right: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3, elevation: 4 }}>
-                              <Image source={{ uri: crest }} style={{ width: 20, height: 20, borderRadius: 10 }} resizeMode="contain" />
+                          {/* Indicador x2 (capitán) o Escudo (no capitán) - arriba izquierda */}
+                          {player.isCaptain ? (
+                            <View style={{ position: 'absolute', top: -8, left: -8, width: 28, height: 28, borderRadius: 14, backgroundColor: '#ffd700', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3, elevation: 4 }}>
+                              <Text style={{ color: '#1f2937', fontWeight: '900', fontSize: 10 }}>x2</Text>
                             </View>
+                          ) : (
+                            crest && (
+                              <View style={{ position: 'absolute', top: -4, left: -4, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3, elevation: 4 }}>
+                                <Image source={{ uri: crest }} style={{ width: 20, height: 20, borderRadius: 10 }} resizeMode="contain" />
+                              </View>
+                            )
                           )}
-                          {player.isCaptain && (
-                            <View style={{ position: 'absolute', bottom: -2, right: -2, backgroundColor: '#ffd700', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#b45309' }}>
-                              <Text style={{ color: '#1f2937', fontWeight: '900', fontSize: 10 }}>C</Text>
-                            </View>
-                          )}
+
                           {/* Badge de puntos - arriba derecha */}
-                          <View style={{ position: 'absolute', top: -8, left: -8, width: 32, height: 32, borderRadius: 16, backgroundColor: '#0892D0', borderWidth: 2, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, elevation: 5 }}>
-                            {(() => {
-                              const pointsObj = pid != null ? playerPoints[pid] : undefined;
-                              // Mostrar '-' si no hay stats o si no jugó minutos aún (minutes === 0 o minutes == null)
-                              const showDash = !pointsObj || pointsObj.minutes == null || pointsObj.minutes === 0;
-                              const display = showDash ? '-' : (pointsObj.points ?? '-');
-                              return <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>{display}</Text>;
-                            })()}
+                          <View style={{ position: 'absolute', top: -8, right: -8, width: 32, height: 32, borderRadius: 16, backgroundColor: '#0892D0', borderWidth: 2, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, elevation: 5 }}>
+                              {(() => {
+                                const pointsObj = pid != null ? playerPoints[pid] : undefined;
+                                // Mostrar '-' si no hay stats o si no jugó minutos aún (minutes === 0 o minutes == null)
+                                const showDash = !pointsObj || pointsObj.minutes == null || pointsObj.minutes === 0;
+                                if (showDash) {
+                                  return (
+                                    <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>-</Text>
+                                  );
+                                }
+
+                                const ptsNum = (pointsObj!.points ?? 0);
+                                const displayNum = player.isCaptain ? ptsNum * 2 : ptsNum;
+
+                                return (
+                                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>{displayNum}</Text>
+                                );
+                              })()}
                           </View>
+                          {/* (crest arriba-izq ya mostrado o x2 si capitán) */}
                         </View>
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginTop: 8 }} numberOfLines={1}>
                           {player.playerName}
