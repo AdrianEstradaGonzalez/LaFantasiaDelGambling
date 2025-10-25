@@ -141,8 +141,13 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
               placeholder="Ej: TormentaImperfecta"
               placeholderTextColor="#94a3b8"
               value={nombreLiga}
-              onChangeText={setNombreLiga}
+              onChangeText={(text) => {
+                // Limitar a máximo 20 caracteres para el nombre de la liga
+                const truncated = text.slice(0, 20);
+                setNombreLiga(truncated);
+              }}
             />
+            <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 6 }}>{nombreLiga.length}/20</Text>
           </View>
 
           <TouchableOpacity

@@ -134,9 +134,14 @@ const Register: React.FC<Props> = ({ navigation }) => {
                       setUsernameFocused(false);
                     }}
                     onFocus={() => setUsernameFocused(true)}
-                    onChangeText={onChange}
+                    onChangeText={(text) => {
+                      // Limitar nombre de usuario a 12 caracteres
+                      const truncated = text.slice(0, 12);
+                      onChange(truncated);
+                    }}
                     value={value}
                   />
+                <Text style={{ color: '#64748b', fontSize: 12, marginTop: 6 }}>{value.length}/12</Text>
                 </View>
                 {errors.username?.message && (
                   <Text style={LoginStyles.errorText}>

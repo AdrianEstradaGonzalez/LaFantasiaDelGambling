@@ -295,8 +295,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [originalFormation, setOriginalFormation] = useState<Formation>(formations[0]);
   const [originalPlayers, setOriginalPlayers] = useState<Record<string, any>>({});
   
-  // ✨ NUEVO: Estado para almacenar puntos de la jornada actual
-  const [playerCurrentPoints, setPlayerCurrentPoints] = useState<Record<number, number>>({});
+  // ✨ NUEVO: Estado para almacenar puntos y minutos de la jornada actual
+  const [playerCurrentPoints, setPlayerCurrentPoints] = useState<Record<number, { points: number | null; minutes: number | null }>>({});
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
   const isLoadingPointsRef = useRef(false); // Evitar múltiples cargas simultáneas
   const lastLoadedJornada = useRef<number | null>(null); // Tracking de última jornada cargada
@@ -349,7 +349,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       console.log(`[MiPlantilla] ${isInitialLoad ? '📥 Carga inicial' : '🔄 Actualizando'} puntos jornada ${currentMatchday} para ${playerIds.length} jugadores`);
       console.log('[MiPlantilla] Player IDs:', playerIds);
       
-      const pointsMap: Record<number, number> = {};
+  const pointsMap: Record<number, { points: number | null; minutes: number | null }> = {};
       const failedPlayers: number[] = [];
       
       // Cargar puntos para cada jugador con reintentos
@@ -366,12 +366,17 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: shouldRefresh });
               
               // Solo agregar al map si existe stats (el jugador ya jugó o está jugando)
-              if (stats && stats.totalPoints !== null && stats.totalPoints !== undefined) {
-                pointsMap[playerId] = stats.totalPoints;
-                console.log(`[MiPlantilla] ✅ Jugador ${playerId}: ${stats.totalPoints} puntos`);
+              if (stats) {
+                pointsMap[playerId] = {
+                  points: stats.totalPoints ?? null,
+                  minutes: stats.minutes ?? null,
+                };
+                console.log(`[MiPlantilla] ✅ Jugador ${playerId}: points=${pointsMap[playerId].points} minutes=${pointsMap[playerId].minutes}`);
                 break; // Éxito, salir del loop de reintentos
               } else {
                 console.log(`[MiPlantilla] ⚠️ Jugador ${playerId} sin stats`);
+                // Guardar explícitamente nulls para indicar ausencia
+                pointsMap[playerId] = { points: null, minutes: null };
                 break;
               }
             } catch (error) {
@@ -1166,9 +1171,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   const sumPoints = Object.keys(selectedPlayers).reduce((total, positionId) => {
                     const player = selectedPlayers[positionId];
                     if (!player) return total;
-                    const points = playerCurrentPoints[player.id] ?? 0;
-                    const isCaptain = captainPosition === positionId;
-                    return total + (isCaptain ? points * 2 : points);
+                      const ptsObj = playerCurrentPoints[player.id];
+                      const points = ptsObj?.points ?? 0;
+                      const isCaptain = captainPosition === positionId;
+                      return total + (isCaptain ? points * 2 : points);
                   }, 0);
                   
                   // ⚠️ Si hay menos de 11 jugadores, el total es 0
@@ -1614,10 +1620,15 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         }}
                       >
                         <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>
-                          {jornadaStatus === 'closed' && playerCurrentPoints[player.id] !== undefined
-                            ? (player.isCaptain ? playerCurrentPoints[player.id] * 2 : playerCurrentPoints[player.id])
-                            : '-'
-                          }
+                          {(() => {
+                            const ptsObj = playerCurrentPoints[player.id];
+                            const showDash = !ptsObj || ptsObj.minutes == null || ptsObj.minutes === 0;
+                            if (jornadaStatus === 'closed' && !showDash) {
+                              const ptsNum = ptsObj!.points ?? 0;
+                              return player.isCaptain ? ptsNum * 2 : ptsNum;
+                            }
+                            return '-';
+                          })()}
                         </Text>
                       </View>
                     </View>

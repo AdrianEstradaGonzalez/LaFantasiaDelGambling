@@ -124,7 +124,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
   const [loading, setLoading] = useState(true);
   const [squad, setSquad] = useState<Squad | null>(null);
   const [playerPhotos, setPlayerPhotos] = useState<Record<number, { photo?: string; teamCrest?: string }>>({});
-  const [playerPoints, setPlayerPoints] = useState<Record<number, number | null>>({});
+  const [playerPoints, setPlayerPoints] = useState<Record<number, { points: number | null; minutes: number | null }>>({});
   const [currentJornada, setCurrentJornada] = useState<number | null>(null);
 
   useEffect(() => {
@@ -160,19 +160,22 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
           if (currentJornada != null) {
             try {
               // ✨ MIGRADO: Ahora usa PlayerStatsService del backend
-              const pointsWithDefaults: Record<number, number | null> = {};
-              
+              const pointsWithDefaults: Record<number, { points: number | null; minutes: number | null }> = {};
+
               // Obtener stats de cada jugador desde el backend
               for (const playerId of ids) {
                 try {
                   const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentJornada);
-                  pointsWithDefaults[playerId] = stats?.totalPoints ?? null;
+                  pointsWithDefaults[playerId] = {
+                    points: stats?.totalPoints ?? null,
+                    minutes: stats?.minutes ?? null,
+                  };
                 } catch {
-                  // Si falla para un jugador, dejar null
-                  pointsWithDefaults[playerId] = null;
+                  // Si falla para un jugador, dejar nulls
+                  pointsWithDefaults[playerId] = { points: null, minutes: null };
                 }
               }
-              
+
               setPlayerPoints(pointsWithDefaults);
             } catch {}
           }
@@ -255,13 +258,14 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                 // Calcular puntos individuales
                 const sumPoints = squad?.players.reduce((sum, player) => {
                   const pid = player.playerId;
-                  const points = playerPoints[pid] ?? 0;
+                  const ptsObj = pid != null ? playerPoints[pid] : undefined;
+                  const points = ptsObj?.points ?? 0;
                   return sum + (player.isCaptain ? points * 2 : points);
                 }, 0) ?? 0;
-                
+
                 // ⚠️ Si hay menos de 11 jugadores, el total es 0
                 const totalPoints = (squad && squad.players && squad.players.length < 11) ? 0 : sumPoints;
-                
+
                 return (
                   <View
                     style={{
@@ -309,14 +313,37 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                 const pid = player?.playerId;
                 const photo = pid ? playerPhotos[pid]?.photo : undefined;
                 const crest = pid ? playerPhotos[pid]?.teamCrest : undefined;
-                const points = pid != null ? playerPoints[pid] : null;
                 return (
                   <View key={position.id} style={{ position: 'absolute', left: `${position.x}%`, top: `${position.y}%`, width: 80, height: 120, marginLeft: -40, marginTop: -60, alignItems: 'center', justifyContent: 'center' }}>
                     {player ? (
                       <View style={{ alignItems: 'center' }}>
                         <View style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 2, borderColor: player.isCaptain ? '#ffd700' : '#0892D0', backgroundColor: '#0b1220', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8, position: 'relative', overflow: 'visible' }}>
                           <View style={{ overflow: 'hidden', borderRadius: 33, width: 66, height: 66 }}>
-                            <Image source={{ uri: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2` }} style={{ width: 66, height: 66, borderRadius: 33 }} resizeMode="cover" />
+                            <TouchableOpacity
+                              activeOpacity={0.8}
+                              onPress={() => {
+                                // Navegar a detalles del jugador. Construimos un objeto "player" mínimo
+                                // con los campos que PlayerDetail espera (id, name, photo, position, price).
+                                const pid = player.playerId;
+                                const playerForNav = {
+                                  id: pid,
+                                  name: player.playerName,
+                                  photo: photo,
+                                  position: (player.position as any) || undefined,
+                                  price: (player.pricePaid as any) || undefined,
+                                };
+
+                                navigation.navigate('PlayerDetail', {
+                                  player: playerForNav,
+                                  ligaId,
+                                  ligaName,
+                                  isAlreadyInSquad: true,
+                                  currentFormation: squad?.formation,
+                                });
+                              }}
+                            >
+                              <Image source={{ uri: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2` }} style={{ width: 66, height: 66, borderRadius: 33 }} resizeMode="cover" />
+                            </TouchableOpacity>
                           </View>
                           {/* Escudo del equipo */}
                           {crest && (
@@ -331,7 +358,13 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                           )}
                           {/* Badge de puntos - arriba derecha */}
                           <View style={{ position: 'absolute', top: -8, left: -8, width: 32, height: 32, borderRadius: 16, backgroundColor: '#0892D0', borderWidth: 2, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, elevation: 5 }}>
-                            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>{points != null ? points : '-'}</Text>
+                            {(() => {
+                              const pointsObj = pid != null ? playerPoints[pid] : undefined;
+                              // Mostrar '-' si no hay stats o si no jugó minutos aún (minutes === 0 o minutes == null)
+                              const showDash = !pointsObj || pointsObj.minutes == null || pointsObj.minutes === 0;
+                              const display = showDash ? '-' : (pointsObj.points ?? '-');
+                              return <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>{display}</Text>;
+                            })()}
                           </View>
                         </View>
                         <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginTop: 8 }} numberOfLines={1}>
