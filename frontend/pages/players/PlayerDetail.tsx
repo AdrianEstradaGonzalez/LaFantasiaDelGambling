@@ -1018,8 +1018,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                     {/* Tarjetas rojas */}
                     <StatRow
                       cantidad={selectedData.stats.redCards ?? 0}
-                      estadistica="Tarjetas rojas"
-                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tarjetas rojas')}
+                      estadistica="Tarjeta roja"
+                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tarjeta roja')}
                     />
                     
                     {/* Penaltis fallados */}
