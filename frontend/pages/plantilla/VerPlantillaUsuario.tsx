@@ -24,6 +24,17 @@ const roleColor = (role: string) => {
   }
 };
 
+// Mapear roles cortos (POR, DEF, CEN, DEL) a posiciones canónicas (Goalkeeper, Defender, etc.)
+const roleToCanonicalPosition = (role: string): string => {
+  switch (role) {
+    case 'POR': return 'Goalkeeper';
+    case 'DEF': return 'Defender';
+    case 'CEN': return 'Midfielder';
+    case 'DEL': return 'Attacker';
+    default: return role; // Si ya viene en formato largo, retornar tal cual
+  }
+};
+
 const formationPositions: Record<string, { id: string; role: 'POR'|'DEF'|'CEN'|'DEL'; x: number; y: number }[]> = {
   '5-4-1': [
     { id: 'por', role: 'POR', x: 50, y: 92 },
@@ -328,11 +339,14 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                                 const pid = player.playerId;
                                 // Prefer canonical position from the PlayerService lookup; fall back to squad role if needed
                                 const canonicalPos = pid ? playerPhotos[pid]?.position : undefined;
+                                // Si no hay posición canónica, convertir el role (POR/DEF/CEN/DEL) a formato canónico
+                                const finalPosition = canonicalPos || roleToCanonicalPosition(player.role || position.role);
+                                
                                 const playerForNav = {
                                   id: pid,
                                   name: player.playerName,
                                   photo: photo,
-                                  position: canonicalPos || player.role || undefined,
+                                  position: finalPosition,
                                   price: (player.pricePaid as any) || undefined,
                                 };
 
