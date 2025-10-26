@@ -1,5 +1,9 @@
 import axios from 'axios';
+import { PrismaClient } from '@prisma/client';
 import { PlayerRepository } from '../repositories/player.repo.js';
+import { PlayerJornadaPointsRepo } from '../repositories/playerJornadaPoints.repo.js';
+import { getPlayerMatchdayStats } from './playerPoints.service.js';
+const prisma = new PrismaClient();
 const API_BASE = 'https://v3.football.api-sports.io';
 const LA_LIGA_LEAGUE_ID = 140;
 const SEASON_DEFAULT = 2025;
@@ -183,10 +187,21 @@ export class PlayerService {
         }
     }
     /**
-     * Obtener todos los jugadores de la base de datos
+     * Obtener todos los jugadores de la base de datos con puntuación total
      */
     static async getAllPlayers() {
         const players = await PlayerRepository.getAllPlayers();
+        // Obtener puntuación total de cada jugador (suma de todas las jornadas)
+        const playersWithTotalPoints = await Promise.all(players.map(async (player) => {
+            const stats = await prisma.playerStats.aggregate({
+                where: { playerId: player.id },
+                _sum: { totalPoints: true },
+            });
+            return {
+                ...player,
+                totalPoints: stats._sum.totalPoints || 0,
+            };
+        }));
         // Ordenar por equipo y luego por posición en el orden lógico
         const positionOrder = {
             'Goalkeeper': 1,
@@ -194,7 +209,7 @@ export class PlayerService {
             'Midfielder': 3,
             'Attacker': 4
         };
-        return players.sort((a, b) => {
+        return playersWithTotalPoints.sort((a, b) => {
             // Primero ordenar por equipo (alfabéticamente)
             const teamCompare = a.teamName.localeCompare(b.teamName);
             if (teamCompare !== 0)
@@ -258,7 +273,7 @@ export class PlayerService {
     /**
      * Actualizar puntos cacheados de la última jornada para un jugador
      */
-    static async updateLastJornadaPoints(id, points, jornada) {
+    static async updateLastJornadaPoints(id, points, jornada, season) {
         if (!Number.isFinite(points)) {
             throw new Error('Puntos inválidos');
         }
@@ -266,13 +281,84 @@ export class PlayerService {
         if (points < -1000 || points > 1000) {
             throw new Error('Puntos fuera de rango');
         }
-        // Jornada ya no se persiste en BD; permitimos que sea opcional
-        return PlayerRepository.updateLastJornadaPoints(id, Math.trunc(points));
+        const sanitized = Math.trunc(points);
+        const finalSeason = Number(season ?? process.env.FOOTBALL_API_SEASON ?? SEASON_DEFAULT);
+        const [playerUpdate] = await Promise.all([
+            PlayerRepository.updateLastJornadaPoints(id, sanitized, jornada),
+            jornada != null
+                ? PlayerJornadaPointsRepo.upsertPoints(id, finalSeason, {
+                    [PlayerJornadaPointsRepo.getColumnName(jornada)]: sanitized,
+                })
+                : Promise.resolve(),
+        ]);
+        return playerUpdate;
+    }
+    static async getJornadaPoints(playerId, matchdays, options) {
+        if (!matchdays.length) {
+            throw new Error('Debes proporcionar al menos una jornada');
+        }
+        const uniqueMatchdays = Array.from(new Set(matchdays.filter((md) => Number.isInteger(md) && md > 0 && md <= 38))).sort((a, b) => a - b);
+        if (!uniqueMatchdays.length) {
+            throw new Error('Jornadas inválidas');
+        }
+        const season = Number(options?.season ?? process.env.FOOTBALL_API_SEASON ?? SEASON_DEFAULT);
+        const refreshLast = options?.refreshLast !== false;
+        const lastMatchday = uniqueMatchdays[uniqueMatchdays.length - 1];
+        const player = await PlayerRepository.getPlayerById(playerId);
+        if (!player) {
+            throw new Error('Jugador no encontrado');
+        }
+        const record = await PlayerJornadaPointsRepo.findByPlayerSeason(playerId, season);
+        const updates = {};
+        const updatedMatchdays = [];
+        const pointsMap = new Map();
+        for (const jornada of uniqueMatchdays) {
+            const column = PlayerJornadaPointsRepo.getColumnName(jornada);
+            const stored = record?.[column] ?? null;
+            const shouldRefresh = refreshLast && jornada === lastMatchday;
+            if (stored === null || shouldRefresh) {
+                const stats = await getPlayerMatchdayStats(playerId, jornada, player.position);
+                const computedPoints = stats?.points != null ? Math.trunc(stats.points) : 0;
+                updates[column] = computedPoints;
+                updatedMatchdays.push(jornada);
+                pointsMap.set(jornada, computedPoints);
+            }
+            else {
+                pointsMap.set(jornada, stored);
+            }
+        }
+        if (Object.keys(updates).length) {
+            await PlayerJornadaPointsRepo.upsertPoints(playerId, season, updates);
+            await PlayerRepository.updateLastJornadaPoints(playerId, pointsMap.get(lastMatchday) ?? 0, lastMatchday);
+        }
+        const points = uniqueMatchdays.map((jornada) => ({
+            matchday: jornada,
+            points: pointsMap.get(jornada) ?? null,
+            source: updatedMatchdays.includes(jornada) ? 'api' : 'cache',
+        }));
+        return {
+            season,
+            matchdays: uniqueMatchdays,
+            points,
+            updatedMatchdays,
+        };
     }
     /**
      * Obtener estadísticas
      */
     static async getStats() {
         return PlayerRepository.getPriceStats();
+    }
+    /**
+     * Eliminar un jugador de la base de datos
+     * - Verifica si el jugador está asignado a alguna plantilla (SquadPlayer) antes de eliminar
+     */
+    static async deletePlayer(id) {
+        // Verificar referencias en SquadPlayer (no permitir eliminación si está en una plantilla)
+        const inSquad = await prisma.squadPlayer.findFirst({ where: { playerId: id } });
+        if (inSquad) {
+            throw new Error('El jugador está asignado a alguna plantilla. Eliminar primero de las plantillas.');
+        }
+        return PlayerRepository.deletePlayer(id);
     }
 }

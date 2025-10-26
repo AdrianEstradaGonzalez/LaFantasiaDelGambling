@@ -169,6 +169,49 @@ export class PlayerController {
         }
     }
     /**
+     * Eliminar jugador
+     * DELETE /api/players/:id
+     */
+    static async deletePlayer(req, reply) {
+        try {
+            const params = req.params;
+            const { id } = params;
+            await PlayerService.deletePlayer(Number(id));
+            return reply.status(200).send({ success: true, message: 'Jugador eliminado correctamente' });
+        }
+        catch (error) {
+            console.error('Error eliminando jugador:', error);
+            if (error?.message && error.message.includes('plantilla')) {
+                return reply.status(400).send({ success: false, message: error.message });
+            }
+            return reply.status(500).send({ success: false, message: error?.message || 'Error al eliminar jugador' });
+        }
+    }
+    static async getJornadaPoints(req, reply) {
+        try {
+            const { id } = req.params;
+            const body = (req.body ?? {});
+            const matchdaysInput = Array.isArray(body.matchdays) ? body.matchdays : [];
+            const matchdays = matchdaysInput
+                .map((md) => Number(md))
+                .filter((md) => Number.isInteger(md) && md > 0 && md <= 38);
+            if (!matchdays.length) {
+                return reply.status(400).send({ success: false, message: 'Debe proporcionar las jornadas a consultar' });
+            }
+            const data = await PlayerService.getJornadaPoints(Number(id), matchdays, {
+                season: body.season != null ? Number(body.season) : undefined,
+                refreshLast: body.refreshLast !== false,
+            });
+            return reply.status(200).send({ success: true, data });
+        }
+        catch (error) {
+            console.error('Error obteniendo puntos por jornada:', error);
+            return reply
+                .status(500)
+                .send({ success: false, message: error?.message || 'Error al obtener puntos por jornada' });
+        }
+    }
+    /**
      * Obtener estadísticas de jugadores
      * GET /api/players/stats
      */

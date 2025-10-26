@@ -302,6 +302,8 @@ async function saveBetOptions(
   // Crear nuevas opciones
   await prisma.bet_option.createMany({
     data: options.map(opt => ({
+      // El campo `id` es requerido por el schema Prisma (no tiene default), lo generamos aquí
+      id: `${leagueId}_${jornada}_${opt.matchId}_${opt.betType}_${opt.betLabel}`.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, ''),
       leagueId,
       jornada,
       matchId: opt.matchId,

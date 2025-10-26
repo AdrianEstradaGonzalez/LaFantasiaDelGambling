@@ -1,4 +1,5 @@
 import { AdminService } from '../services/admin.service.js';
+import { BetEvaluationService } from '../services/betEvaluation.service.js';
 import { AppError } from '../utils/errors.js';
 const adminService = new AdminService();
 export class AdminController {
@@ -10,44 +11,6 @@ export class AdminController {
         }
         catch (error) {
             this.handleError(res, error, 'Error obteniendo usuarios');
-        }
-    }
-    // --- Actualizar puntuaciones de la última jornada ---
-    async updatePlayerScores(req, res) {
-        try {
-            const { jornada } = req.body;
-            if (!jornada || typeof jornada !== 'number') {
-                return res.code(400).send({
-                    code: 'BAD_REQUEST',
-                    message: 'Debes enviar un número de jornada válido en el body',
-                });
-            }
-            const result = await adminService.updateAllPlayersLastJornadaPoints(jornada);
-            res.send({
-                success: true,
-                message: `Puntuaciones actualizadas para la jornada ${result?.processedJornada ?? jornada}`,
-                requestedJornada: jornada,
-                processedJornada: result?.processedJornada ?? jornada,
-                updatedPlayers: result?.updatedPlayers ?? 0,
-            });
-        }
-        catch (error) {
-            this.handleError(res, error, 'Error actualizando puntuaciones de jugadores');
-        }
-    }
-    async updatePlayerScoresFromCurrent(req, res) {
-        try {
-            const result = await adminService.updatePlayersPointsFromCurrentJornada();
-            res.send({
-                success: true,
-                message: `Puntuaciones actualizadas para la jornada ${result.processedJornada}`,
-                requestedJornada: result.requestedJornada,
-                processedJornada: result.processedJornada,
-                updatedPlayers: result.updatedPlayers,
-            });
-        }
-        catch (error) {
-            this.handleError(res, error, 'Error actualizando puntuaciones de jugadores');
         }
     }
     // --- Eliminar un usuario ---
@@ -81,6 +44,57 @@ export class AdminController {
         }
         catch (error) {
             this.handleError(res, error, 'Error eliminando liga');
+        }
+    }
+    // --- Evaluar apuestas pendientes ---
+    async evaluateBets(req, res) {
+        try {
+            const { leagueId } = req.params;
+            console.log(`🎯 Iniciando evaluación de apuestas para liga ${leagueId}...`);
+            const result = await BetEvaluationService.evaluatePendingBets(leagueId);
+            res.send({
+                success: true,
+                ...result,
+                message: `Evaluadas ${result.evaluated} apuestas: ${result.won} ganadas, ${result.lost} perdidas`
+            });
+        }
+        catch (error) {
+            this.handleError(res, error, 'Error evaluando apuestas');
+        }
+    }
+    // --- Evaluar TODAS las apuestas pendientes de TODAS las ligas ---
+    async evaluateAllBets(req, res) {
+        try {
+            console.log(`🌍 Iniciando evaluación de apuestas para TODAS las ligas...`);
+            const result = await BetEvaluationService.evaluateAllPendingBets();
+            res.send({
+                success: true,
+                ...result,
+                message: `Evaluadas ${result.totalEvaluated} apuestas en ${result.leagues.length} ligas: ${result.totalWon} ganadas, ${result.totalLost} perdidas`
+            });
+        }
+        catch (error) {
+            this.handleError(res, error, 'Error evaluando todas las apuestas');
+        }
+    }
+    // --- Calcular puntos en tiempo real para TODAS las ligas ---
+    async calculateAllPoints(req, res) {
+        try {
+            console.log(`🚀 Iniciando cálculo de puntos para TODAS las ligas...`);
+            // Importar dinámicamente el servicio de cálculo
+            const { PointsCalculationService } = await import('../services/pointsCalculation.service.js');
+            // Ejecutar en background sin bloquear la respuesta
+            PointsCalculationService.calculateAllPoints().catch(err => {
+                console.error('Error en cálculo de puntos en background:', err);
+            });
+            // Responder inmediatamente
+            res.send({
+                success: true,
+                message: 'Cálculo de puntos iniciado en segundo plano'
+            });
+        }
+        catch (error) {
+            this.handleError(res, error, 'Error iniciando cálculo de puntos');
         }
     }
     // --- Manejador común de errores ---

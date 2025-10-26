@@ -10,19 +10,28 @@ const TTL_MIN = Number(process.env.RESET_CODE_TTL_MINUTES || 30);
 const MAX_ATTEMPTS = Number(process.env.RESET_CODE_MAX_ATTEMPTS || 5);
 export async function register({ email, password, name }) {
     const exists = await UserRepo.findByEmail(email);
-    if (exists)
-        throw new Error("email_in_use");
+    if (exists) {
+        const error = new Error("Este correo ya está registrado. Intenta iniciar sesión.");
+        error.statusCode = 409;
+        throw error;
+    }
     const hash = await argon2.hash(password);
     const user = await UserRepo.create({ email, password: hash, name });
     return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email, user.isAdmin || false) };
 }
 export async function login({ email, password }) {
     const user = await UserRepo.findByEmail(email);
-    if (!user)
-        throw new Error("invalid_credentials");
+    if (!user) {
+        const error = new Error("Usuario no registrado. Por favor, regístrate primero.");
+        error.statusCode = 404;
+        throw error;
+    }
     const ok = await argon2.verify(user.password, password);
-    if (!ok)
-        throw new Error("invalid_credentials");
+    if (!ok) {
+        const error = new Error("Contraseña incorrecta. Verifica tus credenciales.");
+        error.statusCode = 401;
+        throw error;
+    }
     return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email, user.isAdmin || false) };
 }
 export async function me(userId) {
@@ -31,13 +40,22 @@ export async function me(userId) {
 }
 export async function changePassword(userId, { currentPassword, newPassword }) {
     const user = await UserRepo.findById(userId);
-    if (!user)
-        throw new Error("unauthorized");
+    if (!user) {
+        const error = new Error("Usuario no autorizado");
+        error.statusCode = 401;
+        throw error;
+    }
     const ok = await argon2.verify(user.password, currentPassword);
-    if (!ok)
-        throw new Error("wrong_current_password");
-    if (await argon2.verify(user.password, newPassword))
-        throw new Error("same_password");
+    if (!ok) {
+        const error = new Error("La contraseña actual es incorrecta");
+        error.statusCode = 400;
+        throw error;
+    }
+    if (await argon2.verify(user.password, newPassword)) {
+        const error = new Error("La nueva contraseña debe ser diferente a la actual");
+        error.statusCode = 400;
+        throw error;
+    }
     const newHash = await argon2.hash(newPassword);
     await UserRepo.updatePassword(user.id, newHash);
 }

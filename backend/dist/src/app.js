@@ -16,6 +16,8 @@ import playerRoutes from "./routes/player.routes.js";
 import betRoutes from "./routes/bet.routes.js";
 import betOptionRoutes from "./routes/betOption.routes.js";
 import jornadaRoutes from "./routes/jornada.routes.js";
+import { playerStatsRoutes } from "./routes/playerStats.routes.js";
+import playerStatusRoutes from "./routes/playerStatus.routes.js";
 export async function buildApp() {
     const app = Fastify({
         logger: {
@@ -27,6 +29,21 @@ export async function buildApp() {
                 },
             } : undefined,
         },
+        // Permitir Content-Type: application/json en GET requests sin body
+        ignoreTrailingSlash: true,
+        disableRequestLogging: false,
+    });
+    // Configurar parser de JSON para permitir body vacío
+    app.removeContentTypeParser('application/json');
+    app.addContentTypeParser('application/json', { parseAs: 'string' }, function (req, body, done) {
+        try {
+            const json = body === '' ? {} : JSON.parse(body);
+            done(null, json);
+        }
+        catch (err) {
+            err.statusCode = 400;
+            done(err, undefined);
+        }
     });
     // Plugins de seguridad
     await app.register(cors, {
@@ -88,9 +105,12 @@ export async function buildApp() {
             });
         }
         if (error instanceof ZodError) {
+            // Extraer el primer error de validación con mensaje personalizado
+            const firstError = error.errors[0];
+            const message = firstError?.message || "Datos inválidos";
             return reply.status(400).send({
                 error: "VALIDATION_ERROR",
-                message: "Datos inválidos",
+                message: message,
                 details: error.errors,
             });
         }
@@ -113,5 +133,7 @@ export async function buildApp() {
     await app.register(betRoutes, { prefix: "/bets" });
     await app.register(betOptionRoutes, { prefix: "/" });
     await app.register(jornadaRoutes, { prefix: "/jornada" });
+    await app.register(playerStatsRoutes, { prefix: "/" });
+    await app.register(playerStatusRoutes, { prefix: "/players" });
     return app;
 }

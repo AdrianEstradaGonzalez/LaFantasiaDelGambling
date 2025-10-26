@@ -83,4 +83,70 @@ export class BetOptionController {
             return reply.status(500).send({ error: error.message });
         }
     }
+    /**
+     * POST /api/bet-options/:leagueId/:jornada/generate
+     * Generar opciones de apuesta automáticamente para una liga y jornada
+     * Este endpoint genera las apuestas desde el backend usando la API de fútbol
+     */
+    static async generateBetOptions(request, reply) {
+        try {
+            const userId = request.user?.sub || request.user?.id;
+            if (!userId) {
+                return reply.status(401).send({ error: 'No autenticado' });
+            }
+            const { leagueId, jornada } = request.params;
+            const jornadaNum = parseInt(jornada);
+            if (isNaN(jornadaNum)) {
+                return reply.status(400).send({ error: 'Jornada inválida' });
+            }
+            console.log(`🎲 Generando apuestas para liga ${leagueId}, jornada ${jornadaNum}...`);
+            const result = await BetOptionService.generateBetOptions(leagueId, jornadaNum);
+            return reply.status(200).send({
+                success: true,
+                generated: result.created,
+                message: `Generadas ${result.created} opciones de apuesta`,
+            });
+        }
+        catch (error) {
+            if (error instanceof AppError) {
+                return reply.status(error.statusCode).send({ error: error.message });
+            }
+            console.error('Error generating bet options:', error);
+            return reply.status(500).send({ error: error.message || 'Error al generar opciones de apuesta' });
+        }
+    }
+    /**
+     * GET /api/bet-options/:leagueId/:jornada/get-or-generate
+     * Obtener opciones de apuesta, generándolas si no existen
+     * Este es el endpoint principal que debe usar el frontend
+     */
+    static async getOrGenerateBetOptions(request, reply) {
+        try {
+            const userId = request.user?.sub || request.user?.id;
+            if (!userId) {
+                return reply.status(401).send({ error: 'No autenticado' });
+            }
+            const { leagueId, jornada } = request.params;
+            const jornadaNum = parseInt(jornada);
+            if (isNaN(jornadaNum)) {
+                return reply.status(400).send({ error: 'Jornada inválida' });
+            }
+            // Verificar si ya existen opciones
+            const exists = await BetOptionService.hasOptions(leagueId, jornadaNum);
+            if (!exists) {
+                console.log(`🎲 No existen apuestas para liga ${leagueId}, jornada ${jornadaNum}. Generando...`);
+                await BetOptionService.generateBetOptions(leagueId, jornadaNum);
+            }
+            // Obtener las opciones (recién generadas o existentes)
+            const options = await BetOptionService.getBetOptions(leagueId, jornadaNum);
+            return reply.status(200).send(options);
+        }
+        catch (error) {
+            if (error instanceof AppError) {
+                return reply.status(error.statusCode).send({ error: error.message });
+            }
+            console.error('Error getting or generating bet options:', error);
+            return reply.status(500).send({ error: error.message || 'Error al obtener opciones de apuesta' });
+        }
+    }
 }

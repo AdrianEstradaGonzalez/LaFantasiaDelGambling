@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import axios from 'axios';
-import { calculatePlayerPoints as calculatePlayerPointsService, normalizeRole } from './playerPoints.service.js';
+import { calculatePlayerPointsTotal as calculatePlayerPointsService, normalizeRole } from '../shared/pointsCalculator.js';
+import { PlayerService } from './player.service.js';
+import { generateBetOptionsForAllLeagues } from '../utils/betOptionsGenerator.js';
 const prisma = new PrismaClient();
 const squadRoleMap = {
     POR: "Goalkeeper",
@@ -159,22 +161,7 @@ export class JornadaService {
                 if (labelLower.includes('par'))
                     return totalGoals % 2 === 0;
             }
-            if (type === 'Doble oportunidad') {
-                const homeWin = goalsHome > goalsAway;
-                const draw = goalsHome === goalsAway;
-                const awayWin = goalsAway > goalsHome;
-                const homeTeam = fixture.teams?.home?.name?.toLowerCase();
-                const awayTeam = fixture.teams?.away?.name?.toLowerCase();
-                if (labelLower.includes('empate') && labelLower.includes(homeTeam)) {
-                    return homeWin || draw;
-                }
-                if (labelLower.includes('empate') && labelLower.includes(awayTeam)) {
-                    return awayWin || draw;
-                }
-                if (labelLower.includes(homeTeam) && labelLower.includes(awayTeam)) {
-                    return homeWin || awayWin;
-                }
-            }
+            // Doble oportunidad eliminado - redundante con 'Resultado'
             return false;
         }
         catch (error) {
@@ -203,7 +190,9 @@ export class JornadaService {
                 try {
                     const won = await this.evaluateBet(bet);
                     // Calcular ganancia
-                    const profit = won ? (bet.amount * bet.odd) - bet.amount : -bet.amount;
+                    // Si gana: suma lo ganado (potentialWin)
+                    // Si pierde: resta lo apostado (amount)
+                    const profit = won ? (bet.amount * bet.odd) : -bet.amount;
                     evaluations.push({
                         betId: bet.id,
                         won,
@@ -343,9 +332,10 @@ export class JornadaService {
      */
     static async calculateSquadPoints(userId, leagueId, jornadaObjetivo) {
         try {
-            // Buscar la última jornada con estadísticas disponibles
-            const jornada = await this.findLastCompletedJornada(jornadaObjetivo);
-            console.log(`    🔍 Calculando puntos para userId=${userId}, leagueId=${leagueId}, jornadaObjetivo=${jornadaObjetivo}, jornadaUsada=${jornada}`);
+            // ✅ USAR SIEMPRE LA JORNADA OBJETIVO (la que se está cerrando)
+            // No buscar hacia atrás - si el jugador no jugó, tendrá 0 puntos
+            const jornada = jornadaObjetivo;
+            console.log(`    🔍 Calculando puntos para userId=${userId}, leagueId=${leagueId}, jornada=${jornada}`);
             // Obtener jornada actual de la liga para decidir uso de cache
             const league = await prisma.league.findUnique({ where: { id: leagueId } });
             const leagueJornada = league?.currentJornada ?? jornada;
@@ -380,15 +370,21 @@ export class JornadaService {
                     console.log(`         ID: ${squadPlayer.playerId}`);
                     console.log(`         Rol: ${squadPlayer.role}`);
                     console.log(`         Posición: ${squadPlayer.position}`);
+                    console.log(`         Es Capitán: ${squadPlayer.isCaptain ? '⭐ SÍ' : 'No'}`);
                     console.log(`         Jornada a buscar: ${jornada}`);
                     let playerPoints = 0;
-                    // Preferir puntos cacheados si estamos calculando la jornada actual de la liga
-                    const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
+                    // ✅ IMPORTANTE: Solo usar cache si lastJornadaNumber coincide con la jornada que estamos cerrando
+                    const localPlayer = await prisma.playerStats.findFirst({ where: { playerId: squadPlayer.playerId, jornada: jornada } });
                     if (localPlayer && leagueJornada === jornada) {
-                        const cachedPoints = Math.trunc(Number(localPlayer.lastJornadaPoints ?? 0));
+                        const cachedPoints = Math.trunc(Number(localPlayer.totalPoints ?? 0));
                         playerPointsMap.set(squadPlayer.playerId, cachedPoints);
-                        console.log(`         ♻️ Usando cache (liga.jornada=${leagueJornada}): ${cachedPoints} puntos`);
-                        totalPoints += cachedPoints;
+                        // Aplicar doble si es capitán
+                        const pointsToAdd = squadPlayer.isCaptain ? cachedPoints * 2 : cachedPoints;
+                        console.log(`         ♻️ Usando cache (jornada ${jornada}): ${cachedPoints} puntos`);
+                        if (squadPlayer.isCaptain) {
+                            console.log(`         ⭐ CAPITÁN - Puntos doblados: ${cachedPoints} × 2 = ${pointsToAdd}`);
+                        }
+                        totalPoints += pointsToAdd;
                         console.log(`         💰 Total acumulado: ${totalPoints}`);
                         console.log(`         ====================================\n`);
                         await new Promise((r) => setTimeout(r, 50));
@@ -556,7 +552,12 @@ export class JornadaService {
                     const roundedPoints = Math.trunc(Number(playerPoints) || 0);
                     playerPointsMap.set(squadPlayer.playerId, roundedPoints);
                     console.log(`         ⚽ PUNTOS: ${roundedPoints}`);
-                    totalPoints += roundedPoints;
+                    // Aplicar doble si es capitán
+                    const pointsToAdd = squadPlayer.isCaptain ? roundedPoints * 2 : roundedPoints;
+                    if (squadPlayer.isCaptain) {
+                        console.log(`         ⭐ CAPITÁN - Puntos doblados: ${roundedPoints} × 2 = ${pointsToAdd}`);
+                    }
+                    totalPoints += pointsToAdd;
                     console.log(`         💰 Total acumulado: ${totalPoints}`);
                     console.log(`         ====================================\n`);
                     // Pequeña pausa para evitar rate limit
@@ -569,13 +570,7 @@ export class JornadaService {
             if (playerPointsMap.size > 0) {
                 for (const [playerId, points] of playerPointsMap.entries()) {
                     try {
-                        await prisma.player.update({
-                            where: { id: playerId },
-                            data: {
-                                lastJornadaPoints: points,
-                                lastJornadaNumber: jornada,
-                            },
-                        });
+                        await PlayerService.updateLastJornadaPoints(playerId, points, jornada);
                     }
                     catch (error) {
                         console.warn(`    ⚠️ No se pudo actualizar puntos cacheados para jugador ${playerId}:`, error);
@@ -590,206 +585,8 @@ export class JornadaService {
             return 0;
         }
     }
-    static calculatePlayerPoints(stats, role) {
-        console.log(`\n🎯 ===== CALCULANDO PUNTOS DE JUGADOR =====`);
-        console.log(`   Rol: ${role}`);
-        console.log(`   Stats recibidas:`, JSON.stringify(stats, null, 2));
-        if (!stats || !stats.games) {
-            console.log(`   ⚠️ Sin stats o games, retornando 0`);
-            return 0;
-        }
-        let points = 0;
-        const minutes = Number(stats.games?.minutes ?? 0);
-        const meetsCleanSheetMinutes = minutes >= this.CLEAN_SHEET_MINUTES;
-        console.log(`   ⏱️ Minutos jugados: ${minutes}`);
-        // BASE GENERAL (para todos)
-        if (minutes > 0 && minutes < 45) {
-            points += 1;
-            console.log(`   ✅ +1 punto por jugar < 45 min`);
-        }
-        else if (minutes >= 45) {
-            points += 2;
-            console.log(`   ✅ +2 puntos por jugar >= 45 min`);
-        }
-        const goals = stats.goals || {};
-        const cards = stats.cards || {};
-        const penalty = stats.penalty || {};
-        const passes = stats.passes || {};
-        const shots = stats.shots || {};
-        const dribbles = stats.dribbles || {};
-        const tackles = stats.tackles || {};
-        const duels = stats.duels || {};
-        const fouls = stats.fouls || {};
-        console.log(`\n   📊 Estadísticas base:`);
-        console.log(`      - Goles: ${goals.total || 0}`);
-        console.log(`      - Asistencias: ${goals.assists || 0}`);
-        console.log(`      - Tarjetas amarillas: ${cards.yellow || 0}`);
-        console.log(`      - Tarjetas rojas: ${cards.red || 0}`);
-        const assistPoints = (goals.assists || 0) * 3;
-        points += assistPoints;
-        if (assistPoints > 0)
-            console.log(`   ✅ +${assistPoints} puntos por asistencias`);
-        const yellowCardPenalty = (cards.yellow || 0) * 1;
-        points -= yellowCardPenalty;
-        if (yellowCardPenalty > 0)
-            console.log(`   ❌ -${yellowCardPenalty} puntos por tarjetas amarillas`);
-        const redCardPenalty = (cards.red || 0) * 3;
-        points -= redCardPenalty;
-        if (redCardPenalty > 0)
-            console.log(`   ❌ -${redCardPenalty} puntos por tarjetas rojas`);
-        const penaltyWonPoints = (penalty.won || 0) * 2;
-        points += penaltyWonPoints;
-        if (penaltyWonPoints > 0)
-            console.log(`   ✅ +${penaltyWonPoints} puntos por penaltis ganados`);
-        const penaltyCommittedPenalty = (penalty.committed || 0) * 2;
-        points -= penaltyCommittedPenalty;
-        if (penaltyCommittedPenalty > 0)
-            console.log(`   ❌ -${penaltyCommittedPenalty} puntos por penaltis cometidos`);
-        const penaltyScoredPoints = (penalty.scored || 0) * 3;
-        points += penaltyScoredPoints;
-        if (penaltyScoredPoints > 0)
-            console.log(`   ✅ +${penaltyScoredPoints} puntos por penaltis marcados`);
-        const penaltyMissedPenalty = (penalty.missed || 0) * 2;
-        points -= penaltyMissedPenalty;
-        if (penaltyMissedPenalty > 0)
-            console.log(`   ❌ -${penaltyMissedPenalty} puntos por penaltis fallados`);
-        console.log(`\n   🎭 Calculando puntos específicos por posición: ${role}`);
-        // ESPECÍFICO POR POSICIÓN
-        if (role === 'GK' || role === 'POR') {
-            console.log(`   🧤 PORTERO`);
-            // Portero
-            const conceded = Number(stats.goalkeeper?.conceded ?? stats.goals?.conceded ?? 0);
-            console.log(`      - Goles encajados: ${conceded}`);
-            const savesValue = Number(stats.goalkeeper?.saves ?? stats.goals?.saves ?? 0);
-            console.log(`      - Paradas: ${savesValue}`);
-            if (meetsCleanSheetMinutes && conceded === 0) {
-                points += 5;
-                console.log(`      ✅ +5 puntos por portería a cero (>= 60 min)`);
-            }
-            const concededPenalty = conceded * 2;
-            points -= concededPenalty;
-            if (concededPenalty > 0)
-                console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
-            const savesPoints = savesValue;
-            points += savesPoints;
-            if (savesPoints > 0)
-                console.log(`      ✅ +${savesPoints} puntos por paradas`);
-            const penaltySavedPoints = Number((penalty.saved || stats.goalkeeper?.savedPenalties || 0)) * 5;
-            points += penaltySavedPoints;
-            if (penaltySavedPoints > 0)
-                console.log(`      ✅ +${penaltySavedPoints} puntos por penaltis parados`);
-            const goalPoints = (goals.total || 0) * 10;
-            points += goalPoints;
-            if (goalPoints > 0)
-                console.log(`      ✅ +${goalPoints} puntos por goles marcados`);
-            const interceptionPoints = Math.floor((tackles.interceptions || 0) / 5);
-            points += interceptionPoints;
-            if (interceptionPoints > 0)
-                console.log(`      ✅ +${interceptionPoints} puntos por intercepciones`);
-        }
-        else if (role === 'DEF') {
-            console.log(`   🛡️ DEFENSA`);
-            // Defensa
-            const conceded = Number(stats.goals?.conceded ?? stats.goalkeeper?.conceded ?? 0);
-            console.log(`      - Goles encajados: ${conceded}`);
-            console.log(`      - Duelos ganados: ${duels.won || 0}`);
-            if (meetsCleanSheetMinutes && conceded === 0) {
-                points += 4;
-                console.log(`      ✅ +4 puntos por portería a cero (>= 60 min)`);
-            }
-            const goalPoints = (goals.total || 0) * 6;
-            points += goalPoints;
-            if (goalPoints > 0)
-                console.log(`      ✅ +${goalPoints} puntos por goles marcados`);
-            const duelsPoints = Math.floor((duels.won || 0) / 2);
-            points += duelsPoints;
-            if (duelsPoints > 0)
-                console.log(`      ✅ +${duelsPoints} puntos por duelos ganados`);
-            const interceptionPoints = Math.floor((tackles.interceptions || 0) / 5);
-            points += interceptionPoints;
-            if (interceptionPoints > 0)
-                console.log(`      ✅ +${interceptionPoints} puntos por intercepciones`);
-            const concededPenalty = conceded * 1;
-            points -= concededPenalty;
-            if (concededPenalty > 0)
-                console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
-            const shotsPoints = (shots.on || 0) * 1;
-            points += shotsPoints;
-            if (shotsPoints > 0)
-                console.log(`      ✅ +${shotsPoints} puntos por tiros a puerta`);
-        }
-        else if (role === 'MID' || role === 'CEN') {
-            console.log(`   ⚙️ CENTROCAMPISTA`);
-            // Centrocampista
-            const conceded = stats.goals?.conceded || 0;
-            console.log(`      - Goles encajados: ${conceded}`);
-            console.log(`      - Pases clave: ${passes.key || 0}`);
-            console.log(`      - Regates: ${dribbles.success || 0}`);
-            const goalPoints = (goals.total || 0) * 5;
-            points += goalPoints;
-            if (goalPoints > 0)
-                console.log(`      ✅ +${goalPoints} puntos por goles marcados`);
-            const concededPenalty = Math.floor(conceded / 2);
-            points -= concededPenalty;
-            // Clean sheet (>=60 min): +1
-            if (meetsCleanSheetMinutes && conceded === 0) {
-                points += 1;
-                console.log(`      ✅ +1 punto por portería a cero (>= 60 min)`);
-            }
-            if (concededPenalty > 0)
-                console.log(`      ❌ -${concededPenalty} puntos por goles encajados`);
-            const passesPoints = (passes.key || 0) * 1;
-            points += passesPoints;
-            if (passesPoints > 0)
-                console.log(`      ✅ +${passesPoints} puntos por pases clave`);
-            const dribblesPoints = Math.floor((dribbles.success || 0) / 2);
-            points += dribblesPoints;
-            if (dribblesPoints > 0)
-                console.log(`      ✅ +${dribblesPoints} puntos por regates`);
-            const foulsPoints = Math.floor((fouls.drawn || 0) / 3);
-            points += foulsPoints;
-            if (foulsPoints > 0)
-                console.log(`      ✅ +${foulsPoints} puntos por faltas recibidas`);
-            const interceptionPoints = Math.floor((tackles.interceptions || 0) / 3);
-            points += interceptionPoints;
-            if (interceptionPoints > 0)
-                console.log(`      ✅ +${interceptionPoints} puntos por intercepciones`);
-            const shotsPoints = (shots.on || 0) * 1;
-            points += shotsPoints;
-            if (shotsPoints > 0)
-                console.log(`      ✅ +${shotsPoints} puntos por tiros a puerta`);
-        }
-        else if (role === 'ATT' || role === 'DEL') {
-            console.log(`   ⚽ DELANTERO`);
-            // Delantero
-            console.log(`      - Goles: ${goals.total || 0}`);
-            console.log(`      - Pases clave: ${passes.key || 0}`);
-            console.log(`      - Regates: ${dribbles.success || 0}`);
-            const goalPoints = (goals.total || 0) * 4;
-            points += goalPoints;
-            if (goalPoints > 0)
-                console.log(`      ✅ +${goalPoints} puntos por goles marcados`);
-            const passesPoints = (passes.key || 0) * 1;
-            points += passesPoints;
-            if (passesPoints > 0)
-                console.log(`      ✅ +${passesPoints} puntos por pases clave`);
-            const foulsPoints = Math.floor((fouls.drawn || 0) / 3);
-            points += foulsPoints;
-            if (foulsPoints > 0)
-                console.log(`      ✅ +${foulsPoints} puntos por faltas recibidas`);
-            const dribblesPoints = Math.floor((dribbles.success || 0) / 2);
-            points += dribblesPoints;
-            if (dribblesPoints > 0)
-                console.log(`      ✅ +${dribblesPoints} puntos por regates`);
-            const shotsPoints = (shots.on || 0) * 1;
-            points += shotsPoints;
-            if (shotsPoints > 0)
-                console.log(`      ✅ +${shotsPoints} puntos por tiros a puerta`);
-        }
-        console.log(`\n   🏆 TOTAL PUNTOS: ${points}`);
-        console.log(`   ========================================\n`);
-        return points;
-    }
+    /**
+     * Calcular puntos de un jugador según DreamLeague
     /**
      * Resetear presupuestos para nueva jornada
      */
@@ -950,6 +747,22 @@ export class JornadaService {
                     jornadaStatus: 'closed'
                 }
             });
+            // Resetear budget de todos los miembros al valor de initialBudget
+            console.log(`💰 Reseteando budget de todos los miembros a initialBudget...`);
+            const members = await prisma.leagueMember.findMany({
+                where: { leagueId }
+            });
+            for (const member of members) {
+                await prisma.leagueMember.update({
+                    where: {
+                        leagueId_userId: { leagueId, userId: member.userId }
+                    },
+                    data: {
+                        budget: member.initialBudget
+                    }
+                });
+                console.log(`  👤 Usuario ${member.userId}: budget reseteado de ${member.budget}M a ${member.initialBudget}M`);
+            }
             console.log(`✅ Jornada ${jornada} abierta (bloqueada) para liga "${league.name}"`);
             return {
                 success: true,
@@ -1023,13 +836,17 @@ export class JornadaService {
                     const newBudget = 500 + budgetFromSquad + budgetFromBets;
                     // Actualizar puntos totales
                     const newTotalPoints = member.points + balance.squadPoints;
+                    // Actualizar puntos por jornada
+                    const pointsPerJornada = member.pointsPerJornada || {};
+                    pointsPerJornada[jornada.toString()] = balance.squadPoints;
                     await prisma.leagueMember.update({
                         where: { leagueId_userId: { leagueId, userId } },
                         data: {
                             budget: newBudget,
+                            initialBudget: newBudget, // Actualizar initialBudget con el nuevo valor calculado
                             bettingBudget: 250, // Siempre resetear a 250
                             points: newTotalPoints,
-                            // initialBudget NO se toca, siempre es 500
+                            pointsPerJornada: pointsPerJornada, // Guardar puntos de esta jornada
                         },
                     });
                     console.log(`  👤 Usuario ${member.user.name}:\n` +
@@ -1038,6 +855,7 @@ export class JornadaService {
                         `     Apuestas: ${balance.wonBets}W/${balance.lostBets}L = ${budgetFromBets >= 0 ? '+' : ''}${budgetFromBets}M\n` +
                         `     Plantilla: ${balance.squadPoints} puntos = +${budgetFromSquad}M\n` +
                         `     Nuevo presupuesto: ${newBudget}M\n` +
+                        `     Puntos J${jornada}: ${balance.squadPoints}\n` +
                         `     Puntos totales: ${member.points} → ${newTotalPoints}`);
                     updatedMembers++;
                 }
@@ -1088,6 +906,15 @@ export class JornadaService {
                 },
             });
             console.log(`✅ Liga avanzada a jornada ${nextJornada} con estado "open"\n`);
+            // 9. Generar opciones de apuesta para la nueva jornada
+            console.log(`🎲 9. Generando opciones de apuesta para jornada ${nextJornada}...`);
+            try {
+                const betResult = await generateBetOptionsForAllLeagues(nextJornada);
+                console.log(`✅ Apuestas generadas: ${betResult.totalOptions} opciones para ${betResult.leaguesUpdated} ligas\n`);
+            }
+            catch (error) {
+                console.error(`⚠️  Error generando apuestas (continuando): ${error.message}\n`);
+            }
             console.log(`\n🎉 JORNADA ${jornada} CERRADA EXITOSAMENTE\n`);
             console.log(`📊 Resumen:`);
             console.log(`   - ${evaluations.length} apuestas evaluadas`);
@@ -1156,6 +983,21 @@ export class JornadaService {
                         jornadaStatus: 'closed'
                     }
                 });
+                // Resetear budget de todos los miembros al valor de initialBudget
+                const members = await prisma.leagueMember.findMany({
+                    where: { leagueId: league.id }
+                });
+                for (const member of members) {
+                    await prisma.leagueMember.update({
+                        where: {
+                            leagueId_userId: { leagueId: league.id, userId: member.userId }
+                        },
+                        data: {
+                            budget: member.initialBudget
+                        }
+                    });
+                }
+                console.log(`    💰 Budget reseteado para ${members.length} miembros`);
                 processedLeagues.push({
                     id: league.id,
                     name: league.name,
@@ -1239,7 +1081,3 @@ export class JornadaService {
 JornadaService.API_BASE = 'https://v3.football.api-sports.io';
 JornadaService.API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';
 JornadaService.SEASON = 2025; // Temporada actual de La Liga
-/**
- * Calcular puntos de un jugador según DreamLeague
- */
-JornadaService.CLEAN_SHEET_MINUTES = 60;

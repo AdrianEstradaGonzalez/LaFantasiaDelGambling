@@ -54,15 +54,32 @@ export class BetController {
                 return reply.status(401).send({ error: 'No autenticado' });
             }
             const { leagueId } = request.params;
-            const { matchId, betType, betLabel, odd, amount } = request.body;
+            const { matchId, homeTeam, awayTeam, betType, betLabel, odd, amount } = request.body;
+            console.log('📥 BetController - Datos recibidos del frontend:', {
+                matchId,
+                homeTeam,
+                awayTeam,
+                betType,
+                betLabel,
+                odd,
+                amount
+            });
             const bet = await BetService.placeBet({
                 userId,
                 leagueId,
                 matchId,
+                homeTeam,
+                awayTeam,
                 betType,
                 betLabel,
                 odd,
                 amount,
+            });
+            console.log('✅ BetController - Apuesta creada:', {
+                id: bet.id,
+                homeTeam: bet.homeTeam,
+                awayTeam: bet.awayTeam,
+                apiBetId: bet.apiBetId
             });
             return reply.status(201).send(bet);
         }

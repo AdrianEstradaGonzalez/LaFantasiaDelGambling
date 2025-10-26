@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { AppError } from '../utils/errors.js';
+import { mapBetToApiConfig } from '../utils/apiBetMapping.js';
 const prisma = new PrismaClient();
 export class BetService {
     // Verifica si la liga permite cambios (jornada no bloqueada)
@@ -25,7 +26,7 @@ export class BetService {
             },
         });
         if (!member) {
-            throw new Error('No eres miembro de esta liga');
+            throw new AppError(404, 'NOT_MEMBER', 'No eres miembro de esta liga');
         }
         // Obtener apuestas pendientes de esta jornada
         const currentJornada = await this.getCurrentJornada(leagueId);
@@ -97,7 +98,7 @@ export class BetService {
      * Crear una nueva apuesta
      */
     static async placeBet(params) {
-        const { userId, leagueId, matchId, betType, betLabel, odd, amount } = params;
+        const { userId, leagueId, matchId, homeTeam, awayTeam, betType, betLabel, odd, amount } = params;
         // Bloquear si la jornada está abierta (bloqueada)
         await this.assertBettingAllowed(leagueId);
         // Validar que el usuario es miembro de la liga
@@ -107,19 +108,19 @@ export class BetService {
             },
         });
         if (!member) {
-            throw new Error('No eres miembro de esta liga');
+            throw new AppError(404, 'NOT_MEMBER', 'No eres miembro de esta liga');
         }
         // Validar monto
         if (amount <= 0) {
-            throw new Error('El monto debe ser mayor a 0');
+            throw new AppError(400, 'INVALID_AMOUNT', 'El monto debe ser mayor a 0');
         }
         if (amount > 50) {
-            throw new Error('El monto máximo por apuesta es 50M');
+            throw new AppError(400, 'AMOUNT_TOO_HIGH', 'El monto máximo por apuesta es 50M');
         }
         // Verificar presupuesto disponible
         const budget = await this.getBettingBudget(userId, leagueId);
         if (amount > budget.available) {
-            throw new Error(`Presupuesto insuficiente. Disponible: ${budget.available}M`);
+            throw new AppError(400, 'INSUFFICIENT_BUDGET', `Presupuesto insuficiente. Disponible: ${budget.available}M`);
         }
         // Crear la apuesta
         const currentJornada = await this.getCurrentJornada(leagueId);
@@ -138,19 +139,39 @@ export class BetService {
             throw new AppError(400, 'ONE_BET_PER_MATCH', 'Solo puedes tener una apuesta por partido en esta jornada. Borra o edita tu apuesta existente.');
         }
         const potentialWin = Math.round(amount * odd);
+        // Mapear automáticamente la configuración de la API
+        console.log('🔍 Datos recibidos para mapeo:', { betType, betLabel, homeTeam, awayTeam });
+        const apiConfig = mapBetToApiConfig(betType, betLabel, homeTeam, awayTeam);
+        console.log('🔍 Configuración API generada:', apiConfig);
+        const betData = {
+            leagueId,
+            userId,
+            jornada: currentJornada,
+            matchId,
+            homeTeam,
+            awayTeam,
+            betType,
+            betLabel,
+            apiBetId: apiConfig.apiBetId,
+            apiEndpoint: apiConfig.apiEndpoint,
+            apiStatKey: apiConfig.apiStatKey,
+            apiOperator: apiConfig.apiOperator,
+            apiValue: apiConfig.apiValue,
+            odd,
+            amount,
+            potentialWin,
+            status: 'pending',
+        };
+        console.log('🔍 Datos que se van a guardar en BD:', betData);
         const bet = await prisma.bet.create({
-            data: {
-                leagueId,
-                userId,
-                jornada: currentJornada,
-                matchId,
-                betType,
-                betLabel,
-                odd,
-                amount,
-                potentialWin,
-                status: 'pending',
-            },
+            data: betData,
+        });
+        console.log(`✅ Apuesta creada con ID: ${bet.id}`, {
+            homeTeam: bet.homeTeam,
+            awayTeam: bet.awayTeam,
+            apiBetId: bet.apiBetId,
+            apiEndpoint: bet.apiEndpoint,
+            apiConfig
         });
         return bet;
     }
@@ -181,13 +202,13 @@ export class BetService {
             where: { id: betId },
         });
         if (!bet) {
-            throw new Error('Apuesta no encontrada');
+            throw new AppError(404, 'BET_NOT_FOUND', 'Apuesta no encontrada');
         }
         if (bet.userId !== userId || bet.leagueId !== leagueId) {
-            throw new Error('No tienes permiso para eliminar esta apuesta');
+            throw new AppError(403, 'FORBIDDEN', 'No tienes permiso para eliminar esta apuesta');
         }
         if (bet.status !== 'pending') {
-            throw new Error('Solo puedes eliminar apuestas pendientes');
+            throw new AppError(400, 'BET_NOT_PENDING', 'Solo puedes eliminar apuestas pendientes');
         }
         await prisma.bet.delete({
             where: { id: betId },
@@ -204,25 +225,25 @@ export class BetService {
             where: { id: betId },
         });
         if (!bet) {
-            throw new Error('Apuesta no encontrada');
+            throw new AppError(404, 'BET_NOT_FOUND', 'Apuesta no encontrada');
         }
         if (bet.userId !== userId || bet.leagueId !== leagueId) {
-            throw new Error('No tienes permiso para modificar esta apuesta');
+            throw new AppError(403, 'FORBIDDEN', 'No tienes permiso para modificar esta apuesta');
         }
         if (bet.status !== 'pending') {
-            throw new Error('Solo puedes modificar apuestas pendientes');
+            throw new AppError(400, 'BET_NOT_PENDING', 'Solo puedes modificar apuestas pendientes');
         }
         if (newAmount <= 0) {
-            throw new Error('El monto debe ser mayor a 0');
+            throw new AppError(400, 'INVALID_AMOUNT', 'El monto debe ser mayor a 0');
         }
         if (newAmount > 50) {
-            throw new Error('El monto máximo por apuesta es 50M');
+            throw new AppError(400, 'AMOUNT_TOO_HIGH', 'El monto máximo por apuesta es 50M');
         }
         // Verificar presupuesto (excluyendo el monto actual de esta apuesta)
         const budget = await this.getBettingBudget(userId, leagueId);
         const availableWithThisBet = budget.available + bet.amount;
         if (newAmount > availableWithThisBet) {
-            throw new Error(`Presupuesto insuficiente. Disponible: ${availableWithThisBet}M`);
+            throw new AppError(400, 'INSUFFICIENT_BUDGET', `Presupuesto insuficiente. Disponible: ${availableWithThisBet}M`);
         }
         const potentialWin = Math.round(newAmount * bet.odd);
         const updatedBet = await prisma.bet.update({

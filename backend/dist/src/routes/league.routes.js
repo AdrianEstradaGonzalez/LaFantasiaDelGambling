@@ -7,7 +7,11 @@ const leagueRoutes = async (app) => {
     app.post("/:leagueId/members", LeagueController.addMember); // añadir usuario
     app.post("/join/:code", LeagueController.addMemberByCode); // unirse por código
     app.delete("/:leagueId/members/:userId", LeagueController.removeMember); // quitar usuario
+    app.post("/:leagueId/leave", LeagueController.leaveLeague); // abandonar liga
     app.get("/:leagueId/members", LeagueController.listMembers); // listar miembros
+    app.get("/:leagueId/classifications", LeagueController.getAllClassifications); // obtener todas las clasificaciones
+    app.post("/:leagueId/calculate-realtime", LeagueController.calculateRealTimePoints); // calcular puntos en tiempo real (lee datos ya calculados)
+    app.post("/trigger-points-calculation", LeagueController.triggerPointsCalculation); // disparar cálculo de puntos para todas las ligas
     app.get("/user/:userId", LeagueController.getByUser);
 };
 export default leagueRoutes;

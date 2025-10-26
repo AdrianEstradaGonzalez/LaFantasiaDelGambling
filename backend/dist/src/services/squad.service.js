@@ -15,7 +15,7 @@ export class SquadService {
             throw new AppError(403, 'JORNADA_BLOQUEADA', 'La jornada está abierta (bloqueada). No se permiten modificaciones de plantillas ni fichajes en este momento.');
         }
     }
-    // Obtener plantilla del usuario para una liga específica
+    // Obtener plantilla del usuario con datos completos de jugadores
     static async getUserSquad(userId, ligaId) {
         try {
             const squad = await prisma.squad.findUnique({
@@ -29,7 +29,34 @@ export class SquadService {
                     players: true
                 }
             });
-            return squad;
+            if (!squad) {
+                return null;
+            }
+            // Obtener datos completos de todos los jugadores de la plantilla en una sola query
+            const playerIds = squad.players.map(p => p.playerId);
+            const playersData = await prisma.player.findMany({
+                where: {
+                    id: { in: playerIds }
+                }
+            });
+            console.log('[SquadService] Players data fetched:', playersData.map(p => ({
+                id: p.id,
+                name: p.name,
+                photo: p.photo,
+                hasPhoto: !!p.photo
+            })));
+            // Crear mapa para acceso rápido
+            const playersMap = new Map(playersData.map(p => [p.id, p]));
+            // Enriquecer squad players con datos completos
+            const enrichedPlayers = squad.players.map(sp => ({
+                ...sp,
+                playerData: playersMap.get(sp.playerId) || null
+            }));
+            console.log('[SquadService] Enriched players sample:', enrichedPlayers[0]);
+            return {
+                ...squad,
+                players: enrichedPlayers
+            };
         }
         catch (error) {
             console.error('Error al obtener plantilla:', error);

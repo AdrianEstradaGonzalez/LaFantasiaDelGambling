@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { AppError } from '../utils/errors.js';
+// Importar el sistema centralizado de puntos
+import { calculatePlayerPointsTotal, normalizeRole as normalizeRoleShared, } from '../shared/pointsCalculator.js';
 const API_BASE = 'https://v3.football.api-sports.io';
 const FALLBACK_APISPORTS_KEY = '099ef4c6c0803639d80207d4ac1ad5da';
-const CLEAN_SHEET_MINUTES = 60;
+const DEFAULT_CACHE_TTL_MS = Number(process.env.FOOTBALL_API_CACHE_TTL_MS ?? 60000);
 function buildHeaders() {
     const candidates = [
         process.env.FOOTBALL_API_KEY,
@@ -23,116 +25,29 @@ function buildHeaders() {
 }
 const api = axios.create({ baseURL: API_BASE, timeout: 15000, headers: buildHeaders() });
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-const roleMap = {
-    gk: 'Goalkeeper',
-    goalkeeper: 'Goalkeeper',
-    g: 'Goalkeeper',
-    defender: 'Defender',
-    d: 'Defender',
-    df: 'Defender',
-    back: 'Defender',
-    lb: 'Defender',
-    rb: 'Defender',
-    cb: 'Defender',
-    midfielder: 'Midfielder',
-    m: 'Midfielder',
-    mf: 'Midfielder',
-    cm: 'Midfielder',
-    dm: 'Midfielder',
-    am: 'Midfielder',
-    winger: 'Attacker',
-    wing: 'Attacker',
-    forward: 'Attacker',
-    attacker: 'Attacker',
-    f: 'Attacker',
-    cf: 'Attacker',
-    st: 'Attacker',
-};
-export function normalizeRole(position) {
-    if (!position)
-        return 'Midfielder';
-    const key = position.trim().toLowerCase();
-    return roleMap[key] ?? 'Midfielder';
+function getFromCache(cache, key) {
+    const entry = cache.get(key);
+    if (!entry)
+        return undefined;
+    if (entry.expiresAt < Date.now()) {
+        cache.delete(key);
+        return undefined;
+    }
+    return entry.data;
 }
+function setInCache(cache, key, data) {
+    if (DEFAULT_CACHE_TTL_MS <= 0)
+        return;
+    cache.set(key, { data, expiresAt: Date.now() + DEFAULT_CACHE_TTL_MS });
+}
+const fixturesCache = new Map();
+const playerInfoCache = new Map();
+const fixturePlayersCache = new Map();
+// Exportar la función de normalización centralizada
+export const normalizeRole = normalizeRoleShared;
+// Exportar la función de cálculo de puntos centralizada
 export function calculatePlayerPoints(stats, role) {
-    if (!stats || !stats.games)
-        return 0;
-    let points = 0;
-    const minutes = Number(stats.games?.minutes ?? 0);
-    const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
-    if (minutes > 0 && minutes < 45)
-        points += 1;
-    else if (minutes >= 45)
-        points += 2;
-    const goals = stats.goals || {};
-    const cards = stats.cards || {};
-    const penalty = stats.penalty || {};
-    const passes = stats.passes || {};
-    const shots = stats.shots || {};
-    const dribbles = stats.dribbles || {};
-    const tackles = stats.tackles || {};
-    const duels = stats.duels || {};
-    const fouls = stats.fouls || {};
-    points += (goals.assists || 0) * 3;
-    points -= (cards.yellow || 0) * 1;
-    points -= (cards.red || 0) * 3;
-    points += (penalty.won || 0) * 2;
-    points -= (penalty.committed || 0) * 2;
-    points += (penalty.scored || 0) * 3;
-    points -= (penalty.missed || 0) * 2;
-    if (role === 'Goalkeeper') {
-        const conceded = Number(stats.goalkeeper?.conceded ?? goals.conceded ?? 0);
-        const saves = Number(stats.goalkeeper?.saves ?? goals.saves ?? 0);
-        const savedPens = Number(penalty.saved ?? stats.goalkeeper?.savedPenalties ?? stats.goalkeeper?.saved ?? 0);
-        points += (goals.total || 0) * 10;
-        points += (goals.assists || 0) * 3;
-        points += saves;
-        points -= conceded * 2;
-        points += savedPens * 5;
-    }
-    else if (role === 'Defender') {
-        const conceded = Number(goals.conceded ?? stats.goalkeeper?.conceded ?? 0);
-        if (meetsCleanSheetMinutes && conceded === 0)
-            points += 4;
-        points += (goals.total || 0) * 6;
-        points += Math.floor((duels.won || 0) / 2);
-        points += Math.floor((tackles.interceptions || 0) / 5);
-        points -= conceded;
-        points += (shots.on || 0);
-    }
-    else if (role === 'Midfielder') {
-        const conceded = Number(goals.conceded ?? 0);
-        // Portería a cero (>=60 min): +1
-        if (meetsCleanSheetMinutes && conceded === 0)
-            points += 1;
-        points += (goals.total || 0) * 5;
-        points -= Math.floor(conceded / 2);
-        points += (passes.key || 0);
-        points += Math.floor((dribbles.success || 0) / 2);
-        points += Math.floor((fouls.drawn || 0) / 3);
-        points += Math.floor((tackles.interceptions || 0) / 3);
-        points += (shots.on || 0);
-    }
-    else if (role === 'Attacker') {
-        points += (goals.total || 0) * 4;
-        points += (passes.key || 0);
-        points += Math.floor((fouls.drawn || 0) / 3);
-        points += Math.floor((dribbles.success || 0) / 2);
-        points += (shots.on || 0);
-    }
-    const rawRating = stats.games?.rating;
-    if (rawRating != null && rawRating !== '') {
-        const rating = Number(rawRating);
-        if (!Number.isNaN(rating)) {
-            if (rating >= 9)
-                points += 3;
-            else if (rating >= 8)
-                points += 2;
-            else if (rating >= 7)
-                points += 1;
-        }
-    }
-    return points;
+    return calculatePlayerPointsTotal(stats, role);
 }
 export function createEmptyStats() {
     return {
@@ -157,16 +72,27 @@ export function createEmptyStats() {
     };
 }
 async function fetchMatchdayFixtures(matchday) {
+    const season = Number(process.env.FOOTBALL_API_SEASON ?? 2025);
+    const cacheKey = `${season}:${matchday}`;
+    const cached = getFromCache(fixturesCache, cacheKey);
+    if (cached !== undefined)
+        return cached;
     const response = await api.get('/fixtures', {
         params: {
             league: 140,
-            season: process.env.FOOTBALL_API_SEASON ?? 2025,
+            season,
             round: `Regular Season - ${matchday}`,
         },
     });
-    return response.data?.response ?? [];
+    const fixtures = response.data?.response ?? [];
+    setInCache(fixturesCache, cacheKey, fixtures);
+    return fixtures;
 }
 async function fetchPlayerSeasonInfo(playerId) {
+    const cacheKey = String(playerId);
+    const cached = getFromCache(playerInfoCache, cacheKey);
+    if (cached !== undefined)
+        return cached;
     const response = await api.get('/players', {
         params: {
             id: playerId,
@@ -174,11 +100,19 @@ async function fetchPlayerSeasonInfo(playerId) {
             league: 140,
         },
     });
-    return response.data?.response?.[0] ?? null;
+    const info = response.data?.response?.[0] ?? null;
+    setInCache(playerInfoCache, cacheKey, info);
+    return info;
 }
 async function fetchFixturePlayers(fixtureId) {
+    const cacheKey = String(fixtureId);
+    const cached = getFromCache(fixturePlayersCache, cacheKey);
+    if (cached !== undefined)
+        return cached;
     const response = await api.get('/fixtures/players', { params: { fixture: fixtureId } });
-    return response.data?.response ?? [];
+    const players = response.data?.response ?? [];
+    setInCache(fixturePlayersCache, cacheKey, players);
+    return players;
 }
 export async function getPlayerMatchdayStats(playerId, matchday, roleInput) {
     if (!matchday || matchday < 1) {
