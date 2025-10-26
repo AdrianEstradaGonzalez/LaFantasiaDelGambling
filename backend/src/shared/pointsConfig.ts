@@ -24,13 +24,8 @@ export const BASE_POINTS = {
   // Penaltis (general)
   PENALTY_WON: 2,
   PENALTY_COMMITTED: -2,
-  PENALTY_SCORED: 3,
   PENALTY_MISSED: -2,
   
-  // Valoración del partido (desactivada)
-  RATING_8_OR_MORE: 0,
-  RATING_65_TO_8: 0,
-  RATING_5_TO_65: 0,
 } as const;
 
 // ========== PUNTOS ESPECÍFICOS POR POSICIÓN ==========
@@ -51,8 +46,6 @@ export const GOALKEEPER_POINTS = {
   // Penaltis parados
   PENALTY_SAVED: 5,
   
-  // Intercepciones (cada X intercepciones = 1 punto)
-  INTERCEPTIONS_PER_POINT: 5,
 } as const;
 
 export const DEFENDER_POINTS = {

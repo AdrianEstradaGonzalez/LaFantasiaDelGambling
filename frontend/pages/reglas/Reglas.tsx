@@ -575,26 +575,6 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
                 <Text style={[styles.pointValue, styles.negative]}>-2</Text>
               </View>
             </View>
-
-            <View style={styles.pointsBox}>
-              <View style={styles.pointsCategory}>
-                <ChartBarIcon size={18} color="#93c5fd" />
-                <Text style={styles.pointsCategoryText}>Valoración del partido</Text>
-              </View>
-              <View style={styles.pointRow}>
-                <Text style={styles.pointLabel}>Valoración 8.0 o más</Text>
-                <Text style={styles.pointValue}>+3</Text>
-              </View>
-              <View style={styles.pointRow}>
-                <Text style={styles.pointLabel}>Valoración entre 6.5 y 7.9</Text>
-                <Text style={styles.pointValue}>+2</Text>
-              </View>
-              <View style={styles.pointRow}>
-                <Text style={styles.pointLabel}>Valoración entre 5.0 y 6.4</Text>
-                <Text style={styles.pointValue}>+1</Text>
-              </View>
-            </View>
-
             <View style={styles.divider} />
 
             <View style={styles.sectionTitleContainer}>
@@ -624,7 +604,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
                 <Text style={styles.pointValue}>+5</Text>
               </View>
               <View style={styles.pointRow}>
-                <Text style={styles.pointLabel}>Cada 5 intercepciones</Text>
+                <Text style={styles.pointLabel}>Cada 2 intercepciones</Text>
                 <Text style={styles.pointValue}>+1</Text>
               </View>
             </View>
@@ -653,10 +633,6 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
                 <Text style={styles.pointLabel}>Cada 2 duelos ganados</Text>
                 <Text style={styles.pointValue}>+1</Text>
               </View>
-              <View style={styles.pointRow}>
-                <Text style={styles.pointLabel}>Cada 5 intercepciones</Text>
-                <Text style={styles.pointValue}>+1</Text>
-              </View>
             </View>
 
             <View style={styles.divider} />
@@ -676,7 +652,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
                 <Text style={styles.pointValue}>+1</Text>
               </View>
               <View style={styles.pointRow}>
-                <Text style={styles.pointLabel}>Cada 2 pases clave</Text>
+                <Text style={styles.pointLabel}>Cada pase clave</Text>
                 <Text style={styles.pointValue}>+1</Text>
               </View>
               <View style={styles.pointRow}>
@@ -688,7 +664,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
                 <Text style={styles.pointValue}>+1</Text>
               </View>
               <View style={styles.pointRow}>
-                <Text style={styles.pointLabel}>Cada 3 intercepciones</Text>
+                <Text style={styles.pointLabel}>Cada 2 intercepciones</Text>
                 <Text style={styles.pointValue}>+1</Text>
               </View>
             </View>
@@ -710,7 +686,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
                 <Text style={styles.pointValue}>+1</Text>
               </View>
               <View style={styles.pointRow}>
-                <Text style={styles.pointLabel}>Cada 2 pases clave</Text>
+                <Text style={styles.pointLabel}>Cada pase clave</Text>
                 <Text style={styles.pointValue}>+1</Text>
               </View>
               <View style={styles.pointRow}>

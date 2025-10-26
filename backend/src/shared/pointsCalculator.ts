@@ -126,11 +126,6 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
     const savedPens = Number(penalty.saved ?? stats.goalkeeper?.saved ?? 0);
     if (savedPens) add('Penaltis parados', savedPens, savedPens * GOALKEEPER_POINTS.PENALTY_SAVED);
 
-    // Intercepciones
-    const interceptions = Number(tackles.interceptions || 0);
-    const interceptionPoints = Math.floor(interceptions / GOALKEEPER_POINTS.INTERCEPTIONS_PER_POINT);
-    if (interceptionPoints) add('Recuperaciones', interceptions, interceptionPoints);
-
   } else if (role === 'Defender') {
     // Goles marcados
     const goalsScored = goals.total || 0;
@@ -214,25 +209,7 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
     const foulPoints = Math.floor(foulsDrawn / ATTACKER_POINTS.FOULS_DRAWN_PER_POINT);
     if (foulPoints) add('Faltas recibidas', foulsDrawn, foulPoints);
   }
-
-  // ========== VALORACIÓN DEL PARTIDO (TODAS LAS POSICIONES) ==========
   
-  const rawRating = stats.games?.rating;
-  if (rawRating != null && rawRating !== '') {
-    const rating = Number(rawRating);
-    if (!Number.isNaN(rating)) {
-      let ratingPoints = 0;
-      if (rating >= 8) {
-        ratingPoints = BASE_POINTS.RATING_8_OR_MORE;
-      } else if (rating >= 6.5 && rating < 8) {
-        ratingPoints = BASE_POINTS.RATING_65_TO_8;
-      } else if (rating >= 5 && rating < 6.5) {
-        ratingPoints = BASE_POINTS.RATING_5_TO_65;
-        ;
-      }
-      if (ratingPoints) add('Valoración del partido', rating.toFixed(1), ratingPoints);
-    }
-  }
 
   return { total: Math.trunc(total), breakdown };
 }
