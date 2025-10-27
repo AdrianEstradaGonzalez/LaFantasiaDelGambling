@@ -23,6 +23,7 @@ import { LoginService } from '../../services/LoginService';
 import { MenuIcon, ShieldIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
+import { AdBanner } from '../../components/AdBanner';
 
 type Liga = { id: string; nombre: string };
 const { height } = Dimensions.get('window');
@@ -415,6 +416,9 @@ export const Home = ({ navigation, route }: HomeProps) => {
             </View>
           )}
         </View>
+
+        {/* Banner de anuncio entre ligas y partidos */}
+        <AdBanner visible={true} size="BANNER" />
 
         {/* Jornadas */}
         <View style={styles.calendarContainer}>

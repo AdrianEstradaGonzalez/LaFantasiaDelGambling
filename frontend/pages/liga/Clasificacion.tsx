@@ -15,6 +15,7 @@ import FootballService from '../../services/FutbolService';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { SafeLayout, useSafePadding } from '../../components/SafeLayout';
+import { AdBanner } from '../../components/AdBanner';
 
 
 
@@ -509,6 +510,9 @@ export const Clasificacion = () => {
           </Text>
         </View>
       )}
+
+          {/* Banner de anuncio encima de la barra de navegación */}
+          <AdBanner visible={true} size="BANNER" />
 
           {/* Barra inferior */}
           <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
