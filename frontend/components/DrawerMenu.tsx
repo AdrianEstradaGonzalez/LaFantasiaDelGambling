@@ -324,6 +324,16 @@ export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
             iconColor="#a78bfa"
           />
 
+          <MenuItem
+            icon={<ShieldIcon size={24} color="#64748b" />}
+            label="Política de Privacidad"
+            onPress={() => {
+              navigation.closeDrawer();
+              navigation.navigate('PoliticaPrivacidad');
+            }}
+            iconColor="#64748b"
+          />
+
           {/* Divisor */}
           <View style={styles.divider} />
 
