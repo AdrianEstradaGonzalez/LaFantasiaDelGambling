@@ -59,7 +59,11 @@ export function calculatePlayerPoints(stats: any, role: Role): PointsResult {
 
   // ========== PUNTOS BASE (TODAS LAS POSICIONES) ==========
   
-  const minutes = Number(stats.games?.minutes ?? 0);
+  // Normalizar minutos: eliminar tiempo de descuento
+  // Los minutos de la API pueden ser 45+3, 90+5, etc.
+  // Queremos solo contar hasta 45 (primera parte) y 90 (partido completo)
+  const rawMinutes = Number(stats.games?.minutes ?? 0);
+  const minutes = Math.min(rawMinutes, 90); // Máximo 90 minutos (sin descuento)
   const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
 
   // Minutos jugados
