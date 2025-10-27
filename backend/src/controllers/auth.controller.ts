@@ -17,10 +17,15 @@ export async function register(req: any, reply: any) {
 
 export async function login(req: any, reply: any) {
   try {
+    console.log('🔍 Login attempt - body:', JSON.stringify(req.body));
     const input = loginDTO.parse(req.body);
+    console.log('🔍 Login DTO parsed:', JSON.stringify(input));
     const data = await AuthService.login(input);
+    console.log('🔍 Login successful for user:', input.email);
     reply.send(data);
   } catch (error: any) {
+    console.error('❌ Login error:', error);
+    console.error('❌ Login error stack:', error.stack);
     const statusCode = error.statusCode || 500;
     reply.code(statusCode).send({ 
       error: error.message || 'Error al iniciar sesión',

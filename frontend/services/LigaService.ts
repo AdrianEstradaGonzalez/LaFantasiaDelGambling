@@ -34,6 +34,7 @@ export class LigaService {
     switch (statusCode) {
       case 400:
         if (error?.message?.includes('caracteres')) return error.message;
+        if (error?.message?.includes('Liga completa')) return error.message;
         return 'Los datos proporcionados no son válidos';
       case 401:
         return 'Tu sesión ha expirado. Inicia sesión de nuevo';
@@ -50,6 +51,9 @@ export class LigaService {
         // Mensajes específicos por contenido
         if (error?.message) {
           const msg = error.message.toLowerCase();
+          if (msg.includes('liga completa')) {
+            return error.message;
+          }
           if (msg.includes('name') || msg.includes('nombre')) {
             if (msg.includes('short') || msg.includes('corto') || msg.includes('caracteres')) {
               return 'El nombre de la liga debe tener al menos 3 caracteres';
@@ -191,6 +195,10 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
       
       if (error.message.includes('Código de liga inválido')) {
         throw new Error('El código de liga no existe o es incorrecto');
+      }
+      
+      if (error.message.includes('Liga completa')) {
+        throw new Error(error.message);
       }
       
       throw new Error(error?.message || 'No se pudo unir a la liga');

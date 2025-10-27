@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeLayout } from '../../components/SafeLayout';
+import { ChevronLeftIcon } from '../../components/VectorIcons';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type PoliticaPrivacidadProps = {
@@ -17,6 +18,14 @@ export const PoliticaPrivacidad: React.FC<PoliticaPrivacidadProps> = ({ navigati
         end={{ x: 0, y: 1 }}
         style={styles.container}
       >
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.navigate('Home')}
+        >
+          <ChevronLeftIcon size={28} color="#ffffff" />
+          <Text style={styles.backButtonText}></Text>
+        </TouchableOpacity>
+
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={true}
@@ -370,6 +379,18 @@ const styles = StyleSheet.create({
     color: '#94a3b8',
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    paddingLeft: 20,
+    gap: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });
 
