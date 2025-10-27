@@ -309,8 +309,8 @@ export const Clasificacion = () => {
           {/* Contenido */}
           {jugadores.length > 0 ? (
             <ScrollView
-              style={styles.container}
-              contentContainerStyle={{ paddingBottom: 140 }}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 20 }}
             >
           {jugadores.map((jugador) => {
             const isCurrentUser = jugador.id === currentUserId;

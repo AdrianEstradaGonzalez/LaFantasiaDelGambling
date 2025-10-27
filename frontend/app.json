@@ -1,4 +1,7 @@
 {
   "name": "frontend",
-  "displayName": "frontend"
+  "displayName": "frontend",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-9629575422824270~7692444332"
+  }
 }

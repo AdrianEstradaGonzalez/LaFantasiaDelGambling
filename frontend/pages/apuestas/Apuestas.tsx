@@ -11,6 +11,8 @@ import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIc
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
+import { AdMobService } from '../../services/AdMobService';
+import { AdBanner } from '../../components/AdBanner';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type Bet = {
@@ -75,6 +77,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Estado para controlar visibilidad de la barra de navegación
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
+  // Estado para apuestas desbloqueadas con anuncios (máximo 2)
+  const [unlockedBets, setUnlockedBets] = useState<Set<string>>(new Set());
+  const [loadingAd, setLoadingAd] = useState(false);
+
   // Listener para el teclado
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -96,6 +102,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     let mounted = true;
     (async () => {
       try {
+        // Precargar anuncio recompensado para desbloquear apuestas
+        AdMobService.preloadRewarded().catch(err => 
+          console.warn('No se pudo precargar anuncio recompensado:', err)
+        );
+
         const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName });
 
         // Obtener presupuesto y apuestas del usuario si hay ligaId
@@ -393,6 +404,37 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Regla global: una sola apuesta por partido
   const hasAnyBetInMatch = (matchId: number): boolean => {
     return userBets.some((bet) => bet.matchId === matchId);
+  };
+
+  // Función para desbloquear apuesta con anuncio recompensado
+  const handleUnlockWithAd = async (betKey: string) => {
+    if (unlockedBets.size >= 2) {
+      CustomAlertManager.alert(
+        'Límite alcanzado',
+        'Solo puedes desbloquear 2 apuestas por jornada viendo anuncios.',
+        [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
+      return;
+    }
+
+    setLoadingAd(true);
+    try {
+      const result = await AdMobService.showRewarded();
+      
+      if (result.watched) {
+        // Usuario completó el anuncio, desbloquear la apuesta
+        setUnlockedBets(prev => new Set([...prev, betKey]));
+        showSuccess('¡Apuesta desbloqueada! Ahora puedes apostar en esta opción.');
+      } else {
+        showError('Debes ver el anuncio completo para desbloquear la apuesta.');
+      }
+    } catch (error) {
+      console.error('Error mostrando anuncio:', error);
+      showError('No se pudo cargar el anuncio. Inténtalo de nuevo.');
+    } finally {
+      setLoadingAd(false);
+    }
   };
 
   // Animación del drawer
@@ -835,6 +877,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     </View>
                   )}
 
+                  {/* Banner AdMob cuando jornada está ABIERTA (sin recompensas) */}
+                  {jornadaStatus === 'open' && (
+                    <View style={{ marginBottom: 16 }}>
+                      <AdBanner size="MEDIUM_RECTANGLE" />
+                    </View>
+                  )}
+
                   {/* Presupuesto */}
                   {ligaId && (
                     <View style={{
@@ -962,7 +1011,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             const userBet = getUserBetForOption(b.matchId, b.type, option.label);
                             const groupHasBet = hasAnyBetInGroup(b.matchId, b.type);
                             const anyBetInMatch = hasAnyBetInMatch(b.matchId);
-                            const isBlocked = (groupHasBet || anyBetInMatch) && !userBet;
+                            
+                            // Verificar si está desbloqueada con anuncio
+                            const isUnlocked = unlockedBets.has(betKey);
+                            const isBlocked = (groupHasBet || anyBetInMatch) && !userBet && !isUnlocked;
 
                             return (
                               <View
@@ -977,17 +1029,55 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   opacity: isBlocked && isJornadaOpen ? 0.5 : 1,
                                 }}
                               >
-                                {/* Indicador de bloqueado */}
-                                {isBlocked && isJornadaOpen && (
+                                {/* Indicador de bloqueado con opción de desbloquear (solo jornada CERRADA) */}
+                                {isBlocked && !isJornadaOpen && (
                                   <View style={{
                                     backgroundColor: '#7f1d1d',
+                                    borderRadius: 6,
+                                    paddingHorizontal: 8,
+                                    paddingVertical: 6,
+                                    marginBottom: 8,
+                                  }}>
+                                    <Text style={{ color: '#fca5a5', fontSize: 11, fontWeight: '700', marginBottom: 6 }}>
+                                      🔒 BLOQUEADA - Ya apostaste en este partido
+                                    </Text>
+                                    {unlockedBets.size < 2 && (
+                                      <TouchableOpacity
+                                        onPress={() => handleUnlockWithAd(betKey)}
+                                        disabled={loadingAd}
+                                        style={{
+                                          backgroundColor: '#16a34a',
+                                          borderRadius: 4,
+                                          paddingVertical: 6,
+                                          paddingHorizontal: 10,
+                                          alignItems: 'center',
+                                          opacity: loadingAd ? 0.6 : 1,
+                                        }}
+                                      >
+                                        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>
+                                          {loadingAd ? '⏳ Cargando...' : '� Ver anuncio para desbloquear'}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    )}
+                                    {unlockedBets.size >= 2 && (
+                                      <Text style={{ color: '#64748b', fontSize: 10, fontStyle: 'italic' }}>
+                                        Ya desbloqueaste 2 apuestas (máximo por jornada)
+                                      </Text>
+                                    )}
+                                  </View>
+                                )}
+
+                                {/* Indicador de desbloqueada */}
+                                {isUnlocked && !userBet && !isJornadaOpen && (
+                                  <View style={{
+                                    backgroundColor: '#065f46',
                                     borderRadius: 6,
                                     paddingHorizontal: 8,
                                     paddingVertical: 4,
                                     marginBottom: 8,
                                     alignSelf: 'flex-start',
                                   }}>
-                                    <Text style={{ color: '#fca5a5', fontSize: 11, fontWeight: '700' }}>🔒 BLOQUEADA - Ya apostaste en este partido</Text>
+                                    <Text style={{ color: '#6ee7b7', fontSize: 11, fontWeight: '700' }}>✅ DESBLOQUEADA - Puedes apostar aquí</Text>
                                   </View>
                                 )}
 

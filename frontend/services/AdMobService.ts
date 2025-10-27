@@ -10,31 +10,31 @@ import mobileAds, {
   RewardedAdEventType,
 } from 'react-native-google-mobile-ads';
 
-// IDs de AdMob (REEMPLAZAR con tus IDs reales de producción)
+// IDs de AdMob configurados
 export const ADMOB_CONFIG = {
-  // Banner Ads
+  // Banner Ads (320x50) - Home, Clasificación, Apuestas
   BANNER_HOME: Platform.select({
-    ios: __DEV__ ? TestIds.BANNER : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
-    android: __DEV__ ? TestIds.BANNER : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
+    ios: __DEV__ ? TestIds.BANNER : 'ca-app-pub-9629575422824270/8928778036',
+    android: __DEV__ ? TestIds.BANNER : 'ca-app-pub-9629575422824270/8928778036',
   }),
   
-  // Interstitial Ads (pantalla completa)
-  INTERSTITIAL_GENERAL: Platform.select({
-    ios: __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
-    android: __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
-  }),
-  
-  // Rewarded Ads (con recompensa)
+  // Rewarded Ads (desbloquear apuestas bloqueadas)
+  // Recompensa: 1 apuesta desbloqueada de las 2 últimas bloqueadas
   REWARDED_GENERAL: Platform.select({
-    ios: __DEV__ ? TestIds.REWARDED : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
-    android: __DEV__ ? TestIds.REWARDED : 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY',
+    ios: __DEV__ ? TestIds.REWARDED : 'ca-app-pub-9629575422824270/6302614690',
+    android: __DEV__ ? TestIds.REWARDED : 'ca-app-pub-9629575422824270/6302614690',
+  }),
+  
+  // Nativo Avanzado (disponible si quieres usarlo en lugar de banner)
+  NATIVE_ADVANCED: Platform.select({
+    ios: 'ca-app-pub-9629575422824270/4941431564',
+    android: 'ca-app-pub-9629575422824270/4941431564',
   }),
 };
 
 // Clase para gestionar AdMob
 export class AdMobService {
   private static initialized = false;
-  private static interstitialAd: InterstitialAd | null = null;
   private static rewardedAd: RewardedAd | null = null;
 
   /**
@@ -61,69 +61,7 @@ export class AdMobService {
   }
 
   /**
-   * Precargar anuncio intersticial
-   */
-  static async preloadInterstitial(): Promise<void> {
-    if (!ADMOB_CONFIG.INTERSTITIAL_GENERAL) return;
-
-    try {
-      this.interstitialAd = InterstitialAd.createForAdRequest(
-        ADMOB_CONFIG.INTERSTITIAL_GENERAL as string
-      );
-
-      await new Promise<void>((resolve, reject) => {
-        const unsubscribeLoaded = this.interstitialAd!.addAdEventListener(
-          AdEventType.LOADED,
-          () => {
-            unsubscribeLoaded();
-            resolve();
-          }
-        );
-
-        const unsubscribeError = this.interstitialAd!.addAdEventListener(
-          AdEventType.ERROR,
-          (error: any) => {
-            unsubscribeError();
-            reject(error);
-          }
-        );
-
-        this.interstitialAd!.load();
-      });
-
-      console.log('✅ Anuncio intersticial precargado');
-    } catch (error) {
-      console.error('❌ Error al precargar intersticial:', error);
-    }
-  }
-
-  /**
-   * Mostrar anuncio intersticial
-   */
-  static async showInterstitial(): Promise<boolean> {
-    if (!this.interstitialAd) {
-      await this.preloadInterstitial();
-    }
-
-    try {
-      if (this.interstitialAd) {
-        await this.interstitialAd.show();
-        
-        // Precargar el siguiente
-        this.interstitialAd = null;
-        this.preloadInterstitial();
-        
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('❌ Error al mostrar intersticial:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Precargar anuncio con recompensa
+   * Precargar anuncio con recompensa (para desbloquear apuestas)
    */
   static async preloadRewarded(): Promise<void> {
     if (!ADMOB_CONFIG.REWARDED_GENERAL) return;
@@ -209,14 +147,7 @@ export class AdMobService {
   }
 
   /**
-   * Verificar si hay un intersticial listo
-   */
-  static isInterstitialReady(): boolean {
-    return this.interstitialAd !== null;
-  }
-
-  /**
-   * Verificar si hay un rewarded listo
+   * Verificar si hay un anuncio recompensado listo
    */
   static isRewardedReady(): boolean {
     return this.rewardedAd !== null;
