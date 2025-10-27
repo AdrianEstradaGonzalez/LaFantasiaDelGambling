@@ -14,6 +14,7 @@ import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AdBanner } from '../../components/AdBanner';
 // ✨ NUEVO: Importar servicio de estadísticas del backend
 import { PlayerStatsService } from '../../services/PlayerStatsService';
 
@@ -1861,6 +1862,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         </View>
           </ScrollView>
       
+          {/* Banner de anuncio al final de la plantilla */}
+          <AdBanner visible={true} size="BANNER" />
+
           {/* Barra de navegaciÃ³n */}
           <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
           

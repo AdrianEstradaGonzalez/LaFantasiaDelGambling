@@ -785,15 +785,9 @@ export class JornadaService {
       
       console.log(`\n✅ ${clearedSquads} plantillas vaciadas en total\n`);
 
-      // 6. Eliminar apuestas evaluadas (ya pagadas)
-      const deletedBets = await prisma.bet.deleteMany({
-        where: {
-          leagueId,
-          jornada,
-          status: { in: ['won', 'lost'] },
-        },
-      });
-      console.log(`🗑️  ${deletedBets.count} apuestas evaluadas eliminadas\n`);
+      // 6. NO eliminamos apuestas - solo las mantenemos evaluadas para historial
+      // Las apuestas permanecen en la BBDD con su estado (won/lost/pending)
+      console.log(`� Apuestas mantenidas en BBDD para historial\n`);
 
       return {
         success: true,
@@ -801,7 +795,7 @@ export class JornadaService {
         balances,
         updatedMembers,
         clearedSquads,
-        deletedBets: deletedBets.count,
+        deletedBets: 0, // Ya no borramos apuestas
       };
     } catch (error) {
       console.error('❌ Error en cambio de jornada:', error);
@@ -1046,16 +1040,9 @@ export class JornadaService {
       });
       console.log(`✅ ${deletedBetOptions.count} opciones de apuestas eliminadas\n`);
 
-      // 7. Eliminar apuestas evaluadas
-      console.log(`🗑️  7. Eliminando apuestas evaluadas...`);
-      const deletedBets = await prisma.bet.deleteMany({
-        where: {
-          leagueId,
-          jornada,
-          status: { in: ['won', 'lost'] },
-        },
-      });
-      console.log(`✅ ${deletedBets.count} apuestas eliminadas\n`);
+      // 7. NO eliminamos apuestas - solo las mantenemos evaluadas para historial
+      // Las apuestas permanecen en la BBDD con su estado (won/lost/pending)
+      console.log(`📊 Apuestas mantenidas en BBDD para historial\n`);
 
       // 8. Avanzar jornada y cambiar estado
       console.log(`⏭️  8. Avanzando jornada...`);
