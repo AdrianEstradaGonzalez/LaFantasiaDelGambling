@@ -890,13 +890,6 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                           estadistica="Penaltis parados"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis parados')}
                         />
-                        
-                        {/* Recuperaciones (Intercepciones) */}
-                        <StatRow
-                          cantidad={selectedData.stats.tacklesInterceptions ?? 0}
-                          estadistica="Recuperaciones"
-                          puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Recuperaciones')}
-                        />
                       </>
                     )}
 

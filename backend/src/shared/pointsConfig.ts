@@ -24,13 +24,8 @@ export const BASE_POINTS = {
   // Penaltis (general)
   PENALTY_WON: 2,
   PENALTY_COMMITTED: -2,
-  PENALTY_SCORED: 3,
   PENALTY_MISSED: -2,
   
-  // Valoración del partido (desactivada)
-  RATING_8_OR_MORE: 0,
-  RATING_65_TO_8: 0,
-  RATING_5_TO_65: 0,
 } as const;
 
 // ========== PUNTOS ESPECÍFICOS POR POSICIÓN ==========
@@ -51,8 +46,6 @@ export const GOALKEEPER_POINTS = {
   // Penaltis parados
   PENALTY_SAVED: 5,
   
-  // Intercepciones (cada X intercepciones = 1 punto)
-  INTERCEPTIONS_PER_POINT: 5,
 } as const;
 
 export const DEFENDER_POINTS = {
@@ -62,9 +55,6 @@ export const DEFENDER_POINTS = {
   // Portería a cero (solo si jugó >= CLEAN_SHEET_MINUTES)
   CLEAN_SHEET: 4,
   
-  // Goles encajados
-  GOAL_CONCEDED: -1,
-  
   // Tiros a puerta
   SHOT_ON_TARGET: 1,
   
@@ -72,24 +62,18 @@ export const DEFENDER_POINTS = {
   DUELS_WON_PER_POINT: 2,
   
   // Intercepciones (cada X intercepciones = 1 punto)
-  INTERCEPTIONS_PER_POINT: 5,
+  INTERCEPTIONS_PER_POINT: 2,
 } as const;
 
 export const MIDFIELDER_POINTS = {
   // Goles
   GOAL_SCORED: 5,
   
-  // Portería a cero (solo si jugó >= CLEAN_SHEET_MINUTES)
-  CLEAN_SHEET: 1,
-  
-  // Goles encajados (cada X goles = -1 punto)
-  GOALS_CONCEDED_PER_MINUS_POINT: 2,
-  
   // Tiros a puerta
   SHOT_ON_TARGET: 1,
   
   // Pases clave (cada X pases = 1 punto)
-  KEY_PASSES_PER_POINT: 2,
+  KEY_PASSES_PER_POINT: 1,
   
   // Regates exitosos (cada X regates = 1 punto)
   DRIBBLES_SUCCESS_PER_POINT: 2,
@@ -98,7 +82,7 @@ export const MIDFIELDER_POINTS = {
   FOULS_DRAWN_PER_POINT: 3,
   
   // Intercepciones (cada X intercepciones = 1 punto)
-  INTERCEPTIONS_PER_POINT: 3,
+  INTERCEPTIONS_PER_POINT: 2,
 } as const;
 
 export const ATTACKER_POINTS = {
@@ -109,7 +93,7 @@ export const ATTACKER_POINTS = {
   SHOT_ON_TARGET: 1,
   
   // Pases clave (cada X pases = 1 punto)
-  KEY_PASSES_PER_POINT: 2,
+  KEY_PASSES_PER_POINT: 1,
   
   // Regates exitosos (cada X regates = 1 punto)
   DRIBBLES_SUCCESS_PER_POINT: 2,
