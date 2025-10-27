@@ -7,8 +7,7 @@ import { BetService, BettingBudget, Bet as UserBet } from '../../services/BetSer
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon } from '../../components/VectorIcons';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon, CoinsIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -537,7 +536,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           padding: 8,
                           marginRight: 12,
                         }}>
-                          <Icon name="cash-multiple" size={24} color="#93c5fd" />
+                          <CoinsIcon size={24} color="#93c5fd" />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: '#93c5fd', fontSize: 18, fontWeight: '800' }}>
@@ -573,10 +572,31 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                               </Text>
                             </View>
                             
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                              <Text style={{ color: '#94a3b8', fontSize: 13 }}>
-                                Apuestas: {balance.totalBets} ({balance.wonBets}✅ / {balance.lostBets}❌{balance.pendingBets > 0 ? ` / ${balance.pendingBets}⏳` : ''})
-                              </Text>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4, alignItems: 'center' }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                <Text style={{ color: '#94a3b8', fontSize: 13 }}>
+                                  Apuestas: {balance.totalBets} (
+                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                                  <Text style={{ color: '#94a3b8', fontSize: 13 }}>{balance.wonBets}</Text>
+                                  <CheckIcon size={12} color="#22c55e" />
+                                </View>
+                                <Text style={{ color: '#94a3b8', fontSize: 13 }}> / </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                                  <Text style={{ color: '#94a3b8', fontSize: 13 }}>{balance.lostBets}</Text>
+                                  <ErrorIcon size={12} color="#ef4444" />
+                                </View>
+                                {balance.pendingBets > 0 && (
+                                  <>
+                                    <Text style={{ color: '#94a3b8', fontSize: 13 }}> / </Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                                      <Text style={{ color: '#94a3b8', fontSize: 13 }}>{balance.pendingBets}</Text>
+                                      <ClockIcon size={12} color="#f59e0b" />
+                                    </View>
+                                  </>
+                                )}
+                                <Text style={{ color: '#94a3b8', fontSize: 13 }}>)</Text>
+                              </View>
                               <Text style={{ color: '#cbd5e1', fontSize: 13, fontWeight: '600' }}>
                                 Apostado: {balance.totalStaked}M
                               </Text>
@@ -615,9 +635,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             {/* Apuestas ganadas */}
                             {balance.betsWon && balance.betsWon.length > 0 && (
                               <View style={{ marginTop: 8 }}>
-                                <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '600', marginBottom: 4 }}>
-                                  ✅ Ganadas:
-                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                                  <CheckIcon size={14} color="#22c55e" />
+                                  <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '600' }}>
+                                    Ganadas:
+                                  </Text>
+                                </View>
                                 {balance.betsWon.map((bet: any, idx: number) => (
                                   <View key={bet.betId} style={{ 
                                     backgroundColor: '#0a1420', 
@@ -641,9 +664,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             {/* Apuestas perdidas */}
                             {balance.betsLost && balance.betsLost.length > 0 && (
                               <View style={{ marginTop: 8 }}>
-                                <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '600', marginBottom: 4 }}>
-                                  ❌ Perdidas:
-                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                                  <ErrorIcon size={14} color="#ef4444" />
+                                  <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '600' }}>
+                                    Perdidas:
+                                  </Text>
+                                </View>
                                 {balance.betsLost.map((bet: any, idx: number) => (
                                   <View key={bet.betId} style={{ 
                                     backgroundColor: '#0a1420', 
