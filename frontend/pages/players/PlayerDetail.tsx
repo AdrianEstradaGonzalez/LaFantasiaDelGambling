@@ -843,7 +843,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                     
                     {/* Minutos jugados */}
                     <StatRow
-                      cantidad={selectedData.stats.minutes ?? 0}
+                      cantidad={Math.min(selectedData.stats.minutes ?? 0, 90)}
                       estadistica="Minutos jugados"
                       puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Minutos')}
                     />

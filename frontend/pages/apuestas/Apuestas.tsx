@@ -540,10 +540,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: '#93c5fd', fontSize: 18, fontWeight: '800' }}>
-                            BALANCE DE USUARIOS
+                            BALANCE DE APUESTAS
                           </Text>
                           <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
-                            {evaluatingRealtime ? 'Evaluando...' : realtimeBalances.length > 0 ? 'Resultados en tiempo real' : `${leagueBets.length} apuesta${leagueBets.length !== 1 ? 's' : ''} realizadas`}
+                            {evaluatingRealtime ? 'Evaluando...' : realtimeBalances.length > 0 ? '' : `${leagueBets.length} apuesta${leagueBets.length !== 1 ? 's' : ''} realizadas`}
                           </Text>
                         </View>
                       </View>
@@ -689,6 +689,35 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 ))}
                               </View>
                             )}
+
+                            {/* Apuestas pendientes */}
+                            {balance.betsPending && balance.betsPending.length > 0 && (
+                              <View style={{ marginTop: 8 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                                  <ClockIcon size={14} color="#f59e0b" />
+                                  <Text style={{ color: '#f59e0b', fontSize: 12, fontWeight: '600' }}>
+                                    Pendientes:
+                                  </Text>
+                                </View>
+                                {balance.betsPending.map((bet: any, idx: number) => (
+                                  <View key={bet.betId} style={{ 
+                                    backgroundColor: '#0a1420', 
+                                    padding: 8, 
+                                    borderRadius: 6,
+                                    marginBottom: 4,
+                                    borderLeftWidth: 2,
+                                    borderLeftColor: '#f59e0b',
+                                  }}>
+                                    <Text style={{ color: '#cbd5e1', fontSize: 11 }}>
+                                      {bet.homeTeam || 'Local'} vs {bet.awayTeam || 'Visitante'}
+                                    </Text>
+                                    <Text style={{ color: '#94a3b8', fontSize: 11 }}>
+                                      {bet.betLabel} ({bet.odd}) → {bet.amount}M apostados
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            )}
                           </View>
                         ))
                       ) : (
@@ -731,157 +760,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         })()
                       )}
                     </View>
-
-                    {/* Apuestas por partido */}
-                    <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
-                      Apuestas por Partido
-                    </Text>
-
-                    {(() => {
-                      // Agrupar por matchId
-                      const betsByMatch: Record<number, UserBet[]> = {};
-                      leagueBets.forEach((bet) => {
-                        if (!betsByMatch[bet.matchId]) {
-                          betsByMatch[bet.matchId] = [];
-                        }
-                        betsByMatch[bet.matchId].push(bet);
-                      });
-
-                      // Convertir a array y ordenar por fecha y hora del partido
-                      const sortedMatches = Object.entries(betsByMatch)
-                        .map(([matchIdStr, bets]) => {
-                          const matchId = parseInt(matchIdStr);
-                          const matchInfo = groupedBets.find((gb) => gb.matchId === matchId);
-                          return { matchId, bets, matchInfo };
-                        })
-                        .sort((a, b) => {
-                          // Ordenar por fecha y hora
-                          if (!a.matchInfo || !b.matchInfo) return 0;
-                          
-                          // Convertir fecha y hora a timestamp para comparar
-                          const parseDateTime = (fecha?: string, hora?: string) => {
-                            if (!fecha || !hora) return new Date(0).getTime();
-                            // fecha formato: "DD/MM" o "DD/MM/YYYY"
-                            // hora formato: "HH:MM"
-                            const [day, month, year] = fecha.split('/');
-                            const [hours, minutes] = hora.split(':');
-                            const fullYear = year || '2024'; // Año por defecto
-                            return new Date(
-                              parseInt(fullYear),
-                              parseInt(month) - 1,
-                              parseInt(day),
-                              parseInt(hours),
-                              parseInt(minutes)
-                            ).getTime();
-                          };
-                          
-                          const timeA = parseDateTime(a.matchInfo.fecha, a.matchInfo.hora);
-                          const timeB = parseDateTime(b.matchInfo.fecha, b.matchInfo.hora);
-                          
-                          return timeA - timeB; // Orden ascendente (primero los más antiguos)
-                        });
-
-                      return sortedMatches.map(({ matchId, bets, matchInfo }) => {
-                        
-                        return (
-                          <View key={matchId} style={{
-                            backgroundColor: '#1a2332',
-                            borderWidth: 1,
-                            borderColor: '#334155',
-                            borderRadius: 12,
-                            padding: 14,
-                            marginBottom: 12,
-                          }}>
-                            {/* Equipos del partido */}
-                            {matchInfo && (
-                              <View style={{ marginBottom: 10 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                                  {matchInfo.localCrest && (
-                                    <Image 
-                                      source={{ uri: matchInfo.localCrest }} 
-                                      style={{ width: 24, height: 24, marginRight: 8 }} 
-                                      resizeMode="contain" 
-                                    />
-                                  )}
-                                  <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 15 }}>
-                                    {matchInfo.local}
-                                  </Text>
-                                </View>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                                  {matchInfo.visitanteCrest && (
-                                    <Image 
-                                      source={{ uri: matchInfo.visitanteCrest }} 
-                                      style={{ width: 24, height: 24, marginRight: 8 }} 
-                                      resizeMode="contain" 
-                                    />
-                                  )}
-                                  <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 15 }}>
-                                    {matchInfo.visitante}
-                                  </Text>
-                                </View>
-                                {matchInfo.fecha && matchInfo.hora && (
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                      <CalendarIcon size={14} color="#64748b" />
-                                      <Text style={{ color: '#64748b', fontSize: 12 }}>{matchInfo.fecha}</Text>
-                                    </View>
-                                    <Text style={{ color: '#64748b', fontSize: 12 }}>·</Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                      <ClockIcon size={14} color="#64748b" />
-                                      <Text style={{ color: '#64748b', fontSize: 12 }}>{matchInfo.hora}</Text>
-                                    </View>
-                                  </View>
-                                )}
-                              </View>
-                            )}
-
-                            <View style={{ height: 1, backgroundColor: '#334155', marginVertical: 10 }} />
-
-                            {/* Lista de apuestas */}
-                            <Text style={{ color: '#64748b', fontSize: 12, fontWeight: '600', marginBottom: 8 }}>
-                              {bets.length} apuesta{bets.length !== 1 ? 's' : ''}
-                            </Text>
-                            
-                            {bets.map((bet, idx) => (
-                              <View 
-                                key={bet.id} 
-                                style={{
-                                  backgroundColor: '#0f172a',
-                                  borderRadius: 6,
-                                  padding: 10,
-                                  marginBottom: idx < bets.length - 1 ? 8 : 0,
-                                  borderLeftWidth: 3,
-                                  borderLeftColor: '#3b82f6',
-                                }}
-                              >
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                  <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 13 }}>
-                                    {bet.userName || 'Jugador'}
-                                  </Text>
-                                  <Text style={{ color: '#22c55e', fontWeight: '800', fontSize: 14 }}>
-                                    {bet.amount}M
-                                  </Text>
-                                </View>
-                                <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
-                                  {bet.betType}
-                                </Text>
-                                <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
-                                  {bet.betLabel}
-                                </Text>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                                  <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                    Cuota: {bet.odd.toFixed(2)}
-                                  </Text>
-                                  <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
-                                    Ganancia potencial: +{bet.potentialWin}M
-                                  </Text>
-                                </View>
-                              </View>
-                            ))}
-                          </View>
-                        );
-                      });
-                    })()}
                   </>
                 )}
               </>

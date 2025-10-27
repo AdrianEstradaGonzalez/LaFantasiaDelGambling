@@ -752,6 +752,8 @@ async function evaluateBetsRealTime(leagueId: string, jornada: number) {
       balance.betsPending.push({
         betId: bet.betId,
         matchId: bet.matchId,
+        homeTeam: bet.homeTeam,
+        awayTeam: bet.awayTeam,
         betType: bet.betType,
         betLabel: bet.betLabel,
         odd: bet.odd,
