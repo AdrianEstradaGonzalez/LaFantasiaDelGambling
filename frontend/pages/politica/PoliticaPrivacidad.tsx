@@ -271,7 +271,7 @@ export const PoliticaPrivacidad: React.FC<PoliticaPrivacidadProps> = ({ navigati
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>15. CONTACTO</Text>
             <Text style={styles.paragraph}>
-              Para cualquier consulta relacionada con esta Política de Privacidad o para ejercer sus derechos, puede contactarnos a través de la propia Aplicación o mediante las opciones disponibles en el menú de configuración de su cuenta.
+              Para cualquier consulta relacionada con esta Política de Privacidad o para ejercer sus derechos, puede contactarnos a través de la propia Aplicación o al siguiente correo: dreamleague.contactme@gmail.com
             </Text>
           </View>
 
