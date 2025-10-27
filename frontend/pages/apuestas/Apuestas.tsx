@@ -140,18 +140,24 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           const groupedArray = Object.values(grouped);
           setGroupedBets(groupedArray);
           setUserBets(userBetsData);
-          setLeagueBets(leagueBetsData);
+          
+          // Filtrar apuestas de la liga por la jornada actual
+          const filteredLeagueBets = apuestas.length > 0 
+            ? leagueBetsData.filter(bet => bet.jornada === apuestas[0].jornada)
+            : leagueBetsData;
+          setLeagueBets(filteredLeagueBets);
+          
           setBudget(budgetData);
           if (statusData) setJornadaStatus(statusData);
           if (apuestas.length > 0) {
             setJornada(apuestas[0].jornada);
           }
           console.log('🎲 DEBUG Apuestas - Status:', statusData);
-          console.log('🎲 DEBUG Apuestas - League Bets:', leagueBetsData);
+          console.log('🎲 DEBUG Apuestas - League Bets (filtered):', filteredLeagueBets);
           console.log('🎲 DEBUG Apuestas - Grouped Bets:', groupedArray);
 
           // Si la jornada está cerrada y hay apuestas, evaluar en tiempo real
-          if (statusData === 'closed' && leagueBetsData.length > 0 && apuestas.length > 0 && ligaId) {
+          if (statusData === 'closed' && filteredLeagueBets.length > 0 && apuestas.length > 0 && ligaId) {
             console.log('⚡ Jornada cerrada, evaluando en tiempo real...');
             setEvaluatingRealtime(true);
             try {
