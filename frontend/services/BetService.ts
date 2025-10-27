@@ -293,6 +293,42 @@ export class BetService {
       totalWinnings: number;
       totalLosses: number;
       netProfit: number;
+      betsWon: Array<{
+        betId: string;
+        matchId: number;
+        homeTeam: string;
+        awayTeam: string;
+        homeGoals: number | null;
+        awayGoals: number | null;
+        betType: string;
+        betLabel: string;
+        odd: number;
+        amount: number;
+        potentialWin: number;
+        profit: number;
+        actualResult: string;
+      }>;
+      betsLost: Array<{
+        betId: string;
+        matchId: number;
+        homeTeam: string;
+        awayTeam: string;
+        homeGoals: number | null;
+        awayGoals: number | null;
+        betType: string;
+        betLabel: string;
+        odd: number;
+        amount: number;
+        actualResult: string;
+      }>;
+      betsPending: Array<{
+        betId: string;
+        matchId: number;
+        betType: string;
+        betLabel: string;
+        odd: number;
+        amount: number;
+      }>;
     }>;
     matchesEvaluated: number;
   }> {

@@ -8,6 +8,7 @@ import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
 import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon } from '../../components/VectorIcons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -536,7 +537,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           padding: 8,
                           marginRight: 12,
                         }}>
-                          <Text style={{ fontSize: 24 }}>�</Text>
+                          <Icon name="cash-multiple" size={24} color="#93c5fd" />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: '#93c5fd', fontSize: 18, fontWeight: '800' }}>
@@ -562,7 +563,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             backgroundColor: '#0f172a',
                             borderRadius: 8,
                             padding: 12,
-                            marginBottom: 8,
+                            marginBottom: 12,
                             borderLeftWidth: 3,
                             borderLeftColor: balance.netProfit >= 0 ? '#22c55e' : '#ef4444',
                           }}>
@@ -588,6 +589,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                               paddingTop: 8,
                               borderTopWidth: 1,
                               borderTopColor: '#1e293b',
+                              marginBottom: 8,
                             }}>
                               <View style={{ flexDirection: 'row', gap: 12 }}>
                                 {balance.totalWinnings > 0 && (
@@ -609,6 +611,58 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 {balance.netProfit >= 0 ? '+' : ''}{balance.netProfit.toFixed(1)}M
                               </Text>
                             </View>
+
+                            {/* Apuestas ganadas */}
+                            {balance.betsWon && balance.betsWon.length > 0 && (
+                              <View style={{ marginTop: 8 }}>
+                                <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '600', marginBottom: 4 }}>
+                                  ✅ Ganadas:
+                                </Text>
+                                {balance.betsWon.map((bet: any, idx: number) => (
+                                  <View key={bet.betId} style={{ 
+                                    backgroundColor: '#0a1420', 
+                                    padding: 8, 
+                                    borderRadius: 6,
+                                    marginBottom: 4,
+                                    borderLeftWidth: 2,
+                                    borderLeftColor: '#22c55e',
+                                  }}>
+                                    <Text style={{ color: '#cbd5e1', fontSize: 11 }}>
+                                      {bet.homeTeam} {bet.homeGoals}-{bet.awayGoals} {bet.awayTeam}
+                                    </Text>
+                                    <Text style={{ color: '#94a3b8', fontSize: 11 }}>
+                                      {bet.betLabel} ({bet.odd}) → +{bet.profit.toFixed(1)}M
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            )}
+
+                            {/* Apuestas perdidas */}
+                            {balance.betsLost && balance.betsLost.length > 0 && (
+                              <View style={{ marginTop: 8 }}>
+                                <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '600', marginBottom: 4 }}>
+                                  ❌ Perdidas:
+                                </Text>
+                                {balance.betsLost.map((bet: any, idx: number) => (
+                                  <View key={bet.betId} style={{ 
+                                    backgroundColor: '#0a1420', 
+                                    padding: 8, 
+                                    borderRadius: 6,
+                                    marginBottom: 4,
+                                    borderLeftWidth: 2,
+                                    borderLeftColor: '#ef4444',
+                                  }}>
+                                    <Text style={{ color: '#cbd5e1', fontSize: 11 }}>
+                                      {bet.homeTeam} {bet.homeGoals}-{bet.awayGoals} {bet.awayTeam}
+                                    </Text>
+                                    <Text style={{ color: '#94a3b8', fontSize: 11 }}>
+                                      {bet.betLabel} ({bet.odd}) → -{bet.amount}M
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            )}
                           </View>
                         ))
                       ) : (

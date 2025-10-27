@@ -650,7 +650,10 @@ async function evaluateBetsRealTime(leagueId: string, jornada: number) {
         pendingBets: 0,
         totalWinnings: 0,
         totalLosses: 0,
-        netProfit: 0
+        netProfit: 0,
+        betsWon: [],
+        betsLost: [],
+        betsPending: []
       });
     }
 
@@ -662,12 +665,48 @@ async function evaluateBetsRealTime(leagueId: string, jornada: number) {
       balance.wonBets++;
       balance.totalWinnings += bet.potentialWin;
       balance.netProfit += bet.profit;
+      balance.betsWon.push({
+        betId: bet.betId,
+        matchId: bet.matchId,
+        homeTeam: bet.homeTeam,
+        awayTeam: bet.awayTeam,
+        homeGoals: bet.homeGoals,
+        awayGoals: bet.awayGoals,
+        betType: bet.betType,
+        betLabel: bet.betLabel,
+        odd: bet.odd,
+        amount: bet.amount,
+        potentialWin: bet.potentialWin,
+        profit: bet.profit,
+        actualResult: bet.actualResult
+      });
     } else if (bet.status === 'lost') {
       balance.lostBets++;
       balance.totalLosses += bet.amount;
       balance.netProfit += bet.profit;
+      balance.betsLost.push({
+        betId: bet.betId,
+        matchId: bet.matchId,
+        homeTeam: bet.homeTeam,
+        awayTeam: bet.awayTeam,
+        homeGoals: bet.homeGoals,
+        awayGoals: bet.awayGoals,
+        betType: bet.betType,
+        betLabel: bet.betLabel,
+        odd: bet.odd,
+        amount: bet.amount,
+        actualResult: bet.actualResult
+      });
     } else {
       balance.pendingBets++;
+      balance.betsPending.push({
+        betId: bet.betId,
+        matchId: bet.matchId,
+        betType: bet.betType,
+        betLabel: bet.betLabel,
+        odd: bet.odd,
+        amount: bet.amount
+      });
     }
   }
 

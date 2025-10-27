@@ -1,0 +1,13 @@
+Arreglo manual necesario:
+
+En el archivo: frontend/pages/apuestas/Apuestas.tsx
+Líneas 542-543:
+
+ELIMINAR estas 2 líneas:
+                          <Text style={{ fontSize: 24 }}>💰</Text>
+                        </View>
+
+Ya está el ícono correcto en la línea 540:
+                          <Icon name="cash-multiple" size={24} color="#93c5fd" />
+
+Solo hay que eliminar las líneas 542-543 que quedaron duplicadas.
