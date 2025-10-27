@@ -178,7 +178,14 @@ async function calculateMinutesWithoutInjuryTime(
     }
     
     // Calcular minutos sin descuento
-    const minutesWithoutInjuryTime = Math.min(exitMinute - entryMinute, 90);
+    let minutesWithoutInjuryTime = Math.min(exitMinute - entryMinute, 90);
+    
+    // ✨ IMPORTANTE: Si el jugador participó (rawMinutes > 0) pero el cálculo da 0
+    // (por ejemplo, salió en el minuto 90+5), registrar al menos 1 minuto
+    if (rawMinutes > 0 && minutesWithoutInjuryTime === 0) {
+      minutesWithoutInjuryTime = 1;
+      console.log(`[playerStats] ⚠️  Jugador ${playerName} jugó en descuento, registrando 1 minuto mínimo`);
+    }
     
     console.log(`[playerStats] ⏱️  Jugador ${playerName}: ${rawMinutes} min (API) → ${minutesWithoutInjuryTime} min (sin descuento)`);
     
@@ -187,7 +194,9 @@ async function calculateMinutesWithoutInjuryTime(
   } catch (error) {
     console.warn(`[playerStats] ⚠️  No se pudieron obtener eventos del partido ${fixtureId}, usando cálculo básico:`, error);
     // Fallback: usar el método anterior (límite de 90)
-    return Math.min(rawMinutes, 90);
+    const fallbackMinutes = Math.min(rawMinutes, 90);
+    // También aplicar el mínimo de 1 minuto en el fallback
+    return rawMinutes > 0 && fallbackMinutes === 0 ? 1 : fallbackMinutes;
   }
 }
 

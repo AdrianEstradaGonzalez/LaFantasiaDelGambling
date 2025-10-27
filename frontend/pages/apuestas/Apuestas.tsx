@@ -709,7 +709,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     borderLeftColor: '#f59e0b',
                                   }}>
                                     <Text style={{ color: '#cbd5e1', fontSize: 11 }}>
-                                      {bet.homeTeam || 'Local'} vs {bet.awayTeam || 'Visitante'}
+                                      {bet.homeTeam} - {bet.awayTeam}
                                     </Text>
                                     <Text style={{ color: '#94a3b8', fontSize: 11 }}>
                                       {bet.betLabel} ({bet.odd}) → {bet.amount}M apostados

@@ -646,8 +646,8 @@ async function evaluateBetsRealTime(leagueId: string, jornada: number) {
           potentialWin: 0,
           profit: 0,
           actualResult: 'Partido no finalizado',
-          homeTeam: '',
-          awayTeam: '',
+          homeTeam: bet.homeTeam || '',
+          awayTeam: bet.awayTeam || '',
           homeGoals: null,
           awayGoals: null
         });
