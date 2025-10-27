@@ -47,27 +47,17 @@ export const RegisterService = {
 
       const result = await response.json();
       
-      // 🔍 DEBUG: Ver qué recibimos del backend
-      console.log('RegisterService - Respuesta del backend:', JSON.stringify(result, null, 2));
-
       // Guardar tokens de forma consistente con LoginService
       if (result.accessToken) {
         await EncryptedStorage.setItem('accessToken', result.accessToken);
-        console.log('✅ AccessToken guardado');
-      } else {
-        console.log('❌ No se recibió accessToken');
       }
       
       if (result.refreshToken) {
         await EncryptedStorage.setItem('refreshToken', result.refreshToken);
-        console.log('✅ RefreshToken guardado');
       }
       
       if (result.user?.id) {
         await EncryptedStorage.setItem('userId', result.user.id);
-        console.log('✅ UserId guardado:', result.user.id);
-      } else {
-        console.log('❌ No se recibió user.id, result.user:', result.user);
       }
 
       // Guardar estado de admin

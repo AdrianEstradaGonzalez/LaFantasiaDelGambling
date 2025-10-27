@@ -24,31 +24,20 @@ export async function register({ email, password, name }: { email: string; passw
 }
 
 export async function login({ email, password }: { email: string; password: string }) {
-  try {
-    console.log('🔍 AuthService.login - Looking up user:', email);
-    const user = await UserRepo.findByEmail(email);
-    if (!user) {
-      console.log('❌ AuthService.login - User not found:', email);
-      const error: any = new Error("Usuario no registrado. Por favor, regístrate primero.");
-      error.statusCode = 404;
-      throw error;
-    }
-    console.log('🔍 AuthService.login - User found, verifying password');
-    const ok = await argon2.verify(user.password, password);
-    if (!ok) {
-      console.log('❌ AuthService.login - Invalid password for:', email);
-      const error: any = new Error("Contraseña incorrecta. Verifica tus credenciales.");
-      error.statusCode = 401;
-      throw error;
-    }
-    console.log('🔍 AuthService.login - Password verified, issuing tokens');
-    const tokens = await issueTokens(user.id, user.email, user.isAdmin || false);
-    console.log('✅ AuthService.login - Login successful for:', email);
-    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...tokens };
-  } catch (error) {
-    console.error('❌ AuthService.login - Error:', error);
+  const user = await UserRepo.findByEmail(email);
+  if (!user) {
+    const error: any = new Error("Usuario no registrado. Por favor, regístrate primero.");
+    error.statusCode = 404;
     throw error;
   }
+  const ok = await argon2.verify(user.password, password);
+  if (!ok) {
+    const error: any = new Error("Contraseña incorrecta. Verifica tus credenciales.");
+    error.statusCode = 401;
+    throw error;
+  }
+  const tokens = await issueTokens(user.id, user.email, user.isAdmin || false);
+  return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...tokens };
 }
 
 export async function me(userId: string) {

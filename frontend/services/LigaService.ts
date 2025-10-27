@@ -77,11 +77,7 @@ export class LigaService {
     // ➕ Crear liga (devuelve liga con código generado)
 static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }> {
   const token = await this.getAccessToken();
-  console.log('🔍 LigaService.crearLiga - Token encontrado:', !!token);
   if (!token) throw new Error('Usuario no autenticado');
-
-  console.log('🔍 LigaService.crearLiga - URL:', `${ApiConfig.BASE_URL}/leagues`);
-  console.log('🔍 LigaService.crearLiga - Headers:', { 'Authorization': `Bearer ${token.substring(0, 20)}...` });
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
@@ -98,10 +94,7 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
 
   clearTimeout(timeoutId);
 
-  console.log('🔍 LigaService.crearLiga - Status:', res.status);
-
   const json = await res.json().catch(() => ({}));
-  console.log('🔍 LigaService.crearLiga - Respuesta:', json);
 
   if (!res.ok) {
     // Usar mensajes amigables
@@ -109,7 +102,6 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
     
     // Si es 401, limpiar tokens
     if (res.status === 401) {
-      console.log('🔍 LigaService.crearLiga - Token expirado, limpiando storage');
       await EncryptedStorage.removeItem('accessToken');
       await EncryptedStorage.removeItem('refreshToken');
       await EncryptedStorage.removeItem('userId');
@@ -276,14 +268,11 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
     }
   }
 
-  // �📜 Obtener ligas del usuario autenticado
+  // 📜 Obtener ligas del usuario autenticado
   static async obtenerLigasPorUsuario(userId: string) {
     try {
       const token = await this.getAccessToken();
       if (!token) throw new Error('Usuario no autenticado');
-
-      console.log('🔍 LigaService.obtenerLigasPorUsuario - URL:', `${ApiConfig.BASE_URL}/leagues/user/${userId}`);
-      console.log('🔍 LigaService.obtenerLigasPorUsuario - Token:', !!token);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout (aumentado desde 10s)
@@ -295,10 +284,8 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
       });
 
       clearTimeout(timeoutId);
-      console.log('🔍 LigaService.obtenerLigasPorUsuario - Status:', res.status);
 
       const json = await res.json().catch(() => ({}));
-      console.log('🔍 LigaService.obtenerLigasPorUsuario - Response:', json);
 
       if (!res.ok) {
         const friendlyMessage = this.mapErrorToFriendlyMessage(json, res.status);

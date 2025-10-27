@@ -66,11 +66,6 @@ export class LoginService {
       await EncryptedStorage.setItem('session', JSON.stringify({ user }));
     }
 
-    // 🔎 Verificación y trazas útiles
-    const savedAccess = await EncryptedStorage.getItem('accessToken');
-    const savedUserId = await EncryptedStorage.getItem('userId');
-    console.log('LoginService: accessToken(saved)=', !!savedAccess, 'userId(saved)=', savedUserId, 'isAdmin=', isAdmin, 'userName=', user?.name);
-
     return { accessToken, refreshToken, userId, payload };
   }
 
