@@ -96,6 +96,100 @@ function setInCache<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T) 
 const fixturesCache = new Map<string, CacheEntry<any[]>>();
 const playerInfoCache = new Map<string, CacheEntry<any | null>>();
 const fixturePlayersCache = new Map<string, CacheEntry<any[]>>();
+const fixtureEventsCache = new Map<string, CacheEntry<any[]>>();
+
+/**
+ * Obtiene los eventos de un partido (sustituciones, goles, tarjetas, etc.)
+ */
+async function fetchFixtureEvents(fixtureId: number) {
+  const cacheKey = String(fixtureId);
+  const cached = getFromCache(fixtureEventsCache, cacheKey);
+  if (cached !== undefined) return cached;
+
+  await delay(DEFAULT_REQUEST_DELAY_MS);
+  const response = await api.get('/fixtures/events', { params: { fixture: fixtureId } });
+  const events = response.data?.response ?? [];
+  setInCache(fixtureEventsCache, cacheKey, events);
+  return events;
+}
+
+/**
+ * Calcula los minutos reales jugados sin tiempo de descuento
+ * basándose en los eventos de sustitución del partido
+ * 
+ * @param playerId - ID del jugador
+ * @param playerName - Nombre del jugador
+ * @param fixtureId - ID del partido
+ * @param rawMinutes - Minutos reportados por la API (pueden incluir descuento)
+ * @param wasSubstitute - Si el jugador empezó como suplente
+ * @returns Minutos sin descuento (máximo 90)
+ */
+async function calculateMinutesWithoutInjuryTime(
+  playerId: number,
+  playerName: string,
+  fixtureId: number,
+  rawMinutes: number,
+  wasSubstitute: boolean
+): Promise<number> {
+  try {
+    const events = await fetchFixtureEvents(fixtureId);
+    
+    // Normalizar nombre para comparación
+    const normalizeName = (name: string): string => {
+      return name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[.]/g, '')
+        .trim()
+        .toLowerCase();
+    };
+    
+    const normalizedPlayerName = normalizeName(playerName);
+    
+    // Buscar evento de entrada (si fue suplente)
+    let entryMinute = 0;
+    if (wasSubstitute) {
+      const entryEvent = events.find((e: any) => 
+        e.type === 'subst' && 
+        e.assist?.id === playerId || 
+        (e.assist?.name && normalizeName(e.assist.name) === normalizedPlayerName)
+      );
+      
+      if (entryEvent) {
+        // El minuto puede ser "45+2" o "90", extraer solo el número base
+        const minuteStr = String(entryEvent.time?.elapsed ?? 0);
+        entryMinute = parseInt(minuteStr.split('+')[0]);
+        console.log(`[playerStats] 🔄 Jugador ${playerName} entró en minuto ${entryMinute}`);
+      }
+    }
+    
+    // Buscar evento de salida (si fue sustituido)
+    let exitMinute = 90; // Por defecto, asumimos que jugó hasta el final
+    const exitEvent = events.find((e: any) => 
+      e.type === 'subst' && 
+      (e.player?.id === playerId || 
+       (e.player?.name && normalizeName(e.player.name) === normalizedPlayerName))
+    );
+    
+    if (exitEvent) {
+      const minuteStr = String(exitEvent.time?.elapsed ?? 90);
+      exitMinute = parseInt(minuteStr.split('+')[0]);
+      console.log(`[playerStats] 🔄 Jugador ${playerName} salió en minuto ${exitMinute}`);
+    }
+    
+    // Calcular minutos sin descuento
+    const minutesWithoutInjuryTime = Math.min(exitMinute - entryMinute, 90);
+    
+    console.log(`[playerStats] ⏱️  Jugador ${playerName}: ${rawMinutes} min (API) → ${minutesWithoutInjuryTime} min (sin descuento)`);
+    
+    return minutesWithoutInjuryTime;
+    
+  } catch (error) {
+    console.warn(`[playerStats] ⚠️  No se pudieron obtener eventos del partido ${fixtureId}, usando cálculo básico:`, error);
+    // Fallback: usar el método anterior (límite de 90)
+    return Math.min(rawMinutes, 90);
+  }
+}
 
 /**
  * Extrae estadísticas de un objeto stats de API-Football
@@ -447,6 +541,26 @@ export async function getPlayerStatsForJornada(
       });
       return emptyStats;
     }
+
+    // ✨ NUEVO: Calcular minutos sin tiempo de descuento
+    const rawMinutes = Number(playerStats?.games?.minutes ?? 0);
+    const wasSubstitute = Boolean(playerStats?.games?.substitute);
+    const minutesWithoutInjuryTime = await calculateMinutesWithoutInjuryTime(
+      playerId,
+      playerFromDb.name,
+      fixtureId,
+      rawMinutes,
+      wasSubstitute
+    );
+    
+    // ✨ IMPORTANTE: Sobrescribir los minutos en playerStats con los minutos sin descuento
+    playerStats = {
+      ...playerStats,
+      games: {
+        ...playerStats.games,
+        minutes: minutesWithoutInjuryTime,
+      },
+    };
 
     // Calcular puntos
     const role = normalizeRole(playerFromDb?.position ?? playerStats?.games?.position);
