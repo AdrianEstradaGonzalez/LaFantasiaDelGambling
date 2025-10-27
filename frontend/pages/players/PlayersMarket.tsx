@@ -16,6 +16,7 @@ import { DrawerMenu } from '../../components/DrawerMenu';
 import Svg, { Path } from 'react-native-svg';
 import { JornadaService } from '../../services/JornadaService';
 import { SafeLayout } from '../../components/SafeLayout';
+import { AdBanner } from '../../components/AdBanner';
 
 // Función para decodificar JWT
 function decodeJwt(token: string): any {
@@ -742,7 +743,7 @@ export const PlayersMarket = ({ navigation, route }: {
   };
 
   // Renderizar item de jugador
-  const renderPlayer = ({ item: p }: { item: PlayerWithPrice }) => {
+  const renderPlayer = ({ item: p, index }: { item: PlayerWithPrice; index: number }) => {
     const cat = normalizePosition(p.position);
     const displayCat: CanonicalPos = cat ?? 'Midfielder';
     
@@ -865,7 +866,7 @@ export const PlayersMarket = ({ navigation, route }: {
     if (ligaId) {
       if (isAlreadyInSquad) {
         // Jugador ya fichado: mostrar como card clickeable para ver estadísticas
-        return (
+        const playerCard = (
           <TouchableOpacity
             onPress={() => handleOpenPlayerStats(p)}
             style={{ 
@@ -880,9 +881,23 @@ export const PlayersMarket = ({ navigation, route }: {
             {content}
           </TouchableOpacity>
         );
+
+        // Si es el primer jugador (índice 0), añadir banner después
+        if (index === 0) {
+          return (
+            <>
+              {playerCard}
+              <View style={{ marginBottom: 10 }}>
+                <AdBanner visible={true} size="BANNER" />
+              </View>
+            </>
+          );
+        }
+
+        return playerCard;
       } else {
         // Jugador no fichado: clickeable para ver estadísticas
-        return (
+        const playerCard = (
           <TouchableOpacity
             onPress={() => handleOpenPlayerStats(p)}
             disabled={isSaving}
@@ -900,11 +915,25 @@ export const PlayersMarket = ({ navigation, route }: {
             {content}
           </TouchableOpacity>
         );
+
+        // Si es el primer jugador (índice 0), añadir banner después
+        if (index === 0) {
+          return (
+            <>
+              {playerCard}
+              <View style={{ marginBottom: 10 }}>
+                <AdBanner visible={true} size="BANNER" />
+              </View>
+            </>
+          );
+        }
+
+        return playerCard;
       }
     }
 
     // Admin mode: No clickeable
-    return (
+    const playerCard = (
       <View style={{ 
         backgroundColor: '#1a2332', 
         borderWidth: 1, 
@@ -916,6 +945,20 @@ export const PlayersMarket = ({ navigation, route }: {
         {content}
       </View>
     );
+
+    // Si es el primer jugador (índice 0), añadir banner después
+    if (index === 0) {
+      return (
+        <>
+          {playerCard}
+          <View style={{ marginBottom: 10 }}>
+            <AdBanner visible={true} size="BANNER" />
+          </View>
+        </>
+      );
+    }
+
+    return playerCard;
   };
 
   return (
