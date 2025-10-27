@@ -103,6 +103,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         let userBetsData: UserBet[] = [];
         let leagueBetsData: UserBet[] = [];
         let statusData: string | null = null;
+        let currentJornadaFromLeague: number | null = null;
         if (ligaId) {
           try {
             budgetData = await BetService.getBettingBudget(ligaId);
@@ -110,6 +111,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             leagueBetsData = await BetService.getLeagueBets(ligaId);
             const statusResp = await JornadaService.getJornadaStatus(ligaId);
             statusData = statusResp.status;
+            currentJornadaFromLeague = statusResp.currentJornada;
           } catch (err) {
             console.warn('Error getting budget/bets:', err);
           }
@@ -141,27 +143,33 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           setGroupedBets(groupedArray);
           setUserBets(userBetsData);
           
-          // Filtrar apuestas de la liga por la jornada actual
-          const filteredLeagueBets = apuestas.length > 0 
-            ? leagueBetsData.filter(bet => bet.jornada === apuestas[0].jornada)
+          // Filtrar apuestas de la liga por la jornada actual de la liga
+          const filteredLeagueBets = currentJornadaFromLeague != null
+            ? leagueBetsData.filter(bet => bet.jornada === currentJornadaFromLeague)
             : leagueBetsData;
           setLeagueBets(filteredLeagueBets);
           
           setBudget(budgetData);
           if (statusData) setJornadaStatus(statusData);
-          if (apuestas.length > 0) {
+          
+          // Usar la jornada de la liga, no la de las apuestas disponibles
+          if (currentJornadaFromLeague != null) {
+            setJornada(currentJornadaFromLeague);
+          } else if (apuestas.length > 0) {
             setJornada(apuestas[0].jornada);
           }
+          
           console.log('🎲 DEBUG Apuestas - Status:', statusData);
+          console.log('🎲 DEBUG Apuestas - Current Jornada:', currentJornadaFromLeague);
           console.log('🎲 DEBUG Apuestas - League Bets (filtered):', filteredLeagueBets);
           console.log('🎲 DEBUG Apuestas - Grouped Bets:', groupedArray);
 
           // Si la jornada está cerrada y hay apuestas, evaluar en tiempo real
-          if (statusData === 'closed' && filteredLeagueBets.length > 0 && apuestas.length > 0 && ligaId) {
+          if (statusData === 'closed' && filteredLeagueBets.length > 0 && currentJornadaFromLeague != null && ligaId) {
             console.log('⚡ Jornada cerrada, evaluando en tiempo real...');
             setEvaluatingRealtime(true);
             try {
-              const realtimeResult = await BetService.evaluateBetsRealTime(ligaId, apuestas[0].jornada);
+              const realtimeResult = await BetService.evaluateBetsRealTime(ligaId, currentJornadaFromLeague);
               setRealtimeBalances(realtimeResult.userBalances);
               console.log('✅ Balances en tiempo real:', realtimeResult.userBalances);
             } catch (err) {

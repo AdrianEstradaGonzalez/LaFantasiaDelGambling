@@ -787,7 +787,7 @@ export class JornadaService {
 
       // 6. NO eliminamos apuestas - solo las mantenemos evaluadas para historial
       // Las apuestas permanecen en la BBDD con su estado (won/lost/pending)
-      console.log(`� Apuestas mantenidas en BBDD para historial\n`);
+      console.log(`  Apuestas mantenidas en BBDD para historial\n`);
 
       return {
         success: true,
@@ -1224,7 +1224,7 @@ export class JornadaService {
 
       for (const league of leagues) {
         console.log(`\n${'='.repeat(60)}`);
-        console.log(`� Procesando liga: ${league.name}`);
+        console.log(`  Procesando liga: ${league.name}`);
         console.log(`${'='.repeat(60)}\n`);
 
         try {

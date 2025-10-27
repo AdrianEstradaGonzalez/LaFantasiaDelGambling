@@ -333,3 +333,36 @@ export async function generateBetOptionsForAllLeagues(jornada: number): Promise<
     throw error;
   }
 }
+
+// Public wrapper to generate bet options for a single league using the same logic
+export async function generateBetOptionsForLeaguePublic(leagueId: string, jornada: number): Promise<{
+  success: boolean;
+  matchesProcessed: number;
+  optionsCount: number;
+}> {
+  console.log(`\n🎲 Generando apuestas para liga ${leagueId} jornada ${jornada}...\n`);
+  try {
+    const fixtures = await fetchFixtures(jornada);
+    if (fixtures.length === 0) {
+      console.log('⚠️  No hay fixtures disponibles para generar apuestas');
+      return { success: false, matchesProcessed: 0, optionsCount: 0 };
+    }
+
+    const allMatchBets: MatchBets[] = [];
+    for (const fixture of fixtures) {
+      const matchBets = await fetchOddsForFixture(
+        fixture.fixture.id,
+        fixture.teams.home.name,
+        fixture.teams.away.name
+      );
+      if (matchBets) allMatchBets.push(matchBets);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    const optionsCount = await generateBetOptionsForLeague(leagueId, jornada, allMatchBets);
+    return { success: true, matchesProcessed: allMatchBets.length, optionsCount };
+  } catch (error: any) {
+    console.error('❌ Error generating bet options for league:', error?.message || error);
+    return { success: false, matchesProcessed: 0, optionsCount: 0 };
+  }
+}

@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { AppError } from '../utils/errors.js';
 import axios from 'axios';
+import { generateBetOptionsForLeaguePublic } from '../utils/betOptionsGenerator.js';
 
 const prisma = new PrismaClient();
 
@@ -216,191 +217,22 @@ export class BetOptionService {
    * Ejemplo: "Goles totales" con opciones "Más de 2.5" y "Menos de 2.5"
    */
   static async generateBetOptions(leagueId: string, jornada: number) {
-    console.log(`\n🎲 Iniciando generación de apuestas para liga ${leagueId}, jornada ${jornada}`);
+    console.log(`\n🎲 Delegando generación de apuestas para liga ${leagueId}, jornada ${jornada} al generador compartido`);
 
-    // Si es jornada 9, usar datos predefinidos para testing
+    // Mantener la excepción de Jornada 9 para testing
     if (jornada === 9) {
       return this.generateJornada9Options(leagueId);
     }
 
     try {
-      // 1. Obtener partidos de la jornada desde la API
-      const { data } = await axios.get(`${API_BASE}/fixtures`, {
-        headers: HEADERS,
-        timeout: 10000,
-        params: {
-          league: LA_LIGA_LEAGUE_ID,
-          season: CURRENT_SEASON,
-          round: `Regular Season - ${jornada}`,
-        },
-      });
-
-      const fixtures = data?.response || [];
-      
-      if (fixtures.length === 0) {
-        console.log(`⚠️  No se encontraron partidos para la jornada ${jornada}`);
-        return {
-          success: true,
-          created: 0,
-          message: 'No hay partidos disponibles para esta jornada',
-        };
-      }
-
-      console.log(`✅ Encontrados ${fixtures.length} partidos para la jornada ${jornada}`);
-
-      // 2. Obtener TODAS las odds de la jornada en UNA SOLA petición
-      console.log(`📡 Obteniendo odds de todos los partidos en una sola petición...`);
-      let oddsMap = new Map<number, any>(); // matchId -> odds data
-      
-      try {
-        const { data: oddsData } = await axios.get(`${API_BASE}/odds`, {
-          headers: HEADERS,
-          timeout: 15000,
-          params: {
-            league: LA_LIGA_LEAGUE_ID,
-            season: CURRENT_SEASON,
-            bookmaker: 8, // Bet365
-          },
-        });
-
-        const oddsResponse = oddsData?.response || [];
-        console.log(`✅ Recibidas odds de ${oddsResponse.length} partidos`);
-
-        // Mapear odds por fixture ID
-        for (const oddsItem of oddsResponse) {
-          const fixtureId = oddsItem?.fixture?.id;
-          if (fixtureId) {
-            oddsMap.set(fixtureId, oddsItem);
-          }
-        }
-      } catch (err: any) {
-        console.warn(`⚠️  Error obteniendo odds masivas, se usarán apuestas sintéticas:`, err?.message);
-      }
-
-      // 3. Para cada partido, generar 1 apuesta con sus opciones
-      const allBets: Array<{
-        matchId: number;
-        homeTeam: string;
-        awayTeam: string;
-        betType: string;
-        betLabel: string;
-        odd: number;
-      }> = [];
-
-      // Tipos de apuestas disponibles (se elegirá 1 por partido)
-      const betTypes = ['Goles totales', 'Resultado', 'Ambos marcan', 'Córners', 'Tarjetas'];
-      let betTypeIndex = 0;
-
-      for (const fixture of fixtures) {
-        const matchId = fixture.fixture.id;
-        const homeTeam = fixture.teams.home.name;
-        const awayTeam = fixture.teams.away.name;
-
-        console.log(`🔍 Generando 1 apuesta para ${homeTeam} vs ${awayTeam}...`);
-
-        // Elegir el tipo de apuesta para este partido (rotación)
-        const selectedBetType = betTypes[betTypeIndex % betTypes.length];
-        betTypeIndex++;
-
-        console.log(`   📌 Tipo seleccionado: "${selectedBetType}"`);
-
-        // Buscar odds del partido en el mapa
-        const oddsItem = oddsMap.get(matchId);
-        const bookmaker = oddsItem?.bookmakers?.[0];
-        const bets = bookmaker?.bets ?? [];
-
-        let foundOdds = false;
-
-        if (bets.length > 0) {
-          // Buscar el tipo de apuesta seleccionado
-          for (const bet of bets) {
-            const betId = bet.id;
-            const values = bet.values ?? [];
-
-            // Mapear betId al tipo seleccionado
-            let matches = false;
-            if (selectedBetType === 'Resultado' && betId === 1) matches = true;
-            else if (selectedBetType === 'Goles totales' && betId === 5) matches = true;
-            else if (selectedBetType === 'Ambos marcan' && betId === 8) matches = true;
-            else if (selectedBetType === 'Córners' && betId === 61) matches = true;
-            else if (selectedBetType === 'Tarjetas' && betId === 52) matches = true;
-
-            if (matches) {
-              // Procesar todas las opciones de este tipo
-              for (const v of values) {
-                const odd = parseFloat(v.odd);
-                if (isNaN(odd)) continue;
-
-                let label = '';
-
-                // Generar el label apropiado
-                if (selectedBetType === 'Resultado') {
-                  if (v.value === 'Home') label = `Ganará ${homeTeam}`;
-                  else if (v.value === 'Draw') label = 'Empate';
-                  else if (v.value === 'Away') label = `Ganará ${awayTeam}`;
-                } else if (selectedBetType === 'Goles totales') {
-                  const number = v.value.match(/[\d.]+/)?.[0];
-                  label = v.value.toLowerCase().includes('over')
-                    ? `Más de ${number} goles`
-                    : `Menos de ${number} goles`;
-                } else if (selectedBetType === 'Ambos marcan') {
-                  label = v.value === 'Yes'
-                    ? 'Ambos equipos marcarán'
-                    : 'Al menos un equipo no marcará';
-                } else if (selectedBetType === 'Córners') {
-                  const number = v.value.match(/[\d.]+/)?.[0];
-                  label = v.value.toLowerCase().includes('over')
-                    ? `Más de ${number} córners`
-                    : `Menos de ${number} córners`;
-                } else if (selectedBetType === 'Tarjetas') {
-                  const number = v.value.match(/[\d.]+/)?.[0];
-                  label = v.value.toLowerCase().includes('over')
-                    ? `Más de ${number} tarjetas`
-                    : `Menos de ${number} tarjetas`;
-                }
-
-                if (label) {
-                  allBets.push({
-                    matchId,
-                    homeTeam,
-                    awayTeam,
-                    betType: selectedBetType,
-                    betLabel: label,
-                    odd,
-                  });
-                  foundOdds = true;
-                }
-              }
-
-              if (foundOdds) {
-                console.log(`   ✅ Generadas ${allBets.filter(b => b.matchId === matchId).length} opciones de "${selectedBetType}"`);
-                break; // Ya encontramos este tipo, no seguir buscando
-              }
-            }
-          }
-        }
-
-        // Si no se encontraron odds, generar sintéticas
-        if (!foundOdds) {
-          console.warn(`   ⚠️  No se encontraron odds de "${selectedBetType}", usando sintéticas`);
-          const syntheticBets = this.generateSyntheticBetsOfType(matchId, homeTeam, awayTeam, selectedBetType);
-          allBets.push(...syntheticBets);
-        }
-      }
-
-      console.log(`📊 Total de apuestas generadas: ${allBets.length}`);
-      console.log(`📊 Partidos procesados: ${fixtures.length}`);
-      console.log(`📊 Opciones por partido: ${(allBets.length / fixtures.length).toFixed(1)} promedio`);
-
-      // 4. Guardar apuestas (el método saveBetOptions ya hace la validación y limitación)
-      const result = await this.saveBetOptions(leagueId, jornada, allBets);
-
-      console.log(`✅ Generación completada: ${result.created} opciones guardadas\n`);
-
-      return result;
+      const res = await generateBetOptionsForLeaguePublic(leagueId, jornada);
+      return {
+        success: res.success,
+        created: res.optionsCount || 0,
+      };
     } catch (error: any) {
-      console.error('❌ Error generando apuestas:', error);
-      throw new AppError(500, 'GENERATION_ERROR', `Error al generar apuestas: ${error.message}`);
+      console.error('❌ Error delegating generation to betOptionsGenerator:', error?.message || error);
+      throw new AppError(500, 'GENERATION_ERROR', `Error al generar apuestas: ${error?.message || error}`);
     }
   }
 
