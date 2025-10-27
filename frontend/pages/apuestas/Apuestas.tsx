@@ -63,6 +63,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [amountInputs, setAmountInputs] = useState<Record<string, string>>({});
   const [editingBets, setEditingBets] = useState<Record<string, boolean>>({});
   
+  // Estados para evaluación en tiempo real
+  const [realtimeBalances, setRealtimeBalances] = useState<any[]>([]);
+  const [evaluatingRealtime, setEvaluatingRealtime] = useState(false);
+  
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
@@ -145,6 +149,22 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           console.log('🎲 DEBUG Apuestas - Status:', statusData);
           console.log('🎲 DEBUG Apuestas - League Bets:', leagueBetsData);
           console.log('🎲 DEBUG Apuestas - Grouped Bets:', groupedArray);
+          
+          // Si la jornada está cerrada y hay apuestas, evaluar en tiempo real
+          if (statusData === 'closed' && leagueBetsData.length > 0 && apuestas.length > 0 && ligaId) {
+            console.log('⚡ Jornada cerrada, evaluando en tiempo real...');
+            setEvaluatingRealtime(true);
+            try {
+              const realtimeResult = await BetService.evaluateBetsRealTime(ligaId, apuestas[0].jornada);
+              setRealtimeBalances(realtimeResult.userBalances);
+              console.log('✅ Balances en tiempo real:', realtimeResult.userBalances);
+            } catch (err) {
+              console.error('❌ Error evaluando en tiempo real:', err);
+            } finally {
+              setEvaluatingRealtime(false);
+            }
+          }
+          
           setLoading(false);
         }
       } catch (e) {
@@ -493,7 +513,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   </View>
                 ) : (
                   <>
-                    {/* Resumen general */}
+                    {/* Balance de usuarios (evaluación en tiempo real) */}
                     <View style={{
                       backgroundColor: '#1a2332',
                       borderWidth: 2,
@@ -516,55 +536,120 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           padding: 8,
                           marginRight: 12,
                         }}>
-                          <Text style={{ fontSize: 24 }}>📊</Text>
+                          <Text style={{ fontSize: 24 }}>�</Text>
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: '#93c5fd', fontSize: 18, fontWeight: '800' }}>
-                            RESUMEN GENERAL
+                            BALANCE DE USUARIOS
                           </Text>
                           <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
-                            {leagueBets.length} apuesta{leagueBets.length !== 1 ? 's' : ''} realizadas
+                            {evaluatingRealtime ? 'Evaluando...' : realtimeBalances.length > 0 ? 'Resultados en tiempo real' : `${leagueBets.length} apuesta${leagueBets.length !== 1 ? 's' : ''} realizadas`}
                           </Text>
                         </View>
                       </View>
 
-                      {/* Agrupar por jugador */}
-                      {(() => {
-                        const betsByUser: Record<string, { bets: UserBet[], totalAmount: number }> = {};
-                        leagueBets.forEach((bet) => {
-                          const userName = bet.userName || 'Jugador';
-                          if (!betsByUser[userName]) {
-                            betsByUser[userName] = { bets: [], totalAmount: 0 };
-                          }
-                          betsByUser[userName].bets.push(bet);
-                          betsByUser[userName].totalAmount += bet.amount;
-                        });
-
-                        return Object.entries(betsByUser).map(([userName, data]) => (
-                          <View key={userName} style={{
+                      {evaluatingRealtime ? (
+                        <View style={{ padding: 20, alignItems: 'center' }}>
+                          <ActivityIndicator size="small" color="#3b82f6" />
+                          <Text style={{ color: '#94a3b8', fontSize: 13, marginTop: 8 }}>
+                            Consultando resultados...
+                          </Text>
+                        </View>
+                      ) : realtimeBalances.length > 0 ? (
+                        /* Mostrar balances calculados en tiempo real */
+                        realtimeBalances.map((balance) => (
+                          <View key={balance.userId} style={{
                             backgroundColor: '#0f172a',
                             borderRadius: 8,
                             padding: 12,
                             marginBottom: 8,
                             borderLeftWidth: 3,
-                            borderLeftColor: '#3b82f6',
+                            borderLeftColor: balance.netProfit >= 0 ? '#22c55e' : '#ef4444',
                           }}>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ marginBottom: 8 }}>
                               <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 15 }}>
-                                {userName}
+                                {balance.userName}
                               </Text>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                                <Text style={{ color: '#64748b', fontSize: 13 }}>
-                                  {data.bets.length} apuesta{data.bets.length !== 1 ? 's' : ''}
-                                </Text>
-                                <Text style={{ color: '#22c55e', fontWeight: '800', fontSize: 15 }}>
-                                  {data.totalAmount}M
-                                </Text>
+                            </View>
+                            
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <Text style={{ color: '#94a3b8', fontSize: 13 }}>
+                                Apuestas: {balance.totalBets} ({balance.wonBets}✅ / {balance.lostBets}❌{balance.pendingBets > 0 ? ` / ${balance.pendingBets}⏳` : ''})
+                              </Text>
+                              <Text style={{ color: '#cbd5e1', fontSize: 13, fontWeight: '600' }}>
+                                Apostado: {balance.totalStaked}M
+                              </Text>
+                            </View>
+                            
+                            <View style={{ 
+                              flexDirection: 'row', 
+                              justifyContent: 'space-between', 
+                              alignItems: 'center',
+                              paddingTop: 8,
+                              borderTopWidth: 1,
+                              borderTopColor: '#1e293b',
+                            }}>
+                              <View style={{ flexDirection: 'row', gap: 12 }}>
+                                {balance.totalWinnings > 0 && (
+                                  <Text style={{ color: '#22c55e', fontSize: 13 }}>
+                                    +{balance.totalWinnings.toFixed(1)}M
+                                  </Text>
+                                )}
+                                {balance.totalLosses > 0 && (
+                                  <Text style={{ color: '#ef4444', fontSize: 13 }}>
+                                    -{balance.totalLosses}M
+                                  </Text>
+                                )}
                               </View>
+                              <Text style={{ 
+                                color: balance.netProfit >= 0 ? '#22c55e' : '#ef4444', 
+                                fontWeight: '800', 
+                                fontSize: 16 
+                              }}>
+                                {balance.netProfit >= 0 ? '+' : ''}{balance.netProfit.toFixed(1)}M
+                              </Text>
                             </View>
                           </View>
-                        ));
-                      })()}
+                        ))
+                      ) : (
+                        /* Fallback: agrupar por jugador (versión anterior) */
+                        (() => {
+                          const betsByUser: Record<string, { bets: UserBet[], totalAmount: number }> = {};
+                          leagueBets.forEach((bet) => {
+                            const userName = bet.userName || 'Jugador';
+                            if (!betsByUser[userName]) {
+                              betsByUser[userName] = { bets: [], totalAmount: 0 };
+                            }
+                            betsByUser[userName].bets.push(bet);
+                            betsByUser[userName].totalAmount += bet.amount;
+                          });
+
+                          return Object.entries(betsByUser).map(([userName, data]) => (
+                            <View key={userName} style={{
+                              backgroundColor: '#0f172a',
+                              borderRadius: 8,
+                              padding: 12,
+                              marginBottom: 8,
+                              borderLeftWidth: 3,
+                              borderLeftColor: '#3b82f6',
+                            }}>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 15 }}>
+                                  {userName}
+                                </Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                  <Text style={{ color: '#64748b', fontSize: 13 }}>
+                                    {data.bets.length} apuesta{data.bets.length !== 1 ? 's' : ''}
+                                  </Text>
+                                  <Text style={{ color: '#22c55e', fontWeight: '800', fontSize: 15 }}>
+                                    {data.totalAmount}M
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                          ));
+                        })()
+                      )}
                     </View>
 
                     {/* Apuestas por partido */}

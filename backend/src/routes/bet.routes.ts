@@ -12,6 +12,11 @@ export default async function betRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.auth],
   }, BetController.getLeagueBets);
 
+  // Evaluar apuestas en tiempo real (sin actualizar BD)
+  fastify.get('/realtime/:leagueId/:jornada', {
+    preHandler: [fastify.auth],
+  }, BetController.evaluateBetsRealTime);
+
   // Obtener apuestas del usuario
   fastify.get('/:leagueId', {
     preHandler: [fastify.auth],

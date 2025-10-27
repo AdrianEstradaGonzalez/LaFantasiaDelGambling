@@ -514,7 +514,179 @@ async function evaluateAllPendingBets() {
   };
 }
 
+/**
+ * Evalúa apuestas en tiempo real SIN actualizar la base de datos
+ * Retorna el estado actual de las apuestas basándose en los resultados de los partidos
+ */
+async function evaluateBetsRealTime(leagueId: string, jornada: number) {
+  console.log(`⚡ Evaluación en tiempo real - Liga ${leagueId}, Jornada ${jornada}`);
+
+  // Obtener todas las apuestas de la jornada (sin filtrar por status)
+  const bets = await prisma.bet.findMany({
+    where: {
+      leagueId,
+      jornada
+    },
+    include: {
+      leagueMember: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: {
+      matchId: 'asc'
+    }
+  });
+
+  if (bets.length === 0) {
+    return { bets: [], userBalances: [], matchesEvaluated: 0 };
+  }
+
+  console.log(`📊 Apuestas encontradas: ${bets.length}`);
+
+  // Agrupar apuestas por matchId
+  const betsByMatch = new Map<number, any[]>();
+  for (const bet of bets) {
+    if (!betsByMatch.has(bet.matchId)) {
+      betsByMatch.set(bet.matchId, []);
+    }
+    betsByMatch.get(bet.matchId)!.push(bet);
+  }
+
+  const evaluatedBets: any[] = [];
+  let matchesEvaluated = 0;
+
+  // Procesar cada partido
+  for (const [matchId, matchBets] of betsByMatch.entries()) {
+    try {
+      console.log(`🏟️  Consultando partido ${matchId}...`);
+      
+      // Obtener estadísticas del partido
+      const stats = await getMatchStatistics(matchId);
+      console.log(`   ✅ ${stats.homeTeam} ${stats.homeGoals}-${stats.awayGoals} ${stats.awayTeam}`);
+      matchesEvaluated++;
+
+      // Evaluar cada apuesta de este partido
+      for (const bet of matchBets) {
+        const evaluation = evaluateBet(bet, stats);
+        
+        const userName = bet.leagueMember?.user?.name || 'Usuario';
+        
+        evaluatedBets.push({
+          betId: bet.id,
+          userId: bet.userId,
+          userName: userName,
+          userFullName: userName,
+          matchId: bet.matchId,
+          betType: bet.betType,
+          betLabel: bet.betLabel,
+          odd: bet.odd,
+          amount: bet.amount,
+          status: evaluation.won ? 'won' : 'lost',
+          potentialWin: evaluation.won ? bet.amount * bet.odd : 0,
+          profit: evaluation.won ? (bet.amount * bet.odd) - bet.amount : -bet.amount,
+          actualResult: evaluation.actualResult,
+          homeTeam: stats.homeTeam,
+          awayTeam: stats.awayTeam,
+          homeGoals: stats.homeGoals,
+          awayGoals: stats.awayGoals
+        });
+
+        console.log(`   ${evaluation.won ? '✅' : '❌'} ${userName}: ${bet.betLabel} (${bet.amount}M × ${bet.odd})`);
+      }
+
+      // Delay para no saturar la API
+      await new Promise(resolve => setTimeout(resolve, 300));
+    } catch (error: any) {
+      console.error(`⚠️  Error en partido ${matchId}: ${error.message}`);
+      
+      // Para partidos no finalizados o con error, marcar como pendientes
+      for (const bet of matchBets) {
+        const userName = bet.leagueMember?.user?.name || 'Usuario';
+        
+        evaluatedBets.push({
+          betId: bet.id,
+          userId: bet.userId,
+          userName: userName,
+          userFullName: userName,
+          matchId: bet.matchId,
+          betType: bet.betType,
+          betLabel: bet.betLabel,
+          odd: bet.odd,
+          amount: bet.amount,
+          status: 'pending',
+          potentialWin: 0,
+          profit: 0,
+          actualResult: 'Partido no finalizado',
+          homeTeam: '',
+          awayTeam: '',
+          homeGoals: null,
+          awayGoals: null
+        });
+      }
+    }
+  }
+
+  // Calcular balance por usuario
+  const userBalances = new Map<string, any>();
+  
+  for (const bet of evaluatedBets) {
+    if (!userBalances.has(bet.userId)) {
+      userBalances.set(bet.userId, {
+        userId: bet.userId,
+        userName: bet.userName,
+        userFullName: bet.userFullName,
+        totalBets: 0,
+        totalStaked: 0,
+        wonBets: 0,
+        lostBets: 0,
+        pendingBets: 0,
+        totalWinnings: 0,
+        totalLosses: 0,
+        netProfit: 0
+      });
+    }
+
+    const balance = userBalances.get(bet.userId)!;
+    balance.totalBets++;
+    balance.totalStaked += bet.amount;
+
+    if (bet.status === 'won') {
+      balance.wonBets++;
+      balance.totalWinnings += bet.potentialWin;
+      balance.netProfit += bet.profit;
+    } else if (bet.status === 'lost') {
+      balance.lostBets++;
+      balance.totalLosses += bet.amount;
+      balance.netProfit += bet.profit;
+    } else {
+      balance.pendingBets++;
+    }
+  }
+
+  const userBalancesArray = Array.from(userBalances.values()).sort((a, b) => b.netProfit - a.netProfit);
+
+  console.log(`\n✅ Evaluación en tiempo real completada:`);
+  console.log(`   - Partidos evaluados: ${matchesEvaluated}`);
+  console.log(`   - Apuestas procesadas: ${evaluatedBets.length}`);
+  console.log(`   - Usuarios: ${userBalancesArray.length}`);
+
+  return {
+    bets: evaluatedBets,
+    userBalances: userBalancesArray,
+    matchesEvaluated
+  };
+}
+
 export const BetEvaluationService = {
   evaluatePendingBets,
   evaluateAllPendingBets,
+  evaluateBetsRealTime,
 };

@@ -257,4 +257,61 @@ export class BetService {
       throw new Error(error?.response?.data?.error || 'Error al evaluar todas las apuestas');
     }
   }
+
+  /**
+   * Evaluar apuestas en tiempo real (sin actualizar BD)
+   */
+  static async evaluateBetsRealTime(leagueId: string, jornada: number): Promise<{
+    bets: Array<{
+      betId: string;
+      userId: string;
+      userName: string;
+      userFullName: string;
+      matchId: number;
+      betType: string;
+      betLabel: string;
+      odd: number;
+      amount: number;
+      status: 'won' | 'lost' | 'pending';
+      potentialWin: number;
+      profit: number;
+      actualResult: string;
+      homeTeam: string;
+      awayTeam: string;
+      homeGoals: number | null;
+      awayGoals: number | null;
+    }>;
+    userBalances: Array<{
+      userId: string;
+      userName: string;
+      userFullName: string;
+      totalBets: number;
+      totalStaked: number;
+      wonBets: number;
+      lostBets: number;
+      pendingBets: number;
+      totalWinnings: number;
+      totalLosses: number;
+      netProfit: number;
+    }>;
+    matchesEvaluated: number;
+  }> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      
+      const response = await axios.get(
+        `${API_URL}/bets/realtime/${leagueId}/${jornada}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('Error evaluating bets in realtime:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al evaluar apuestas en tiempo real');
+    }
+  }
 }
