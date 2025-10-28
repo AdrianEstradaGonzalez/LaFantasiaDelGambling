@@ -18,7 +18,9 @@ const App = () => {
     ]);
 
     // 🎯 Inicializar AdMob al arrancar la app
-    AdMobService.initialize();
+    AdMobService.initialize().catch(error => {
+      console.error('Error inicializando AdMob:', error);
+    });
   }, []);
 
   return (
