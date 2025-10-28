@@ -29,9 +29,15 @@ const BET_TYPE_TRANSLATIONS: Record<string, string> = {
   'Cards Over/Under': 'Más/Menos Tarjetas',
   'Double Chance': 'Doble Oportunidad',
   'Clean Sheet': 'Portería a Cero',
+  'Clean Sheet - Home': 'Portería a Cero - Local',
+  'Clean Sheet - Away': 'Portería a Cero - Visitante',
   'Exact Score': 'Resultado Exacto',
   'First Half Winner': 'Ganador Primera Parte',
   'Second Half Winner': 'Ganador Segunda Parte',
+  'Odd/Even': 'Par/Impar',
+  'Total Goals': 'Total de Goles',
+  'Home Team Total Goals': 'Goles Local',
+  'Away Team Total Goals': 'Goles Visitante',
 };
 
 // Mapa de traducción de opciones de apuesta al español
@@ -46,10 +52,43 @@ const BET_LABEL_TRANSLATIONS: Record<string, string> = {
   'Home/Draw': 'Local o Empate',
   'Home/Away': 'Local o Visitante',
   'Draw/Away': 'Empate o Visitante',
+  'Odd': 'Impar',
+  'Even': 'Par',
 };
 
 function translateBetType(betType: string): string {
-  return BET_TYPE_TRANSLATIONS[betType] || betType;
+  // Intentar traducción directa
+  if (BET_TYPE_TRANSLATIONS[betType]) {
+    return BET_TYPE_TRANSLATIONS[betType];
+  }
+  
+  // Traducir casos especiales que pueden venir con diferentes formatos
+  const lowerType = betType.toLowerCase();
+  
+  if (lowerType.includes('goals') && (lowerType.includes('over') || lowerType.includes('under'))) {
+    return 'Más/Menos Goles';
+  }
+  if (lowerType.includes('corners') && (lowerType.includes('over') || lowerType.includes('under'))) {
+    return 'Más/Menos Corners';
+  }
+  if (lowerType.includes('cards') && (lowerType.includes('over') || lowerType.includes('under'))) {
+    return 'Más/Menos Tarjetas';
+  }
+  if (lowerType.includes('both') && lowerType.includes('score')) {
+    return 'Ambos Equipos Marcan';
+  }
+  if (lowerType.includes('clean sheet')) {
+    if (lowerType.includes('home')) return 'Portería a Cero - Local';
+    if (lowerType.includes('away')) return 'Portería a Cero - Visitante';
+    return 'Portería a Cero';
+  }
+  if (lowerType.includes('winner')) {
+    if (lowerType.includes('first half')) return 'Ganador Primera Parte';
+    if (lowerType.includes('second half')) return 'Ganador Segunda Parte';
+    return 'Ganador del Partido';
+  }
+  
+  return betType;
 }
 
 function translateBetLabel(betLabel: string, homeTeam?: string, awayTeam?: string): string {
@@ -58,19 +97,31 @@ function translateBetLabel(betLabel: string, homeTeam?: string, awayTeam?: strin
     return BET_LABEL_TRANSLATIONS[betLabel];
   }
   
-  // Traducir Over/Under con números
-  if (betLabel.includes('Over')) {
+  // Traducir Over/Under con números (diferentes formatos)
+  if (betLabel.startsWith('Over ')) {
     const value = betLabel.replace('Over ', '');
     return `Más de ${value}`;
   }
-  if (betLabel.includes('Under')) {
+  if (betLabel.startsWith('Under ')) {
     const value = betLabel.replace('Under ', '');
     return `Menos de ${value}`;
   }
   
-  // Si es un nombre de equipo, mantenerlo
+  // Casos especiales de Clean Sheet
+  if (betLabel.toLowerCase().includes('clean sheet')) {
+    if (betLabel.toLowerCase().includes('home')) return 'Sí - Local';
+    if (betLabel.toLowerCase().includes('away')) return 'Sí - Visitante';
+    if (betLabel.toLowerCase().includes('yes')) return 'Sí';
+    if (betLabel.toLowerCase().includes('no')) return 'No';
+  }
+  
+  // Si es un nombre de equipo, mantenerlo tal cual
   if (homeTeam && betLabel === homeTeam) return homeTeam;
   if (awayTeam && betLabel === awayTeam) return awayTeam;
+  
+  // Si contiene el nombre de un equipo, mantenerlo
+  if (homeTeam && betLabel.includes(homeTeam)) return betLabel;
+  if (awayTeam && betLabel.includes(awayTeam)) return betLabel;
   
   return betLabel;
 }
