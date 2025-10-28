@@ -28,7 +28,7 @@ export class BetController {
 
   /**
    * GET /api/bets/all/:leagueId
-   * Obtener todas las apuestas de la liga (jornada actual) con nombre y cantidad
+   * Obtener todas las apuestas de la liga (todas las jornadas) con nombre y cantidad
    */
   static async getLeagueBets(request: FastifyRequest<{ Params: { leagueId: string } }>, reply: FastifyReply) {
     try {
