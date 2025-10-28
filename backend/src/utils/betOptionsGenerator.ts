@@ -184,35 +184,9 @@ async function fetchOddsForFixture(fixtureId: number, homeTeam: string, awayTeam
       
       const betNameLower = bet.name.toLowerCase();
       
-      // Caso especial: Over/Under 2.5 goles
-      if (betNameLower.includes('goals') && betNameLower.includes('over')) {
-        const over25 = bet.values.find((v: any) => v.value === 'Over 2.5');
-        const under25 = bet.values.find((v: any) => v.value === 'Under 2.5');
-        
-        if (over25 && under25) {
-          const over25Odd = parseFloat(over25.odd);
-          const under25Odd = parseFloat(under25.odd);
-          
-          // Solo agregar si ambas cuotas están en rango
-          if (over25Odd >= 1.40 && over25Odd <= 3.00 && under25Odd >= 1.40 && under25Odd <= 3.00) {
-            validBets.push({
-              tipo: translateBetType(bet.name),
-              opcion: translateBetLabel(over25.value, homeTeam, awayTeam),
-              cuota: over25.odd
-            });
-            validBets.push({
-              tipo: translateBetType(bet.name),
-              opcion: translateBetLabel(under25.value, homeTeam, awayTeam),
-              cuota: under25.odd
-            });
-          }
-        }
-        return;
-      }
-      
       // Caso especial: Match Winner (puede tener 3 opciones)
       const isMatchWinner = betNameLower.includes('match winner') || 
-                            betNameLower.includes('winner') ||
+                            (betNameLower.includes('winner') && !betNameLower.includes('first') && !betNameLower.includes('second')) ||
                             (bet.values.length === 3 && 
                              bet.values.some((v: any) => v.value === 'Home') &&
                              bet.values.some((v: any) => v.value === 'Draw') &&
@@ -237,7 +211,50 @@ async function fetchOddsForFixture(fixtureId: number, homeTeam: string, awayTeam
         return;
       }
       
-      // Resto de apuestas: SOLO 2 opciones contrarias
+      // Over/Under: Tomar TODOS los pares que estén en rango
+      const isOverUnder = betNameLower.includes('over') || betNameLower.includes('under');
+      
+      if (isOverUnder) {
+        // Agrupar por línea (2.5, 3.5, 8.5, etc.)
+        const linesMap = new Map<string, { over?: any, under?: any }>();
+        
+        bet.values.forEach((value: any) => {
+          const valueStr = value.value as string;
+          if (valueStr.includes('Over')) {
+            const line = valueStr.replace('Over ', '');
+            if (!linesMap.has(line)) linesMap.set(line, {});
+            linesMap.get(line)!.over = value;
+          } else if (valueStr.includes('Under')) {
+            const line = valueStr.replace('Under ', '');
+            if (!linesMap.has(line)) linesMap.set(line, {});
+            linesMap.get(line)!.under = value;
+          }
+        });
+        
+        // Agregar cada par completo que esté en rango
+        linesMap.forEach((pair, line) => {
+          if (pair.over && pair.under) {
+            const overOdd = parseFloat(pair.over.odd);
+            const underOdd = parseFloat(pair.under.odd);
+            
+            if (overOdd >= 1.40 && overOdd <= 3.00 && underOdd >= 1.40 && underOdd <= 3.00) {
+              validBets.push({
+                tipo: translateBetType(bet.name),
+                opcion: translateBetLabel(pair.over.value, homeTeam, awayTeam),
+                cuota: pair.over.odd
+              });
+              validBets.push({
+                tipo: translateBetType(bet.name),
+                opcion: translateBetLabel(pair.under.value, homeTeam, awayTeam),
+                cuota: pair.under.odd
+              });
+            }
+          }
+        });
+        return;
+      }
+      
+      // Resto de apuestas binarias (Yes/No, Home/Away, etc.): SOLO 2 opciones contrarias
       if (bet.values.length === 2) {
         const validValues = bet.values.filter((value: any) => {
           const odd = parseFloat(value.odd);
@@ -246,6 +263,25 @@ async function fetchOddsForFixture(fixtureId: number, homeTeam: string, awayTeam
         
         // Solo agregar si ambas opciones están en rango
         if (validValues.length === 2) {
+          validValues.forEach((value: any) => {
+            validBets.push({
+              tipo: translateBetType(bet.name),
+              opcion: translateBetLabel(value.value, homeTeam, awayTeam),
+              cuota: value.odd
+            });
+          });
+        }
+      }
+      
+      // Apuestas con 3 opciones que NO son Match Winner (ej: Double Chance)
+      // Estas también las incluimos si todas están en rango
+      if (bet.values.length === 3 && !isMatchWinner) {
+        const validValues = bet.values.filter((value: any) => {
+          const odd = parseFloat(value.odd);
+          return odd >= 1.40 && odd <= 3.00;
+        });
+        
+        if (validValues.length === 3) {
           validValues.forEach((value: any) => {
             validBets.push({
               tipo: translateBetType(bet.name),
