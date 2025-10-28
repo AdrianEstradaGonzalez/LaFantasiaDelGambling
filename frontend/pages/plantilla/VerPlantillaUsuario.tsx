@@ -11,6 +11,7 @@ import { PlayerStatsService } from '../../services/PlayerStatsService';
 import LoadingScreen from '../../components/LoadingScreen';
 import { ChevronLeftIcon, AlertIcon } from '../../components/VectorIcons';
 import { SafeLayout } from '../../components/SafeLayout';
+import { AdBanner } from '../../components/AdBanner';
 
 type VerPlantillaRoute = RouteProp<{ params: { ligaId: string; ligaName: string; userId: string; userName: string; jornada?: number } }, 'params'>;
 
@@ -248,7 +249,12 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         </View>
       )}
 
-      <View style={{ flex: 1, paddingTop: squad && squad.players && squad.players.length < 11 ? 0 : 60 }}>
+      {/* Banner publicitario */}
+      <View style={{ marginHorizontal: 16, marginTop: squad && squad.players && squad.players.length < 11 ? 8 : 60, marginBottom: 8 }}>
+        <AdBanner />
+      </View>
+
+      <View style={{ flex: 1, paddingTop: 0 }}>
         {/* Campo de fútbol a pantalla completa */}
         <View style={{ flex: 1, padding: 16 }}>
           <View style={{

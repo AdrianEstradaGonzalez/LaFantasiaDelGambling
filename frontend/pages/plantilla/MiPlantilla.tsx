@@ -994,6 +994,12 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           )}
 
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 20 }} scrollEnabled={!isChangingFormation}>
+          
+          {/* Banner publicitario */}
+          <View style={{ marginBottom: 16 }}>
+            <AdBanner />
+          </View>
+
           {/* Header con tÃ­tulo y botÃ³n guardar */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
