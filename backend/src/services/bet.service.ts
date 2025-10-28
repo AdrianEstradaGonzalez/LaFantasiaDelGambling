@@ -69,6 +69,8 @@ export class BetService {
     userName: string;
     jornada: number;
     matchId: number;
+    homeTeam: string;
+    awayTeam: string;
     betType: string;
     betLabel: string;
     odd: number;
@@ -107,6 +109,8 @@ export class BetService {
       userName: b.leagueMember?.user?.name || 'Jugador',
       jornada: b.jornada,
       matchId: b.matchId,
+      homeTeam: b.homeTeam || '',
+      awayTeam: b.awayTeam || '',
       betType: b.betType,
       betLabel: b.betLabel,
       odd: b.odd,

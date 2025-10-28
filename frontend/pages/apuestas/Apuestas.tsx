@@ -235,10 +235,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             setJornada(apuestas[0].jornada);
           }
           
-          console.log('ðŸŽ² DEBUG Apuestas - Status:', statusData);
-          console.log('ðŸŽ² DEBUG Apuestas - Current Jornada:', currentJornadaFromLeague);
-          console.log('ðŸŽ² DEBUG Apuestas - League Bets (filtered):', filteredLeagueBets);
-          console.log('ðŸŽ² DEBUG Apuestas - Grouped Bets:', groupedArray);
+          console.log('DEBUG Apuestas - Status:', statusData);
+          console.log('DEBUG Apuestas - Current Jornada:', currentJornadaFromLeague);
+          console.log('DEBUG Apuestas - League Bets (filtered):', filteredLeagueBets);
+          console.log('DEBUG Apuestas - Grouped Bets:', groupedArray);
 
           // Si la jornada estÃ¡ cerrada y hay apuestas, evaluar en tiempo real
           if (statusData === 'closed' && filteredLeagueBets.length > 0 && currentJornadaFromLeague != null && ligaId) {
@@ -334,7 +334,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     // Verificar si contiene punto o coma (decimales)
     if (value.includes('.') || value.includes(',')) {
       CustomAlertManager.alert(
-        'Cantidad no vÃ¡lida',
+        'Cantidad no válida',
         'Solo se permiten cantidades enteras. No puedes usar decimales.',
         [{ text: 'Entendido', style: 'default', onPress: () => { } }]
       );
@@ -350,13 +350,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     const raw = amountInputs[key] ?? '';
     const amount = parseFloat(raw);
     if (!raw || isNaN(amount) || amount <= 0) {
-      showError('Introduce una cantidad vÃ¡lida');
+      showError('Introduce una cantidad válida');
       return;
     }
     if (amount > 50) {
       CustomAlertManager.alert(
-        'LÃ­mite de apuesta',
-        'El mÃ¡ximo por apuesta es 50M',
+        'Límite de apuesta',
+        'El máximo por apuesta es 50M',
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -364,7 +364,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }
     try {
       setSavingBet(key);
-      console.log('ðŸ“¤ Frontend - Enviando apuesta con:', {
+      console.log('Frontend - Enviando apuesta con:', {
         matchId: params.matchId,
         homeTeam: params.homeTeam,
         awayTeam: params.awayTeam,
@@ -417,8 +417,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }
     if (amount > 50) {
       CustomAlertManager.alert(
-        'LÃ­mite de apuesta',
-        'El mÃ¡ximo por apuesta es 50M',
+        'Límite de apuesta',
+        'El máximo por apuesta es 50M',
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -618,87 +618,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               </View>
             )}
 
-            {/* Selector de Jornada */}
-            {availableJornadas.length > 0 && (
-              <View style={{ 
-                backgroundColor: '#181818ff', 
-                paddingVertical: 12,
-                paddingHorizontal: 16,
-                borderBottomWidth: 1, 
-                borderBottomColor: '#334155',
-                zIndex: showJornadaPicker ? 999 : 5
-              }}>
-                <TouchableOpacity
-                  onPress={() => setShowJornadaPicker(!showJornadaPicker)}
-                  style={{
-                    backgroundColor: '#1e293b',
-                    borderRadius: 12,
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    borderWidth: 1,
-                    borderColor: '#334155'
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
-                    JORNADA {selectedJornada}
-                  </Text>
-                  <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '900' }}>
-                    {showJornadaPicker ? '▲' : '▼'}
-                  </Text>
-                </TouchableOpacity>
-
-                {showJornadaPicker && (
-                  <View style={{
-                    backgroundColor: '#1e293b',
-                    borderRadius: 12,
-                    marginTop: 8,
-                    maxHeight: 300,
-                    borderWidth: 2,
-                    borderColor: '#334155',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.5,
-                    shadowRadius: 8,
-                    elevation: 10,
-                    zIndex: 999
-                  }}>
-                    <ScrollView>
-                      {availableJornadas.map((jornada) => (
-                        <TouchableOpacity
-                          key={jornada}
-                          onPress={() => {
-                            setSelectedJornada(jornada);
-                            setShowJornadaPicker(false);
-                          }}
-                          style={{
-                            paddingVertical: 14,
-                            paddingHorizontal: 16,
-                            backgroundColor: selectedJornada === jornada ? '#0892D020' : 'transparent',
-                            borderBottomWidth: 1,
-                            borderBottomColor: '#334155',
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                          }}
-                        >
-                          <Text style={{ 
-                            color: selectedJornada === jornada ? '#0892D0' : '#fff', 
-                            fontSize: 15, 
-                            fontWeight: selectedJornada === jornada ? '800' : '600' 
-                          }}>
-                            JORNADA {jornada}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-            )}
-
             <ScrollView
               ref={scrollViewRef}
               contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
@@ -709,8 +628,79 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               {(jornadaStatus === 'closed' || selectedJornada !== currentJornada) ? (
                 <>
                   <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Historial de Apuestas</Text>
-                  {jornada != null && (
-                    <Text style={{ color: '#94a3b8', marginBottom: 16 }}>Jornada {jornada}</Text>
+                  
+                  {/* Selector de Jornada */}
+                  {availableJornadas.length > 0 && (
+                    <View style={{ marginBottom: 16 }}>
+                      <TouchableOpacity
+                        onPress={() => setShowJornadaPicker(!showJornadaPicker)}
+                        style={{
+                          backgroundColor: '#1e293b',
+                          borderRadius: 12,
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          borderWidth: 1,
+                          borderColor: '#334155'
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
+                          JORNADA {selectedJornada}
+                        </Text>
+                        <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '900' }}>
+                          {showJornadaPicker ? '▲' : '▼'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {showJornadaPicker && (
+                        <View style={{
+                          backgroundColor: '#1e293b',
+                          borderRadius: 12,
+                          marginTop: 8,
+                          maxHeight: 300,
+                          borderWidth: 2,
+                          borderColor: '#334155',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.5,
+                          shadowRadius: 8,
+                          elevation: 10,
+                          zIndex: 999
+                        }}>
+                          <ScrollView>
+                            {availableJornadas.map((jornada) => (
+                              <TouchableOpacity
+                                key={jornada}
+                                onPress={() => {
+                                  setSelectedJornada(jornada);
+                                  setShowJornadaPicker(false);
+                                }}
+                                style={{
+                                  paddingVertical: 14,
+                                  paddingHorizontal: 16,
+                                  backgroundColor: selectedJornada === jornada ? '#0892D020' : 'transparent',
+                                  borderBottomWidth: 1,
+                                  borderBottomColor: '#334155',
+                                  flexDirection: 'row',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center'
+                                }}
+                              >
+                                <Text style={{ 
+                                  color: selectedJornada === jornada ? '#0892D0' : '#fff', 
+                                  fontSize: 15, 
+                                  fontWeight: selectedJornada === jornada ? '800' : '600' 
+                                }}>
+                                  JORNADA {jornada}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
                   )}
 
                   {leagueBets.length === 0 ? (
@@ -995,7 +985,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 borderLeftWidth: 3,
                                 borderLeftColor: '#3b82f6',
                               }}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                   <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 15 }}>
                                     {userName}
                                   </Text>
@@ -1008,6 +998,75 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     </Text>
                                   </View>
                                 </View>
+
+                                {/* Lista de apuestas del jugador */}
+                                {data.bets.map((bet) => (
+                                  <View key={bet.id} style={{
+                                    backgroundColor: '#0a1420',
+                                    padding: 8,
+                                    borderRadius: 6,
+                                    marginBottom: 4,
+                                    borderLeftWidth: 2,
+                                    borderLeftColor: bet.status === 'won' ? '#22c55e' : bet.status === 'lost' ? '#ef4444' : '#f59e0b',
+                                  }}>
+                                    {bet.homeTeam && bet.awayTeam && (
+                                      <Text style={{ color: '#e2e8f0', fontSize: 11, fontWeight: '600', marginBottom: 4 }}>
+                                        {bet.homeTeam} vs {bet.awayTeam}
+                                      </Text>
+                                    )}
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <View style={{ flex: 1 }}>
+                                        <Text style={{ color: '#cbd5e1', fontSize: 11, marginBottom: 2 }}>
+                                          {bet.betLabel}
+                                        </Text>
+                                        <Text style={{ color: '#94a3b8', fontSize: 10 }}>
+                                          Cuota: {bet.odd} • Apostado: {bet.amount}M
+                                        </Text>
+                                      </View>
+                                      <View style={{ alignItems: 'flex-end', marginLeft: 8 }}>
+                                        {bet.status === 'won' && (
+                                          <>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                                              <CheckIcon size={12} color="#22c55e" />
+                                              <Text style={{ color: '#22c55e', fontSize: 10, fontWeight: '600' }}>
+                                                GANADA
+                                              </Text>
+                                            </View>
+                                            <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '800' }}>
+                                              +{bet.potentialWin.toFixed(1)}M
+                                            </Text>
+                                          </>
+                                        )}
+                                        {bet.status === 'lost' && (
+                                          <>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                                              <ErrorIcon size={12} color="#ef4444" />
+                                              <Text style={{ color: '#ef4444', fontSize: 10, fontWeight: '600' }}>
+                                                PERDIDA
+                                              </Text>
+                                            </View>
+                                            <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '800' }}>
+                                              -{bet.amount}M
+                                            </Text>
+                                          </>
+                                        )}
+                                        {bet.status === 'pending' && (
+                                          <>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}>
+                                              <ClockIcon size={12} color="#f59e0b" />
+                                              <Text style={{ color: '#f59e0b', fontSize: 10, fontWeight: '600' }}>
+                                                PENDIENTE
+                                              </Text>
+                                            </View>
+                                            <Text style={{ color: '#f59e0b', fontSize: 12, fontWeight: '800' }}>
+                                              {bet.amount}M
+                                            </Text>
+                                          </>
+                                        )}
+                                      </View>
+                                    </View>
+                                  </View>
+                                ))}
                               </View>
                             ));
                           })()
@@ -1017,14 +1076,85 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   )}
                 </>
               ) : (
-                /* MODO APUESTAS - Cuando la jornada estÃ¡ abierta */
+                /* MODO APUESTAS - Cuando la jornada está abierta */
                 <>
                   <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Apuestas</Text>
-                  {jornada != null && (
-                    <Text style={{ color: '#94a3b8', marginBottom: 16 }}>Jornada {jornada}</Text>
+                  
+                  {/* Selector de Jornada */}
+                  {availableJornadas.length > 0 && (
+                    <View style={{ marginBottom: 16 }}>
+                      <TouchableOpacity
+                        onPress={() => setShowJornadaPicker(!showJornadaPicker)}
+                        style={{
+                          backgroundColor: '#1e293b',
+                          borderRadius: 12,
+                          paddingVertical: 12,
+                          paddingHorizontal: 16,
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          borderWidth: 1,
+                          borderColor: '#334155'
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
+                          JORNADA {selectedJornada}
+                        </Text>
+                        <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '900' }}>
+                          {showJornadaPicker ? '▲' : '▼'}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {showJornadaPicker && (
+                        <View style={{
+                          backgroundColor: '#1e293b',
+                          borderRadius: 12,
+                          marginTop: 8,
+                          maxHeight: 300,
+                          borderWidth: 2,
+                          borderColor: '#334155',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.5,
+                          shadowRadius: 8,
+                          elevation: 10,
+                          zIndex: 999
+                        }}>
+                          <ScrollView>
+                            {availableJornadas.map((jornada) => (
+                              <TouchableOpacity
+                                key={jornada}
+                                onPress={() => {
+                                  setSelectedJornada(jornada);
+                                  setShowJornadaPicker(false);
+                                }}
+                                style={{
+                                  paddingVertical: 14,
+                                  paddingHorizontal: 16,
+                                  backgroundColor: selectedJornada === jornada ? '#0892D020' : 'transparent',
+                                  borderBottomWidth: 1,
+                                  borderBottomColor: '#334155',
+                                  flexDirection: 'row',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center'
+                                }}
+                              >
+                                <Text style={{ 
+                                  color: selectedJornada === jornada ? '#0892D0' : '#fff', 
+                                  fontSize: 15, 
+                                  fontWeight: selectedJornada === jornada ? '800' : '600' 
+                                }}>
+                                  JORNADA {jornada}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
                   )}
 
-                  {/* Mensajes de Ã©xito/error */}
+                  {/* Mensajes de éxito/error */}
                   {successMessage && (
                     <View style={{
                       backgroundColor: '#065f46',

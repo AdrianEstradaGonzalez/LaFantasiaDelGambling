@@ -17,6 +17,8 @@ export interface Bet {
   userName?: string;
   jornada: number;
   matchId: number;
+  homeTeam?: string;
+  awayTeam?: string;
   betType: string;
   betLabel: string;
   odd: number;
@@ -361,7 +363,7 @@ export class BetService {
         throw new Error('No token found');
       }
 
-      const response = await axios.get(`${API_URL}/bets/user/${leagueId}`, {
+      const response = await axios.get(`${API_URL}/bets/${leagueId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       
