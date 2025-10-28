@@ -999,12 +999,14 @@ export class JornadaService {
       const balances = await this.calculateUserBalances(leagueId, evaluations);
       console.log(`✅ Balances calculados para ${balances.size} usuarios\n`);
 
-      // 3. Calcular puntos de plantilla para cada usuario
-      console.log(`⚽ 3. Calculando puntos de plantilla...`);
+      // 4. Calcular puntos de plantilla para cada usuario y actualizar presupuestos
+      console.log(`⚽ 4. Calculando puntos de plantilla y actualizando presupuestos finales...`);
       const allMembers = await prisma.leagueMember.findMany({
         where: { leagueId },
         include: { user: true },
       });
+
+      let updatedMembers = 0;
 
       for (const member of allMembers) {
         const squadPoints = await this.calculateSquadPoints(member.userId, leagueId, jornada);
@@ -1022,56 +1024,46 @@ export class JornadaService {
         
         const userBalance = balances.get(member.userId)!;
         userBalance.squadPoints = squadPoints;
-      }
-      console.log(`✅ Puntos de plantilla calculados\n`);
 
-      // 4. Actualizar presupuestos y puntos de los miembros
-      console.log(`💵 4. Actualizando presupuestos...`);
-      let updatedMembers = 0;
-
-      for (const [userId, balance] of balances) {
-        const member = await prisma.leagueMember.findUnique({
-          where: { leagueId_userId: { leagueId, userId } },
-          include: { user: true },
+        // Obtener el presupuesto actual (ya incluye ajustes de apuestas)
+        const currentMember = await prisma.leagueMember.findUnique({
+          where: { leagueId_userId: { leagueId, userId: member.userId } }
         });
 
-        if (member) {
-          // Calcular nuevo presupuesto: 500 (base) + puntos plantilla + resultado apuestas
-          const budgetFromBets = balance.totalProfit;
-          const budgetFromSquad = balance.squadPoints; // 1M por punto
-          const newBudget = 500 + budgetFromSquad + budgetFromBets;
-          
-          // Actualizar puntos totales
-          const newTotalPoints = member.points + balance.squadPoints;
-          
-          // Actualizar puntos por jornada
-          const pointsPerJornada = (member.pointsPerJornada as any) || {};
-          pointsPerJornada[jornada.toString()] = balance.squadPoints;
-          
-          await prisma.leagueMember.update({
-            where: { leagueId_userId: { leagueId, userId } },
-            data: {
-              budget: newBudget,
-              initialBudget: newBudget, // Actualizar initialBudget con el nuevo valor calculado
-              bettingBudget: 250, // Siempre resetear a 250
-              points: newTotalPoints,
-              pointsPerJornada: pointsPerJornada, // Guardar puntos de esta jornada
-            },
-          });
+        if (!currentMember) continue;
 
-          console.log(
-            `  👤 Usuario ${member.user.name}:\n` +
-            `     Presupuesto anterior: ${member.budget}M\n` +
-            `     Base: 500M\n` +
-            `     Apuestas: ${balance.wonBets}W/${balance.lostBets}L = ${budgetFromBets >= 0 ? '+' : ''}${budgetFromBets}M\n` +
-            `     Plantilla: ${balance.squadPoints} puntos = +${budgetFromSquad}M\n` +
-            `     Nuevo presupuesto: ${newBudget}M\n` +
-            `     Puntos J${jornada}: ${balance.squadPoints}\n` +
-            `     Puntos totales: ${member.points} → ${newTotalPoints}`
-          );
+        // Sumar puntos de plantilla al presupuesto actual (1M por punto)
+        const budgetFromSquad = squadPoints;
+        const newBudget = currentMember.budget + budgetFromSquad;
+        
+        // Actualizar puntos totales
+        const newTotalPoints = currentMember.points + squadPoints;
+        
+        // Actualizar puntos por jornada
+        const pointsPerJornada = (currentMember.pointsPerJornada as any) || {};
+        pointsPerJornada[jornada.toString()] = squadPoints;
+        
+        await prisma.leagueMember.update({
+          where: { leagueId_userId: { leagueId, userId: member.userId } },
+          data: {
+            budget: newBudget,
+            initialBudget: newBudget, // Actualizar initialBudget con el nuevo valor calculado
+            bettingBudget: 250, // Siempre resetear a 250
+            points: newTotalPoints,
+            pointsPerJornada: pointsPerJornada, // Guardar puntos de esta jornada
+          },
+        });
 
-          updatedMembers++;
-        }
+        console.log(
+          `  👤 Usuario ${member.user.name}:\n` +
+          `     Presupuesto tras apuestas: ${currentMember.budget}M\n` +
+          `     Plantilla: ${squadPoints} puntos = +${budgetFromSquad}M\n` +
+          `     Nuevo presupuesto: ${newBudget}M\n` +
+          `     Puntos J${jornada}: ${squadPoints}\n` +
+          `     Puntos totales: ${currentMember.points} → ${newTotalPoints}`
+        );
+
+        updatedMembers++;
       }
       console.log(`✅ ${updatedMembers} miembros actualizados\n`);
 
