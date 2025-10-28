@@ -44,6 +44,11 @@ export class AdMobService {
     if (this.initialized) return;
 
     try {
+      if (!mobileAds || typeof mobileAds !== 'function') {
+        console.warn('⚠️ mobileAds no está disponible');
+        return;
+      }
+
       await mobileAds().initialize();
       
       // Configuración de clasificación de contenido
