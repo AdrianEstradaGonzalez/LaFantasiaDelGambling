@@ -159,5 +159,10 @@ export class AdMobService {
   }
 }
 
+// Inicializar AdMob automáticamente cuando se importa el módulo
+AdMobService.initialize().catch(err => {
+  console.error('Error auto-inicializando AdMob:', err);
+});
+
 // Exportar componentes útiles
 export { BannerAd, BannerAdSize, TestIds };
