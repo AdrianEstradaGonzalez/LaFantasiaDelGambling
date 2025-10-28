@@ -202,11 +202,10 @@ export class JornadaService {
    */
   static async evaluateJornadaBets(jornada: number, leagueId?: string): Promise<BetEvaluation[]> {
     try {
-      // Obtener todas las apuestas pendientes de la jornada
+      // Obtener todas las apuestas pendientes de la jornada específica
       const where: any = {
         status: 'pending',
-        // Aquí asumimos que las apuestas tienen relación con partidos de la jornada
-        // Si no tienes un campo jornada en Bet, necesitarás ajustar esto
+        jornada: jornada, // ✅ FILTRAR POR JORNADA
       };
 
       if (leagueId) {
@@ -215,7 +214,7 @@ export class JornadaService {
 
       const bets = await prisma.bet.findMany({ where });
 
-      console.log(`📊 Evaluando ${bets.length} apuestas de la jornada ${jornada}...`);
+      console.log(`📊 Evaluando ${bets.length} apuestas de la jornada ${jornada} (liga: ${leagueId || 'todas'})...`);
 
       const evaluations: BetEvaluation[] = [];
 
