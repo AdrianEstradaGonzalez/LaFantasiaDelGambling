@@ -131,6 +131,12 @@ async function calculateMinutesWithoutInjuryTime(
   rawMinutes: number,
   wasSubstitute: boolean
 ): Promise<number> {
+  // ✨ IMPORTANTE: Si el jugador no jugó ningún minuto según la API, devolver 0 directamente
+  if (rawMinutes === 0) {
+    console.log(`[playerStats] ⏱️  Jugador ${playerName}: 0 min (no jugó)`);
+    return 0;
+  }
+
   try {
     const events = await fetchFixtureEvents(fixtureId);
     
@@ -160,6 +166,11 @@ async function calculateMinutesWithoutInjuryTime(
         const minuteStr = String(entryEvent.time?.elapsed ?? 0);
         entryMinute = parseInt(minuteStr.split('+')[0]);
         console.log(`[playerStats] 🔄 Jugador ${playerName} entró en minuto ${entryMinute}`);
+      } else if (wasSubstitute && rawMinutes > 0) {
+        // Si fue suplente pero no se encontró evento de entrada y jugó minutos,
+        // probablemente entró muy tarde. Calcular basándonos en rawMinutes.
+        entryMinute = 90 - rawMinutes;
+        console.log(`[playerStats] ⚠️  No se encontró evento de entrada para ${playerName}, calculando: entró en min ${entryMinute}`);
       }
     }
     
@@ -185,6 +196,12 @@ async function calculateMinutesWithoutInjuryTime(
     if (rawMinutes > 0 && minutesWithoutInjuryTime === 0) {
       minutesWithoutInjuryTime = 1;
       console.log(`[playerStats] ⚠️  Jugador ${playerName} jugó en descuento, registrando 1 minuto mínimo`);
+    }
+    
+    // Si el cálculo da más minutos de los que reporta la API, usar el valor de la API (limitado a 90)
+    if (minutesWithoutInjuryTime > rawMinutes) {
+      minutesWithoutInjuryTime = Math.min(rawMinutes, 90);
+      console.log(`[playerStats] ⚠️  Ajustando minutos de ${playerName} a ${minutesWithoutInjuryTime} (API reporta ${rawMinutes})`);
     }
     
     console.log(`[playerStats] ⏱️  Jugador ${playerName}: ${rawMinutes} min (API) → ${minutesWithoutInjuryTime} min (sin descuento)`);

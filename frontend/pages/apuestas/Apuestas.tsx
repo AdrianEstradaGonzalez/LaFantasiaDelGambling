@@ -1110,8 +1110,57 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             return null;
                           })()}
 
-                          {/* Opciones: interactivas si jornada esta abierta, lectura si cerrada */}
-                          {b.options.map((option, optionIndex) => {
+                          {/* Opciones: solo mostrar si está desbloqueada o si ya tiene apuesta */}
+                          {(() => {
+                            const requiresAdUnlock = index === 8 || index === 9;
+                            const isUnlocked = unlockedBets.has(index);
+                            const hasUserBetInMatch = userBets.some((bet) => bet.matchId === b.matchId);
+                            
+                            // Si requiere anuncio y no está desbloqueada y no tiene apuesta, ocultar opciones
+                            if (requiresAdUnlock && !isUnlocked && !hasUserBetInMatch) {
+                              return (
+                                <View style={{
+                                  backgroundColor: '#0a0f1a',
+                                  borderRadius: 10,
+                                  padding: 20,
+                                  borderWidth: 1,
+                                  borderColor: '#1e293b',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}>
+                                  <View style={{
+                                    width: 48,
+                                    height: 48,
+                                    borderRadius: 24,
+                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginBottom: 12,
+                                  }}>
+                                    <LockIcon size={24} color="#3b82f6" />
+                                  </View>
+                                  <Text style={{ 
+                                    color: '#64748b', 
+                                    fontSize: 14, 
+                                    fontWeight: '600',
+                                    textAlign: 'center',
+                                  }}>
+                                    Opciones ocultas
+                                  </Text>
+                                  <Text style={{ 
+                                    color: '#475569', 
+                                    fontSize: 12, 
+                                    textAlign: 'center',
+                                    marginTop: 4,
+                                  }}>
+                                    Desbloquea para ver las opciones de apuesta
+                                  </Text>
+                                </View>
+                              );
+                            }
+                            
+                            // Mostrar las opciones normalmente
+                            return b.options.map((option, optionIndex) => {
                             const betKey = `${b.matchId}-${b.type}-${optionIndex}`;
                             const isJornadaOpen = jornadaStatus === 'open';
                             const userBet = getUserBetForOption(b.matchId, b.type, option.label);
@@ -1355,7 +1404,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 )}
                               </View>
                             );
-                          })}
+                          });
+                          })()}
                         </View>
                       ))
                   )}
