@@ -7,6 +7,7 @@
 
 import axios from 'axios';
 import { PrismaClient } from '@prisma/client';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -415,19 +416,22 @@ async function saveBetOptions(
     where: { leagueId, jornada },
   });
 
-  await prisma.bet_option.createMany({
-    data: options.map(opt => ({
-      id: `${leagueId}_${jornada}_${opt.matchId}_${opt.betType}_${opt.betLabel}`.replace(/\s+/g, '_'),
-      leagueId,
-      jornada,
-      matchId: opt.matchId,
-      homeTeam: opt.homeTeam,
-      awayTeam: opt.awayTeam,
-      betType: opt.betType,
-      betLabel: opt.betLabel,
-      odd: opt.odd,
-    })),
-  });
+  // Usar IDs únicos generados automáticamente
+  for (const opt of options) {
+    await prisma.bet_option.create({
+      data: {
+        id: crypto.randomUUID(), // ID único garantizado
+        leagueId,
+        jornada,
+        matchId: opt.matchId,
+        homeTeam: opt.homeTeam,
+        awayTeam: opt.awayTeam,
+        betType: opt.betType,
+        betLabel: opt.betLabel,
+        odd: opt.odd,
+      },
+    });
+  }
 }
 
 export async function generateBetOptionsForAllLeagues(jornada: number): Promise<{
