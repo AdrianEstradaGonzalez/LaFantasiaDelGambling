@@ -502,6 +502,11 @@ export const Clasificacion = () => {
               </TouchableOpacity>
             );
           })}
+
+          {/* Banner de Anuncio dentro del ScrollView */}
+          <View style={{ marginTop: 20, marginBottom: 20, alignItems: 'center' }}>
+            <AdBanner />
+          </View>
         </ScrollView>
       ) : (
         <View style={styles.loadingContainer}>
@@ -510,9 +515,6 @@ export const Clasificacion = () => {
           </Text>
         </View>
       )}
-
-      {/* Banner de Anuncio */}
-      <AdBanner />
 
       {/* Barra inferior */}
       <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
