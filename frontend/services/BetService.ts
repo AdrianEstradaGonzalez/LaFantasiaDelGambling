@@ -350,4 +350,50 @@ export class BetService {
       throw new Error(error?.response?.data?.error || 'Error al evaluar apuestas en tiempo real');
     }
   }
+
+  /**
+   * Obtener apuestas del usuario para una jornada específica
+   */
+  static async getUserBetsForJornada(leagueId: string, jornada: number): Promise<Bet[]> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/bets/user/${leagueId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      // Filtrar por jornada en el frontend
+      const allBets: Bet[] = response.data;
+      return allBets.filter(bet => bet.jornada === jornada);
+    } catch (error: any) {
+      console.error('Error getting user bets for jornada:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al obtener apuestas del usuario');
+    }
+  }
+
+  /**
+   * Obtener apuestas de toda la liga para una jornada específica
+   */
+  static async getLeagueBetsForJornada(leagueId: string, jornada: number): Promise<Bet[]> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.get(`${API_URL}/bets/all/${leagueId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      // Filtrar por jornada en el frontend
+      const allBets: Bet[] = response.data;
+      return allBets.filter(bet => bet.jornada === jornada);
+    } catch (error: any) {
+      console.error('Error getting league bets for jornada:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al obtener apuestas de la liga');
+    }
+  }
 }

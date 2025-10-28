@@ -60,7 +60,7 @@ export class BetService {
   }
 
   /**
-   * Obtener todas las apuestas de una liga para la jornada actual (con nombre de usuario)
+   * Obtener todas las apuestas de una liga (todas las jornadas, con nombre de usuario)
    */
   static async getLeagueBets(leagueId: string, requesterUserId: string): Promise<Array<{
     id: string;
@@ -87,20 +87,10 @@ export class BetService {
       throw new AppError(403, 'FORBIDDEN', 'No eres miembro de esta liga');
     }
 
-    // Obtener jornada actual de la liga
-    const league = await prisma.league.findUnique({
-      where: { id: leagueId },
-      select: { currentJornada: true }
-    });
-
-    if (!league) {
-      throw new AppError(404, 'NOT_FOUND', 'Liga no encontrada');
-    }
-
+    // Obtener todas las apuestas de la liga (sin filtrar por jornada)
     const bets = await prisma.bet.findMany({
       where: {
         leagueId,
-        jornada: league.currentJornada,
       },
       include: {
         leagueMember: {

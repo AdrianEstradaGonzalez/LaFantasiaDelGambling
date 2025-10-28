@@ -66,7 +66,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [amountInputs, setAmountInputs] = useState<Record<string, string>>({});
   const [editingBets, setEditingBets] = useState<Record<string, boolean>>({});
 
-  // Estados para evaluaciÃ³n en tiempo real
+  // Estados para evaluacion en tiempo real
   const [realtimeBalances, setRealtimeBalances] = useState<any[]>([]);
   const [evaluatingRealtime, setEvaluatingRealtime] = useState(false);
 
@@ -75,12 +75,18 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Estado para controlar visibilidad de la barra de navegaciÃ³n
+  // Estado para controlar visibilidad de la barra de navegación
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  // Estado para apuestas desbloqueadas con anuncios (mÃ¡ximo 2)
+  // Estado para apuestas desbloqueadas con anuncios (máximo 2)
   const [unlockedBets, setUnlockedBets] = useState<Set<number>>(new Set());
   const [loadingAd, setLoadingAd] = useState(false);
+
+  // Estados para selector de jornadas (historial)
+  const [selectedJornada, setSelectedJornada] = useState<number | null>(null);
+  const [showJornadaPicker, setShowJornadaPicker] = useState(false);
+  const [availableJornadas, setAvailableJornadas] = useState<number[]>([]);
+  const [currentJornada, setCurrentJornada] = useState<number | null>(null);
 
   // Listener para el teclado
   useEffect(() => {
@@ -159,12 +165,35 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             const statusResp = await JornadaService.getJornadaStatus(ligaId);
             statusData = statusResp.status;
             currentJornadaFromLeague = statusResp.currentJornada;
+
+            // Obtener todas las jornadas desde las apuestas realizadas (tabla Bet)
+            const allJornadas = [...new Set(leagueBetsData.map(bet => bet.jornada))];
+            
+            // Agregar la jornada actual si no está en la lista
+            if (currentJornadaFromLeague != null && !allJornadas.includes(currentJornadaFromLeague)) {
+              allJornadas.push(currentJornadaFromLeague);
+            }
+            
+            // Ordenar descendente
+            allJornadas.sort((a, b) => b - a);
+            setAvailableJornadas(allJornadas);
           } catch (err) {
             console.warn('Error getting budget/bets:', err);
           }
         }
 
         if (mounted) {
+          // Establecer jornada actual y seleccionada
+          if (currentJornadaFromLeague != null) {
+            setJornada(currentJornadaFromLeague);
+            setCurrentJornada(currentJornadaFromLeague);
+            setSelectedJornada(currentJornadaFromLeague);
+          } else if (apuestas.length > 0) {
+            setJornada(apuestas[0].jornada);
+            setCurrentJornada(apuestas[0].jornada);
+            setSelectedJornada(apuestas[0].jornada);
+          }
+
           // Agrupar apuestas por matchId + type para consolidar opciones
           const grouped: Record<string, GroupedBet> = {};
           for (const bet of apuestas) {
@@ -243,7 +272,45 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return () => { mounted = false; };
   }, [ligaId, ligaName]);
 
-  // Helpers y handlers para crear/editar/eliminar apuestas cuando la jornada estÃ¡ abierta
+  // Efecto para cargar datos cuando cambia la jornada seleccionada
+  useEffect(() => {
+    if (!ligaId || selectedJornada === null || selectedJornada === currentJornada) {
+      return; // Si es la jornada actual, ya está cargada
+    }
+
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        
+        // Cargar apuestas del usuario y de la liga para esta jornada
+        const [userBetsData, leagueBetsData, realtimeResult] = await Promise.all([
+          BetService.getUserBetsForJornada(ligaId, selectedJornada),
+          BetService.getLeagueBetsForJornada(ligaId, selectedJornada),
+          BetService.evaluateBetsRealTime(ligaId, selectedJornada).catch(() => ({ userBalances: [], matchesEvaluated: 0 }))
+        ]);
+
+        if (mounted) {
+          setUserBets(userBetsData);
+          setLeagueBets(leagueBetsData);
+          setRealtimeBalances(realtimeResult.userBalances);
+          setJornada(selectedJornada);
+          // Las jornadas pasadas siempre están cerradas
+          setJornadaStatus('closed');
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error loading historical jornada:', err);
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, [selectedJornada, ligaId, currentJornada]);
+
+  // Helpers y handlers para crear/editar/eliminar apuestas cuando la jornada está abierta
 
   const refreshBets = async () => {
     if (!ligaId) return;
@@ -551,14 +618,95 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               </View>
             )}
 
+            {/* Selector de Jornada */}
+            {availableJornadas.length > 0 && (
+              <View style={{ 
+                backgroundColor: '#181818ff', 
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                borderBottomWidth: 1, 
+                borderBottomColor: '#334155',
+                zIndex: showJornadaPicker ? 999 : 5
+              }}>
+                <TouchableOpacity
+                  onPress={() => setShowJornadaPicker(!showJornadaPicker)}
+                  style={{
+                    backgroundColor: '#1e293b',
+                    borderRadius: 12,
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: '#334155'
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
+                    JORNADA {selectedJornada}
+                  </Text>
+                  <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '900' }}>
+                    {showJornadaPicker ? '▲' : '▼'}
+                  </Text>
+                </TouchableOpacity>
+
+                {showJornadaPicker && (
+                  <View style={{
+                    backgroundColor: '#1e293b',
+                    borderRadius: 12,
+                    marginTop: 8,
+                    maxHeight: 300,
+                    borderWidth: 2,
+                    borderColor: '#334155',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 8,
+                    elevation: 10,
+                    zIndex: 999
+                  }}>
+                    <ScrollView>
+                      {availableJornadas.map((jornada) => (
+                        <TouchableOpacity
+                          key={jornada}
+                          onPress={() => {
+                            setSelectedJornada(jornada);
+                            setShowJornadaPicker(false);
+                          }}
+                          style={{
+                            paddingVertical: 14,
+                            paddingHorizontal: 16,
+                            backgroundColor: selectedJornada === jornada ? '#0892D020' : 'transparent',
+                            borderBottomWidth: 1,
+                            borderBottomColor: '#334155',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <Text style={{ 
+                            color: selectedJornada === jornada ? '#0892D0' : '#fff', 
+                            fontSize: 15, 
+                            fontWeight: selectedJornada === jornada ? '800' : '600' 
+                          }}>
+                            JORNADA {jornada}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            )}
+
             <ScrollView
               ref={scrollViewRef}
               contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
             >
-              {/* MODO HISTORIAL - Cuando la jornada estÃ¡ cerrada */}
-              {jornadaStatus === 'closed' ? (
+              {/* MODO HISTORIAL - Cuando la jornada está cerrada o es histórica */}
+              {(jornadaStatus === 'closed' || selectedJornada !== currentJornada) ? (
                 <>
                   <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Historial de Apuestas</Text>
                   {jornada != null && (
