@@ -445,26 +445,35 @@ async function fetchOddsForFixture(fixtureId: number, homeTeam: string, awayTeam
           }
         });
         
-        // Agregar cada par completo que esté en rango
+        // Filtrar pares completos que estén en rango
+        const validPairs: Array<{ line: string, over: any, under: any }> = [];
         linesMap.forEach((pair, line) => {
           if (pair.over && pair.under) {
             const overOdd = parseFloat(pair.over.odd);
             const underOdd = parseFloat(pair.under.odd);
             
             if (overOdd >= 1.40 && overOdd <= 3.00 && underOdd >= 1.40 && underOdd <= 3.00) {
-              validBets.push({
-                tipo: translateBetType(bet.name),
-                opcion: translateBetLabel(pair.over.value, homeTeam, awayTeam),
-                cuota: pair.over.odd
-              });
-              validBets.push({
-                tipo: translateBetType(bet.name),
-                opcion: translateBetLabel(pair.under.value, homeTeam, awayTeam),
-                cuota: pair.under.odd
-              });
+              validPairs.push({ line, over: pair.over, under: pair.under });
             }
           }
         });
+        
+        // Seleccionar aleatoriamente SOLO UNA línea
+        if (validPairs.length > 0) {
+          const randomIndex = Math.floor(Math.random() * validPairs.length);
+          const selectedPair = validPairs[randomIndex];
+          
+          validBets.push({
+            tipo: translateBetType(bet.name),
+            opcion: translateBetLabel(selectedPair.over.value, homeTeam, awayTeam),
+            cuota: selectedPair.over.odd
+          });
+          validBets.push({
+            tipo: translateBetType(bet.name),
+            opcion: translateBetLabel(selectedPair.under.value, homeTeam, awayTeam),
+            cuota: selectedPair.under.odd
+          });
+        }
         return;
       }
       
