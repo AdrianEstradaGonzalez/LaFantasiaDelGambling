@@ -558,11 +558,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return userBets.some((bet) => bet.matchId === matchId);
   };
 
-  // FunciÃ³n para desbloquear apuesta con anuncio recompensado
+  // Función para desbloquear apuesta con anuncio recompensado
   const handleUnlockWithAd = async (betIndex: number) => {
     if (unlockedBets.size >= 2) {
       CustomAlertManager.alert(
-        'Líite alcanzado',
+        'Límite alcanzado',
         'Solo puedes desbloquear 2 apuestas por jornada viendo anuncios.',
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
@@ -574,16 +574,19 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     try {
       const result = await AdMobService.showRewarded();
       
-      if (result.watched) {
-        // Usuario completo el anuncio, desbloquear la apuesta por indice
+      if (result.error) {
+        // Hubo un error al cargar/mostrar el anuncio
+        showError(result.error);
+      } else if (result.watched) {
+        // Usuario completó el anuncio, desbloquear la apuesta por índice
         setUnlockedBets(prev => new Set([...prev, betIndex]));
-        showSuccess('Apuesta desbloqueada! Ahora puedes apostar en esta opcion.');
+        showSuccess('¡Apuesta desbloqueada! Ahora puedes apostar en esta opción.');
       } else {
         showError('Debes ver el anuncio completo para desbloquear la apuesta.');
       }
     } catch (error) {
       console.error('Error mostrando anuncio:', error);
-      showError('No se pudo cargar el anuncio. Intentalo de nuevo.');
+      showError('No se pudo cargar el anuncio. Por favor, verifica tu conexión e inténtalo de nuevo.');
     } finally {
       setLoadingAd(false);
     }
