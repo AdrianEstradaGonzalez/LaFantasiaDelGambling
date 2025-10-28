@@ -259,6 +259,16 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
     };
   }, [selectedMatchday, matchdayPoints, player.id]);
 
+  // Scroll automático a la última jornada cuando se carguen los datos
+  useEffect(() => {
+    if (matchdayPoints.length > 0 && matchdayScrollRef.current && !loading) {
+      // Esperar un poco para que el ScrollView se renderice completamente
+      setTimeout(() => {
+        matchdayScrollRef.current?.scrollToEnd({ animated: true });
+      }, 300);
+    }
+  }, [matchdayPoints.length, loading]);
+
   // Auto-scroll a la derecha cuando se carguen las jornadas
   useEffect(() => {
     if (matchdayPoints.length > 0 && matchdayScrollRef.current) {
