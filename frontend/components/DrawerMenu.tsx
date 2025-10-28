@@ -387,7 +387,7 @@ export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>DreamLeague</Text>
-          <Text style={styles.footerVersion}>v1.0.0</Text>
+          <Text style={styles.footerVersion}>v1.5</Text>
         </View>
       </SafeAreaView>
     </LinearGradient>
