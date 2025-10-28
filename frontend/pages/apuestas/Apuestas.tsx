@@ -274,8 +274,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
   // Efecto para cargar datos cuando cambia la jornada seleccionada
   useEffect(() => {
-    if (!ligaId || selectedJornada === null || selectedJornada === currentJornada) {
-      return; // Si es la jornada actual, ya está cargada
+    if (!ligaId || selectedJornada === null || currentJornada === null) {
+      return;
     }
 
     let mounted = true;
@@ -283,24 +283,73 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       try {
         setLoading(true);
         
-        // Cargar apuestas del usuario y de la liga para esta jornada
-        const [userBetsData, leagueBetsData, realtimeResult] = await Promise.all([
-          BetService.getUserBetsForJornada(ligaId, selectedJornada),
-          BetService.getLeagueBetsForJornada(ligaId, selectedJornada),
-          BetService.evaluateBetsRealTime(ligaId, selectedJornada).catch(() => ({ userBalances: [], matchesEvaluated: 0 }))
-        ]);
+        if (selectedJornada === currentJornada) {
+          // Jornada actual: cargar apuestas disponibles para apostar
+          const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName });
+          
+          // Agrupar apuestas por matchId + type para consolidar opciones
+          const grouped: Record<string, GroupedBet> = {};
+          for (const bet of apuestas) {
+            const key = `${bet.matchId}-${bet.type}`;
+            if (!grouped[key]) {
+              grouped[key] = {
+                matchId: bet.matchId,
+                jornada: bet.jornada,
+                local: bet.local,
+                visitante: bet.visitante,
+                localCrest: bet.localCrest,
+                visitanteCrest: bet.visitanteCrest,
+                fecha: bet.fecha,
+                hora: bet.hora,
+                type: bet.type,
+                options: [],
+              };
+            }
+            grouped[key].options.push({ label: bet.label, odd: bet.odd });
+          }
 
-        if (mounted) {
-          setUserBets(userBetsData);
-          setLeagueBets(leagueBetsData);
-          setRealtimeBalances(realtimeResult.userBalances);
-          setJornada(selectedJornada);
-          // Las jornadas pasadas siempre están cerradas
-          setJornadaStatus('closed');
-          setLoading(false);
+          const groupedArray = Object.values(grouped);
+          
+          // Obtener apuestas del usuario y presupuesto
+          const [budgetData, userBetsData, leagueBetsData, statusResp] = await Promise.all([
+            BetService.getBettingBudget(ligaId),
+            BetService.getUserBets(ligaId),
+            BetService.getLeagueBets(ligaId),
+            JornadaService.getJornadaStatus(ligaId)
+          ]);
+
+          // Filtrar apuestas de la liga por la jornada actual
+          const filteredLeagueBets = leagueBetsData.filter(bet => bet.jornada === currentJornada);
+
+          if (mounted) {
+            setGroupedBets(groupedArray);
+            setUserBets(userBetsData);
+            setLeagueBets(filteredLeagueBets);
+            setBudget(budgetData);
+            setJornada(currentJornada);
+            setJornadaStatus(statusResp.status);
+            setLoading(false);
+          }
+        } else {
+          // Jornada histórica: cargar apuestas realizadas
+          const [userBetsData, leagueBetsData, realtimeResult] = await Promise.all([
+            BetService.getUserBetsForJornada(ligaId, selectedJornada),
+            BetService.getLeagueBetsForJornada(ligaId, selectedJornada),
+            BetService.evaluateBetsRealTime(ligaId, selectedJornada).catch(() => ({ userBalances: [], matchesEvaluated: 0 }))
+          ]);
+
+          if (mounted) {
+            setUserBets(userBetsData);
+            setLeagueBets(leagueBetsData);
+            setRealtimeBalances(realtimeResult.userBalances);
+            setJornada(selectedJornada);
+            // Las jornadas pasadas siempre están cerradas
+            setJornadaStatus('closed');
+            setLoading(false);
+          }
         }
       } catch (err) {
-        console.error('Error loading historical jornada:', err);
+        console.error('Error loading jornada:', err);
         if (mounted) {
           setLoading(false);
         }
@@ -308,7 +357,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     })();
 
     return () => { mounted = false; };
-  }, [selectedJornada, ligaId, currentJornada]);
+  }, [selectedJornada, ligaId, ligaName, currentJornada]);
 
   // Helpers y handlers para crear/editar/eliminar apuestas cuando la jornada está abierta
 
