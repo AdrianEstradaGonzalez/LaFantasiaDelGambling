@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated, Platform, Keyboard, findNodeHandle } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
 import { JornadaService } from '../../services/JornadaService';
@@ -7,7 +8,7 @@ import { BetService, BettingBudget, Bet as UserBet } from '../../services/BetSer
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon, CoinsIcon } from '../../components/VectorIcons';
+import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon, CoinsIcon, LockIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -65,7 +66,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [amountInputs, setAmountInputs] = useState<Record<string, string>>({});
   const [editingBets, setEditingBets] = useState<Record<string, boolean>>({});
 
-  // Estados para evaluación en tiempo real
+  // Estados para evaluaciÃ³n en tiempo real
   const [realtimeBalances, setRealtimeBalances] = useState<any[]>([]);
   const [evaluatingRealtime, setEvaluatingRealtime] = useState(false);
 
@@ -74,11 +75,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const slideAnim = useRef(new Animated.Value(-300)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
-  // Estado para controlar visibilidad de la barra de navegación
+  // Estado para controlar visibilidad de la barra de navegaciÃ³n
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  // Estado para apuestas desbloqueadas con anuncios (máximo 2)
-  const [unlockedBets, setUnlockedBets] = useState<Set<string>>(new Set());
+  // Estado para apuestas desbloqueadas con anuncios (mÃ¡ximo 2)
+  const [unlockedBets, setUnlockedBets] = useState<Set<number>>(new Set());
   const [loadingAd, setLoadingAd] = useState(false);
 
   // Listener para el teclado
@@ -97,6 +98,41 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       keyboardDidHideListener.remove();
     };
   }, []);
+
+  // Cargar apuestas desbloqueadas desde AsyncStorage al iniciar
+  useEffect(() => {
+    const loadUnlockedBets = async () => {
+      try {
+        const stored = await AsyncStorage.getItem(`unlockedBets_${ligaId}_${jornada}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setUnlockedBets(new Set(parsed));
+        }
+      } catch (error) {
+        console.warn('Error loading unlocked bets:', error);
+      }
+    };
+    if (ligaId && jornada) {
+      loadUnlockedBets();
+    }
+  }, [ligaId, jornada]);
+
+  // Guardar apuestas desbloqueadas en AsyncStorage cuando cambien
+  useEffect(() => {
+    const saveUnlockedBets = async () => {
+      try {
+        if (ligaId && jornada) {
+          await AsyncStorage.setItem(
+            `unlockedBets_${ligaId}_${jornada}`,
+            JSON.stringify([...unlockedBets])
+          );
+        }
+      } catch (error) {
+        console.warn('Error saving unlocked bets:', error);
+      }
+    };
+    saveUnlockedBets();
+  }, [unlockedBets, ligaId, jornada]);
 
   useEffect(() => {
     let mounted = true;
@@ -170,21 +206,21 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             setJornada(apuestas[0].jornada);
           }
           
-          console.log('🎲 DEBUG Apuestas - Status:', statusData);
-          console.log('🎲 DEBUG Apuestas - Current Jornada:', currentJornadaFromLeague);
-          console.log('🎲 DEBUG Apuestas - League Bets (filtered):', filteredLeagueBets);
-          console.log('🎲 DEBUG Apuestas - Grouped Bets:', groupedArray);
+          console.log('ðŸŽ² DEBUG Apuestas - Status:', statusData);
+          console.log('ðŸŽ² DEBUG Apuestas - Current Jornada:', currentJornadaFromLeague);
+          console.log('ðŸŽ² DEBUG Apuestas - League Bets (filtered):', filteredLeagueBets);
+          console.log('ðŸŽ² DEBUG Apuestas - Grouped Bets:', groupedArray);
 
-          // Si la jornada está cerrada y hay apuestas, evaluar en tiempo real
+          // Si la jornada estÃ¡ cerrada y hay apuestas, evaluar en tiempo real
           if (statusData === 'closed' && filteredLeagueBets.length > 0 && currentJornadaFromLeague != null && ligaId) {
-            console.log('⚡ Jornada cerrada, evaluando en tiempo real...');
+            console.log('Jornada cerrada, evaluando en tiempo real...');
             setEvaluatingRealtime(true);
             try {
               const realtimeResult = await BetService.evaluateBetsRealTime(ligaId, currentJornadaFromLeague);
               setRealtimeBalances(realtimeResult.userBalances);
-              console.log('✅ Balances en tiempo real:', realtimeResult.userBalances);
+              console.log('Balances en tiempo real:', realtimeResult.userBalances);
             } catch (err) {
-              console.error('❌ Error evaluando en tiempo real:', err);
+              console.error('Error evaluando en tiempo real:', err);
             } finally {
               setEvaluatingRealtime(false);
             }
@@ -207,7 +243,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return () => { mounted = false; };
   }, [ligaId, ligaName]);
 
-  // Helpers y handlers para crear/editar/eliminar apuestas cuando la jornada está abierta
+  // Helpers y handlers para crear/editar/eliminar apuestas cuando la jornada estÃ¡ abierta
 
   const refreshBets = async () => {
     if (!ligaId) return;
@@ -231,13 +267,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     // Verificar si contiene punto o coma (decimales)
     if (value.includes('.') || value.includes(',')) {
       CustomAlertManager.alert(
-        'Cantidad no válida',
+        'Cantidad no vÃ¡lida',
         'Solo se permiten cantidades enteras. No puedes usar decimales.',
         [{ text: 'Entendido', style: 'default', onPress: () => { } }]
       );
       return;
     }
-    // Solo números enteros
+    // Solo nÃºmeros enteros
     let sanitized = value.replace(/[^0-9]/g, '');
     setAmountInputs((prev) => ({ ...prev, [key]: sanitized }));
   };
@@ -247,13 +283,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     const raw = amountInputs[key] ?? '';
     const amount = parseFloat(raw);
     if (!raw || isNaN(amount) || amount <= 0) {
-      showError('Introduce una cantidad válida');
+      showError('Introduce una cantidad vÃ¡lida');
       return;
     }
     if (amount > 50) {
       CustomAlertManager.alert(
-        'Límite de apuesta',
-        'El máximo por apuesta es 50M',
+        'LÃ­mite de apuesta',
+        'El mÃ¡ximo por apuesta es 50M',
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -261,7 +297,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }
     try {
       setSavingBet(key);
-      console.log('📤 Frontend - Enviando apuesta con:', {
+      console.log('ðŸ“¤ Frontend - Enviando apuesta con:', {
         matchId: params.matchId,
         homeTeam: params.homeTeam,
         awayTeam: params.awayTeam,
@@ -309,13 +345,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     const raw = amountInputs[key] ?? '';
     const amount = parseFloat(raw);
     if (!raw || isNaN(amount) || amount <= 0) {
-      showError('Introduce una cantidad válida');
+      showError('Introduce una cantidad vÃ¡lida');
       return;
     }
     if (amount > 50) {
       CustomAlertManager.alert(
-        'Límite de apuesta',
-        'El máximo por apuesta es 50M',
+        'LÃ­mite de apuesta',
+        'El mÃ¡ximo por apuesta es 50M',
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -370,16 +406,16 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     setTimeout(() => setErrorMessage(null), 3000);
   };
 
-  // Cálculos de ganancias potenciales los devuelve el backend con la apuesta del usuario
+  // CÃ¡lculos de ganancias potenciales los devuelve el backend con la apuesta del usuario
 
-  // Función auxiliar para verificar si una opción tiene apuesta del usuario
+  // FunciÃ³n auxiliar para verificar si una opciÃ³n tiene apuesta del usuario
   const getUserBetForOption = (matchId: number, betType: string, betLabel: string): UserBet | undefined => {
     return userBets.find(
       (bet) => bet.matchId === matchId && bet.betType === betType && bet.betLabel === betLabel
     );
   };
 
-  // Normalizar etiquetas para comparar (quita tildes, espacios extra y mayúsculas/minúsculas)
+  // Normalizar etiquetas para comparar (quita tildes, espacios extra y mayÃºsculas/minÃºsculas)
   const normalizeLabel = (s: string) =>
     (s || '')
       .toString()
@@ -396,7 +432,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       .trim()
       .toLowerCase();
 
-  // Función para verificar si existe alguna apuesta en el grupo (mismo matchId + betType)
+  // FunciÃ³n para verificar si existe alguna apuesta en el grupo (mismo matchId + betType)
   const hasAnyBetInGroup = (matchId: number, betType: string): boolean => {
     return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType);
   };
@@ -406,11 +442,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return userBets.some((bet) => bet.matchId === matchId);
   };
 
-  // Función para desbloquear apuesta con anuncio recompensado
-  const handleUnlockWithAd = async (betKey: string) => {
+  // FunciÃ³n para desbloquear apuesta con anuncio recompensado
+  const handleUnlockWithAd = async (betIndex: number) => {
     if (unlockedBets.size >= 2) {
       CustomAlertManager.alert(
-        'Límite alcanzado',
+        'Líite alcanzado',
         'Solo puedes desbloquear 2 apuestas por jornada viendo anuncios.',
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
@@ -423,21 +459,21 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       const result = await AdMobService.showRewarded();
       
       if (result.watched) {
-        // Usuario completó el anuncio, desbloquear la apuesta
-        setUnlockedBets(prev => new Set([...prev, betKey]));
-        showSuccess('¡Apuesta desbloqueada! Ahora puedes apostar en esta opción.');
+        // Usuario completo el anuncio, desbloquear la apuesta por indice
+        setUnlockedBets(prev => new Set([...prev, betIndex]));
+        showSuccess('Apuesta desbloqueada! Ahora puedes apostar en esta opcion.');
       } else {
         showError('Debes ver el anuncio completo para desbloquear la apuesta.');
       }
     } catch (error) {
       console.error('Error mostrando anuncio:', error);
-      showError('No se pudo cargar el anuncio. Inténtalo de nuevo.');
+      showError('No se pudo cargar el anuncio. Intentalo de nuevo.');
     } finally {
       setLoadingAd(false);
     }
   };
 
-  // Animación del drawer
+  // AnimaciÃ³n del drawer
   useEffect(() => {
     if (isDrawerOpen) {
       Animated.timing(slideAnim, {
@@ -461,7 +497,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       ) : (
         <View style={{ flex: 1 }}>
           <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
-            {/* Top Header Bar - Estilo idéntico a LigaTopNavBar */}
+            {/* Top Header Bar - Estilo idÃ©ntico a LigaTopNavBar */}
             {/* Icono Drawer arriba absoluto */}
             <TouchableOpacity
               onPress={() => setIsDrawerOpen(true)}
@@ -521,7 +557,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
             >
-              {/* MODO HISTORIAL - Cuando la jornada está cerrada */}
+              {/* MODO HISTORIAL - Cuando la jornada estÃ¡ cerrada */}
               {jornadaStatus === 'closed' ? (
                 <>
                   <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Historial de Apuestas</Text>
@@ -569,7 +605,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     </View>
                   ) : (
                     <>
-                      {/* Balance de usuarios (evaluación en tiempo real) */}
+                      {/* Balance de usuarios (evaluaciÃ³n en tiempo real) */}
                       <View style={{
                         backgroundColor: '#1a2332',
                         borderWidth: 2,
@@ -790,7 +826,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             </View>
                           ))
                         ) : (
-                          /* Fallback: agrupar por jugador (versión anterior) */
+                          /* Fallback: agrupar por jugador (versiÃ³n anterior) */
                           (() => {
                             const betsByUser: Record<string, { bets: UserBet[], totalAmount: number }> = {};
                             leagueBets.forEach((bet) => {
@@ -833,14 +869,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   )}
                 </>
               ) : (
-                /* MODO APUESTAS - Cuando la jornada está abierta */
+                /* MODO APUESTAS - Cuando la jornada estÃ¡ abierta */
                 <>
                   <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Apuestas</Text>
                   {jornada != null && (
                     <Text style={{ color: '#94a3b8', marginBottom: 16 }}>Jornada {jornada}</Text>
                   )}
 
-                  {/* Mensajes de éxito/error */}
+                  {/* Mensajes de Ã©xito/error */}
                   {successMessage && (
                     <View style={{
                       backgroundColor: '#065f46',
@@ -877,13 +913,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     </View>
                   )}
 
-                  {/* Banner AdMob cuando jornada está ABIERTA (sin recompensas) */}
-                  {jornadaStatus === 'open' && (
-                    <View style={{ marginBottom: 16 }}>
-                      <AdBanner size="MEDIUM_RECTANGLE" />
-                    </View>
-                  )}
-
                   {/* Presupuesto */}
                   {ligaId && (
                     <View style={{
@@ -913,6 +942,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     </View>
                   )}
 
+                  {/* Banner AdMob cuando jornada está ABIERTA */}
+                  {jornadaStatus === 'open' && (
+                    <View style={{ marginBottom: 16 }}>
+                      <AdBanner size="MEDIUM_RECTANGLE" />
+                    </View>
+                  )}
+
                   {groupedBets.length === 0 ? (
                     <View style={{ padding: 20, alignItems: 'center' }}>
                       <Text style={{ color: '#94a3b8', textAlign: 'center' }}>
@@ -927,7 +963,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         if (!a.fecha || !a.hora) return 1;
                         if (!b.fecha || !b.hora) return -1;
 
-                        // Comparar primero por fecha, luego por hora (comparación de strings)
+                        // Comparar primero por fecha, luego por hora (comparaciÃ³n de strings)
                         const fechaCompare = a.fecha.localeCompare(b.fecha);
                         if (fechaCompare !== 0) return fechaCompare;
 
@@ -951,7 +987,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             shadowRadius: 4,
                           }}
                         >
-                          {/* Número de apuesta */}
+                          {/* NÃºmero de apuesta */}
                           <View style={{
                             position: 'absolute',
                             top: 10,
@@ -986,7 +1022,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   <CalendarIcon size={14} color="#64748b" />
                                   <Text style={{ color: '#64748b', fontSize: 12 }}>{b.fecha}</Text>
                                 </View>
-                                <Text style={{ color: '#64748b', fontSize: 12 }}>·</Text>
+                                <Text style={{ color: '#64748b', fontSize: 12 }}></Text>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                   <ClockIcon size={14} color="#64748b" />
                                   <Text style={{ color: '#64748b', fontSize: 12 }}>{b.hora}</Text>
@@ -1003,18 +1039,90 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             {b.type}
                           </Text>
 
-                          {/* Opciones: interactivas si jornada está abierta, lectura si cerrada */}
+                          {/* Calcular si la apuesta requiere anuncio y mostrar boton de desbloqueo */}
+                          {(() => {
+                            const requiresAdUnlock = index === 8 || index === 9;
+                            const isUnlocked = unlockedBets.has(index);
+                            const hasUserBetInMatch = userBets.some((bet) => bet.matchId === b.matchId);
+                            
+                            if (requiresAdUnlock && !isUnlocked && !hasUserBetInMatch) {
+                              const isDisabled = loadingAd || unlockedBets.size >= 2;
+                              return (
+                                <View style={{ marginBottom: 16 }}>
+                                  <LinearGradient
+                                    colors={isDisabled ? ['#374151', '#1f2937'] : ['#1e3a8a', '#1e40af']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{
+                                      borderRadius: 12,
+                                      shadowColor: isDisabled ? '#000' : '#3b82f6',
+                                      shadowOffset: { width: 0, height: 4 },
+                                      shadowOpacity: isDisabled ? 0.2 : 0.4,
+                                      shadowRadius: 8,
+                                      elevation: 6,
+                                    }}
+                                  >
+                                    <TouchableOpacity
+                                      onPress={() => handleUnlockWithAd(index)}
+                                      disabled={isDisabled}
+                                      activeOpacity={0.8}
+                                      style={{
+                                        paddingVertical: 14,
+                                        paddingHorizontal: 20,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 10,
+                                        opacity: loadingAd ? 0.7 : 1,
+                                      }}
+                                    >
+                                      {loadingAd ? (
+                                        <ActivityIndicator size="small" color="#ffffff" />
+                                      ) : (
+                                        <View style={{
+                                          width: 28,
+                                          height: 28,
+                                          borderRadius: 14,
+                                          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                        }}>
+                                          <LockIcon size={16} color="#ffffff" />
+                                        </View>
+                                      )}
+                                      <Text style={{ 
+                                        color: '#ffffff', 
+                                        fontSize: 14, 
+                                        fontWeight: '700',
+                                        letterSpacing: 0.3,
+                                      }}>
+                                        {loadingAd 
+                                          ? 'Cargando anuncio...' 
+                                          : unlockedBets.size >= 2 
+                                            ? 'Límite alcanzado' 
+                                            : 'Ver anuncio para desbloquear'}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  </LinearGradient>
+                                </View>
+                              );
+                            }
+                            return null;
+                          })()}
+
+                          {/* Opciones: interactivas si jornada esta abierta, lectura si cerrada */}
                           {b.options.map((option, optionIndex) => {
                             const betKey = `${b.matchId}-${b.type}-${optionIndex}`;
                             const isJornadaOpen = jornadaStatus === 'open';
-                            // Verificar si el usuario ya apostó en esta opción
                             const userBet = getUserBetForOption(b.matchId, b.type, option.label);
                             const groupHasBet = hasAnyBetInGroup(b.matchId, b.type);
                             const anyBetInMatch = hasAnyBetInMatch(b.matchId);
                             
-                            // Verificar si está desbloqueada con anuncio
-                            const isUnlocked = unlockedBets.has(betKey);
-                            const isBlocked = (groupHasBet || anyBetInMatch) && !userBet && !isUnlocked;
+                            const isUnlocked = unlockedBets.has(index);
+                            const requiresAdUnlock = index === 8 || index === 9;
+                            const isBlockedByAd = requiresAdUnlock && !isUnlocked && !userBet;
+                            const isBlockedByBet = (groupHasBet || anyBetInMatch) && !userBet && !isUnlocked;
+                            const isBlocked = isBlockedByAd || isBlockedByBet;
 
                             return (
                               <View
@@ -1029,58 +1137,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   opacity: isBlocked && isJornadaOpen ? 0.5 : 1,
                                 }}
                               >
-                                {/* Indicador de bloqueado con opción de desbloquear (solo jornada CERRADA) */}
-                                {isBlocked && !isJornadaOpen && (
-                                  <View style={{
-                                    backgroundColor: '#7f1d1d',
-                                    borderRadius: 6,
-                                    paddingHorizontal: 8,
-                                    paddingVertical: 6,
-                                    marginBottom: 8,
-                                  }}>
-                                    <Text style={{ color: '#fca5a5', fontSize: 11, fontWeight: '700', marginBottom: 6 }}>
-                                      🔒 BLOQUEADA - Ya apostaste en este partido
-                                    </Text>
-                                    {unlockedBets.size < 2 && (
-                                      <TouchableOpacity
-                                        onPress={() => handleUnlockWithAd(betKey)}
-                                        disabled={loadingAd}
-                                        style={{
-                                          backgroundColor: '#16a34a',
-                                          borderRadius: 4,
-                                          paddingVertical: 6,
-                                          paddingHorizontal: 10,
-                                          alignItems: 'center',
-                                          opacity: loadingAd ? 0.6 : 1,
-                                        }}
-                                      >
-                                        <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>
-                                          {loadingAd ? '⏳ Cargando...' : '� Ver anuncio para desbloquear'}
-                                        </Text>
-                                      </TouchableOpacity>
-                                    )}
-                                    {unlockedBets.size >= 2 && (
-                                      <Text style={{ color: '#64748b', fontSize: 10, fontStyle: 'italic' }}>
-                                        Ya desbloqueaste 2 apuestas (máximo por jornada)
-                                      </Text>
-                                    )}
-                                  </View>
-                                )}
-
-                                {/* Indicador de desbloqueada */}
-                                {isUnlocked && !userBet && !isJornadaOpen && (
-                                  <View style={{
-                                    backgroundColor: '#065f46',
-                                    borderRadius: 6,
-                                    paddingHorizontal: 8,
-                                    paddingVertical: 4,
-                                    marginBottom: 8,
-                                    alignSelf: 'flex-start',
-                                  }}>
-                                    <Text style={{ color: '#6ee7b7', fontSize: 11, fontWeight: '700' }}>✅ DESBLOQUEADA - Puedes apostar aquí</Text>
-                                  </View>
-                                )}
-
                                 {/* Label y Cuota */}
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                   <Text style={{ color: isBlocked ? '#64748b' : '#e5e7eb', fontWeight: '600', fontSize: 15, flex: 1 }}>
@@ -1101,7 +1157,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   </View>
                                 </View>
 
-                                {/* Si el usuario ya apostó */}
+                                {/* Si el usuario ya apostÃ³ */}
                                 {userBet && ligaId && isJornadaOpen && (
                                   <View style={{
                                     backgroundColor: '#1e293b',
@@ -1123,7 +1179,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         </Text>
                                       </View>
                                     </View>
-                                    {/* Controles de edición si jornada abierta */}
+                                    {/* Controles de ediciÃ³n si jornada abierta */}
                                     {isJornadaOpen ? (
                                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
                                         {/* Two simple buttons: Edit and Delete. Edit toggles an inline editable input. */}
@@ -1215,7 +1271,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     ) : null}
                                   </View>
                                 )}
-                                {/* Si no hay apuesta del usuario en este grupo y la jornada está abierta, permitir apostar */}
+                                {/* Si no hay apuesta del usuario en este grupo y la jornada estÃ¡ abierta, permitir apostar */}
                                 {!userBet && !isBlocked && ligaId && isJornadaOpen && (
                                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
                                     <TextInput
@@ -1260,7 +1316,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   </View>
                                 )}
 
-                                {/* En jornada cerrada: mostrar jugadores y cantidades que apostaron en esta opción */}
+                                {/* En jornada cerrada: mostrar jugadores y cantidades que apostaron en esta opciÃ³n */}
                                 {!isJornadaOpen && ligaId && (
                                   (() => {
                                     const betsForOption = leagueBets.filter((betItem) =>
@@ -1268,7 +1324,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       normalizeType(betItem.betType) === normalizeType(b.type) &&
                                       normalizeLabel(betItem.betLabel) === normalizeLabel(option.label)
                                     );
-                                    console.log('🔍 Filtering bets for option:', {
+                                    console.log('ðŸ” Filtering bets for option:', {
                                       matchId: b.matchId,
                                       type: b.type,
                                       label: option.label,
@@ -1315,7 +1371,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               onRequestClose={() => setIsDrawerOpen(false)}
             >
               <View style={{ flex: 1, flexDirection: 'row' }}>
-                {/* Drawer content con animación */}
+                {/* Drawer content con animaciÃ³n */}
                 <Animated.View
                   style={{
                     width: '75%',
@@ -1344,7 +1400,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               </View>
             </Modal>
           </LinearGradient>
-          {/* Barra de navegación fija en la parte inferior, solo visible cuando NO hay teclado */}
+          {/* Barra de navegaciÃ³n fija en la parte inferior, solo visible cuando NO hay teclado */}
           {!isKeyboardVisible && (
             <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
               <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
@@ -1357,3 +1413,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 };
 
 export default Apuestas;
+
+
+
+
+
