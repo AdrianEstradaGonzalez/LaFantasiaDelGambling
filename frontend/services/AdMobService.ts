@@ -73,7 +73,7 @@ export class AdMobService {
 
       await new Promise<void>((resolve, reject) => {
         const unsubscribeLoaded = this.rewardedAd!.addAdEventListener(
-          AdEventType.LOADED,
+          RewardedAdEventType.LOADED,
           () => {
             unsubscribeLoaded();
             resolve();

@@ -15,7 +15,6 @@ import FootballService from '../../services/FutbolService';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { SafeLayout, useSafePadding } from '../../components/SafeLayout';
-import { AdBanner } from '../../components/AdBanner';
 
 
 
@@ -309,8 +308,8 @@ export const Clasificacion = () => {
           {/* Contenido */}
           {jugadores.length > 0 ? (
             <ScrollView
-              style={{ flex: 1 }}
-              contentContainerStyle={{ paddingBottom: 20 }}
+              style={styles.container}
+              contentContainerStyle={{ paddingBottom: 140 }}
             >
           {jugadores.map((jugador) => {
             const isCurrentUser = jugador.id === currentUserId;
@@ -510,9 +509,6 @@ export const Clasificacion = () => {
           </Text>
         </View>
       )}
-
-          {/* Banner de anuncio encima de la barra de navegación */}
-          <AdBanner visible={true} size="BANNER" />
 
           {/* Barra inferior */}
           <LigaNavBar ligaId={ligaId} ligaName={ligaName} />

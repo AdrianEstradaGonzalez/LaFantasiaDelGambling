@@ -993,7 +993,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             </View>
           )}
 
-          <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 200 }} scrollEnabled={!isChangingFormation}>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 20 }} scrollEnabled={!isChangingFormation}>
           {/* Header con tÃ­tulo y botÃ³n guardar */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
