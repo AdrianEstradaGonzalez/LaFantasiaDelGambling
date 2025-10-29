@@ -285,10 +285,14 @@ export const PlayersMarket = ({ navigation, route }: {
       }
       setLoading(true);
       const playersData = await PlayerService.getAllPlayers({ division: leagueDivision });
-      const teamsData = await FootballService.getLaLigaTeamsCached();
+      
+      // Extraer equipos únicos de los jugadores cargados
+      const uniqueTeams = Array.from(
+        new Set(playersData.map(p => JSON.stringify({ id: p.teamId, name: p.teamName })))
+      ).map(str => JSON.parse(str));
       
       setPlayers(playersData);
-      setTeams(teamsData);
+      setTeams(uniqueTeams);
       
       // Cargar presupuesto y plantilla si tenemos ligaId
       if (ligaId) {

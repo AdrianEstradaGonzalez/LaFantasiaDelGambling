@@ -286,15 +286,15 @@ function extractStats(stats: any) {
   };
 }
 
-async function fetchMatchdayFixtures(matchday: number) {
+async function fetchMatchdayFixtures(matchday: number, leagueId: number = 140) {
   const season = Number(process.env.FOOTBALL_API_SEASON ?? 2025);
-  const cacheKey = `${season}:${matchday}`;
+  const cacheKey = `${leagueId}:${season}:${matchday}`;
   const cached = getFromCache(fixturesCache, cacheKey);
   if (cached !== undefined) return cached;
 
   const response = await api.get('/fixtures', {
     params: {
-      league: 140,
+      league: leagueId,
       season,
       round: `Regular Season - ${matchday}`,
     },
@@ -360,13 +360,26 @@ export async function getPlayerStatsForJornada(
 
   // 2. Consultar API Football con la nueva lógica
   try {
-    const fixtures = await fetchMatchdayFixtures(jornada);
-
     // Paso 1: Obtener el nombre del jugador desde nuestra BD
-    const playerFromDb = await prisma.player.findUnique({ where: { id: playerId } });
+    // Primero intentar en player (Primera División)
+    let playerFromDb = await prisma.player.findUnique({ where: { id: playerId } });
+    let isSegundaDivision = false;
+    
+    // Si no está en player, buscar en player_segunda (Segunda División)
+    if (!playerFromDb) {
+      playerFromDb = await (prisma as any).playerSegunda.findUnique({ where: { id: playerId } });
+      isSegundaDivision = true;
+    }
+    
     if (!playerFromDb) {
       throw new AppError(404, 'PLAYER_NOT_FOUND_IN_DB', 'Jugador no encontrado en la base de datos local');
     }
+
+    // Determinar qué liga consultar (140 = La Liga, 141 = Segunda División)
+    const leagueId = isSegundaDivision ? 141 : 140;
+    console.log(`[playerStats] 🔍 Buscando estadísticas para ${playerFromDb.name} en ${isSegundaDivision ? 'Segunda' : 'Primera'} División (Liga ${leagueId})`);
+
+    const fixtures = await fetchMatchdayFixtures(jornada, leagueId);
 
     // Función para normalizar nombres (eliminar tildes, puntos, etc.)
     const normalizeName = (name: string): string => {

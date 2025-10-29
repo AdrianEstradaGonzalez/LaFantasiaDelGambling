@@ -715,12 +715,22 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
 
       
           <View style={{ backgroundColor: '#0f172a', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
-            <ScrollView 
-              ref={matchdayScrollRef}
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-            >
+            {matchdayPoints.length === 0 || matchdayPoints.every(mp => mp.stats === null) ? (
+              <View style={{ paddingHorizontal: 16, paddingVertical: 20, alignItems: 'center' }}>
+                <Text style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', marginBottom: 8 }}>
+                  ⚠️ Estadísticas no disponibles
+                </Text>
+                <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center' }}>
+                  No se encontraron datos para este jugador
+                </Text>
+              </View>
+            ) : (
+              <ScrollView 
+                ref={matchdayScrollRef}
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
+              >
               {matchdayPoints.map((mp) => {
                 const isSelected = selectedMatchday === mp.matchday;
                 const pointsColor = mp.points > 0 ? '#10b981' : mp.points < 0 ? '#ef4444' : '#f59e0b';
@@ -787,6 +797,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
                 );
               })}
             </ScrollView>
+            )}
           </View>
 
           {selectedData && (
