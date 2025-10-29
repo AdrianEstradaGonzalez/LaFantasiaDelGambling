@@ -36,6 +36,9 @@ export const ADMOB_CONFIG = {
 export class AdMobService {
   private static initialized = false;
   private static rewardedAd: RewardedAd | null = null;
+  private static isLoadingRewarded = false;
+  private static loadAttempts = 0;
+  private static maxLoadAttempts = 3;
 
   /**
    * Inicializar AdMob (llamar una vez al inicio de la app)
@@ -69,7 +72,27 @@ export class AdMobService {
    * Precargar anuncio con recompensa (para desbloquear apuestas)
    */
   static async preloadRewarded(): Promise<void> {
-    if (!ADMOB_CONFIG.REWARDED_GENERAL) return;
+    if (!ADMOB_CONFIG.REWARDED_GENERAL) {
+      console.warn('⚠️ No hay ID de anuncio recompensado configurado');
+      return;
+    }
+
+    if (this.isLoadingRewarded) {
+      console.log('⏳ Ya hay una carga de anuncio en progreso...');
+      return;
+    }
+
+    if (this.loadAttempts >= this.maxLoadAttempts) {
+      console.warn('⚠️ Máximo de intentos alcanzado. Esperando antes de reintentar...');
+      // Resetear después de 2 minutos
+      setTimeout(() => {
+        this.loadAttempts = 0;
+      }, 120000);
+      return;
+    }
+
+    this.isLoadingRewarded = true;
+    this.loadAttempts++;
 
     try {
       this.rewardedAd = RewardedAd.createForAdRequest(
@@ -77,10 +100,16 @@ export class AdMobService {
       );
 
       await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout al cargar anuncio'));
+        }, 30000); // 30 segundos timeout
+
         const unsubscribeLoaded = this.rewardedAd!.addAdEventListener(
           RewardedAdEventType.LOADED,
           () => {
+            clearTimeout(timeout);
             unsubscribeLoaded();
+            this.loadAttempts = 0; // Reset en caso de éxito
             resolve();
           }
         );
@@ -88,6 +117,7 @@ export class AdMobService {
         const unsubscribeError = this.rewardedAd!.addAdEventListener(
           AdEventType.ERROR,
           (error: any) => {
+            clearTimeout(timeout);
             unsubscribeError();
             reject(error);
           }
@@ -96,9 +126,21 @@ export class AdMobService {
         this.rewardedAd!.load();
       });
 
-      console.log('✅ Anuncio con recompensa precargado');
+      console.log('✅ Anuncio con recompensa precargado (intento ' + this.loadAttempts + ')');
     } catch (error) {
-      console.error('❌ Error al precargar rewarded:', error);
+      console.error('❌ Error al precargar rewarded (intento ' + this.loadAttempts + '):', error);
+      this.rewardedAd = null;
+      
+      // Reintentar después de un delay si no hemos alcanzado el máximo
+      if (this.loadAttempts < this.maxLoadAttempts) {
+        const delay = this.loadAttempts * 5000; // 5s, 10s, 15s
+        console.log(`🔄 Reintentando en ${delay/1000} segundos...`);
+        setTimeout(() => {
+          this.preloadRewarded();
+        }, delay);
+      }
+    } finally {
+      this.isLoadingRewarded = false;
     }
   }
 
@@ -106,23 +148,34 @@ export class AdMobService {
    * Mostrar anuncio con recompensa
    * @returns Promise con si el usuario completó el anuncio y ganó la recompensa
    */
-  static async showRewarded(): Promise<{ watched: boolean; reward?: { type: string; amount: number } }> {
+  static async showRewarded(): Promise<{ watched: boolean; reward?: { type: string; amount: number }; error?: string }> {
+    // Si no hay anuncio cargado, intentar precargarlo
     if (!this.rewardedAd) {
+      console.log('⚠️ No hay anuncio precargado, intentando cargar...');
       await this.preloadRewarded();
+      
+      // Esperar un momento para que se cargue
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
     try {
       if (!this.rewardedAd) {
-        return { watched: false };
+        console.error('❌ No hay anuncio disponible después de intentar cargar');
+        return { 
+          watched: false, 
+          error: 'No hay anuncios disponibles en este momento. Por favor, intenta más tarde.' 
+        };
       }
 
       return new Promise((resolve) => {
         let rewarded = false;
         let rewardData: { type: string; amount: number } | undefined;
+        
         // Listener para cuando gana la recompensa
         const unsubscribeEarned = this.rewardedAd!.addAdEventListener(
           RewardedAdEventType.EARNED_REWARD,
           (reward: any) => {
+            console.log('🎁 Recompensa ganada:', reward);
             rewarded = true;
             rewardData = reward;
           }
@@ -132,6 +185,7 @@ export class AdMobService {
         const unsubscribeClosed = this.rewardedAd!.addAdEventListener(
           AdEventType.CLOSED,
           () => {
+            console.log('🚪 Anuncio cerrado. Recompensa ganada:', rewarded);
             unsubscribeEarned();
             unsubscribeClosed();
             
@@ -143,11 +197,32 @@ export class AdMobService {
           }
         );
 
+        // Listener para errores
+        const unsubscribeError = this.rewardedAd!.addAdEventListener(
+          AdEventType.ERROR,
+          (error: any) => {
+            console.error('❌ Error al mostrar anuncio:', error);
+            unsubscribeEarned();
+            unsubscribeClosed();
+            unsubscribeError();
+            
+            this.rewardedAd = null;
+            
+            resolve({ 
+              watched: false, 
+              error: 'Error al mostrar el anuncio. Inténtalo de nuevo.' 
+            });
+          }
+        );
+
         this.rewardedAd!.show();
       });
     } catch (error) {
       console.error('❌ Error al mostrar rewarded:', error);
-      return { watched: false };
+      return { 
+        watched: false, 
+        error: 'Error inesperado al mostrar el anuncio.' 
+      };
     }
   }
 
@@ -155,7 +230,9 @@ export class AdMobService {
    * Verificar si hay un anuncio recompensado listo
    */
   static isRewardedReady(): boolean {
-    return this.rewardedAd !== null;
+    const ready = this.rewardedAd !== null;
+    console.log('🔍 Anuncio recompensado listo:', ready);
+    return ready;
   }
 }
 
