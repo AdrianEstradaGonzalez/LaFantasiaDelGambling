@@ -9,13 +9,26 @@ export const LeagueMemberRepo = {
         if (existingMember) {
             return existingMember; // Si ya es miembro, devolver el registro existente
         }
+        // Obtener información de la liga para verificar si es premium
+        const league = await prisma.league.findUnique({
+            where: { id: leagueId },
+            select: { isPremium: true, division: true }
+        });
+        if (!league) {
+            throw new Error('Liga no encontrada');
+        }
         // Contar miembros actuales en la liga
         const memberCount = await prisma.leagueMember.count({
             where: { leagueId }
         });
-        // Validar límite de 20 usuarios
-        if (memberCount >= 20) {
-            throw new Error('Liga completa. Esta liga ya tiene el máximo de 20 usuarios');
+        // Determinar límite según tipo de liga
+        // Liga Premium = 50 jugadores
+        // Liga Normal = 20 jugadores
+        const maxPlayers = league.isPremium ? 50 : 20;
+        const ligaType = league.isPremium ? 'Premium' : 'Normal';
+        // Validar límite según tipo de liga
+        if (memberCount >= maxPlayers) {
+            throw new Error(`Liga completa. Esta liga ${ligaType} ya tiene el máximo de ${maxPlayers} usuarios`);
         }
         // Inicializar pointsPerJornada con todas las jornadas a 0 (1-38)
         const initialPointsPerJornada = {};

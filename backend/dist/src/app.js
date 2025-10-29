@@ -14,6 +14,7 @@ import leagueRoutes from "./routes/league.routes.js";
 import squadRoutes from "./routes/squad.routes.js";
 import playerRoutes from "./routes/player.routes.js";
 import betRoutes from "./routes/bet.routes.js";
+import betCombiRoutes from "./routes/betCombi.routes.js";
 import betOptionRoutes from "./routes/betOption.routes.js";
 import jornadaRoutes from "./routes/jornada.routes.js";
 import { playerStatsRoutes } from "./routes/playerStats.routes.js";
@@ -131,6 +132,7 @@ export async function buildApp() {
     await app.register(squadRoutes, { prefix: "/squads" });
     await app.register(playerRoutes, { prefix: "/players" });
     await app.register(betRoutes, { prefix: "/bets" });
+    await app.register(betCombiRoutes, { prefix: "/bet-combis" });
     await app.register(betOptionRoutes, { prefix: "/" });
     await app.register(jornadaRoutes, { prefix: "/jornada" });
     await app.register(playerStatsRoutes, { prefix: "/" });
