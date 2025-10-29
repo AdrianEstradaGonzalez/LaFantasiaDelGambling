@@ -398,4 +398,62 @@ export class BetService {
       throw new Error(error?.response?.data?.error || 'Error al obtener apuestas de la liga');
     }
   }
+
+  /**
+   * COMBIS - Crear apuesta combinada
+   */
+  static async createCombi(leagueId: string, data: {
+    jornada: number;
+    selections: Array<{
+      matchId: number;
+      betType: string;
+      betLabel: string;
+      odd: number;
+      homeTeam: string;
+      awayTeam: string;
+    }>;
+    amount: number;
+  }): Promise<any> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(`${API_URL}/bet-combis/${leagueId}`, data, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error creating combi:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al crear combi');
+    }
+  }
+
+  /**
+   * COMBIS - Obtener combis del usuario en una liga
+   */
+  static async getUserCombis(leagueId: string, jornada?: number): Promise<any[]> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const url = jornada 
+        ? `${API_URL}/bet-combis/${leagueId}?jornada=${jornada}`
+        : `${API_URL}/bet-combis/${leagueId}`;
+
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error getting combis:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al obtener combis');
+    }
+  }
 }
+

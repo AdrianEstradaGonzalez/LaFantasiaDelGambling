@@ -1,0 +1,130 @@
+import { FastifyRequest, FastifyReply } from 'fastify';
+import { BetCombiService, CombiSelection } from '../services/betCombi.service.js';
+import { AppError } from '../utils/errors.js';
+
+export class BetCombiController {
+  /**
+   * POST /bet-combis/:leagueId
+   * Crear una nueva apuesta combinada
+   */
+  static async create(
+    request: FastifyRequest<{ 
+      Params: { leagueId: string };
+      Body: { jornada: number; selections: CombiSelection[]; amount: number } 
+    }>, 
+    reply: FastifyReply
+  ) {
+    try {
+      const userId = (request.user as any)?.sub || (request.user as any)?.id;
+      if (!userId) {
+        return reply.status(401).send({ error: 'No autenticado' });
+      }
+
+      const { leagueId } = request.params;
+      const { jornada, selections, amount } = request.body;
+
+      // Validar datos
+      if (!jornada || !selections || !amount) {
+        return reply.status(400).send({ error: 'Faltan campos requeridos' });
+      }
+
+      if (selections.length < 2) {
+        return reply.status(400).send({ error: 'Se requieren mínimo 2 apuestas para una combi' });
+      }
+
+      if (amount > 50_000_000) {
+        return reply.status(400).send({ error: 'El monto máximo para combis es 50M' });
+      }
+
+      const combi = await BetCombiService.createCombi({
+        leagueId,
+        userId,
+        jornada,
+        selections,
+        amount,
+      });
+
+      return reply.status(201).send(combi);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      return reply.status(400).send({ error: error.message });
+    }
+  }
+
+  /**
+   * GET /bet-combis/:leagueId
+   * Obtener combis del usuario en una liga
+   */
+  static async getByLeague(
+    request: FastifyRequest<{ 
+      Params: { leagueId: string };
+      Querystring: { jornada?: string } 
+    }>, 
+    reply: FastifyReply
+  ) {
+    try {
+      const userId = (request.user as any)?.sub || (request.user as any)?.id;
+      if (!userId) {
+        return reply.status(401).send({ error: 'No autenticado' });
+      }
+
+      const { leagueId } = request.params;
+      const jornada = request.query.jornada ? parseInt(request.query.jornada) : undefined;
+
+      const combis = await BetCombiService.getUserCombis(userId, leagueId, jornada);
+      return reply.status(200).send(combis);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      return reply.status(400).send({ error: error.message });
+    }
+  }
+
+  /**
+   * POST /bet-combis/evaluate/:combiId
+   * Evaluar una combi específica
+   */
+  static async evaluate(
+    request: FastifyRequest<{ Params: { combiId: string } }>, 
+    reply: FastifyReply
+  ) {
+    try {
+      const { combiId } = request.params;
+      const combi = await BetCombiService.evaluateCombi(combiId);
+      return reply.status(200).send(combi);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      return reply.status(400).send({ error: error.message });
+    }
+  }
+
+  /**
+   * POST /bet-combis/evaluate-jornada
+   * Evaluar todas las combis de una jornada
+   */
+  static async evaluateJornada(
+    request: FastifyRequest<{ Body: { leagueId: string; jornada: number } }>, 
+    reply: FastifyReply
+  ) {
+    try {
+      const { leagueId, jornada } = request.body;
+
+      if (!leagueId || !jornada) {
+        return reply.status(400).send({ error: 'Faltan campos requeridos' });
+      }
+
+      const results = await BetCombiService.evaluateJornadaCombis(leagueId, jornada);
+      return reply.status(200).send(results);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      return reply.status(400).send({ error: error.message });
+    }
+  }
+}

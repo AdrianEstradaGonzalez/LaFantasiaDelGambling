@@ -64,6 +64,7 @@ model LeagueMember {
   league           League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   bets             Bet[]
+  betCombis        BetCombi[]
 
   @@id([leagueId, userId])
   @@index([userId])
@@ -298,13 +299,36 @@ model Bet {
   awayTeam     String?
   evaluatedAt  DateTime?    @db.Timestamp(6)
   homeTeam     String?
+  combiId      String?      // Referencia a BetCombi si es parte de una combinada
   leagueMember LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
+  betCombi     BetCombi?    @relation(fields: [combiId], references: [id], onDelete: Cascade)
 
   @@index([leagueId, userId])
   @@index([jornada])
   @@index([status])
   @@index([matchId])
+  @@index([combiId])
   @@map("bet")
+}
+
+model BetCombi {
+  id            String       @id @default(cuid())
+  leagueId      String
+  userId        String
+  jornada       Int
+  totalOdd      Float        // Cuota total (producto de todas las cuotas)
+  amount        Int          // Cantidad apostada (máx 50M)
+  potentialWin  Int          // Ganancia potencial
+  status        String       @default("pending") // "pending", "won", "lost"
+  createdAt     DateTime     @default(now())
+  evaluatedAt   DateTime?    @db.Timestamp(6)
+  leagueMember  LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
+  selections    Bet[]        // Apuestas individuales que forman la combi
+
+  @@index([leagueId, userId])
+  @@index([jornada])
+  @@index([status])
+  @@map("bet_combi")
 }
 
 model bet_option {
