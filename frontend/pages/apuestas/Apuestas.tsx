@@ -1662,12 +1662,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             const userBet = getUserBetForOption(b.matchId, b.type, option.label);
                             const groupHasBet = hasAnyBetInGroup(b.matchId, b.type);
                             const anyBetInMatch = hasAnyBetInMatch(b.matchId);
+                            const isInCurrentCombi = isInCombi(b.matchId, b.type, option.label);
                             
                             const isUnlocked = unlockedBets.has(index);
                             const requiresAdUnlock = index === 8 || index === 9;
                             const isBlockedByAd = requiresAdUnlock && !isUnlocked && !userBet;
                             const isBlockedByBet = (groupHasBet || anyBetInMatch) && !userBet && !isUnlocked;
-                            const isBlocked = isBlockedByAd || isBlockedByBet;
+                            const isBlockedByCombi = isInCurrentCombi && !userBet; // Bloquear si está en combi
+                            const isBlocked = isBlockedByAd || isBlockedByBet || isBlockedByCombi;
 
                             return (
                               <View
@@ -2031,8 +2033,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '600', marginBottom: 4 }}>
                           {sel.homeTeam} vs {sel.awayTeam}
                         </Text>
+                        <Text style={{ color: '#93c5fd', fontSize: 11, fontWeight: '600', textTransform: 'uppercase', marginBottom: 4 }}>
+                          {sel.betType}
+                        </Text>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text style={{ color: '#94a3b8', fontSize: 12 }}>
+                          <Text style={{ color: '#94a3b8', fontSize: 12, flex: 1 }}>
                             {sel.betLabel}
                           </Text>
                           <Text style={{ color: '#ef4444', fontSize: 14, fontWeight: '800' }}>

@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { BetCombiController } from '../controllers/betCombi.controller';
+import { BetCombiController } from '../controllers/betCombi.controller.js';
 
 export default async function betCombiRoutes(fastify: FastifyInstance) {
   /**
