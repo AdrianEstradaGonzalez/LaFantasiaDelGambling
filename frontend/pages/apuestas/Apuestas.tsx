@@ -43,7 +43,7 @@ type GroupedBet = {
   options: Array<{ label: string; odd: number }>;
 };
 
-type ApuestasRouteProps = RouteProp<{ params: { ligaId?: string; ligaName?: string } }, 'params'>;
+type ApuestasRouteProps = RouteProp<{ params: { ligaId?: string; ligaName?: string; isPremium?: boolean } }, 'params'>;
 
 type ApuestasProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -53,6 +53,7 @@ type ApuestasProps = {
 export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
+  const isPremium = route.params?.isPremium || false;
   const [loading, setLoading] = useState(true);
   const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
   const [userBets, setUserBets] = useState<UserBet[]>([]);
@@ -572,6 +573,17 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
   // Funciones para manejar combis
   const toggleCombiSelection = (selection: CombiSelection) => {
+    // Verificar si la liga es premium
+    if (!isPremium) {
+      CustomAlertManager.alert(
+        'Funcionalidad Premium',
+        'Las apuestas combinadas solo están disponibles en ligas premium. Mejora tu liga para desbloquear esta función.',
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
+      return;
+    }
+
     const isAlreadySelected = combiSelections.some(
       s => s.matchId === selection.matchId && s.betType === selection.betType && s.betLabel === selection.betLabel
     );
@@ -1873,22 +1885,35 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         homeTeam: b.local,
                                         awayTeam: b.visitante,
                                       })}
-                                      disabled={isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)}
+                                      disabled={!isPremium || (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))}
                                       style={{
-                                        backgroundColor: isInCombi(b.matchId, b.type, option.label) 
-                                          ? '#0ea5e9' 
-                                          : isMatchBlockedByCombi(b.matchId) 
-                                            ? '#374151'
-                                            : '#1e40af',
+                                        backgroundColor: !isPremium
+                                          ? '#374151'  // Gris si no es premium
+                                          : isInCombi(b.matchId, b.type, option.label) 
+                                            ? '#0ea5e9' 
+                                            : isMatchBlockedByCombi(b.matchId) 
+                                              ? '#374151'
+                                              : '#1e40af',
                                         paddingHorizontal: 16,
                                         paddingVertical: 10,
                                         borderRadius: 8,
                                         marginTop: 8,
-                                        opacity: (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)) ? 0.5 : 1,
+                                        opacity: (!isPremium || (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ? 0.5 : 1,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 6,
                                       }}
                                     >
+                                      {!isPremium && (
+                                        <LockIcon size={14} color="#fff" />
+                                      )}
                                       <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
-                                        {isInCombi(b.matchId, b.type, option.label) ? '✓ En combi' : 'Combinar'}
+                                        {!isPremium 
+                                          ? 'Combinar (Premium)' 
+                                          : isInCombi(b.matchId, b.type, option.label) 
+                                            ? '✓ En combi' 
+                                            : 'Combinar'}
                                       </Text>
                                     </TouchableOpacity>
                                   </>

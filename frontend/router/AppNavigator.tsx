@@ -39,7 +39,7 @@ export type RootStackParamList = {
   Equipo: { ligaId: string, ligaName: string};
   VerPlantillaUsuario: { ligaId: string; ligaName: string; userId: string; userName: string; jornada?: number };
   InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string };
-  Apuestas: { ligaId?: string; ligaName?: string } | undefined;
+  Apuestas: { ligaId?: string; ligaName?: string; isPremium?: boolean } | undefined;
   HistorialApuestas: { ligaId?: string; ligaName?: string } | undefined;
   AdminPanel: undefined;
   GestionJugadores: undefined;
