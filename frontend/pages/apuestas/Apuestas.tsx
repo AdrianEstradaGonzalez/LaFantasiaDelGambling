@@ -278,9 +278,60 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     
     setSelectedJornada(newJornada);
     
-    // Si volvemos a la jornada actual, no recargar datos (ya los tenemos del primer useEffect)
+    // Si volvemos a la jornada actual, recargar las apuestas disponibles
     if (newJornada === currentJornada) {
-      setJornada(currentJornada);
+      try {
+        setLoading(true);
+        
+        // Cargar apuestas disponibles para apostar
+        const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName });
+        
+        // Agrupar apuestas por matchId + type
+        const grouped: Record<string, GroupedBet> = {};
+        for (const bet of apuestas) {
+          const key = `${bet.matchId}-${bet.type}`;
+          if (!grouped[key]) {
+            grouped[key] = {
+              matchId: bet.matchId,
+              jornada: bet.jornada,
+              local: bet.local,
+              visitante: bet.visitante,
+              localCrest: bet.localCrest,
+              visitanteCrest: bet.visitanteCrest,
+              fecha: bet.fecha,
+              hora: bet.hora,
+              type: bet.type,
+              options: [],
+            };
+          }
+          grouped[key].options.push({ label: bet.label, odd: bet.odd });
+        }
+        
+        const groupedArray = Object.values(grouped);
+        
+        // Recargar apuestas del usuario, presupuesto y estado
+        const [budgetData, userBetsData, leagueBetsData, statusResp] = await Promise.all([
+          BetService.getBettingBudget(ligaId),
+          BetService.getUserBets(ligaId),
+          BetService.getLeagueBets(ligaId),
+          JornadaService.getJornadaStatus(ligaId)
+        ]);
+        
+        // Filtrar apuestas de la liga por la jornada actual
+        const filteredLeagueBets = leagueBetsData.filter(bet => bet.jornada === currentJornada);
+        
+        setGroupedBets(groupedArray);
+        setUserBets(userBetsData);
+        setLeagueBets(filteredLeagueBets);
+        setBudget(budgetData);
+        setJornada(currentJornada);
+        setJornadaStatus(statusResp.status);
+      } catch (err) {
+        console.error('Error loading current jornada:', err);
+        showError('Error al cargar la jornada');
+      } finally {
+        setLoading(false);
+      }
       return;
     }
     
