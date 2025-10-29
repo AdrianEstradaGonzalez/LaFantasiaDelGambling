@@ -384,7 +384,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>
-                Cada apuesta tiene todas sus opciones disponibles (ej: +8.5 corners y -8.5 corners)
+                Cada apuesta tiene todas sus opciones disponibles (ej: +10.5 corners y -10.5 corners)
               </Text>
             </View>
 

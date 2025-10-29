@@ -657,7 +657,7 @@ export default class FootballService {
       // Este código solo se ejecuta si el usuario no tiene ligaId
       if (!ligaId) {
         console.log('⚠️ Modo sin liga - usando generación local de apuestas');
-        const storeKey = `apuestas_jornada_${nextJ}_v4`;
+  const storeKey = `apuestas_jornada_${nextJ}_v5`;
         
         try {
           const stored = await EncryptedStorage.getItem(storeKey);
@@ -989,7 +989,7 @@ export default class FootballService {
                 n = [0.5, 1.5, 2.5, 3.5][Math.floor(Math.random() * 4)];
                 labelPrefix = 'Se marcarán';
               } else if (t === 'Córners') {
-                n = [6.5, 8.5, 9.5, 10.5][Math.floor(Math.random() * 4)];
+                n = [6.5, 9.5, 10.5, 11.5][Math.floor(Math.random() * 4)];
                 labelPrefix = 'Habrá';
               } else {
                 n = [3.5, 4.5, 5.5, 6.5][Math.floor(Math.random() * 4)];
@@ -1098,7 +1098,7 @@ export default class FootballService {
               });
               usedLabels.add(opt.label.toLowerCase());
             }
-          } else if (t === 'Goles totales' || t === 'Córners' || t === 'Tarjetas') {
+            } else if (t === 'Goles totales' || t === 'Córners' || t === 'Tarjetas') {
             // Generar AMBAS opciones: Más de X y Menos de X
             let n: number;
             let labelPrefix: string;
@@ -1106,7 +1106,7 @@ export default class FootballService {
               n = [0.5, 1.5, 2.5, 3.5][Math.floor(Math.random() * 4)];
               labelPrefix = 'Se marcarán';
             } else if (t === 'Córners') {
-              n = [6.5, 8.5, 9.5, 10.5][Math.floor(Math.random() * 4)];
+                n = [9.5, 10.5, 11.5][Math.floor(Math.random() * 4)];
               labelPrefix = 'Habrá';
             } else {
               n = [3.5, 4.5, 5.5, 6.5][Math.floor(Math.random() * 4)];
@@ -1292,7 +1292,7 @@ export default class FootballService {
       // Si hay ligaId, las apuestas ya están en BD (manejadas por el backend)
       if (!ligaId) {
         // Sin ligaId, usar caché local
-        const storeKey = `apuestas_jornada_${nextJ}_v4`;
+  const storeKey = `apuestas_jornada_${nextJ}_v5`;
         try {
           await EncryptedStorage.setItem(storeKey, JSON.stringify(finalBets));
           console.log(`💾 Apuestas guardadas en caché local`);
@@ -1335,8 +1335,8 @@ export default class FootballService {
           odd: opt.odd,
         });
       }
-    } else if (type === 'Córners') {
-      const thresholds = [6.5, 8.5, 9.5, 10.5];
+      } else if (type === 'Córners') {
+      const thresholds = [6.5, 9.5, 10.5, 11.5];
       const n = thresholds[Math.floor(Math.random() * thresholds.length)];
       const options = [
         { label: `Habrá más de ${n} córners`, odd: parseFloat(baseOdd.toFixed(2)) },
@@ -1752,7 +1752,7 @@ export default class FootballService {
 
       // 6. Limpiar caché de apuestas anteriores
       try {
-        await EncryptedStorage.removeItem(`apuestas_jornada_${jornada}_v4`);
+  await EncryptedStorage.removeItem(`apuestas_jornada_${jornada}_v5`);
       } catch {}
 
       return {
