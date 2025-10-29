@@ -319,7 +319,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                 key={liga.id}
                 style={styles.ligaCard}
                 activeOpacity={0.85}
-                onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre, division: liga.division, isPremium: liga.isPremium })}
+                                onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre, division: liga.division, isPremium: liga.isPremium })}
               >
                 {/* Fondo con gradiente sutil */}
                 <LinearGradient

@@ -27,13 +27,15 @@ type UsuarioClasificacion = {
   presupuesto: number;
 };
 
-type ClasificacionRouteProps = RouteProp<{ params: { ligaId: string, ligaName: string } }, 'params'>;
+type ClasificacionRouteProps = RouteProp<{ params: { ligaId: string, ligaName: string, division?: string, isPremium?: boolean } }, 'params'>;
 
 export const Clasificacion = () => {
   const route = useRoute<ClasificacionRouteProps>();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { ligaId } = route.params;
   const { ligaName } = route.params;
+  const division = route.params?.division || 'primera';
+  const isPremium = route.params?.isPremium || false;
   const safePadding = useSafePadding();
 
   const [jugadores, setJugadores] = useState<UsuarioClasificacion[]>([]);
@@ -523,7 +525,7 @@ export const Clasificacion = () => {
       )}
 
       {/* Barra inferior */}
-      <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+      <LigaNavBar ligaId={ligaId} ligaName={ligaName} division={division} isPremium={isPremium} />
 
           {/* Drawer Modal */}
           <Modal

@@ -8,19 +8,21 @@ import { LeaderboardIcon, JerseyIcon, TrendingIcon, DiceIcon } from '../../compo
 type LigaNavBarProps = {
   ligaId?: string;
   ligaName?: string;
+  division?: string;
+  isPremium?: boolean;
 };
 
-const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName }) => {
+const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName, division = 'primera', isPremium = false }) => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const route = useRoute();
   
   // Determinar qué página está activa
   const currentRoute = route.name;
 
-  const handleClasificacion = () => navigation.navigate('Clasificacion', { ligaId, ligaName });
-  const handleEquipo = () => navigation.navigate('Equipo', { ligaId, ligaName });
-  const handleJugadores = () => navigation.navigate('PlayersMarket', { ligaId, ligaName });
-  const handleApuestas = () => navigation.navigate('Apuestas', { ligaId, ligaName });
+  const handleClasificacion = () => navigation.navigate('Clasificacion', { ligaId, ligaName, division, isPremium });
+  const handleEquipo = () => navigation.navigate('Equipo', { ligaId, ligaName, division, isPremium });
+  const handleJugadores = () => navigation.navigate('PlayersMarket', { ligaId, ligaName, division, isPremium });
+  const handleApuestas = () => navigation.navigate('Apuestas', { ligaId, ligaName, division, isPremium });
 
   // Configuración de botones con iconos SVG más representativos
   const buttons = [

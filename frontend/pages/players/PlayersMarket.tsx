@@ -258,33 +258,23 @@ export const PlayersMarket = ({ navigation, route }: {
 
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
+  const division = route.params?.division || 'primera'; // Recibir división directamente
+  const isPremium = route.params?.isPremium || false; // Recibir isPremium directamente
   
-  // Modo selecciÃ³n (cuando viene desde MiPlantilla)
+  // Modo selección (cuando viene desde MiPlantilla)
   const selectMode = route.params?.selectMode || false;
   const filterByRole = route.params?.filterByRole;
-  const targetPosition = route.params?.targetPosition; // PosiciÃ³n especÃ­fica donde fichar
-  const currentFormation = route.params?.currentFormation; // FormaciÃ³n actual (aunque no estÃ© guardada)
+  const targetPosition = route.params?.targetPosition; // Posición específica donde fichar
+  const currentFormation = route.params?.currentFormation; // Formación actual (aunque no esté guardada)
   const returnTo = route.params?.returnTo; // Pantalla a la que volver
 
   // Cargar jugadores y equipos desde el backend
   const loadPlayers = useCallback(async () => {
     try {
-      // Cargar estado de jornada si hay ligaId
-      let leagueDivision = 'primera'; // default
-      if (ligaId) {
-        try {
-          const status = await JornadaService.getJornadaStatus(ligaId);
-          setJornadaStatus((status.status as 'open' | 'closed'));
-          // Obtener división de la liga si está disponible
-          if (status.division) {
-            leagueDivision = status.division;
-          }
-        } catch (e) {
-          console.warn('No se pudo obtener estado de jornada:', e);
-        }
-      }
       setLoading(true);
-      const playersData = await PlayerService.getAllPlayers({ division: leagueDivision });
+      
+      // Cargar jugadores directamente con la división recibida (sin llamada extra)
+      const playersData = await PlayerService.getAllPlayers({ division });
       
       // Extraer equipos únicos de los jugadores cargados
       const uniqueTeams = Array.from(
@@ -294,13 +284,16 @@ export const PlayersMarket = ({ navigation, route }: {
       setPlayers(playersData);
       setTeams(uniqueTeams);
       
-      // Cargar presupuesto y plantilla si tenemos ligaId
+      // Cargar estado de jornada, presupuesto y plantilla en paralelo si tenemos ligaId
       if (ligaId) {
         try {
-          const [budgetData, squad] = await Promise.all([
+          const [status, budgetData, squad] = await Promise.all([
+            JornadaService.getJornadaStatus(ligaId),
             SquadService.getUserBudget(ligaId),
             SquadService.getUserSquad(ligaId)
           ]);
+          
+          setJornadaStatus((status.status as 'open' | 'closed'));
           setBudget(budgetData);
           
           // Guardar IDs de jugadores ya fichados
@@ -1206,7 +1199,7 @@ export const PlayersMarket = ({ navigation, route }: {
           />
 
           {/* Barra de navegación */}
-          <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+          <LigaNavBar ligaId={ligaId} ligaName={ligaName} division={division} isPremium={isPremium} />
 
           {/* Drawer Modal */}
           <Modal

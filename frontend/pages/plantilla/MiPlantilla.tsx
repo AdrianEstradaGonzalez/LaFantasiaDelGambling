@@ -919,6 +919,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       navigation.navigate('PlayersMarket', { 
         ligaId,
         ligaName,
+        division,
+        isPremium,
         selectMode: true, 
         filterByRole: position.role,
         targetPosition: positionId,
@@ -2013,7 +2015,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           <AdBanner visible={true} size="BANNER" />
 
           {/* Barra de navegaciÃ³n */}
-          <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+          <LigaNavBar ligaId={ligaId} ligaName={ligaName} division={division} isPremium={isPremium} />
           
           {/* Overlay sutil cuando se estÃ¡ cambiando formaciÃ³n */}
           {isChangingFormation && (
