@@ -70,7 +70,8 @@ export const LeagueRepo = {
         // Obtener la jornada actual desde la API de football
         const currentJornada = await getCurrentJornadaFromAPI();
         
-        console.log(`📅 Creando liga "${name}" con jornada actual: ${currentJornada} (División: ${division})`);
+        const isPremium = division === 'segunda';
+        console.log(`📅 Creando liga "${name}" con jornada actual: ${currentJornada} (División: ${division}, Premium: ${isPremium})`);
         
         return prisma.league.create({
             data: {
@@ -79,8 +80,9 @@ export const LeagueRepo = {
                 leaderId,
                 currentJornada,
                 division,
+                isPremium,
                 members: { create: { userId: leaderId, points: 0 } },
-            },
+            } as any,
         });
     },
 

@@ -9,7 +9,7 @@ import { JornadaService } from '../../services/JornadaService';
 import { PlayerService } from '../../services/PlayerService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon, AlertIcon } from '../../components/VectorIcons';
+import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon, AlertIcon, LockIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -21,6 +21,7 @@ import { PlayerStatsService } from '../../services/PlayerStatsService';
 type Formation = {
   id: string;
   name: string;
+  isPremium?: boolean;
   positions: {
     id: string;
     role: 'POR' | 'DEF' | 'CEN' | 'DEL';
@@ -30,57 +31,6 @@ type Formation = {
 };
 
 const formations: Formation[] = [
-  {
-    id: '5-4-1',
-    name: '5-4-1',
-    positions: [
-      { id: 'por', role: 'POR', x: 50, y: 92 },
-      { id: 'def1', role: 'DEF', x: 8, y: 70 },
-      { id: 'def2', role: 'DEF', x: 29, y: 70 },
-      { id: 'def3', role: 'DEF', x: 50, y: 70 },
-      { id: 'def4', role: 'DEF', x: 71, y: 70 },
-      { id: 'def5', role: 'DEF', x: 92, y: 70 },
-      { id: 'cen1', role: 'CEN', x: 12, y: 48 },
-      { id: 'cen2', role: 'CEN', x: 37, y: 48 },
-      { id: 'cen3', role: 'CEN', x: 63, y: 48 },
-      { id: 'cen4', role: 'CEN', x: 88, y: 48 },
-      { id: 'del1', role: 'DEL', x: 50, y: 22 },
-    ]
-  },
-  {
-    id: '5-3-2',
-    name: '5-3-2',
-    positions: [
-      { id: 'por', role: 'POR', x: 50, y: 92 },
-      { id: 'def1', role: 'DEF', x: 8, y: 70 },
-      { id: 'def2', role: 'DEF', x: 29, y: 70 },
-      { id: 'def3', role: 'DEF', x: 50, y: 70 },
-      { id: 'def4', role: 'DEF', x: 71, y: 70 },
-      { id: 'def5', role: 'DEF', x: 92, y: 70 },
-      { id: 'cen1', role: 'CEN', x: 25, y: 48 },
-      { id: 'cen2', role: 'CEN', x: 50, y: 48 },
-      { id: 'cen3', role: 'CEN', x: 75, y: 48 },
-      { id: 'del1', role: 'DEL', x: 35, y: 22 },
-      { id: 'del2', role: 'DEL', x: 65, y: 22 },
-    ]
-  },
-  {
-    id: '4-5-1',
-    name: '4-5-1',
-    positions: [
-      { id: 'por', role: 'POR', x: 50, y: 92 },
-      { id: 'def1', role: 'DEF', x: 12, y: 70 },
-      { id: 'def2', role: 'DEF', x: 37, y: 70 },
-      { id: 'def3', role: 'DEF', x: 63, y: 70 },
-      { id: 'def4', role: 'DEF', x: 88, y: 70 },
-      { id: 'cen1', role: 'CEN', x: 10, y: 48 },
-      { id: 'cen2', role: 'CEN', x: 30, y: 48 },
-      { id: 'cen3', role: 'CEN', x: 50, y: 48 },
-      { id: 'cen4', role: 'CEN', x: 70, y: 48 },
-      { id: 'cen5', role: 'CEN', x: 90, y: 48 },
-      { id: 'del1', role: 'DEL', x: 50, y: 22 },
-    ]
-  },
   {
     id: '4-4-2',
     name: '4-4-2',
@@ -115,6 +65,25 @@ const formations: Formation[] = [
       { id: 'del3', role: 'DEL', x: 85, y: 22 },
     ]
   },
+  // ⭐ PREMIUM
+  {
+    id: '4-6-0',
+    name: '4-6-0',
+    isPremium: true,
+    positions: [
+      { id: 'por', role: 'POR', x: 50, y: 92 },
+      { id: 'def1', role: 'DEF', x: 12, y: 70 },
+      { id: 'def2', role: 'DEF', x: 37, y: 70 },
+      { id: 'def3', role: 'DEF', x: 63, y: 70 },
+      { id: 'def4', role: 'DEF', x: 88, y: 70 },
+      { id: 'cen1', role: 'CEN', x: 8, y: 35 },
+      { id: 'cen2', role: 'CEN', x: 25, y: 48 },
+      { id: 'cen3', role: 'CEN', x: 42, y: 35 },
+      { id: 'cen4', role: 'CEN', x: 58, y: 48 },
+      { id: 'cen5', role: 'CEN', x: 75, y: 35 },
+      { id: 'cen6', role: 'CEN', x: 92, y: 48 },
+    ]
+  },
   {
     id: '3-5-2',
     name: '3-5-2',
@@ -147,6 +116,78 @@ const formations: Formation[] = [
       { id: 'del1', role: 'DEL', x: 15, y: 22 },
       { id: 'del2', role: 'DEL', x: 50, y: 22 },
       { id: 'del3', role: 'DEL', x: 85, y: 22 },
+    ]
+  },
+  // ⭐ PREMIUM
+  {
+    id: '4-5-1',
+    name: '4-5-1',
+    isPremium: true,
+    positions: [
+      { id: 'por', role: 'POR', x: 50, y: 92 },
+      { id: 'def1', role: 'DEF', x: 12, y: 70 },
+      { id: 'def2', role: 'DEF', x: 37, y: 70 },
+      { id: 'def3', role: 'DEF', x: 63, y: 70 },
+      { id: 'def4', role: 'DEF', x: 88, y: 70 },
+      { id: 'cen1', role: 'CEN', x: 10, y: 48 },
+      { id: 'cen2', role: 'CEN', x: 30, y: 48 },
+      { id: 'cen3', role: 'CEN', x: 50, y: 48 },
+      { id: 'cen4', role: 'CEN', x: 70, y: 48 },
+      { id: 'cen5', role: 'CEN', x: 90, y: 48 },
+      { id: 'del1', role: 'DEL', x: 50, y: 22 },
+    ]
+  },
+  {
+    id: '5-4-1',
+    name: '5-4-1',
+    positions: [
+      { id: 'por', role: 'POR', x: 50, y: 92 },
+      { id: 'def1', role: 'DEF', x: 8, y: 70 },
+      { id: 'def2', role: 'DEF', x: 29, y: 70 },
+      { id: 'def3', role: 'DEF', x: 50, y: 70 },
+      { id: 'def4', role: 'DEF', x: 71, y: 70 },
+      { id: 'def5', role: 'DEF', x: 92, y: 70 },
+      { id: 'cen1', role: 'CEN', x: 12, y: 48 },
+      { id: 'cen2', role: 'CEN', x: 37, y: 48 },
+      { id: 'cen3', role: 'CEN', x: 63, y: 48 },
+      { id: 'cen4', role: 'CEN', x: 88, y: 48 },
+      { id: 'del1', role: 'DEL', x: 50, y: 22 },
+    ]
+  },
+  // ⭐ PREMIUM
+  {
+    id: '3-6-1',
+    name: '3-6-1',
+    isPremium: true,
+    positions: [
+      { id: 'por', role: 'POR', x: 50, y: 92 },
+      { id: 'def1', role: 'DEF', x: 20, y: 70 },
+      { id: 'def2', role: 'DEF', x: 50, y: 70 },
+      { id: 'def3', role: 'DEF', x: 80, y: 70 },
+      { id: 'cen1', role: 'CEN', x: 8, y: 40 },
+      { id: 'cen2', role: 'CEN', x: 25, y: 52 },
+      { id: 'cen3', role: 'CEN', x: 42, y: 40 },
+      { id: 'cen4', role: 'CEN', x: 58, y: 52 },
+      { id: 'cen5', role: 'CEN', x: 75, y: 40 },
+      { id: 'cen6', role: 'CEN', x: 92, y: 52 },
+      { id: 'del1', role: 'DEL', x: 50, y: 22 },
+    ]
+  },
+  {
+    id: '5-3-2',
+    name: '5-3-2',
+    positions: [
+      { id: 'por', role: 'POR', x: 50, y: 92 },
+      { id: 'def1', role: 'DEF', x: 8, y: 70 },
+      { id: 'def2', role: 'DEF', x: 29, y: 70 },
+      { id: 'def3', role: 'DEF', x: 50, y: 70 },
+      { id: 'def4', role: 'DEF', x: 71, y: 70 },
+      { id: 'def5', role: 'DEF', x: 92, y: 70 },
+      { id: 'cen1', role: 'CEN', x: 25, y: 48 },
+      { id: 'cen2', role: 'CEN', x: 50, y: 48 },
+      { id: 'cen3', role: 'CEN', x: 75, y: 48 },
+      { id: 'del1', role: 'DEL', x: 35, y: 22 },
+      { id: 'del2', role: 'DEL', x: 65, y: 22 },
     ]
   }
 ];
@@ -261,16 +302,115 @@ const Dropdown = ({
   );
 };
 
+// Componente Dropdown especializado para formaciones con soporte de lock
+const FormationDropdown = ({ 
+  label, 
+  value, 
+  onValueChange, 
+  formations,
+  isPremium,
+  disabled = false
+}: { 
+  label: string; 
+  value: any; 
+  onValueChange: (formationId: any) => void; 
+  formations: Formation[];
+  isPremium: boolean;
+  disabled?: boolean;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel = formations.find(f => f.id === value)?.name || label;
+
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <Text style={{ color: '#94a3b8', marginBottom: 6 }}>{label}</Text>
+      <View>
+        <TouchableOpacity
+          onPress={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          style={{
+            backgroundColor: disabled ? '#0f1624' : '#1a2332',
+            borderWidth: 1,
+            borderColor: disabled ? '#1e293b' : '#334155',
+            borderRadius: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            opacity: disabled ? 0.6 : 1
+          }}
+        >
+          <Text style={{ color: disabled ? '#64748b' : '#fff', flex: 1 }}>{selectedLabel}</Text>
+          <Text style={{ color: '#94a3b8', fontSize: 16 }}>{isOpen ? '▲' : '▼'}</Text>
+        </TouchableOpacity>
+        {isOpen && (
+          <View
+            style={{
+              backgroundColor: '#1a2332',
+              borderWidth: 1,
+              borderColor: '#334155',
+              borderTopWidth: 0,
+              borderBottomLeftRadius: 10,
+              borderBottomRightRadius: 10,
+              maxHeight: 200,
+            }}
+          >
+            <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled={true}>
+              {formations.map((formation, index) => {
+                const isLocked = formation.isPremium && !isPremium;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => {
+                      if (isLocked) {
+                        CustomAlertManager.alert(
+                          'Formación Premium',
+                          'Debes crear una liga premium para elegir esta formación',
+                          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                          { icon: 'lock', iconColor: '#f59e0b' }
+                        );
+                      } else {
+                        onValueChange(formation.id);
+                        setIsOpen(false);
+                      }
+                    }}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 12,
+                      borderBottomWidth: index < formations.length - 1 ? 1 : 0,
+                      borderBottomColor: '#334155',
+                      backgroundColor: formation.id === value ? '#374151' : 'transparent',
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <Text style={{ color: isLocked ? '#94a3b8' : '#fff' }}>{formation.name}</Text>
+                    {isLocked && <LockIcon size={16} color="#f59e0b" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+};
+
 type MiPlantillaProps = {
   navigation: NativeStackNavigationProp<any>;
 };
 
-type MiPlantillaRouteProps = RouteProp<{ params: { ligaId?: string, ligaName?: string } }, 'params'>;
+type MiPlantillaRouteProps = RouteProp<{ params: { ligaId?: string, ligaName?: string, division?: string, isPremium?: boolean } }, 'params'>;
 
 export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const route = useRoute<MiPlantillaRouteProps>();
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
+  const division = route.params?.division || 'primera'; // Por defecto primera
+  const isPremium = route.params?.isPremium || false; // Por defecto false
   const insets = useSafeAreaInsets();
   
   const [selectedFormation, setSelectedFormation] = useState<Formation>(formations[0]);
@@ -1077,9 +1217,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           </View>
         
         {/* Selector de Formación */}
-        <Dropdown
+        <FormationDropdown
           label="Formación"
           value={selectedFormation.id}
+          formations={formations}
+          isPremium={isPremium}
           disabled={jornadaStatus === 'closed'}
           onValueChange={async (formationId) => {
             const formation = formations.find(f => f.id === formationId);
@@ -1143,7 +1285,6 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               }
             }
           }}
-          items={formations.map(f => ({ label: f.name, value: f.id }))}
         />
 
         {/* Total de puntos en tiempo real - Solo cuando la jornada está cerrada */}

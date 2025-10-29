@@ -45,6 +45,7 @@ model League {
   currentJornada Int            @default(1)
   jornadaStatus  String         @default("open")
   division       String         @default("primera") // "primera" o "segunda"
+  isPremium      Boolean        @default(false) // Liga Premium (Segunda División)
   leader         User           @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
   members        LeagueMember[]
   squads         Squad[]

@@ -253,4 +253,153 @@ export const CrearLigaStyles = StyleSheet.create({
   divisionButtonTextActive: {
     color: Colors.text.primary,
   },
+
+  // ⭐ Premium Section
+  premiumSection: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
+    borderColor: '#fbbf24',
+    ...Shadows.large,
+  },
+
+  premiumTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: Typography.weights.bold,
+    color: '#fbbf24',
+    flex: 1,
+  },
+
+  premiumButton: {
+    backgroundColor: '#fbbf24',
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    ...Shadows.large,
+    borderWidth: 1,
+    borderColor: '#f59e0b',
+  },
+
+  premiumButtonText: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: Typography.weights.bold,
+    color: '#1f2937',
+  },
+
+  // 🎭 Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+  },
+
+  modalContent: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 2,
+    borderColor: '#fbbf24',
+    ...Shadows.large,
+  },
+
+  modalFormContent: {
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: Colors.border.primary,
+    ...Shadows.large,
+  },
+
+  modalTitle: {
+    fontSize: Typography.sizes['2xl'],
+    fontWeight: Typography.weights.bold,
+    color: '#fbbf24',
+    textAlign: 'center',
+  },
+
+  modalSubtitle: {
+    fontSize: Typography.sizes.base,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+  },
+
+  featuresList: {
+    marginBottom: Spacing.xl,
+  },
+
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.lg,
+    padding: Spacing.md,
+    backgroundColor: Colors.background.tertiary,
+    borderRadius: BorderRadius.md,
+    borderLeftWidth: 3,
+    borderLeftColor: '#fbbf24',
+  },
+
+  featureTextContainer: {
+    flex: 1,
+  },
+
+  featureTitle: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
+  },
+
+  featureDescription: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.secondary,
+    lineHeight: 18,
+  },
+
+  modalPrimaryButton: {
+    backgroundColor: '#fbbf24',
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+    ...Shadows.medium,
+  },
+
+  modalPrimaryButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.bold,
+    color: '#1f2937',
+  },
+
+  modalSecondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border.primary,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  modalSecondaryButtonText: {
+    fontSize: Typography.sizes.base,
+    fontWeight: Typography.weights.medium,
+    color: Colors.text.secondary,
+  },
 });
