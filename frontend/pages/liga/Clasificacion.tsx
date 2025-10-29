@@ -306,6 +306,17 @@ export const Clasificacion = () => {
             )}
           </View>
 
+          {/* Banner publicitario */}
+          <View style={{ 
+            backgroundColor: '#181818ff', 
+            paddingHorizontal: 16, 
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: '#334155'
+          }}>
+            <AdBanner />
+          </View>
+
           {/* Contenido */}
           {jugadores.length > 0 ? (
             <ScrollView
@@ -502,11 +513,6 @@ export const Clasificacion = () => {
               </TouchableOpacity>
             );
           })}
-
-          {/* Banner de Anuncio dentro del ScrollView */}
-          <View style={{ marginTop: 20, marginBottom: 20, alignItems: 'center' }}>
-            <AdBanner />
-          </View>
         </ScrollView>
       ) : (
         <View style={styles.loadingContainer}>

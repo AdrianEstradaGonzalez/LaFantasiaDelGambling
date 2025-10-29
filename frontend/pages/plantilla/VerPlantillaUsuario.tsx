@@ -25,6 +25,7 @@ const roleColor = (role: string) => {
   }
 };
 
+
 // Mapear roles cortos (POR, DEF, CEN, DEL) a posiciones canónicas (Goalkeeper, Defender, etc.)
 const roleToCanonicalPosition = (role: string): string => {
   switch (role) {
@@ -32,7 +33,7 @@ const roleToCanonicalPosition = (role: string): string => {
     case 'DEF': return 'Defender';
     case 'CEN': return 'Midfielder';
     case 'DEL': return 'Attacker';
-    default: return role; // Si ya viene en formato largo, retornar tal cual
+    default: return role; // Si ya viene en formato largo, retornar tal cualk
   }
 };
 
