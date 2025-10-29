@@ -26,6 +26,7 @@ export interface Bet {
   potentialWin: number;
   status: 'pending' | 'won' | 'lost';
   createdAt: string;
+  combiId?: string | null;
 }
 
 export class BetService {

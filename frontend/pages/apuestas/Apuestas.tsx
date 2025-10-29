@@ -53,7 +53,7 @@ type ApuestasProps = {
 export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
-  const isPremium = route.params?.isPremium || false;
+  const isPremium = true;
   const [loading, setLoading] = useState(true);
   const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
   const [userBets, setUserBets] = useState<UserBet[]>([]);
@@ -102,6 +102,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [combiAmount, setCombiAmount] = useState<string>('');
   const [showCombiModal, setShowCombiModal] = useState(false);
   const [creatingCombi, setCreatingCombi] = useState(false);
+  const [hasExistingCombi, setHasExistingCombi] = useState(false);
 
   // Listener para el teclado
   useEffect(() => {
@@ -234,6 +235,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           setGroupedBets(groupedArray);
           setUserBets(userBetsData);
           
+          // Verificar si el usuario ya tiene una combi para esta jornada
+          if (currentJornadaFromLeague != null) {
+            const existingCombi = userBetsData.some(bet => 
+              bet.jornada === currentJornadaFromLeague && bet.combiId != null
+            );
+            setHasExistingCombi(existingCombi);
+          }
+          
           // Filtrar apuestas de la liga por la jornada actual de la liga
           const filteredLeagueBets = currentJornadaFromLeague != null
             ? leagueBetsData.filter(bet => bet.jornada === currentJornadaFromLeague)
@@ -335,6 +344,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         // Filtrar apuestas de la liga por la jornada actual
         const filteredLeagueBets = leagueBetsData.filter(bet => bet.jornada === currentJornada);
         
+        // Verificar si hay combi existente para la jornada actual
+        const existingCombi = userBetsData.some(bet => 
+          bet.jornada === currentJornada && bet.combiId != null
+        );
+        setHasExistingCombi(existingCombi);
+        
         setGroupedBets(groupedArray);
         setUserBets(userBetsData);
         setLeagueBets(filteredLeagueBets);
@@ -364,6 +379,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       setRealtimeBalances(realtimeResult.userBalances);
       setJornada(newJornada);
       setJornadaStatus('closed');
+      
+      // Verificar si hay combi existente para esta jornada histórica
+      const existingCombi = userBetsData.some(bet => bet.combiId != null);
+      setHasExistingCombi(existingCombi);
     } catch (err) {
       console.error('Error loading historical jornada:', err);
       showError('Error al cargar la jornada');
@@ -387,6 +406,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       setUserBets(userBetsData);
       setLeagueBets(leagueBetsData);
       setJornadaStatus(statusResp.status);
+      
+      // Verificar si hay combi existente
+      if (jornada != null) {
+        const existingCombi = userBetsData.some(bet => 
+          bet.jornada === jornada && bet.combiId != null
+        );
+        setHasExistingCombi(existingCombi);
+      }
     } catch (err: any) {
       console.warn('Error refreshing bets/budget:', err?.message || err);
     }
@@ -664,10 +691,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }
 
     // Validar máximo 50M
-    if (amount > 50) {
+    if (amount > 30) {
       CustomAlertManager.alert(
         'Cantidad no válida',
-        'El máximo a apostar son 50 millones',
+        'El máximo a apostar son 30 millones',
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -715,6 +742,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       setCombiSelections([]);
       setCombiAmount('');
       setShowCombiModal(false);
+      
+      // Marcar que ya existe una combi para esta jornada
+      setHasExistingCombi(true);
 
       // Recargar presupuesto y apuestas
       const budgetData = await BetService.getBettingBudget(ligaId);
@@ -1675,12 +1705,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             const groupHasBet = hasAnyBetInGroup(b.matchId, b.type);
                             const anyBetInMatch = hasAnyBetInMatch(b.matchId);
                             const isInCurrentCombi = isInCombi(b.matchId, b.type, option.label);
+                            const matchInCombi = isMatchBlockedByCombi(b.matchId); // Verificar si el partido tiene opciones en combi
                             
                             const isUnlocked = unlockedBets.has(index);
                             const requiresAdUnlock = index === 8 || index === 9;
                             const isBlockedByAd = requiresAdUnlock && !isUnlocked && !userBet;
                             const isBlockedByBet = (groupHasBet || anyBetInMatch) && !userBet && !isUnlocked;
-                            const isBlockedByCombi = isInCurrentCombi && !userBet; // Bloquear si está en combi
+                            const isBlockedByCombi = matchInCombi && !userBet; // Bloquear si el partido está en combi
                             const isBlocked = isBlockedByAd || isBlockedByBet || isBlockedByCombi;
 
                             return (
@@ -1832,51 +1863,52 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 )}
                                 {/* Si no hay apuesta del usuario en este grupo y la jornada estÃ¡ abierta, permitir apostar */}
                                 {!userBet && !isBlocked && ligaId && isJornadaOpen && (
-                                  <>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-                                      <TextInput
-                                        value={amountInputs[betKey] ?? ''}
-                                        onChangeText={(t) => setAmountForKey(betKey, t)}
-                                        keyboardType="number-pad"
-                                        placeholder="Cantidad"
-                                        placeholderTextColor="#64748b"
-                                        returnKeyType="done"
-                                        style={{
-                                          flex: 1,
-                                          backgroundColor: '#0b1220',
-                                          borderWidth: 1,
-                                          borderColor: '#334155',
-                                          color: '#e5e7eb',
-                                          paddingHorizontal: 10,
-                                          paddingVertical: 8,
-                                          borderRadius: 8,
-                                          marginRight: 8,
-                                        }}
-                                      />
-                                      <TouchableOpacity
-                                        onPress={() => handlePlaceBet(betKey, {
-                                          matchId: b.matchId,
-                                          homeTeam: b.local,
-                                          awayTeam: b.visitante,
-                                          betType: b.type,
-                                          betLabel: option.label,
-                                          odd: option.odd
-                                        })}
-                                        disabled={savingBet === betKey}
-                                        style={{
-                                          backgroundColor: '#16a34a',
-                                          paddingHorizontal: 16,
-                                          paddingVertical: 10,
-                                          borderRadius: 8,
-                                          opacity: savingBet === betKey ? 0.6 : 1,
-                                        }}
-                                      >
-                                        <Text style={{ color: '#ecfdf5', fontWeight: '800' }}>Apostar</Text>
-                                      </TouchableOpacity>
-                                    </View>
-
-                                    {/* Botón Combinar */}
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                                    <TextInput
+                                      value={amountInputs[betKey] ?? ''}
+                                      onChangeText={(t) => setAmountForKey(betKey, t)}
+                                      keyboardType="number-pad"
+                                      placeholder="Cantidad"
+                                      placeholderTextColor="#64748b"
+                                      returnKeyType="done"
+                                      style={{
+                                        flex: 1,
+                                        backgroundColor: '#0b1220',
+                                        borderWidth: 1,
+                                        borderColor: '#334155',
+                                        color: '#e5e7eb',
+                                        paddingHorizontal: 10,
+                                        paddingVertical: 8,
+                                        borderRadius: 8,
+                                        marginRight: 8,
+                                      }}
+                                    />
                                     <TouchableOpacity
+                                      onPress={() => handlePlaceBet(betKey, {
+                                        matchId: b.matchId,
+                                        homeTeam: b.local,
+                                        awayTeam: b.visitante,
+                                        betType: b.type,
+                                        betLabel: option.label,
+                                        odd: option.odd
+                                      })}
+                                      disabled={savingBet === betKey}
+                                      style={{
+                                        backgroundColor: '#0892D0',
+                                        paddingHorizontal: 16,
+                                        paddingVertical: 10,
+                                        borderRadius: 8,
+                                        opacity: savingBet === betKey ? 0.6 : 1,
+                                      }}
+                                    >
+                                      <Text style={{ color: '#fff', fontWeight: '800' }}>Apostar</Text>
+                                    </TouchableOpacity>
+                                  </View>
+                                )}
+
+                                {/* Botón Combinar - Siempre visible si no hay apuesta del usuario */}
+                                {!userBet && ligaId && isJornadaOpen && (
+                                  <TouchableOpacity
                                       onPress={() => toggleCombiSelection({
                                         matchId: b.matchId,
                                         betType: b.type,
@@ -1885,20 +1917,32 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         homeTeam: b.local,
                                         awayTeam: b.visitante,
                                       })}
-                                      disabled={!isPremium || (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))}
+                                      disabled={
+                                        !isPremium || 
+                                        hasExistingCombi ||
+                                        (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)) ||
+                                        (combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
+                                      }
                                       style={{
-                                        backgroundColor: !isPremium
-                                          ? '#374151'  // Gris si no es premium
+                                        backgroundColor: !isPremium || hasExistingCombi
+                                          ? '#374151'  // Gris si no es premium o ya tiene combi
                                           : isInCombi(b.matchId, b.type, option.label) 
-                                            ? '#0ea5e9' 
-                                            : isMatchBlockedByCombi(b.matchId) 
-                                              ? '#374151'
-                                              : '#1e40af',
+                                            ? '#0892D0' // Azul cyan cuando está seleccionado
+                                            : (isMatchBlockedByCombi(b.matchId) || combiSelections.length >= 3)
+                                              ? '#374151' // Gris bloqueado
+                                              : '#0b1220', // Tono oscuro de la app
                                         paddingHorizontal: 16,
                                         paddingVertical: 10,
                                         borderRadius: 8,
                                         marginTop: 8,
-                                        opacity: (!isPremium || (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ? 0.5 : 1,
+                                        borderWidth: isInCombi(b.matchId, b.type, option.label) ? 0 : 1,
+                                        borderColor: '#0892D0',
+                                        opacity: (
+                                          !isPremium || 
+                                          hasExistingCombi ||
+                                          (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)) ||
+                                          (combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
+                                        ) ? 0.5 : 1,
                                         flexDirection: 'row',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -1908,15 +1952,18 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       {!isPremium && (
                                         <LockIcon size={14} color="#fff" />
                                       )}
-                                      <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
+                                      <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center', fontSize: 12 }}>
                                         {!isPremium 
                                           ? 'Combinar (Premium)' 
-                                          : isInCombi(b.matchId, b.type, option.label) 
-                                            ? '✓ En combi' 
-                                            : 'Combinar'}
+                                          : hasExistingCombi
+                                            ? 'Ya existe una combi'
+                                            : isInCombi(b.matchId, b.type, option.label) 
+                                              ? '✓ En combi' 
+                                              : combiSelections.length >= 3
+                                                ? 'Máximo alcanzado'
+                                                : 'Combinar'}
                                       </Text>
                                     </TouchableOpacity>
-                                  </>
                                 )}
 
                                 {/* En jornada cerrada: mostrar jugadores y cantidades que apostaron en esta opciÃ³n */}
@@ -1969,60 +2016,29 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
             {/* Indicador flotante de combi en construcción */}
             {combiSelections.length > 0 && (
-              <View style={{
-                position: 'absolute',
-                bottom: 80,
-                right: 16,
-                backgroundColor: '#1e40af',
-                borderRadius: 16,
-                padding: 16,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 8,
-                minWidth: 200,
-              }}>
-                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700', marginBottom: 8 }}>
-                  Combi en construcción
+              <TouchableOpacity
+                onPress={() => setShowCombiModal(true)}
+                style={{
+                  position: 'absolute',
+                  bottom: 80,
+                  right: 16,
+                  backgroundColor: '#1a2332',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: '#334155',
+                  paddingVertical: 12,
+                  paddingHorizontal: 20,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 8,
+                }}
+              >
+                <Text style={{ color: '#0892D0', fontSize: 20, fontWeight: '700', textAlign: 'center' }}>
+                  {calculateCombiOdds().toFixed(2)}
                 </Text>
-                <Text style={{ color: '#93c5fd', fontSize: 12, marginBottom: 4 }}>
-                  {combiSelections.length} / 3 apuestas seleccionadas
-                </Text>
-                <Text style={{ color: '#93c5fd', fontSize: 12, marginBottom: 12 }}>
-                  Cuota total: {calculateCombiOdds().toFixed(2)}
-                </Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => setShowCombiModal(true)}
-                    disabled={combiSelections.length < 2}
-                    style={{
-                      flex: 1,
-                      backgroundColor: combiSelections.length < 2 ? '#374151' : '#16a34a',
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      opacity: combiSelections.length < 2 ? 0.5 : 1,
-                    }}
-                  >
-                    <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center', fontSize: 12 }}>
-                      Crear
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={clearCombi}
-                    style={{
-                      flex: 1,
-                      backgroundColor: '#7f1d1d',
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center', fontSize: 12 }}>
-                      Cancelar
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              </TouchableOpacity>
             )}
 
             {/* Modal de creación de combi */}
@@ -2080,9 +2096,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     padding: 12,
                     marginBottom: 16,
                     borderWidth: 2,
-                    borderColor: '#3b82f6',
+                    borderColor: '#0892D0',
                   }}>
-                    <Text style={{ color: '#93c5fd', fontSize: 12, marginBottom: 4 }}>
+                    <Text style={{ color: '#0892D0', fontSize: 12, marginBottom: 4 }}>
                       Cuota total (multiplicada)
                     </Text>
                     <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800' }}>
@@ -2092,13 +2108,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
                   {/* Input de cantidad */}
                   <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>
-                    Cantidad a apostar (máx. 50M, sin decimales)
+                    Cantidad a apostar (máx. 50M)
                   </Text>
                   <TextInput
                     value={combiAmount}
                     onChangeText={setCombiAmount}
                     keyboardType="number-pad"
-                    placeholder="Ej: 10 (solo números enteros)"
+                    placeholder=""
                     placeholderTextColor="#64748b"
                     style={{
                       backgroundColor: '#0f172a',
@@ -2152,7 +2168,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       disabled={creatingCombi || !combiAmount || parseInt(combiAmount) <= 0}
                       style={{
                         flex: 1,
-                        backgroundColor: creatingCombi ? '#374151' : '#16a34a',
+                        backgroundColor: creatingCombi ? '#374151' : '#0892D0',
                         paddingVertical: 12,
                         borderRadius: 8,
                         opacity: (creatingCombi || !combiAmount || parseInt(combiAmount) <= 0) ? 0.5 : 1,

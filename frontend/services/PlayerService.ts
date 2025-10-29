@@ -183,6 +183,32 @@ export class PlayerService {
   }
 
   /**
+   * Actualizar equipo de un jugador
+   */
+  static async updatePlayerTeam(id: number, teamId: number): Promise<PlayerWithPrice> {
+    try {
+      const response = await fetch(`${this.BASE_URL}/${id}/team`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ teamId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error ${response.status}`);
+      }
+
+      const json = await response.json();
+      return json.data;
+    } catch (error) {
+      console.error('Error actualizando equipo:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Actualizar puntos de la última jornada (cache)
    */
   static async updatePlayerLastPoints(id: number, points: number, jornada?: number): Promise<PlayerWithPrice> {

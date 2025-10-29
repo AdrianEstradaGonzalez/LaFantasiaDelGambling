@@ -276,6 +276,86 @@ const Dropdown = ({ label, value, onValueChange, items }: {
   );
 };
 
+// Componente Dropdown para seleccionar equipo
+const TeamDropdown = ({ label, value, onValueChange, teams }: {
+  label: string;
+  value: number;
+  onValueChange: (value: number) => void;
+  teams: TeamMinimal[];
+}) => {
+  const [showPicker, setShowPicker] = useState(false);
+
+  const selectedTeam = teams.find(t => t.id === value);
+
+  return (
+    <View>
+      <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>{label}</Text>
+      <TouchableOpacity
+        onPress={() => setShowPicker(true)}
+        style={{
+          backgroundColor: '#1a2332',
+          borderWidth: 1,
+          borderColor: '#334155',
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          {selectedTeam?.crest && (
+            <Image source={{ uri: selectedTeam.crest }} style={{ width: 20, height: 20, marginRight: 8 }} />
+          )}
+          <Text style={{ color: '#fff', fontSize: 14, flex: 1 }} numberOfLines={1}>
+            {selectedTeam?.name || 'Seleccionar'}
+          </Text>
+        </View>
+        <Text style={{ color: '#94a3b8' }}>▼</Text>
+      </TouchableOpacity>
+
+      <Modal visible={showPicker} transparent animationType="fade">
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}
+          activeOpacity={1}
+          onPress={() => setShowPicker(false)}
+        >
+          <View style={{ backgroundColor: '#1a2332', borderRadius: 12, width: '80%', maxWidth: 400, maxHeight: '70%', borderWidth: 1, borderColor: '#334155' }}>
+            <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
+              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{label}</Text>
+            </View>
+            <ScrollView style={{ maxHeight: 400 }}>
+              {teams.map((team) => (
+                <TouchableOpacity
+                  key={team.id}
+                  onPress={() => {
+                    onValueChange(team.id);
+                    setShowPicker(false);
+                  }}
+                  style={{
+                    padding: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#334155',
+                    backgroundColor: value === team.id ? '#0892D0' : 'transparent',
+                    flexDirection: 'row',
+                    alignItems: 'center'
+                  }}
+                >
+                  {team.crest && (
+                    <Image source={{ uri: team.crest }} style={{ width: 24, height: 24, marginRight: 12 }} />
+                  )}
+                  <Text style={{ color: '#fff', fontSize: 14, flex: 1 }}>{team.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+};
+
 export const GestionJugadores = ({ navigation, route }: { 
   navigation: NativeStackNavigationProp<any>; 
   route: RouteProp<any, any>; 
@@ -288,6 +368,7 @@ export const GestionJugadores = ({ navigation, route }: {
   const [query, setQuery] = useState('');
   const [editedPrices, setEditedPrices] = useState<{ [key: number]: number }>({});
   const [editedPositions, setEditedPositions] = useState<{ [key: number]: CanonicalPos }>({});
+  const [editedTeams, setEditedTeams] = useState<{ [key: number]: number }>({});
   const [isSaving, setIsSaving] = useState(false);
   const [focusedPriceId, setFocusedPriceId] = useState<number | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -358,8 +439,9 @@ export const GestionJugadores = ({ navigation, route }: {
   const handleSavePrices = async () => {
     const hasPriceChanges = Object.keys(editedPrices).length > 0;
     const hasPositionChanges = Object.keys(editedPositions).length > 0;
+    const hasTeamChanges = Object.keys(editedTeams).length > 0;
 
-    if (!hasPriceChanges && !hasPositionChanges) {
+    if (!hasPriceChanges && !hasPositionChanges && !hasTeamChanges) {
       CustomAlertManager.alert(
         'Sin cambios',
         'No hay modificaciones para guardar',
@@ -402,6 +484,14 @@ export const GestionJugadores = ({ navigation, route }: {
         );
         await Promise.all(positionUpdates);
       }
+
+      // Actualizar equipos
+      if (hasTeamChanges) {
+        const teamUpdates = Object.entries(editedTeams).map(([id, teamId]) => 
+          PlayerService.updatePlayerTeam(parseInt(id), teamId)
+        );
+        await Promise.all(teamUpdates);
+      }
       
       // Recargar jugadores
       await loadPlayers();
@@ -409,9 +499,11 @@ export const GestionJugadores = ({ navigation, route }: {
       // Limpiar cambios
       setEditedPrices({});
       setEditedPositions({});
+      setEditedTeams({});
       
       const changesCount = (hasPriceChanges ? Object.keys(editedPrices).length : 0) + 
-                          (hasPositionChanges ? Object.keys(editedPositions).length : 0);
+                          (hasPositionChanges ? Object.keys(editedPositions).length : 0) +
+                          (hasTeamChanges ? Object.keys(editedTeams).length : 0);
       CustomAlertManager.alert(
         'Éxito',
         `${changesCount} cambio(s) guardado(s) correctamente`,
@@ -454,7 +546,7 @@ export const GestionJugadores = ({ navigation, route }: {
   };
 
   // Verificar si hay cambios pendientes
-  const hasChanges = Object.keys(editedPrices).length > 0 || Object.keys(editedPositions).length > 0;
+  const hasChanges = Object.keys(editedPrices).length > 0 || Object.keys(editedPositions).length > 0 || Object.keys(editedTeams).length > 0;
 
   if (loading) {
     return <LoadingScreen />;
@@ -562,8 +654,10 @@ export const GestionJugadores = ({ navigation, route }: {
           const posLabel = canonical ? posAbbr[canonical] : '?';
           const isPriceEdited = editedPrices[p.id] !== undefined;
           const isPositionEdited = editedPositions[p.id] !== undefined;
+          const isTeamEdited = editedTeams[p.id] !== undefined;
           const currentPrice = isPriceEdited ? editedPrices[p.id] : p.price;
           const currentPosition = isPositionEdited ? editedPositions[p.id] : (canonical || 'Midfielder');
+          const currentTeamId = isTeamEdited ? editedTeams[p.id] : p.teamId;
 
           return (
             <View
@@ -671,6 +765,18 @@ export const GestionJugadores = ({ navigation, route }: {
                   ]}
                 />
               </View>
+
+              {/* Dropdown de equipo editable */}
+              <View style={{ marginTop: 8 }}>
+                <TeamDropdown
+                  label="Equipo"
+                  value={currentTeamId}
+                  onValueChange={(value: number) => {
+                    setEditedTeams(prev => ({ ...prev, [p.id]: value }));
+                  }}
+                  teams={teams}
+                />
+              </View>
             </View>
           );
         }}
@@ -694,7 +800,7 @@ export const GestionJugadores = ({ navigation, route }: {
         }}>
           <TouchableOpacity onPress={handleSavePrices} disabled={isSaving}>
             <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', textAlign: 'center' }}>
-              {isSaving ? 'GUARDANDO...' : `GUARDAR CAMBIOS (${Object.keys(editedPrices).length + Object.keys(editedPositions).length})`}
+              {isSaving ? 'GUARDANDO...' : `GUARDAR CAMBIOS (${Object.keys(editedPrices).length + Object.keys(editedPositions).length + Object.keys(editedTeams).length})`}
             </Text>
           </TouchableOpacity>
         </View>

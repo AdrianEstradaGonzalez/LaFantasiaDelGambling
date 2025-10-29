@@ -637,7 +637,7 @@ export const PlayersMarket = ({ navigation, route }: {
       
       if (existingPlayerInPosition) {
         // Buscar el precio de mercado actual del jugador a sustituir
-        const allPlayers = await PlayerService.getAllPlayers();
+        const allPlayers = await PlayerService.getAllPlayers({ division });
         const existingPlayerData = allPlayers.find(p => p.id === existingPlayerInPosition.playerId);
         existingPlayerMarketPrice = existingPlayerData?.price || 0;
         availableBudget += existingPlayerMarketPrice;
