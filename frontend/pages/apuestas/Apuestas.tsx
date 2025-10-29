@@ -618,23 +618,58 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (!ligaId || !jornada) return;
 
     if (combiSelections.length < 2) {
-      showError('Necesitas mínimo 2 apuestas para crear una combi');
+      CustomAlertManager.alert(
+        'Cantidad no válida',
+        'Necesitas mínimo 2 apuestas para crear una combi',
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
+      return;
+    }
+
+    // Validar que no tenga decimales
+    if (combiAmount.includes('.') || combiAmount.includes(',')) {
+      CustomAlertManager.alert(
+        'Cantidad no válida',
+        'No se permiten decimales en las apuestas. Ingresa un número entero.',
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
       return;
     }
 
     const amount = parseInt(combiAmount);
-    if (!amount || amount <= 0) {
-      showError('Ingresa una cantidad válida');
+    
+    // Validar que sea un número válido
+    if (!amount || isNaN(amount) || amount <= 0) {
+      CustomAlertManager.alert(
+        'Cantidad no válida',
+        'Ingresa una cantidad válida mayor a 0',
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
       return;
     }
 
-    if (amount > 50_000_000) {
-      showError('El monto máximo para combis es 50M');
+    // Validar máximo 50M
+    if (amount > 50) {
+      CustomAlertManager.alert(
+        'Cantidad no válida',
+        'El máximo a apostar son 50 millones',
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
       return;
     }
 
+    // Validar presupuesto disponible
     if (amount > budget.available) {
-      showError(`Solo tienes ${budget.available}M disponibles`);
+      CustomAlertManager.alert(
+        'Presupuesto insuficiente',
+        `Solo tienes ${budget.available}M disponibles`,
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
       return;
     }
 
@@ -2027,13 +2062,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
                   {/* Input de cantidad */}
                   <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>
-                    Cantidad a apostar (máx. 50M)
+                    Cantidad a apostar (máx. 50M, sin decimales)
                   </Text>
                   <TextInput
                     value={combiAmount}
                     onChangeText={setCombiAmount}
                     keyboardType="number-pad"
-                    placeholder="Ingresa cantidad"
+                    placeholder="Ej: 10 (solo números enteros)"
                     placeholderTextColor="#64748b"
                     style={{
                       backgroundColor: '#0f172a',
