@@ -267,8 +267,19 @@ export async function getPlayerStatsForJornada(playerId, jornada, options = {}) 
     // ✨ MEJORADO: Solo forzar refresh si es explícitamente solicitado
     // NO forzar automáticamente por el estado de la jornada para evitar sobrescribir datos buenos
     let shouldForceRefresh = options.forceRefresh || false;
-    // 1. Buscar en BD primero (incluso si la jornada está cerrada)
-    const existing = await prisma.playerStats.findUnique({
+    // 1. Determinar si es jugador de Primera o Segunda División
+    let playerFromDb = await prisma.player.findUnique({ where: { id: playerId } });
+    let isSegundaDivision = false;
+    if (!playerFromDb) {
+        playerFromDb = await prisma.playerSegunda.findUnique({ where: { id: playerId } });
+        isSegundaDivision = true;
+    }
+    if (!playerFromDb) {
+        throw new AppError(404, 'PLAYER_NOT_FOUND_IN_DB', 'Jugador no encontrado en la base de datos local');
+    }
+    // 2. Buscar en la tabla correcta según la división
+    const statsTable = isSegundaDivision ? prisma.playerSegundaStats : prisma.playerStats;
+    const existing = await statsTable.findUnique({
         where: {
             playerId_jornada_season: {
                 playerId,
@@ -279,33 +290,21 @@ export async function getPlayerStatsForJornada(playerId, jornada, options = {}) 
     });
     // Si existe en BD y NO se fuerza refresh explícitamente, usar datos de BD
     if (existing && !shouldForceRefresh) {
-        console.log(`[playerStats] 💾 Usando datos de BD para jugador ${playerId} jornada ${jornada} (${existing.totalPoints} puntos)`);
+        console.log(`[playerStats] 💾 Usando datos de BD para jugador ${playerId} jornada ${jornada} (${existing.totalPoints} puntos) - ${isSegundaDivision ? 'Segunda' : 'Primera'} División`);
         return existing;
     }
     // Si se fuerza refresh o no hay datos, consultar API
     if (shouldForceRefresh && existing) {
-        console.log(`[playerStats] 🔄 Refresh solicitado para jugador ${playerId} jornada ${jornada} - intentando actualizar desde API`);
+        console.log(`[playerStats] 🔄 Refresh solicitado para jugador ${playerId} jornada ${jornada} - intentando actualizar desde API (${isSegundaDivision ? 'Segunda' : 'Primera'} División)`);
     }
     else if (shouldForceRefresh) {
-        console.log(`[playerStats] 🔄 Refresh solicitado para jugador ${playerId} jornada ${jornada} (sin datos previos)`);
+        console.log(`[playerStats] 🔄 Refresh solicitado para jugador ${playerId} jornada ${jornada} (sin datos previos) - ${isSegundaDivision ? 'Segunda' : 'Primera'} División`);
     }
     else {
-        console.log(`[playerStats] 🆕 No hay datos en BD para jugador ${playerId} jornada ${jornada}, consultando API`);
+        console.log(`[playerStats] 🆕 No hay datos en BD para jugador ${playerId} jornada ${jornada}, consultando API (${isSegundaDivision ? 'Segunda' : 'Primera'} División)`);
     }
-    // 2. Consultar API Football con la nueva lógica
+    // 3. Consultar API Football con la nueva lógica
     try {
-        // Paso 1: Obtener el nombre del jugador desde nuestra BD
-        // Primero intentar en player (Primera División)
-        let playerFromDb = await prisma.player.findUnique({ where: { id: playerId } });
-        let isSegundaDivision = false;
-        // Si no está en player, buscar en player_segunda (Segunda División)
-        if (!playerFromDb) {
-            playerFromDb = await prisma.playerSegunda.findUnique({ where: { id: playerId } });
-            isSegundaDivision = true;
-        }
-        if (!playerFromDb) {
-            throw new AppError(404, 'PLAYER_NOT_FOUND_IN_DB', 'Jugador no encontrado en la base de datos local');
-        }
         // Determinar qué liga consultar (140 = La Liga, 141 = Segunda División)
         const leagueId = isSegundaDivision ? 141 : 140;
         console.log(`[playerStats] 🔍 Buscando estadísticas para ${playerFromDb.name} en ${isSegundaDivision ? 'Segunda' : 'Primera'} División (Liga ${leagueId})`);
@@ -436,7 +435,7 @@ export async function getPlayerStatsForJornada(playerId, jornada, options = {}) 
             }
             // Solo guardar 0 si es primera vez (no hay datos previos)
             console.log(`[playerStats] ℹ️ Jugador ${playerId} no jugó en jornada ${jornada} - guardando 0 puntos`);
-            const emptyStats = await prisma.playerStats.upsert({
+            const emptyStats = await statsTable.upsert({
                 where: { playerId_jornada_season: { playerId, jornada, season } },
                 create: {
                     playerId,
@@ -466,7 +465,7 @@ export async function getPlayerStatsForJornada(playerId, jornada, options = {}) 
             }
             // Solo guardar 0 si es primera vez
             console.log(`[playerStats] ℹ️ Jugador ${playerId} sin participación en partido - guardando 0 puntos`);
-            const emptyStats = await prisma.playerStats.upsert({
+            const emptyStats = await statsTable.upsert({
                 where: { playerId_jornada_season: { playerId, jornada, season } },
                 create: {
                     playerId,
@@ -514,9 +513,9 @@ export async function getPlayerStatsForJornada(playerId, jornada, options = {}) 
         const pointsResult = calculatePlayerPoints(statsWithTeamGoals, role);
         const totalPoints = pointsResult.total;
         const pointsBreakdown = pointsResult.breakdown;
-        // Extraer y guardar estadísticas
+        // Extraer y guardar estadísticas en la tabla correcta
         const extractedStats = extractStats(statsWithTeamGoals);
-        const savedStats = await prisma.playerStats.upsert({
+        const savedStats = await statsTable.upsert({
             where: { playerId_jornada_season: { playerId, jornada, season } },
             create: {
                 playerId,

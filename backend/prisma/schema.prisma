@@ -178,6 +178,55 @@ model PlayerStats {
   @@map("player_stats")
 }
 
+model PlayerSegundaStats {
+  id                   String   @id @default(cuid())
+  playerId             Int
+  jornada              Int
+  season               Int      @default(2025)
+  fixtureId            Int
+  teamId               Int
+  totalPoints          Int      @default(0)
+  minutes              Int?
+  position             String?
+  rating               String?
+  captain              Boolean  @default(false)
+  substitute           Boolean  @default(false)
+  goals                Int?
+  assists              Int?
+  conceded             Int?
+  saves                Int?
+  shotsTotal           Int?
+  shotsOn              Int?
+  passesTotal          Int?
+  passesKey            Int?
+  passesAccuracy       Int?
+  tacklesTotal         Int?
+  tacklesBlocks        Int?
+  tacklesInterceptions Int?
+  duelsTotal           Int?
+  duelsWon             Int?
+  dribblesAttempts     Int?
+  dribblesSuccess      Int?
+  dribblesPast         Int?
+  foulsDrawn           Int?
+  foulsCommitted       Int?
+  yellowCards          Int?
+  redCards             Int?
+  penaltyWon           Int?
+  penaltyCommitted     Int?
+  penaltyScored        Int?
+  penaltyMissed        Int?
+  penaltySaved         Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  pointsBreakdown      Json?
+
+  @@unique([playerId, jornada, season])
+  @@index([playerId, jornada])
+  @@index([jornada, season])
+  @@map("player_segunda_stats")
+}
+
 model PlayerJornadaPoints {
   playerId  Int
   season    Int      @default(2025)
