@@ -74,6 +74,103 @@ function setInCache(cache, key, data) {
 const fixturesCache = new Map();
 const playerInfoCache = new Map();
 const fixturePlayersCache = new Map();
+const fixtureEventsCache = new Map();
+/**
+ * Obtiene los eventos de un partido (sustituciones, goles, tarjetas, etc.)
+ */
+async function fetchFixtureEvents(fixtureId) {
+    const cacheKey = String(fixtureId);
+    const cached = getFromCache(fixtureEventsCache, cacheKey);
+    if (cached !== undefined)
+        return cached;
+    await delay(DEFAULT_REQUEST_DELAY_MS);
+    const response = await api.get('/fixtures/events', { params: { fixture: fixtureId } });
+    const events = response.data?.response ?? [];
+    setInCache(fixtureEventsCache, cacheKey, events);
+    return events;
+}
+/**
+ * Calcula los minutos reales jugados sin tiempo de descuento
+ * basándose en los eventos de sustitución del partido
+ *
+ * @param playerId - ID del jugador
+ * @param playerName - Nombre del jugador
+ * @param fixtureId - ID del partido
+ * @param rawMinutes - Minutos reportados por la API (pueden incluir descuento)
+ * @param wasSubstitute - Si el jugador empezó como suplente
+ * @returns Minutos sin descuento (máximo 90)
+ */
+async function calculateMinutesWithoutInjuryTime(playerId, playerName, fixtureId, rawMinutes, wasSubstitute) {
+    // ✨ IMPORTANTE: Si el jugador no jugó ningún minuto según la API, devolver 0 directamente
+    if (rawMinutes === 0) {
+        console.log(`[playerStats] ⏱️  Jugador ${playerName}: 0 min (no jugó)`);
+        return 0;
+    }
+    try {
+        const events = await fetchFixtureEvents(fixtureId);
+        // Normalizar nombre para comparación
+        const normalizeName = (name) => {
+            return name
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[.]/g, '')
+                .trim()
+                .toLowerCase();
+        };
+        const normalizedPlayerName = normalizeName(playerName);
+        // Buscar evento de entrada (si fue suplente)
+        let entryMinute = 0;
+        if (wasSubstitute) {
+            const entryEvent = events.find((e) => e.type === 'subst' &&
+                e.assist?.id === playerId ||
+                (e.assist?.name && normalizeName(e.assist.name) === normalizedPlayerName));
+            if (entryEvent) {
+                // El minuto puede ser "45+2" o "90", extraer solo el número base
+                const minuteStr = String(entryEvent.time?.elapsed ?? 0);
+                entryMinute = parseInt(minuteStr.split('+')[0]);
+                console.log(`[playerStats] 🔄 Jugador ${playerName} entró en minuto ${entryMinute}`);
+            }
+            else if (wasSubstitute && rawMinutes > 0) {
+                // Si fue suplente pero no se encontró evento de entrada y jugó minutos,
+                // probablemente entró muy tarde. Calcular basándonos en rawMinutes.
+                entryMinute = 90 - rawMinutes;
+                console.log(`[playerStats] ⚠️  No se encontró evento de entrada para ${playerName}, calculando: entró en min ${entryMinute}`);
+            }
+        }
+        // Buscar evento de salida (si fue sustituido)
+        let exitMinute = 90; // Por defecto, asumimos que jugó hasta el final
+        const exitEvent = events.find((e) => e.type === 'subst' &&
+            (e.player?.id === playerId ||
+                (e.player?.name && normalizeName(e.player.name) === normalizedPlayerName)));
+        if (exitEvent) {
+            const minuteStr = String(exitEvent.time?.elapsed ?? 90);
+            exitMinute = parseInt(minuteStr.split('+')[0]);
+            console.log(`[playerStats] 🔄 Jugador ${playerName} salió en minuto ${exitMinute}`);
+        }
+        // Calcular minutos sin descuento
+        let minutesWithoutInjuryTime = Math.min(exitMinute - entryMinute, 90);
+        // ✨ IMPORTANTE: Si el jugador participó (rawMinutes > 0) pero el cálculo da 0
+        // (por ejemplo, salió en el minuto 90+5), registrar al menos 1 minuto
+        if (rawMinutes > 0 && minutesWithoutInjuryTime === 0) {
+            minutesWithoutInjuryTime = 1;
+            console.log(`[playerStats] ⚠️  Jugador ${playerName} jugó en descuento, registrando 1 minuto mínimo`);
+        }
+        // Si el cálculo da más minutos de los que reporta la API, usar el valor de la API (limitado a 90)
+        if (minutesWithoutInjuryTime > rawMinutes) {
+            minutesWithoutInjuryTime = Math.min(rawMinutes, 90);
+            console.log(`[playerStats] ⚠️  Ajustando minutos de ${playerName} a ${minutesWithoutInjuryTime} (API reporta ${rawMinutes})`);
+        }
+        console.log(`[playerStats] ⏱️  Jugador ${playerName}: ${rawMinutes} min (API) → ${minutesWithoutInjuryTime} min (sin descuento)`);
+        return minutesWithoutInjuryTime;
+    }
+    catch (error) {
+        console.warn(`[playerStats] ⚠️  No se pudieron obtener eventos del partido ${fixtureId}, usando cálculo básico:`, error);
+        // Fallback: usar el método anterior (límite de 90)
+        const fallbackMinutes = Math.min(rawMinutes, 90);
+        // También aplicar el mínimo de 1 minuto en el fallback
+        return rawMinutes > 0 && fallbackMinutes === 0 ? 1 : fallbackMinutes;
+    }
+}
 /**
  * Extrae estadísticas de un objeto stats de API-Football
  */
@@ -380,6 +477,18 @@ export async function getPlayerStatsForJornada(playerId, jornada, options = {}) 
             });
             return emptyStats;
         }
+        // ✨ NUEVO: Calcular minutos sin tiempo de descuento
+        const rawMinutes = Number(playerStats?.games?.minutes ?? 0);
+        const wasSubstitute = Boolean(playerStats?.games?.substitute);
+        const minutesWithoutInjuryTime = await calculateMinutesWithoutInjuryTime(playerId, playerFromDb.name, fixtureId, rawMinutes, wasSubstitute);
+        // ✨ IMPORTANTE: Sobrescribir los minutos en playerStats con los minutos sin descuento
+        playerStats = {
+            ...playerStats,
+            games: {
+                ...playerStats.games,
+                minutes: minutesWithoutInjuryTime,
+            },
+        };
         // Calcular puntos
         const role = normalizeRole(playerFromDb?.position ?? playerStats?.games?.position);
         // ✨ IMPORTANTE: Solo inyectar goles del equipo para DEFENSAS

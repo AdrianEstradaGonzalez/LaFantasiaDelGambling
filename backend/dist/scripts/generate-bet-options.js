@@ -167,25 +167,37 @@ function groupBetsByType(bets) {
     }
     return grouped;
 }
-function selectRandomBetForMatch(matchBets) {
+function selectRandomBetForMatch(matchBets, usedBetTypes) {
     const grouped = groupBetsByType(matchBets.apuestas);
     // Convertir a array de tipos de apuesta
-    const betTypes = Array.from(grouped.keys());
+    let betTypes = Array.from(grouped.keys());
     if (betTypes.length === 0) {
         return [];
     }
+    // Filtrar tipos que ya se han usado 2 o más veces
+    const availableTypes = betTypes.filter(type => {
+        const count = usedBetTypes.get(type) || 0;
+        return count < 2;
+    });
+    // Si todos los tipos ya se usaron 2 veces, usar cualquiera
+    const typesToChooseFrom = availableTypes.length > 0 ? availableTypes : betTypes;
     // Elegir un tipo de apuesta al azar
-    const randomType = betTypes[Math.floor(Math.random() * betTypes.length)];
+    const randomType = typesToChooseFrom[Math.floor(Math.random() * typesToChooseFrom.length)];
+    // Incrementar contador de uso
+    usedBetTypes.set(randomType, (usedBetTypes.get(randomType) || 0) + 1);
     // Retornar todas las opciones de ese tipo (para Over/Under, 1X2, etc)
     return grouped.get(randomType);
 }
 async function generateBetOptionsForLeague(leagueId, jornada, allMatchBets) {
     console.log(`\n🎰 Generando apuestas aleatorias para liga ${leagueId}...`);
     const betOptionsToSave = [];
+    const usedBetTypes = new Map(); // Contador de tipos usados
     for (const matchBets of allMatchBets) {
-        const selectedBets = selectRandomBetForMatch(matchBets);
+        const selectedBets = selectRandomBetForMatch(matchBets, usedBetTypes);
         if (selectedBets.length > 0) {
-            console.log(`   Partido ${matchBets.idPartido}: ${selectedBets[0].tipo} (${selectedBets.length} opciones)`);
+            const betType = selectedBets[0].tipo;
+            const useCount = usedBetTypes.get(betType) || 0;
+            console.log(`   Partido ${matchBets.idPartido}: ${betType} (${selectedBets.length} opciones) [Uso: ${useCount}/2]`);
             for (const bet of selectedBets) {
                 betOptionsToSave.push({
                     matchId: matchBets.idPartido,
@@ -198,10 +210,15 @@ async function generateBetOptionsForLeague(leagueId, jornada, allMatchBets) {
             }
         }
     }
+    // Mostrar resumen de uso de tipos
+    console.log('\n📊 Resumen de tipos de apuesta usados:');
+    for (const [type, count] of usedBetTypes.entries()) {
+        console.log(`   ${type}: ${count} veces`);
+    }
     // Guardar en base de datos usando el servicio existente
     if (betOptionsToSave.length > 0) {
         await saveBetOptions(leagueId, jornada, betOptionsToSave);
-        console.log(`   ✅ ${betOptionsToSave.length} opciones guardadas en BD`);
+        console.log(`\n   ✅ ${betOptionsToSave.length} opciones guardadas en BD`);
     }
 }
 async function saveBetOptions(leagueId, jornada, options) {

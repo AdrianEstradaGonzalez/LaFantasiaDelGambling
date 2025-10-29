@@ -27,7 +27,10 @@ export function calculatePlayerPoints(stats, role) {
         total += points;
     };
     // ========== PUNTOS BASE (TODAS LAS POSICIONES) ==========
-    const minutes = Number(stats.games?.minutes ?? 0);
+    // Los minutos ya vienen calculados sin tiempo de descuento desde playerStats.service
+    // No necesitamos aplicar Math.min() aquí
+    const rawMinutes = Number(stats.games?.minutes ?? 0);
+    const minutes = rawMinutes;
     const meetsCleanSheetMinutes = minutes >= CLEAN_SHEET_MINUTES;
     // Minutos jugados
     let minutesPoints = 0;
@@ -93,11 +96,6 @@ export function calculatePlayerPoints(stats, role) {
         const savedPens = Number(penalty.saved ?? stats.goalkeeper?.saved ?? 0);
         if (savedPens)
             add('Penaltis parados', savedPens, savedPens * GOALKEEPER_POINTS.PENALTY_SAVED);
-        // Intercepciones
-        const interceptions = Number(tackles.interceptions || 0);
-        const interceptionPoints = Math.floor(interceptions / GOALKEEPER_POINTS.INTERCEPTIONS_PER_POINT);
-        if (interceptionPoints)
-            add('Recuperaciones', interceptions, interceptionPoints);
     }
     else if (role === 'Defender') {
         // Goles marcados
@@ -182,26 +180,6 @@ export function calculatePlayerPoints(stats, role) {
         const foulPoints = Math.floor(foulsDrawn / ATTACKER_POINTS.FOULS_DRAWN_PER_POINT);
         if (foulPoints)
             add('Faltas recibidas', foulsDrawn, foulPoints);
-    }
-    // ========== VALORACIÓN DEL PARTIDO (TODAS LAS POSICIONES) ==========
-    const rawRating = stats.games?.rating;
-    if (rawRating != null && rawRating !== '') {
-        const rating = Number(rawRating);
-        if (!Number.isNaN(rating)) {
-            let ratingPoints = 0;
-            if (rating >= 8) {
-                ratingPoints = BASE_POINTS.RATING_8_OR_MORE;
-            }
-            else if (rating >= 6.5 && rating < 8) {
-                ratingPoints = BASE_POINTS.RATING_65_TO_8;
-            }
-            else if (rating >= 5 && rating < 6.5) {
-                ratingPoints = BASE_POINTS.RATING_5_TO_65;
-                ;
-            }
-            if (ratingPoints)
-                add('Valoración del partido', rating.toFixed(1), ratingPoints);
-        }
     }
     return { total: Math.trunc(total), breakdown };
 }

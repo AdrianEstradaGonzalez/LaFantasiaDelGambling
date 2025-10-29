@@ -28,19 +28,19 @@ export class PlayerController {
     static async getAllPlayers(req, reply) {
         try {
             const query = req.query;
-            const { position, teamId, minPrice, maxPrice, search } = query;
+            const { position, teamId, minPrice, maxPrice, search, division } = query;
             let players;
             if (search) {
-                players = await PlayerService.searchPlayers(search);
+                players = await PlayerService.searchPlayers(search, division);
             }
             else if (position) {
-                players = await PlayerService.getPlayersByPosition(position);
+                players = await PlayerService.getPlayersByPosition(position, division);
             }
             else if (teamId) {
-                players = await PlayerService.getPlayersByTeam(Number(teamId));
+                players = await PlayerService.getPlayersByTeam(Number(teamId), division);
             }
             else {
-                players = await PlayerService.getAllPlayers();
+                players = await PlayerService.getAllPlayers(division);
             }
             // Filtrar por rango de precio si se proporciona
             if (minPrice || maxPrice) {

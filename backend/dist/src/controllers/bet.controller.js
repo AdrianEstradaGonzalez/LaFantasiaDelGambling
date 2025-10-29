@@ -1,4 +1,5 @@
 import { BetService } from '../services/bet.service.js';
+import { BetEvaluationService } from '../services/betEvaluation.service.js';
 import { AppError } from '../utils/errors.js';
 export class BetController {
     /**
@@ -24,7 +25,7 @@ export class BetController {
     }
     /**
      * GET /api/bets/all/:leagueId
-     * Obtener todas las apuestas de la liga (jornada actual) con nombre y cantidad
+     * Obtener todas las apuestas de la liga (todas las jornadas) con nombre y cantidad
      */
     static async getLeagueBets(request, reply) {
         try {
@@ -177,6 +178,36 @@ export class BetController {
                 return reply.status(error.statusCode).send({ error: error.message });
             }
             return reply.status(400).send({ error: error.message });
+        }
+    }
+    /**
+     * GET /api/bets/realtime/:leagueId/:jornada
+     * Evaluar apuestas en tiempo real sin actualizar la BD
+     */
+    static async evaluateBetsRealTime(request, reply) {
+        try {
+            const userId = request.user?.sub || request.user?.id;
+            if (!userId) {
+                return reply.status(401).send({ error: 'No autenticado' });
+            }
+            const { leagueId, jornada } = request.params;
+            const jornadaNum = parseInt(jornada);
+            if (isNaN(jornadaNum)) {
+                return reply.status(400).send({ error: 'Jornada inválida' });
+            }
+            console.log(`⚡ Evaluando en tiempo real - Liga: ${leagueId}, Jornada: ${jornadaNum}`);
+            const result = await BetEvaluationService.evaluateBetsRealTime(leagueId, jornadaNum);
+            return reply.status(200).send({
+                success: true,
+                ...result
+            });
+        }
+        catch (error) {
+            console.error('❌ Error evaluando apuestas en tiempo real:', error);
+            if (error instanceof AppError) {
+                return reply.status(error.statusCode).send({ error: error.message });
+            }
+            return reply.status(500).send({ error: error.message });
         }
     }
 }

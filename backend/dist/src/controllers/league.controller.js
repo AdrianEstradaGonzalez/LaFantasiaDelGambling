@@ -8,8 +8,8 @@ export const LeagueController = {
             const leaderId = req.user?.sub || req.user?.id;
             if (!leaderId)
                 throw new AppError(401, "UNAUTHORIZED", "Token inválido");
-            const { name } = createLeagueBody.parse(req.body);
-            const league = await LeagueService.createLeague(name, leaderId);
+            const { name, division } = createLeagueBody.parse(req.body);
+            const league = await LeagueService.createLeague(name, leaderId, division);
             reply.code(201).send(league);
         }
         catch (error) {

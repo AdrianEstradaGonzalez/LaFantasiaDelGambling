@@ -17,7 +17,8 @@ export async function register({ email, password, name }) {
     }
     const hash = await argon2.hash(password);
     const user = await UserRepo.create({ email, password: hash, name });
-    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email, user.isAdmin || false) };
+    const tokens = await issueTokens(user.id, user.email, user.isAdmin || false);
+    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...tokens };
 }
 export async function login({ email, password }) {
     const user = await UserRepo.findByEmail(email);
@@ -32,7 +33,8 @@ export async function login({ email, password }) {
         error.statusCode = 401;
         throw error;
     }
-    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...await issueTokens(user.id, user.email, user.isAdmin || false) };
+    const tokens = await issueTokens(user.id, user.email, user.isAdmin || false);
+    return { user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin || false }, ...tokens };
 }
 export async function me(userId) {
     const u = await UserRepo.findById(userId);

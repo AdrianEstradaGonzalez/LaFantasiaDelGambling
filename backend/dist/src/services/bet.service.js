@@ -47,7 +47,7 @@ export class BetService {
         };
     }
     /**
-     * Obtener todas las apuestas de una liga para la jornada actual (con nombre de usuario)
+     * Obtener todas las apuestas de una liga (todas las jornadas, con nombre de usuario)
      */
     static async getLeagueBets(leagueId, requesterUserId) {
         // Verificar que el solicitante sea miembro de la liga
@@ -58,18 +58,10 @@ export class BetService {
         if (!member) {
             throw new AppError(403, 'FORBIDDEN', 'No eres miembro de esta liga');
         }
-        // Obtener jornada actual de la liga
-        const league = await prisma.league.findUnique({
-            where: { id: leagueId },
-            select: { currentJornada: true }
-        });
-        if (!league) {
-            throw new AppError(404, 'NOT_FOUND', 'Liga no encontrada');
-        }
+        // Obtener todas las apuestas de la liga (sin filtrar por jornada)
         const bets = await prisma.bet.findMany({
             where: {
                 leagueId,
-                jornada: league.currentJornada,
             },
             include: {
                 leagueMember: {
@@ -85,6 +77,8 @@ export class BetService {
             userName: b.leagueMember?.user?.name || 'Jugador',
             jornada: b.jornada,
             matchId: b.matchId,
+            homeTeam: b.homeTeam || '',
+            awayTeam: b.awayTeam || '',
             betType: b.betType,
             betLabel: b.betLabel,
             odd: b.odd,

@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { LeagueRepo } from "../repositories/league.repo.js";
 import { LeagueMemberRepo } from "../repositories/leagueMember.js";
+import { generateBetOptionsForLeaguePublic } from "../utils/betOptionsGenerator.js";
 const prisma = new PrismaClient();
 // Generar código único de 8 caracteres (letras mayúsculas y números)
 const generateUniqueCode = () => {
@@ -12,13 +13,15 @@ const generateUniqueCode = () => {
     return result;
 };
 export const LeagueService = {
-    createLeague: async (name, leaderId) => {
+    createLeague: async (name, leaderId, division = 'primera') => {
         // Generar código único, reintentar si hay colisión
         let code = generateUniqueCode();
         let attempts = 0;
+        let createdLeague = null;
         while (attempts < 10) {
             try {
-                return await LeagueRepo.create(name, leaderId, code);
+                createdLeague = await LeagueRepo.create(name, leaderId, code, division);
+                break; // creado con éxito
             }
             catch (error) {
                 // Si es error de código duplicado, generar otro
@@ -35,7 +38,22 @@ export const LeagueService = {
                 }
             }
         }
-        throw new Error('No se pudo generar un código único después de 10 intentos');
+        if (!createdLeague) {
+            throw new Error('No se pudo generar un código único después de 10 intentos');
+        }
+        // Después de crear la liga, generar las opciones de apuesta para su jornada actual
+        (async () => {
+            try {
+                const jornadaToGenerate = createdLeague.currentJornada || 1;
+                console.log(`[LeagueService] Generating bet options for new league ${createdLeague.id} jornada ${jornadaToGenerate}`);
+                const result = await generateBetOptionsForLeaguePublic(createdLeague.id, jornadaToGenerate);
+                console.log(`[LeagueService] Bet options generated for league ${createdLeague.id}:`, result);
+            }
+            catch (err) {
+                console.error(`[LeagueService] Error generating bet options for league ${createdLeague?.id}:`, err);
+            }
+        })();
+        return createdLeague;
     },
     deleteLeague: async (leagueId, leaderId) => {
         const res = await LeagueRepo.deleteIfLeader(leagueId, leaderId);
