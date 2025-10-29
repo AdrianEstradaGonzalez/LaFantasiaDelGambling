@@ -10,6 +10,7 @@ export type Liga = {
 
 export type CreateLeagueData = {
   name: string;
+  division?: 'primera' | 'segunda';
 };
 
 export type AddMemberData = {

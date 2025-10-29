@@ -44,6 +44,7 @@ model League {
   code           String         @unique
   currentJornada Int            @default(1)
   jornadaStatus  String         @default("open")
+  division       String         @default("primera") // "primera" o "segunda"
   leader         User           @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
   members        LeagueMember[]
   squads         Squad[]
@@ -272,4 +273,29 @@ model bet_option {
 
   @@index([leagueId, jornada])
   @@index([matchId])
+}
+
+model PlayerSegunda {
+  id                 Int      @id
+  name               String
+  position           String
+  teamId             Int
+  teamHistory        Int[]    @default([])
+  teamName           String
+  teamCrest          String?
+  nationality        String?
+  shirtNumber        Int?
+  photo              String?
+  price              Int
+  availabilityStatus String   @default("AVAILABLE")
+  availabilityInfo   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  lastJornadaPoints  Int      @default(0)
+  lastJornadaNumber  Int      @default(0)
+
+  @@index([teamId])
+  @@index([position])
+  @@index([price])
+  @@map("player_segunda")
 }

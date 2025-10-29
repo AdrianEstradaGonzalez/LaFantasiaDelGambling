@@ -30,6 +30,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   const [codigoLiga, setCodigoLiga] = useState('');
   const [loadingCrear, setLoadingCrear] = useState(false);
   const [loadingUnirse, setLoadingUnirse] = useState(false);
+  const [division, setDivision] = useState<'primera' | 'segunda'>('primera');
 
   // Manejar código de deep link
   useEffect(() => {
@@ -58,7 +59,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
 
     try {
       setLoadingCrear(true);
-      const nuevaLiga = await LigaService.crearLiga({ name: nombreLiga });
+      const nuevaLiga = await LigaService.crearLiga({ name: nombreLiga, division });
       
       // Limpiar el campo y navegar directamente a InvitarAmigos
       setNombreLiga('');
@@ -133,6 +134,44 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           <Text style={styles.sectionDescription}>
             Crea tu propia liga y compite con amigos
           </Text>
+          
+          {/* Selector de división */}
+          <View style={styles.inputContainer}>
+            <Text style={styles.inputLabel}>División</Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+              <TouchableOpacity
+                style={[
+                  styles.divisionButton,
+                  division === 'primera' && styles.divisionButtonActive
+                ]}
+                onPress={() => setDivision('primera')}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.divisionButtonText,
+                  division === 'primera' && styles.divisionButtonTextActive
+                ]}>
+                  🏆 Primera División
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.divisionButton,
+                  division === 'segunda' && styles.divisionButtonActive
+                ]}
+                onPress={() => setDivision('segunda')}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.divisionButtonText,
+                  division === 'segunda' && styles.divisionButtonTextActive
+                ]}>
+                  ⚽ Segunda División
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
           
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Nombre de la liga</Text>

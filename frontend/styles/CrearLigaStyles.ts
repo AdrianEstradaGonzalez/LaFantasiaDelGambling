@@ -222,4 +222,35 @@ export const CrearLigaStyles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+
+  // 🎯 Division Selector Buttons
+  divisionButton: {
+    flex: 1,
+    backgroundColor: Colors.background.tertiary,
+    borderWidth: 1,
+    borderColor: Colors.border.primary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.small,
+  },
+
+  divisionButtonActive: {
+    backgroundColor: Colors.primary[600],
+    borderColor: Colors.primary[500],
+    ...Shadows.medium,
+  },
+
+  divisionButtonText: {
+    fontSize: Typography.sizes.sm,
+    fontWeight: Typography.weights.semibold,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+  },
+
+  divisionButtonTextActive: {
+    color: Colors.text.primary,
+  },
 });

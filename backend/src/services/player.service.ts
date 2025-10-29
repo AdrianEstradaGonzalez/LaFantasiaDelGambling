@@ -237,12 +237,14 @@ export class PlayerService {
   /**
    * Obtener todos los jugadores de la base de datos con puntuación total
    */
-  static async getAllPlayers() {
-    const players = await PlayerRepository.getAllPlayers();
+  static async getAllPlayers(division: string = 'primera') {
+    const players = division === 'segunda' 
+      ? await PlayerRepository.getAllSegundaPlayers()
+      : await PlayerRepository.getAllPlayers();
     
     // Obtener puntuación total de cada jugador (suma de todas las jornadas)
     const playersWithTotalPoints = await Promise.all(
-      players.map(async (player) => {
+      players.map(async (player: any) => {
         const stats = await prisma.playerStats.aggregate({
           where: { playerId: player.id },
           _sum: { totalPoints: true },
@@ -292,22 +294,28 @@ export class PlayerService {
   /**
    * Obtener jugadores por equipo
    */
-  static async getPlayersByTeam(teamId: number) {
-    return PlayerRepository.getPlayersByTeam(teamId);
+  static async getPlayersByTeam(teamId: number, division: string = 'primera') {
+    return division === 'segunda'
+      ? PlayerRepository.getSegundaPlayersByTeam(teamId)
+      : PlayerRepository.getPlayersByTeam(teamId);
   }
 
   /**
    * Obtener jugadores por posición
    */
-  static async getPlayersByPosition(position: string) {
-    return PlayerRepository.getPlayersByPosition(position);
+  static async getPlayersByPosition(position: string, division: string = 'primera') {
+    return division === 'segunda'
+      ? PlayerRepository.getSegundaPlayersByPosition(position)
+      : PlayerRepository.getPlayersByPosition(position);
   }
 
   /**
    * Buscar jugadores
    */
-  static async searchPlayers(query: string) {
-    return PlayerRepository.searchPlayers(query);
+  static async searchPlayers(query: string, division: string = 'primera') {
+    return division === 'segunda'
+      ? PlayerRepository.searchSegundaPlayers(query)
+      : PlayerRepository.searchPlayers(query);
   }
 
   /**

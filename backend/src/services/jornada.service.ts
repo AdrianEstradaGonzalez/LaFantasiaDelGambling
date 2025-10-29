@@ -1151,6 +1151,7 @@ export class JornadaService {
     currentJornada: number;
     status: string; // 'open' o 'closed'
     leagueName: string;
+    division?: string;
   }> {
     try {
       const league = await prisma.league.findUnique({
@@ -1158,7 +1159,8 @@ export class JornadaService {
         select: {
           name: true,
           currentJornada: true,
-          jornadaStatus: true
+          jornadaStatus: true,
+          division: true
         }
       });
 
@@ -1169,7 +1171,8 @@ export class JornadaService {
       return {
         currentJornada: league.currentJornada,
         status: league.jornadaStatus,
-        leagueName: league.name
+        leagueName: league.name,
+        division: league.division
       };
     } catch (error) {
       console.error('❌ Error obteniendo estado de jornada:', error);

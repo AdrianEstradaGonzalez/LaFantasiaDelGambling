@@ -38,6 +38,7 @@ export class PlayerService {
     minPrice?: number;
     maxPrice?: number;
     search?: string;
+    division?: string;
   }): Promise<PlayerWithPrice[]> {
     try {
       const params = new URLSearchParams();
@@ -47,6 +48,7 @@ export class PlayerService {
       if (filters?.minPrice) params.append('minPrice', filters.minPrice.toString());
       if (filters?.maxPrice) params.append('maxPrice', filters.maxPrice.toString());
       if (filters?.search) params.append('search', filters.search);
+      if (filters?.division) params.append('division', filters.division);
 
       const url = `${this.BASE_URL}${params.toString() ? '?' + params.toString() : ''}`;
       const response = await fetch(url);

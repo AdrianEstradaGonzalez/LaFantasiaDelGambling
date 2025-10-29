@@ -80,6 +80,19 @@ export class PlayerRepository {
   }
 
   /**
+   * Obtener todos los jugadores de Segunda División
+   */
+  static async getAllSegundaPlayers() {
+    return (prisma as any).playerSegunda.findMany({
+      orderBy: [
+        { teamName: 'asc' },
+        { position: 'asc' },
+        { name: 'asc' },
+      ],
+    });
+  }
+
+  /**
    * Obtener jugador por ID
    */
   static async getPlayerById(id: number) {
@@ -150,6 +163,47 @@ export class PlayerRepository {
    */
   static async searchPlayers(query: string) {
     return prisma.player.findMany({
+      where: {
+        name: {
+          contains: query,
+          mode: 'insensitive',
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  /**
+   * Obtener jugadores de Segunda División por equipo
+   */
+  static async getSegundaPlayersByTeam(teamId: number) {
+    return (prisma as any).playerSegunda.findMany({
+      where: { teamId },
+      orderBy: [
+        { position: 'asc' },
+        { name: 'asc' },
+      ],
+    });
+  }
+
+  /**
+   * Obtener jugadores de Segunda División por posición
+   */
+  static async getSegundaPlayersByPosition(position: string) {
+    return (prisma as any).playerSegunda.findMany({
+      where: { position },
+      orderBy: [
+        { teamName: 'asc' },
+        { name: 'asc' },
+      ],
+    });
+  }
+
+  /**
+   * Buscar jugadores de Segunda División por nombre
+   */
+  static async searchSegundaPlayers(query: string) {
+    return (prisma as any).playerSegunda.findMany({
       where: {
         name: {
           contains: query,

@@ -270,16 +270,21 @@ export const PlayersMarket = ({ navigation, route }: {
   const loadPlayers = useCallback(async () => {
     try {
       // Cargar estado de jornada si hay ligaId
+      let leagueDivision = 'primera'; // default
       if (ligaId) {
         try {
           const status = await JornadaService.getJornadaStatus(ligaId);
           setJornadaStatus((status.status as 'open' | 'closed'));
+          // Obtener división de la liga si está disponible
+          if (status.division) {
+            leagueDivision = status.division;
+          }
         } catch (e) {
           console.warn('No se pudo obtener estado de jornada:', e);
         }
       }
       setLoading(true);
-      const playersData = await PlayerService.getAllPlayers();
+      const playersData = await PlayerService.getAllPlayers({ division: leagueDivision });
       const teamsData = await FootballService.getLaLigaTeamsCached();
       
       setPlayers(playersData);

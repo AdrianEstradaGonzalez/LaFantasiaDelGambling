@@ -16,7 +16,7 @@ const generateUniqueCode = (): string => {
 };
 
 export const LeagueService = {
-  createLeague: async (name: string, leaderId: string) => {
+  createLeague: async (name: string, leaderId: string, division: 'primera' | 'segunda' = 'primera') => {
     // Generar código único, reintentar si hay colisión
     let code = generateUniqueCode();
     let attempts = 0;
@@ -24,7 +24,7 @@ export const LeagueService = {
 
     while (attempts < 10) {
       try {
-        createdLeague = await LeagueRepo.create(name, leaderId, code);
+        createdLeague = await LeagueRepo.create(name, leaderId, code, division);
         break; // creado con éxito
       } catch (error: any) {
         // Si es error de código duplicado, generar otro

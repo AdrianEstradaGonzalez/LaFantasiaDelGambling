@@ -186,6 +186,7 @@ export class JornadaService {
     currentJornada: number;
     status: string;
     leagueName: string;
+    division?: string;
   }> {
     try {
       const token = await EncryptedStorage.getItem('accessToken');

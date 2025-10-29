@@ -31,18 +31,18 @@ export class PlayerController {
   static async getAllPlayers(req: FastifyRequest, reply: FastifyReply) {
     try {
       const query = req.query as any;
-      const { position, teamId, minPrice, maxPrice, search } = query;
+      const { position, teamId, minPrice, maxPrice, search, division } = query;
 
       let players;
 
       if (search) {
-        players = await PlayerService.searchPlayers(search as string);
+        players = await PlayerService.searchPlayers(search as string, division);
       } else if (position) {
-        players = await PlayerService.getPlayersByPosition(position as string);
+        players = await PlayerService.getPlayersByPosition(position as string, division);
       } else if (teamId) {
-        players = await PlayerService.getPlayersByTeam(Number(teamId));
+        players = await PlayerService.getPlayersByTeam(Number(teamId), division);
       } else {
-        players = await PlayerService.getAllPlayers();
+        players = await PlayerService.getAllPlayers(division);
       }
 
       // Filtrar por rango de precio si se proporciona
