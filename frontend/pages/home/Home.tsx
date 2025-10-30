@@ -391,12 +391,22 @@ export const Home = ({ navigation, route }: HomeProps) => {
                         fontWeight: '800',
                         fontSize: 18,
                         letterSpacing: 0.3,
-                        marginBottom: 2,
+                        marginBottom: 4,
                       }}
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
                       {liga.nombre}
+                    </Text>
+                    <Text
+                      style={{
+                        color: '#94a3b8',
+                        fontSize: 12,
+                        fontWeight: '600',
+                        letterSpacing: 0.2,
+                      }}
+                    >
+                      {liga.division === 'segunda' ? 'Segunda División Española' : 'Primera División Española'}
                     </Text>
                   </View>
                   

@@ -1135,12 +1135,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             </View>
           )}
 
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 20 }} scrollEnabled={!isChangingFormation}>
-          
-          {/* Banner publicitario */}
-          <View style={{ marginBottom: 16 }}>
-            <AdBanner />
-          </View>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 150 }} scrollEnabled={!isChangingFormation}>
 
           {/* Header con tÃ­tulo y botÃ³n guardar */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
@@ -2010,9 +2005,18 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           )}
         </View>
           </ScrollView>
-      
-          {/* Banner de anuncio al final de la plantilla */}
-          <AdBanner visible={true} size="BANNER" />
+
+          {/* Banner publicitario - Posición absoluta encima de la barra inferior */}
+          <View style={{ 
+            position: 'absolute',
+            bottom: 70,
+            left: 0,
+            right: 0,
+            zIndex: 999,
+            elevation: 10,
+          }}>
+            <AdBanner />
+          </View>
 
           {/* Barra de navegaciÃ³n */}
           <LigaNavBar ligaId={ligaId} ligaName={ligaName} division={division} isPremium={isPremium} />

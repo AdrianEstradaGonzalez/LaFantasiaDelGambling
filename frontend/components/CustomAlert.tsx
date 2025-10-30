@@ -86,7 +86,20 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
             )}
 
             {/* Message */}
-            <Text style={styles.message}>{message}</Text>
+            {typeof message === 'string' && message.includes('PREMIUM') ? (
+              <Text style={styles.message}>
+                {message.split('PREMIUM').map((part, index, array) => (
+                  <React.Fragment key={index}>
+                    <Text>{part}</Text>
+                    {index < array.length - 1 && (
+                      <Text style={{ color: '#fbbf24', fontWeight: '800' }}>PREMIUM</Text>
+                    )}
+                  </React.Fragment>
+                ))}
+              </Text>
+            ) : (
+              <Text style={styles.message}>{message}</Text>
+            )}
           </ScrollView>
 
           {/* Buttons */}

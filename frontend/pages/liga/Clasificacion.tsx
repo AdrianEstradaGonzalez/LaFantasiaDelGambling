@@ -308,22 +308,11 @@ export const Clasificacion = () => {
             )}
           </View>
 
-          {/* Banner publicitario */}
-          <View style={{ 
-            backgroundColor: '#181818ff', 
-            paddingHorizontal: 16, 
-            paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: '#334155'
-          }}>
-            <AdBanner />
-          </View>
-
           {/* Contenido */}
           {jugadores.length > 0 ? (
             <ScrollView
               style={styles.container}
-              contentContainerStyle={{ paddingBottom: 140 }}
+              contentContainerStyle={{ paddingBottom: 200 }}
             >
           {jugadores.map((jugador) => {
             const isCurrentUser = jugador.id === currentUserId;
@@ -523,6 +512,18 @@ export const Clasificacion = () => {
           </Text>
         </View>
       )}
+
+      {/* Banner publicitario - Posición absoluta encima de la barra inferior */}
+      <View style={{ 
+        position: 'absolute',
+        bottom: 70, // Justo encima de la barra de navegación (altura típica ~70px)
+        left: 0,
+        right: 0,
+        zIndex: 999,
+        elevation: 10, // Para Android
+      }}>
+        <AdBanner />
+      </View>
 
       {/* Barra inferior */}
       <LigaNavBar ligaId={ligaId} ligaName={ligaName} division={division} isPremium={isPremium} />
