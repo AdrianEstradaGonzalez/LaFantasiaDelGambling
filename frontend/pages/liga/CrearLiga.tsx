@@ -6,12 +6,15 @@ import {
   TextInput,
   ScrollView,
   Modal,
+  Linking,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
 import LinearGradient from 'react-native-linear-gradient';
 import { CrearLigaStyles as styles } from '../../styles/CrearLigaStyles';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase, RouteProp } from '@react-navigation/native';
 import { LigaService } from '../../services/LigaService';
+import { PaymentService } from '../../services/PaymentService';
 import TopNavBar from '../navBar/TopNavBar';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -45,6 +48,10 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   const [nombreLigaPremium, setNombreLigaPremium] = useState('');
   const [divisionPremium, setDivisionPremium] = useState<'primera' | 'segunda'>('primera');
   const [loadingCrearPremium, setLoadingCrearPremium] = useState(false);
+  
+  // Estados para pago
+  const [showPaymentWebView, setShowPaymentWebView] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState('');
 
   // Manejar código de deep link
   useEffect(() => {
@@ -65,6 +72,16 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       CustomAlertManager.alert(
         'Error',
         'Por favor, introduce un nombre para la liga.',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+      return;
+    }
+
+    if (nombreLiga.trim().length < 3) {
+      CustomAlertManager.alert(
+        'Nombre muy corto',
+        'El nombre de la liga debe tener al menos 3 caracteres.',
         [{ text: 'OK', onPress: () => {}, style: 'default' }],
         { icon: 'alert-circle', iconColor: '#ef4444' }
       );
@@ -106,14 +123,61 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       return;
     }
 
+    if (nombreLigaPremium.trim().length < 3) {
+      CustomAlertManager.alert(
+        'Nombre muy corto',
+        'El nombre de la liga debe tener al menos 3 caracteres.',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+      return;
+    }
+
     try {
       setLoadingCrearPremium(true);
-      const nuevaLiga = await LigaService.crearLiga({ name: nombreLigaPremium, division: divisionPremium });
       
-      // Limpiar y cerrar modales
-      setNombreLigaPremium('');
+      // Crear sesión de pago en Stripe
+      const checkoutUrl = await PaymentService.createPremiumCheckout(
+        nombreLigaPremium,
+        divisionPremium
+      );
+      
+      // Abrir WebView con la URL de pago
+      setPaymentUrl(checkoutUrl);
       setShowPremiumForm(false);
+      setShowPaymentWebView(true);
+      
+    } catch (error: any) {
+      CustomAlertManager.alert(
+        'Error',
+        error.message || 'No se pudo iniciar el proceso de pago',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+    } finally {
+      setLoadingCrearPremium(false);
+    }
+  };
+
+  const handlePaymentComplete = async () => {
+    // Una vez completado el pago, crear la liga
+    try {
+      const nuevaLiga = await LigaService.crearLiga({ 
+        name: nombreLigaPremium, 
+        division: divisionPremium 
+      });
+      
+      // Limpiar y cerrar
+      setNombreLigaPremium('');
+      setShowPaymentWebView(false);
       setShowPremiumModal(false);
+      
+      CustomAlertManager.alert(
+        '¡Pago exitoso!',
+        'Tu liga premium ha sido creada.',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'checkmark-circle', iconColor: '#10b981' }
+      );
       
       navigation.navigate('InvitarAmigos', { 
         ligaNombre: nuevaLiga.name, 
@@ -127,8 +191,6 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         [{ text: 'OK', onPress: () => {}, style: 'default' }],
         { icon: 'alert-circle', iconColor: '#ef4444' }
       );
-    } finally {
-      setLoadingCrearPremium(false);
     }
   };
 
@@ -332,6 +394,25 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                     </Text>
                   </View>
                 </View>
+
+                <View style={styles.featureItem}>
+                  <View style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 14,
+                    backgroundColor: '#fbbf24',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#1f2937' }}>×</Text>
+                  </View>
+                  <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
+                    <Text style={styles.featureTitle}>Apuestas Combinadas</Text>
+                    <Text style={styles.featureDescription}>
+                      Combina hasta 3 apuestas en una sola para multiplicar tus ganancias - Mayor riesgo, mayor recompensa
+                    </Text>
+                  </View>
+                </View>
               </View>
 
               <TouchableOpacity
@@ -446,7 +527,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.modalPrimaryButtonText, loadingCrearPremium && styles.primaryButtonTextDisabled]}>
-                  {loadingCrearPremium ? 'Creando...' : 'Crear Liga Premium'}
+                  {loadingCrearPremium ? 'Procesando...' : 'Pagar 10€ y Crear Liga'}
                 </Text>
               </TouchableOpacity>
 
@@ -461,6 +542,114 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                 <Text style={styles.modalSecondaryButtonText}>Cancelar</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </Modal>
+
+        {/* Modal WebView de Pago */}
+        <Modal
+          visible={showPaymentWebView}
+          animationType="slide"
+          onRequestClose={() => {
+            CustomAlertManager.alert(
+              'Cancelar pago',
+              '¿Estás seguro de que quieres cancelar el pago?',
+              [
+                { text: 'No', onPress: () => {}, style: 'cancel' },
+                { 
+                  text: 'Sí, cancelar', 
+                  onPress: () => {
+                    setShowPaymentWebView(false);
+                    setPaymentUrl('');
+                  }, 
+                  style: 'destructive' 
+                },
+              ],
+              { icon: 'alert-circle', iconColor: '#f59e0b' }
+            );
+          }}
+        >
+          <View style={{ flex: 1, backgroundColor: '#1f2937' }}>
+            <View style={{ 
+              backgroundColor: '#1f2937', 
+              paddingTop: 50, 
+              paddingBottom: 10, 
+              paddingHorizontal: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
+                Pago Seguro - 10€
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  CustomAlertManager.alert(
+                    'Cancelar pago',
+                    '¿Estás seguro de que quieres cancelar el pago?',
+                    [
+                      { text: 'No', onPress: () => {}, style: 'cancel' },
+                      { 
+                        text: 'Sí, cancelar', 
+                        onPress: () => {
+                          setShowPaymentWebView(false);
+                          setPaymentUrl('');
+                        }, 
+                        style: 'destructive' 
+                      },
+                    ],
+                    { icon: 'alert-circle', iconColor: '#f59e0b' }
+                  );
+                }}
+                style={{ padding: 8 }}
+              >
+                <Text style={{ color: '#ef4444', fontSize: 16, fontWeight: '700' }}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {paymentUrl ? (
+              <WebView
+                source={{ uri: paymentUrl }}
+                onNavigationStateChange={(navState) => {
+                  console.log('WebView URL:', navState.url);
+                  
+                  // Detectar si el pago fue exitoso
+                  if (navState.url.includes('fantasiagambling://payment/success') || 
+                      navState.url.includes('/payment/success')) {
+                    handlePaymentComplete();
+                  } else if (navState.url.includes('fantasiagambling://payment/cancel') || 
+                             navState.url.includes('/payment/cancel')) {
+                    setShowPaymentWebView(false);
+                    setPaymentUrl('');
+                    CustomAlertManager.alert(
+                      'Pago cancelado',
+                      'El pago ha sido cancelado.',
+                      [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                      { icon: 'alert-circle', iconColor: '#f59e0b' }
+                    );
+                  }
+                }}
+                onShouldStartLoadWithRequest={(request) => {
+                  // Interceptar URLs con el esquema de la app
+                  if (request.url.startsWith('fantasiagambling://')) {
+                    if (request.url.includes('/success')) {
+                      handlePaymentComplete();
+                    } else if (request.url.includes('/cancel')) {
+                      setShowPaymentWebView(false);
+                      setPaymentUrl('');
+                      CustomAlertManager.alert(
+                        'Pago cancelado',
+                        'El pago ha sido cancelado.',
+                        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                        { icon: 'alert-circle', iconColor: '#f59e0b' }
+                      );
+                    }
+                    return false; // No cargar la URL
+                  }
+                  return true; // Cargar URLs normales (Stripe)
+                }}
+                style={{ flex: 1 }}
+              />
+            ) : null}
           </View>
         </Modal>
 

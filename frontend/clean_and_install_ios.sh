@@ -7,6 +7,8 @@ cd ios
 # Elimina instalaciones de pods anteriores
 echo "Limpiando instalaciones de Pods anteriores..."
 rm -rf Pods Podfile.lock frontend.xcworkspace
+pod deintegrate || true
+rm -rf Pods Podfile.lock frontend.xcworkspace
 
 # Instala los pods
 echo "Instalando Pods..."
