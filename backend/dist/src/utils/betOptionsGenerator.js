@@ -15,6 +15,7 @@ const HEADERS = {
     'x-rapidapi-host': 'v3.football.api-sports.io',
 };
 const LA_LIGA_LEAGUE_ID = 140;
+const SEGUNDA_DIVISION_LEAGUE_ID = 141;
 const SEASON = 2025;
 // Mapa de traducción de tipos de apuesta al español
 const BET_TYPE_TRANSLATIONS = {
@@ -347,10 +348,10 @@ function translateBetLabel(betLabel, homeTeam, awayTeam) {
         return betLabel;
     return betLabel;
 }
-async function fetchFixtures(jornada) {
+async function fetchFixtures(jornada, leagueApiId = LA_LIGA_LEAGUE_ID) {
     const url = `${API_BASE}/fixtures`;
     const params = {
-        league: LA_LIGA_LEAGUE_ID,
+        league: leagueApiId,
         season: SEASON,
         round: `Regular Season - ${jornada}`
     };
@@ -593,44 +594,76 @@ async function saveBetOptions(leagueId, jornada, options) {
 export async function generateBetOptionsForAllLeagues(jornada) {
     console.log(`\n🎲 Generando apuestas para jornada ${jornada}...\n`);
     try {
-        // 1. Obtener fixtures
-        const fixtures = await fetchFixtures(jornada);
-        if (fixtures.length === 0) {
-            console.log('⚠️  No hay fixtures disponibles');
-            return {
-                success: false,
-                matchesProcessed: 0,
-                leaguesUpdated: 0,
-                totalOptions: 0,
-            };
-        }
-        console.log(`✅ ${fixtures.length} partidos encontrados`);
-        // 2. Obtener todas las apuestas posibles
-        const allMatchBets = [];
-        for (const fixture of fixtures) {
-            const matchBets = await fetchOddsForFixture(fixture.fixture.id, fixture.teams.home.name, fixture.teams.away.name);
-            if (matchBets) {
-                allMatchBets.push(matchBets);
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        console.log(`✅ Apuestas obtenidas para ${allMatchBets.length} partidos\n`);
-        // 3. Obtener todas las ligas
+        // 1. Obtener todas las ligas para saber qué divisiones existen
         const leagues = await prisma.league.findMany({
-            select: { id: true, name: true },
+            select: { id: true, name: true, division: true },
         });
         console.log(`📋 ${leagues.length} ligas activas\n`);
-        // 4. Generar apuestas para cada liga
+        // Agrupar ligas por división
+        const primeraLeagues = leagues.filter(l => l.division === 'primera' || !l.division);
+        const segundaLeagues = leagues.filter(l => l.division === 'segunda');
+        console.log(`   Primera División: ${primeraLeagues.length} ligas`);
+        console.log(`   Segunda División: ${segundaLeagues.length} ligas\n`);
         let totalOptions = 0;
-        for (const league of leagues) {
-            const optionsCount = await generateBetOptionsForLeague(league.id, jornada, allMatchBets);
-            totalOptions += optionsCount;
-            console.log(`   ✅ Liga "${league.name}": ${optionsCount} opciones`);
+        let totalMatchesProcessed = 0;
+        // 2. Procesar Primera División si hay ligas
+        if (primeraLeagues.length > 0) {
+            console.log('🔵 Procesando Primera División (Liga 140)...\n');
+            const fixtures = await fetchFixtures(jornada, LA_LIGA_LEAGUE_ID);
+            if (fixtures.length === 0) {
+                console.log('⚠️  No hay fixtures disponibles para Primera División');
+            }
+            else {
+                console.log(`✅ ${fixtures.length} partidos encontrados en Primera División`);
+                const allMatchBets = [];
+                for (const fixture of fixtures) {
+                    const matchBets = await fetchOddsForFixture(fixture.fixture.id, fixture.teams.home.name, fixture.teams.away.name);
+                    if (matchBets) {
+                        allMatchBets.push(matchBets);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                console.log(`✅ Apuestas obtenidas para ${allMatchBets.length} partidos de Primera\n`);
+                totalMatchesProcessed += allMatchBets.length;
+                // Generar para cada liga de primera
+                for (const league of primeraLeagues) {
+                    const optionsCount = await generateBetOptionsForLeague(league.id, jornada, allMatchBets);
+                    totalOptions += optionsCount;
+                    console.log(`   ✅ Liga "${league.name}": ${optionsCount} opciones`);
+                }
+            }
         }
-        console.log(`\n✅ Total: ${totalOptions} opciones de apuesta generadas\n`);
+        // 3. Procesar Segunda División si hay ligas
+        if (segundaLeagues.length > 0) {
+            console.log('\n🟡 Procesando Segunda División (Liga 141)...\n');
+            const fixtures = await fetchFixtures(jornada, SEGUNDA_DIVISION_LEAGUE_ID);
+            if (fixtures.length === 0) {
+                console.log('⚠️  No hay fixtures disponibles para Segunda División');
+            }
+            else {
+                console.log(`✅ ${fixtures.length} partidos encontrados en Segunda División`);
+                const allMatchBets = [];
+                for (const fixture of fixtures) {
+                    const matchBets = await fetchOddsForFixture(fixture.fixture.id, fixture.teams.home.name, fixture.teams.away.name);
+                    if (matchBets) {
+                        allMatchBets.push(matchBets);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                console.log(`✅ Apuestas obtenidas para ${allMatchBets.length} partidos de Segunda\n`);
+                totalMatchesProcessed += allMatchBets.length;
+                // Generar para cada liga de segunda
+                for (const league of segundaLeagues) {
+                    const optionsCount = await generateBetOptionsForLeague(league.id, jornada, allMatchBets);
+                    totalOptions += optionsCount;
+                    console.log(`   ✅ Liga "${league.name}": ${optionsCount} opciones`);
+                }
+            }
+        }
+        console.log(`\n✅ Total: ${totalOptions} opciones de apuesta generadas para ${leagues.length} ligas\n`);
         return {
             success: true,
-            matchesProcessed: allMatchBets.length,
+            matchesProcessed: totalMatchesProcessed,
             leaguesUpdated: leagues.length,
             totalOptions,
         };
@@ -644,7 +677,15 @@ export async function generateBetOptionsForAllLeagues(jornada) {
 export async function generateBetOptionsForLeaguePublic(leagueId, jornada) {
     console.log(`\n🎲 Generando apuestas para liga ${leagueId} jornada ${jornada}...\n`);
     try {
-        const fixtures = await fetchFixtures(jornada);
+        // Detectar la división de la liga para usar el API ID correcto
+        const league = await prisma.league.findUnique({
+            where: { id: leagueId },
+            select: { division: true }
+        });
+        const isSegunda = league?.division === 'segunda';
+        const leagueApiId = isSegunda ? SEGUNDA_DIVISION_LEAGUE_ID : LA_LIGA_LEAGUE_ID;
+        console.log(`📊 Liga detectada: ${isSegunda ? 'Segunda División' : 'Primera División'} (API ID: ${leagueApiId})`);
+        const fixtures = await fetchFixtures(jornada, leagueApiId);
         if (fixtures.length === 0) {
             console.log('⚠️  No hay fixtures disponibles para generar apuestas');
             return { success: false, matchesProcessed: 0, optionsCount: 0 };

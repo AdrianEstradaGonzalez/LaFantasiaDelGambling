@@ -1,4 +1,4 @@
-import { BetCombiController } from '../controllers/betCombi.controller';
+import { BetCombiController } from '../controllers/betCombi.controller.js';
 export default async function betCombiRoutes(fastify) {
     /**
      * POST /bet-combis/:leagueId

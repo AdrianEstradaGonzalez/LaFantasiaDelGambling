@@ -55,10 +55,14 @@ async function getCurrentJornadaFromAPI() {
 }
 export const LeagueRepo = {
     create: async (name, leaderId, code, division = 'primera') => {
-        // Obtener la jornada actual desde la API de football
-        const currentJornada = await getCurrentJornadaFromAPI();
+        // Obtener la jornada actual desde la API de football (Primera División)
+        const primeraJornada = await getCurrentJornadaFromAPI();
+        // Segunda división va 1 jornada por delante
+        const currentJornada = division === 'segunda' ? primeraJornada + 1 : primeraJornada;
         const isPremium = division === 'segunda';
-        console.log(`📅 Creando liga "${name}" con jornada actual: ${currentJornada} (División: ${division}, Premium: ${isPremium})`);
+        console.log(`📅 Creando liga "${name}" (División: ${division})`);
+        console.log(`   Jornada Primera: ${primeraJornada}`);
+        console.log(`   Jornada asignada: ${currentJornada} (Premium: ${isPremium})`);
         return prisma.league.create({
             data: {
                 name,
@@ -78,7 +82,14 @@ export const LeagueRepo = {
     }),
     getByUserId: (userId) => prisma.league.findMany({
         where: { members: { some: { userId } } },
-        include: {
+        select: {
+            id: true,
+            name: true,
+            code: true,
+            division: true,
+            isPremium: true,
+            currentJornada: true,
+            createdAt: true,
             leader: { select: { id: true, name: true, email: true } },
             members: { select: { userId: true, points: true } },
         },

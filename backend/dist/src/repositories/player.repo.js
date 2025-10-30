@@ -202,6 +202,15 @@ export class PlayerRepository {
         });
     }
     /**
+     * Actualizar equipo de un jugador
+     */
+    static async updatePlayerTeam(id, teamId) {
+        return prisma.player.update({
+            where: { id },
+            data: { teamId },
+        });
+    }
+    /**
      * Eliminar un jugador
      */
     static async deletePlayer(id) {

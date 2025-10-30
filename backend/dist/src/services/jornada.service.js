@@ -3,6 +3,7 @@ import axios from 'axios';
 import { calculatePlayerPointsTotal as calculatePlayerPointsService, normalizeRole } from '../shared/pointsCalculator.js';
 import { PlayerService } from './player.service.js';
 import { generateBetOptionsForAllLeagues } from '../utils/betOptionsGenerator.js';
+import { BetCombiService } from './betCombi.service.js';
 const prisma = new PrismaClient();
 const squadRoleMap = {
     POR: "Goalkeeper",
@@ -595,9 +596,52 @@ export class JornadaService {
             // 1. Evaluar apuestas de la jornada anterior
             const evaluations = await this.evaluateJornadaBets(jornada, leagueId);
             console.log(`\n✅ ${evaluations.length} apuestas evaluadas\n`);
-            // 2. Calcular balances por usuario
+            // 1.1. Evaluar combis de la jornada anterior
+            console.log(`\n🎰 Evaluando combis de la jornada ${jornada}...\n`);
+            let combiResults = { won: 0, lost: 0, pending: 0, total: 0 };
+            try {
+                combiResults = await BetCombiService.evaluateJornadaCombis(leagueId, jornada);
+                console.log(`✅ Combis evaluadas: ${combiResults.total} (${combiResults.won} ganadas, ${combiResults.lost} perdidas, ${combiResults.pending} pendientes)\n`);
+            }
+            catch (error) {
+                console.error('⚠️  Error evaluando combis:', error);
+                console.log('Continuando con el resto del proceso...\n');
+            }
+            // 2. Calcular balances por usuario (incluye ganancias de combis)
             const balances = await this.calculateUserBalances(leagueId, evaluations);
-            console.log(`💰 Balances de apuestas calculados para ${balances.size} usuarios\n`);
+            // 2.1. Agregar ganancias/pérdidas de combis al balance
+            const allCombis = await prisma.betCombi.findMany({
+                where: {
+                    leagueId,
+                    jornada,
+                    status: { in: ['won', 'lost'] }
+                }
+            });
+            for (const combi of allCombis) {
+                if (!balances.has(combi.userId)) {
+                    balances.set(combi.userId, {
+                        userId: combi.userId,
+                        totalProfit: 0,
+                        wonBets: 0,
+                        lostBets: 0,
+                        squadPoints: 0,
+                    });
+                }
+                const userBalance = balances.get(combi.userId);
+                if (combi.status === 'won') {
+                    // Ganó la combi: sumar ganancia neta (potentialWin - amount apostado)
+                    userBalance.totalProfit += (combi.potentialWin - combi.amount);
+                    userBalance.wonBets++;
+                    console.log(`  💰 Usuario ${combi.userId}: Combi ganada +${combi.potentialWin - combi.amount}M (apostó ${combi.amount}M, ganó ${combi.potentialWin}M)`);
+                }
+                else if (combi.status === 'lost') {
+                    // Perdió la combi: restar lo apostado
+                    userBalance.totalProfit -= combi.amount;
+                    userBalance.lostBets++;
+                    console.log(`  💸 Usuario ${combi.userId}: Combi perdida -${combi.amount}M`);
+                }
+            }
+            console.log(`💰 Balances de apuestas calculados para ${balances.size} usuarios (incluyendo combis)\n`);
             // 3. Calcular puntos de plantilla para cada usuario
             const allMembers = await prisma.leagueMember.findMany({
                 where: { leagueId },

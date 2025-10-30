@@ -148,6 +148,36 @@ export class PlayerController {
         }
     }
     /**
+     * PATCH /api/players/:id/team
+     */
+    static async updatePlayerTeam(req, reply) {
+        try {
+            const params = req.params;
+            const body = req.body;
+            const { id } = params;
+            const { teamId } = body;
+            if (!teamId || !Number.isInteger(teamId) || teamId <= 0) {
+                return reply.status(400).send({
+                    success: false,
+                    message: 'El ID del equipo debe ser un número válido',
+                });
+            }
+            const player = await PlayerService.updatePlayerTeam(Number(id), teamId);
+            return reply.status(200).send({
+                success: true,
+                message: 'Equipo actualizado correctamente',
+                data: player,
+            });
+        }
+        catch (error) {
+            console.error('Error actualizando equipo:', error);
+            return reply.status(500).send({
+                success: false,
+                message: error?.message || 'Error al actualizar equipo',
+            });
+        }
+    }
+    /**
      * Actualizar puntos de la última jornada (cache)
      * PATCH /api/players/:id/last-points
      */

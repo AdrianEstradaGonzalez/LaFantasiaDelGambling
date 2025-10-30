@@ -150,28 +150,14 @@ export const BetCombiService = {
             newStatus = 'lost';
             console.log(`❌ Combi ${combiId} PERDIÓ`);
         }
-        // Actualizar combi y presupuesto si ganó
-        const updatedCombi = await prisma.$transaction(async (tx) => {
-            const updated = await tx.betCombi.update({
-                where: { id: combiId },
-                data: {
-                    status: newStatus,
-                    evaluatedAt: new Date()
-                },
-                include: { selections: true }
-            });
-            if (newStatus === 'won') {
-                await tx.leagueMember.update({
-                    where: {
-                        leagueId_userId: {
-                            leagueId: combi.leagueId,
-                            userId: combi.userId
-                        }
-                    },
-                    data: { bettingBudget: { increment: budgetChange } }
-                });
-            }
-            return updated;
+        // Actualizar combi (NO acreditar en bettingBudget aquí, se hará en cambio de jornada)
+        const updatedCombi = await prisma.betCombi.update({
+            where: { id: combiId },
+            data: {
+                status: newStatus,
+                evaluatedAt: new Date()
+            },
+            include: { selections: true }
         });
         return updatedCombi;
     },

@@ -279,6 +279,15 @@ export class PlayerService {
         return PlayerRepository.updatePlayerPosition(id, position);
     }
     /**
+     * Actualizar equipo de jugador
+     */
+    static async updatePlayerTeam(id, teamId) {
+        if (!Number.isInteger(teamId) || teamId <= 0) {
+            throw new Error('El ID del equipo debe ser un número válido');
+        }
+        return PlayerRepository.updatePlayerTeam(id, teamId);
+    }
+    /**
      * Actualizar puntos cacheados de la última jornada para un jugador
      */
     static async updateLastJornadaPoints(id, points, jornada, season) {
