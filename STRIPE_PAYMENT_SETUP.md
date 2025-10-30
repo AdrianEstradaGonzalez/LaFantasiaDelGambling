@@ -47,11 +47,11 @@ Se ha implementado un sistema de pagos con Stripe para monetizar la creación de
 #### Backend (`.env`)
 ```env
 # Stripe
-STRIPE_SECRET_KEY=sk_test_51xxxxxxxxxxxxxxxxxxxxxx
+STRIPE_SECRET_KEY=sk_test_TU_CLAVE_SECRETA_AQUI
 APP_URL=https://tu-dominio.com
 
 # O para desarrollo local
-STRIPE_SECRET_KEY=sk_test_51xxxxxxxxxxxxxxxxxxxxxx
+STRIPE_SECRET_KEY=sk_test_TU_CLAVE_SECRETA_AQUI
 APP_URL=http://localhost:3000
 ```
 

@@ -527,7 +527,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.modalPrimaryButtonText, loadingCrearPremium && styles.primaryButtonTextDisabled]}>
-                  {loadingCrearPremium ? 'Procesando...' : 'Pagar 10€ y Crear Liga'}
+                  {loadingCrearPremium ? 'Procesando...' : 'Continuar al Pago (10€)'}
                 </Text>
               </TouchableOpacity>
 
