@@ -13,18 +13,20 @@ import { CrearLigaStyles as styles } from '../../styles/CrearLigaStyles';
 import TopNavBar from '../navBar/TopNavBar';
 import { Colors, Typography, Spacing } from '../../styles/DesignSystem';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import type { RootStackParamList } from '../../router/AppNavigator';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { SafeLayout } from '../../components/SafeLayout';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 // ✅ Usa RouteProp con tu lista de rutas y el nombre exacto de esta pantalla
 type InvitarRouteProp = RouteProp<RootStackParamList, 'InvitarAmigos'>;
 
 export const InvitarAmigos: React.FC = () => {
   const route = useRoute<InvitarRouteProp>();
-  const { ligaNombre, codigo, ligaId } = route.params;
-  console.log('🔍 InvitarAmigos - Parámetros recibidos:', { ligaNombre, codigo, ligaId });
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { ligaNombre, codigo, ligaId, division = 'primera', isPremium = false } = route.params;
+  console.log('🔍 InvitarAmigos - Parámetros recibidos:', { ligaNombre, codigo, ligaId, division, isPremium });
 
   const [copied, setCopied] = useState(false);
 
@@ -136,6 +138,22 @@ Ingresa este código en la sección "Unirse a una liga" desde la app.`;
             Tus amigos pueden ingresar este código en la sección "Unirse a una liga".
           </Text>
         </View>
+
+        {/* Botón para ir a la liga */}
+        <TouchableOpacity
+          style={[styles.primaryButton, { marginTop: Spacing.xl }]}
+          onPress={() => {
+            navigation.navigate('Clasificacion', {
+              ligaId,
+              ligaName: ligaNombre,
+              division,
+              isPremium
+            });
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.primaryButtonText}>Ir a la Liga</Text>
+        </TouchableOpacity>
       </ScrollView>
       </LinearGradient>
     </SafeLayout>

@@ -98,7 +98,9 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       navigation.navigate('InvitarAmigos', { 
         ligaNombre: nuevaLiga.name, 
         codigo: nuevaLiga.code,
-        ligaId: nuevaLiga.id
+        ligaId: nuevaLiga.id,
+        division: 'primera',
+        isPremium: false
       });
     } catch (error: any) {
       CustomAlertManager.alert(
@@ -182,7 +184,9 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       navigation.navigate('InvitarAmigos', { 
         ligaNombre: nuevaLiga.name, 
         codigo: nuevaLiga.code,
-        ligaId: nuevaLiga.id
+        ligaId: nuevaLiga.id,
+        division: divisionPremium,
+        isPremium: true
       });
     } catch (error: any) {
       CustomAlertManager.alert(

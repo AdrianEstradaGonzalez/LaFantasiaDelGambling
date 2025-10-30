@@ -31,14 +31,14 @@ export type RootStackParamList = {
   CrearLiga: undefined;
   Login: undefined;
   Register: undefined;
-  Clasificacion: { ligaId: string, ligaName: string};
+  Clasificacion: { ligaId: string, ligaName: string, division?: 'primera' | 'segunda', isPremium?: boolean };
   PlayersList: { selectMode?: boolean; filterByRole?: string; onPlayerSelected?: (player: any) => void; ligaId?: string; ligaName?: string } | undefined;
   PlayersMarket: { ligaId?: string; ligaName?: string } | undefined;
   PlayerDetail: { player: any; ligaId?: string; ligaName?: string };
   MiPlantilla: undefined;
   Equipo: { ligaId: string, ligaName: string};
   VerPlantillaUsuario: { ligaId: string; ligaName: string; userId: string; userName: string; jornada?: number };
-  InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string };
+  InvitarAmigos: { ligaNombre: string, codigo: string, ligaId: string, division?: 'primera' | 'segunda', isPremium?: boolean };
   Apuestas: { ligaId?: string; ligaName?: string; isPremium?: boolean } | undefined;
   HistorialApuestas: { ligaId?: string; ligaName?: string } | undefined;
   AdminPanel: undefined;
