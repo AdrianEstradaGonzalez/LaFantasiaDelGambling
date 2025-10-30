@@ -641,8 +641,9 @@ export async function getPlayerStatsForJornada(
       },
     });
 
-    // Actualizar cache en Player
-    await prisma.player.update({
+    // Actualizar cache en la tabla correcta según la división
+    const playerTable = isSegundaDivision ? (prisma as any).playerSegunda : prisma.player;
+    await playerTable.update({
       where: { id: playerId },
       data: {
         lastJornadaPoints: totalPoints,

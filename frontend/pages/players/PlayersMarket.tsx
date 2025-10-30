@@ -738,6 +738,7 @@ export const PlayersMarket = ({ navigation, route }: {
       player,
       ligaId,
       ligaName,
+      division, // Pasar la división
       budget,
       isAlreadyInSquad,
       currentFormation // Pasar la formación actual

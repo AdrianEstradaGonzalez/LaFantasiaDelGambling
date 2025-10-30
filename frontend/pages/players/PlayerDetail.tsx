@@ -55,7 +55,7 @@ interface MatchdayPoints {
 }
 
 export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route }) => {
-  const { player, ligaId, ligaName, budget: initialBudget, isAlreadyInSquad, currentFormation } = route.params || {};
+  const { player, ligaId, ligaName, division, budget: initialBudget, isAlreadyInSquad, currentFormation } = route.params || {};
   
   if (!player) {
     return (
@@ -66,6 +66,9 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       </LinearGradient>
     );
   }
+  
+  // Si es segunda división, mostrar mensaje temporal
+  const isSegundaDivision = division === 'segunda';
   
   const [loading, setLoading] = useState(true);
   const [availableMatchdays, setAvailableMatchdays] = useState<number[]>([]);
@@ -86,7 +89,7 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
       try {
         setLoading(true);
         
-        console.log('[PlayerDetail] Iniciando carga de datos para jugador:', player.id, player.name);
+        console.log('[PlayerDetail] Iniciando carga de datos para jugador:', player.id, player.name, 'División:', division || 'primera');
         
         // Verificar estado de autenticación
         const authStatus = await AuthDebug.checkAuthStatus();
@@ -117,10 +120,18 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
           }
         }
         
-        // Obtener jornadas disponibles
-        const matchdays = await FootballService.getAvailableMatchdays();
+        // Obtener jornadas disponibles según la división
+        const allMatchdays = await FootballService.getAvailableMatchdays((division || 'primera') as 'primera' | 'segunda');
+        console.log(`[PlayerDetail] Jornadas disponibles de ${division === 'segunda' ? 'Segunda' : 'Primera'} División:`, allMatchdays);
+        
+        // Filtrar solo hasta la jornada actual de la liga
+        const matchdays = ligaId 
+          ? allMatchdays.filter(j => j <= currentJornada)
+          : allMatchdays;
+        
+        console.log('[PlayerDetail] Jornadas a cargar (hasta jornada actual):', matchdays);
+        
         setAvailableMatchdays(matchdays);
-        console.log('[PlayerDetail] Jornadas disponibles:', matchdays);
 
         if (!matchdays.length) {
           setMatchdayPoints([]);
@@ -143,27 +154,27 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         try {
           console.log('[PlayerDetail] Solicitando estadísticas al backend...');
           
-          // Obtener todas las jornadas EXCEPTO la última (desde BD)
-          const previousMatchdays = matchdays.slice(0, -1);
-          let statsArray: (PlayerStats | null)[] = [];
+          // Cargar estadísticas individualmente para cada jornada
+          const statsArray: (PlayerStats | null)[] = [];
           
-          if (previousMatchdays.length > 0) {
-            const previousStats = await PlayerStatsService.getPlayerMultipleJornadasStats(
-              player.id,
-              previousMatchdays,
-              { refresh: false } // Jornadas anteriores desde BD
-            );
-            statsArray = [...previousStats];
+          for (const matchday of matchdays) {
+            try {
+              // Refrescar solo si es la última jornada y está cerrada
+              const isLastMatchday = matchday === matchdays[matchdays.length - 1];
+              const shouldRefresh = isLastMatchday && shouldRefreshLastJornada;
+              
+              const stats = await PlayerStatsService.getPlayerJornadaStats(
+                player.id,
+                matchday,
+                { refresh: shouldRefresh }
+              );
+              
+              statsArray.push(stats);
+            } catch (error) {
+              console.warn(`[PlayerDetail] No se pudieron cargar stats para jornada ${matchday}, usando null`);
+              statsArray.push(null);
+            }
           }
-          
-          // 🆕 Obtener la ÚLTIMA jornada con refresh si está cerrada
-          const lastJornadaStats = await PlayerStatsService.getPlayerJornadaStats(
-            player.id,
-            lastMatchday,
-            { refresh: shouldRefreshLastJornada } // refresh: true si cerrada
-          );
-          
-          statsArray.push(lastJornadaStats);
 
           if (shouldRefreshLastJornada) {
             console.log('[PlayerDetail] ✅ Estadísticas de jornada cerrada actualizadas desde API');

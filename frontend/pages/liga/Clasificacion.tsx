@@ -112,8 +112,8 @@ export const Clasificacion = () => {
           }
         }
 
-        // Obtener jornadas disponibles
-        const matchdays = await FootballService.getAvailableMatchdays();
+        // Obtener jornadas disponibles según la división
+        const matchdays = await FootballService.getAvailableMatchdays(division as 'primera' | 'segunda');
         setAvailableJornadas(matchdays);
         
         // Cargar TODAS las clasificaciones de una vez

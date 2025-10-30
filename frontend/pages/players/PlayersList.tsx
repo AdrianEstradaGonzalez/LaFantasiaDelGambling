@@ -213,6 +213,8 @@ export const PlayersList = ({ navigation, route }: {
   // Parámetros de liga para añadir a plantilla
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
+  const division = route.params?.division || 'primera';
+  const isPremium = route.params?.isPremium || false;
 
   // Función para añadir jugador a plantilla
   const addPlayerToSquad = async (player: Player) => {
@@ -664,7 +666,7 @@ export const PlayersList = ({ navigation, route }: {
       )}
       
         {/* Barra de navegación */}
-        <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+        <LigaNavBar ligaId={ligaId} ligaName={ligaName} division={division} isPremium={isPremium} />
       </LinearGradient>
     </SafeLayout>
   );

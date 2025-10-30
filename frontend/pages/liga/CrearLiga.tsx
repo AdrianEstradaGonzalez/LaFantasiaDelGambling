@@ -152,7 +152,9 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       setCodigoLiga('');
       navigation.navigate('Clasificacion', { 
         ligaId: ligaResponse.league.id, 
-        ligaName: ligaResponse.league.name
+        ligaName: ligaResponse.league.name,
+        division: ligaResponse.league.division || 'primera',
+        isPremium: ligaResponse.league.isPremium || false
       });
     } catch (error: any) {
       CustomAlertManager.alert(

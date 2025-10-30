@@ -38,7 +38,7 @@ type GroupedBet = {
   options: Array<{ label: string; odd: number }>;
 };
 
-type HistorialApuestasRouteProps = RouteProp<{ params: { ligaId?: string; ligaName?: string } }, 'params'>;
+type HistorialApuestasRouteProps = RouteProp<{ params: { ligaId?: string; ligaName?: string; division?: string; isPremium?: boolean } }, 'params'>;
 
 type HistorialApuestasProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -48,6 +48,8 @@ type HistorialApuestasProps = {
 export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation, route }) => {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
+  const division = route.params?.division || 'primera';
+  const isPremium = route.params?.isPremium || false;
   const [loading, setLoading] = useState(true);
   const [leagueBets, setLeagueBets] = useState<UserBet[]>([]);
   const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
@@ -436,7 +438,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
             )}
           </ScrollView>
 
-          <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+          <LigaNavBar ligaId={ligaId} ligaName={ligaName} division={division} isPremium={isPremium} />
           
           {/* Drawer Modal */}
           <Modal

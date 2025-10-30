@@ -11,6 +11,7 @@ import { BetOptionService, BetOption } from './BetOptionService';
 // API-FOOTBALL (API-Sports v3)
 const API_BASE = "https://v3.football.api-sports.io";
 const LA_LIGA_LEAGUE_ID = 140; // La Liga ID en API-FOOTBALL
+const SEGUNDA_DIVISION_LEAGUE_ID = 141; // Segunda División ID en API-FOOTBALL
 const SEASON_DEFAULT = 2025;
 
 // Nota: por simplicidad usamos la key proporcionada; idealmente cargar desde .env o almacenamiento seguro
@@ -109,6 +110,10 @@ export default class FootballService {
   private static matchesCache: Partido[] | null = null;
   private static matchesPromise: Promise<Partido[]> | null = null;
   private static readonly MATCHES_CACHE_KEY = 'laLiga_matches_v2';
+  // Cachés para Segunda División
+  private static matchesCacheSegunda: Partido[] | null = null;
+  private static matchesPromiseSegunda: Promise<Partido[]> | null = null;
+  private static readonly MATCHES_CACHE_KEY_SEGUNDA = 'segunda_matches_v2';
   private static readonly TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
 
   static async setMatchday(jornada: number, season = FootballService.season) {
@@ -269,22 +274,44 @@ export default class FootballService {
   }
 
   // ---------- Matches cached ----------
-  static async getAllMatchesCached(): Promise<Partido[]> {
-    if (this.matchesCache) return this.matchesCache;
-    if (this.matchesPromise) return this.matchesPromise;
-    const fromStore = await this.loadFromStorage<Partido[]>(this.MATCHES_CACHE_KEY);
+  static async getAllMatchesCached(division: 'primera' | 'segunda' = 'primera'): Promise<Partido[]> {
+    const cache = division === 'segunda' ? this.matchesCacheSegunda : this.matchesCache;
+    const promise = division === 'segunda' ? this.matchesPromiseSegunda : this.matchesPromise;
+    const cacheKey = division === 'segunda' ? this.MATCHES_CACHE_KEY_SEGUNDA : this.MATCHES_CACHE_KEY;
+    
+    if (cache) return cache;
+    if (promise) return promise;
+    
+    const fromStore = await this.loadFromStorage<Partido[]>(cacheKey);
     if (fromStore && fromStore.length) {
-      this.matchesCache = fromStore;
+      if (division === 'segunda') {
+        this.matchesCacheSegunda = fromStore;
+      } else {
+        this.matchesCache = fromStore;
+      }
       return fromStore;
     }
-    this.matchesPromise = (async () => {
-      const matches = await this.getAllMatchesWithJornadas();
-      this.matchesCache = matches;
-      this.matchesPromise = null;
-      if (matches.length) this.saveToStorage(this.MATCHES_CACHE_KEY, matches);
+    
+    const fetchPromise = (async () => {
+      const matches = await this.getAllMatchesWithJornadas(undefined, division);
+      if (division === 'segunda') {
+        this.matchesCacheSegunda = matches;
+        this.matchesPromiseSegunda = null;
+      } else {
+        this.matchesCache = matches;
+        this.matchesPromise = null;
+      }
+      if (matches.length) this.saveToStorage(cacheKey, matches);
       return matches;
     })();
-    return this.matchesPromise;
+    
+    if (division === 'segunda') {
+      this.matchesPromiseSegunda = fetchPromise;
+    } else {
+      this.matchesPromise = fetchPromise;
+    }
+    
+    return fetchPromise;
   }
 
   static async prefetchAllData(force = false) {
@@ -338,10 +365,11 @@ export default class FootballService {
     }
   }
 
-  static async getAllMatchesWithJornadas(matchdayNum?: number): Promise<Partido[]> {
+  static async getAllMatchesWithJornadas(matchdayNum?: number, division: 'primera' | 'segunda' = 'primera'): Promise<Partido[]> {
     try {
+      const leagueId = division === 'segunda' ? SEGUNDA_DIVISION_LEAGUE_ID : LA_LIGA_LEAGUE_ID;
       const params: Record<string, string | number> = {
-        league: LA_LIGA_LEAGUE_ID,
+        league: leagueId,
         season: FootballService.season,
       };
       if (matchdayNum != null) {
@@ -1661,9 +1689,9 @@ export default class FootballService {
   }
 
   // Obtener lista de jornadas disponibles (jornadas que ya se han jugado o están en curso)
-  static async getAvailableMatchdays(): Promise<number[]> {
+  static async getAvailableMatchdays(division: 'primera' | 'segunda' = 'primera'): Promise<number[]> {
     try {
-      const allMatches = await this.getAllMatchesCached();
+      const allMatches = await this.getAllMatchesCached(division);
       const matchdays = new Set<number>();
       
       // Obtener jornadas que han empezado o terminado
@@ -1679,9 +1707,9 @@ export default class FootballService {
   }
 
   // Verificar si una jornada ha terminado completamente
-  static async isJornadaCompleta(jornada: number): Promise<boolean> {
+  static async isJornadaCompleta(jornada: number, division: 'primera' | 'segunda' = 'primera'): Promise<boolean> {
     try {
-      const matches = await this.getAllMatchesCached();
+      const matches = await this.getAllMatchesCached(division);
       const jornadaMatches = matches.filter(m => m.jornada === jornada);
       
       if (jornadaMatches.length === 0) return false;

@@ -43,7 +43,7 @@ type GroupedBet = {
   options: Array<{ label: string; odd: number }>;
 };
 
-type ApuestasRouteProps = RouteProp<{ params: { ligaId?: string; ligaName?: string; isPremium?: boolean } }, 'params'>;
+type ApuestasRouteProps = RouteProp<{ params: { ligaId?: string; ligaName?: string; isPremium?: boolean; division?: string } }, 'params'>;
 
 type ApuestasProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -53,7 +53,8 @@ type ApuestasProps = {
 export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
-  const isPremium = true;
+  const division = route.params?.division || 'primera';
+  const isPremium = route.params?.isPremium || false;
   const [loading, setLoading] = useState(true);
   const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
   const [userBets, setUserBets] = useState<UserBet[]>([]);
@@ -2227,7 +2228,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           {/* Barra de navegaciÃ³n fija en la parte inferior, solo visible cuando NO hay teclado */}
           {!isKeyboardVisible && (
             <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-              <LigaNavBar ligaId={ligaId} ligaName={ligaName} />
+              <LigaNavBar ligaId={ligaId} ligaName={ligaName} division={division} isPremium={isPremium} />
             </View>
           )}
         </View>

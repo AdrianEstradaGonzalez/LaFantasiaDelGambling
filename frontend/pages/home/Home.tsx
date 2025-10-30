@@ -121,6 +121,8 @@ export const Home = ({ navigation, route }: HomeProps) => {
       const ligasFormateadas: Liga[] = ligasUsuario.map((liga: any) => ({
         id: liga.id,
         nombre: liga.name,
+        division: liga.division || 'primera',
+        isPremium: liga.isPremium || false,
       }));
 
       setLigas(ligasFormateadas);
