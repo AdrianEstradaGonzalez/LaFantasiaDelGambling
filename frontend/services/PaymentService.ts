@@ -1,5 +1,5 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import { ApiConfig } from '../utils/apiConfig';
 
 const API_URL = ApiConfig.BASE_URL;
@@ -22,7 +22,7 @@ export class PaymentService {
    */
   static async createPremiumCheckout(leagueName: string, division: 'primera' | 'segunda'): Promise<string> {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await EncryptedStorage.getItem('accessToken');
       
       if (!token) {
         throw new Error('No estás autenticado');
@@ -56,7 +56,7 @@ export class PaymentService {
    */
   static async verifyPayment(sessionId: string): Promise<PaymentVerificationResponse> {
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await EncryptedStorage.getItem('accessToken');
       
       if (!token) {
         throw new Error('No estás autenticado');
