@@ -315,8 +315,15 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           </Text>
 
           <TouchableOpacity
-            style={styles.premiumButton}
-            onPress={() => setShowPremiumModal(true)}
+            style={[styles.premiumButton, { opacity: 0.5 }]}
+            onPress={() => {
+              CustomAlertManager.alert(
+                'Próximamente',
+                'Las ligas premium estarán disponibles muy pronto.',
+                [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                { icon: 'information-circle', iconColor: '#3b82f6' }
+              );
+            }}
             activeOpacity={0.8}
           >
             <TrophyStarIcon size={20} color="#1f2937" />
@@ -389,46 +396,51 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
               </View>
               <Text style={styles.modalSubtitle}>Características exclusivas</Text>
               
-              <View style={styles.featuresList}>
-                <View style={styles.featureItem}>
-                  <TrophyIcon size={28} color="#fbbf24" />
-                  <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
-                    <Text style={styles.featureTitle}>Elige tu División</Text>
-                    <Text style={styles.featureDescription}>
-                      Primera o Segunda División española - Tú decides con qué jugadores competir
-                    </Text>
+              <ScrollView 
+                style={{ maxHeight: 400 }}
+                showsVerticalScrollIndicator={true}
+              >
+                <View style={styles.featuresList}>
+                  <View style={styles.featureItem}>
+                    <TrophyIcon size={28} color="#fbbf24" />
+                    <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
+                      <Text style={styles.featureTitle}>Elige tu División</Text>
+                      <Text style={styles.featureDescription}>
+                        Primera o Segunda División española - Tú decides con qué jugadores competir
+                      </Text>
+                    </View>
                   </View>
-                </View>
-                
-                <View style={styles.featureItem}>
-                  <UsersGroupIcon size={28} color="#fbbf24" />
-                  <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
-                    <Text style={styles.featureTitle}>Hasta 50 Jugadores</Text>
-                    <Text style={styles.featureDescription}>
-                      Más espacio para competir con amigos - Las ligas premium permiten hasta 50 participantes
-                    </Text>
+                  
+                  <View style={styles.featureItem}>
+                    <UsersGroupIcon size={28} color="#fbbf24" />
+                    <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
+                      <Text style={styles.featureTitle}>Hasta 50 Jugadores</Text>
+                      <Text style={styles.featureDescription}>
+                        Más espacio para competir con amigos - Las ligas premium permiten hasta 50 participantes
+                      </Text>
+                    </View>
                   </View>
-                </View>
 
-                <View style={styles.featureItem}>
-                  <View style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 14,
-                    backgroundColor: '#fbbf24',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#1f2937' }}>×</Text>
-                  </View>
-                  <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
-                    <Text style={styles.featureTitle}>Apuestas Combinadas</Text>
-                    <Text style={styles.featureDescription}>
-                      Combina hasta 3 apuestas en una sola para multiplicar tus ganancias - Mayor riesgo, mayor recompensa
-                    </Text>
+                  <View style={styles.featureItem}>
+                    <View style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: '#fbbf24',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
+                      <Text style={{ fontSize: 18, fontWeight: '800', color: '#1f2937' }}>×</Text>
+                    </View>
+                    <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
+                      <Text style={styles.featureTitle}>Apuestas Combinadas</Text>
+                      <Text style={styles.featureDescription}>
+                        Combina hasta 3 apuestas en una sola para multiplicar tus ganancias - Mayor riesgo, mayor recompensa
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
+              </ScrollView>
 
               <TouchableOpacity
                 style={styles.modalPrimaryButton}
