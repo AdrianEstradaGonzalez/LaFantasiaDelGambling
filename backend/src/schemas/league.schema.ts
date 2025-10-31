@@ -6,6 +6,7 @@ export const createLeagueBody = z.object({
     .max(50, "El nombre de la liga no puede exceder 50 caracteres")
     .regex(/^[a-zA-Z0-9\s\-_áéíóúüñÁÉÍÓÚÜÑ]+$/, "El nombre solo puede contener letras, números, espacios y guiones"),
   division: z.enum(['primera', 'segunda']).default('primera'),
+  isPremium: z.boolean().optional().default(false),
 });
 
 export const deleteLeagueParams = z.object({

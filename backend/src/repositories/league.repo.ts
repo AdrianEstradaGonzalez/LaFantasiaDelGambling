@@ -66,14 +66,15 @@ async function getCurrentJornadaFromAPI(): Promise<number> {
 }
 
 export const LeagueRepo = {
-    create: async (name: string, leaderId: string, code: string, division: string = 'primera') => {
+    create: async (name: string, leaderId: string, code: string, division: string = 'primera', isPremiumParam?: boolean) => {
         // Obtener la jornada actual desde la API de football (Primera División)
         const primeraJornada = await getCurrentJornadaFromAPI();
         
         // Segunda división va 1 jornada por delante
         const currentJornada = division === 'segunda' ? primeraJornada + 1 : primeraJornada;
         
-        const isPremium = division === 'segunda';
+        // isPremium viene del parámetro (pago) o si es segunda división (backward compatibility)
+        const isPremium = isPremiumParam !== undefined ? isPremiumParam : (division === 'segunda');
         console.log(`📅 Creando liga "${name}" (División: ${division})`);
         console.log(`   Jornada Primera: ${primeraJornada}`);
         console.log(`   Jornada asignada: ${currentJornada} (Premium: ${isPremium})`);

@@ -17,4 +17,16 @@ export default async function paymentRoutes(fastify: FastifyInstance) {
   fastify.get('/verify', {
     preHandler: [fastify.auth],
   }, PaymentController.verifyPayment);
+
+  /**
+   * GET /payment/success
+   * Redirigir después de pago exitoso
+   */
+  fastify.get('/success', PaymentController.handleSuccess);
+
+  /**
+   * GET /payment/cancel
+   * Redirigir después de cancelar pago
+   */
+  fastify.get('/cancel', PaymentController.handleCancel);
 }

@@ -12,8 +12,8 @@ export const LeagueController = {
       // líder = usuario autenticado
       const leaderId = (req.user as any)?.sub || (req.user as any)?.id;
       if (!leaderId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
-      const { name, division } = createLeagueBody.parse((req as any).body);
-      const league = await LeagueService.createLeague(name, leaderId, division);
+      const { name, division, isPremium } = createLeagueBody.parse((req as any).body);
+      const league = await LeagueService.createLeague(name, leaderId, division, isPremium);
       reply.code(201).send(league);
     } catch (error: any) {
       if (error instanceof AppError) {

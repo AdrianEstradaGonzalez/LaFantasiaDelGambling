@@ -24,14 +24,14 @@ export const PaymentService = {
                 name: 'Liga Premium - La Fantasía del Gambling',
                 description: `Liga Premium: ${leagueName}`,
               },
-              unit_amount: 1000, // 10.00 EUR (en centavos)
+              unit_amount: 50, // 0.50 EUR (en centavos)
             },
             quantity: 1,
           },
         ],
         mode: 'payment',
-        success_url: `fantasiagambling://payment/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `fantasiagambling://payment/cancel`,
+        success_url: `${process.env.APP_URL || 'https://lafantasiadelgambling-production.up.railway.app'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.APP_URL || 'https://lafantasiadelgambling-production.up.railway.app'}/payment/cancel`,
         metadata: {
           userId,
           leagueName,

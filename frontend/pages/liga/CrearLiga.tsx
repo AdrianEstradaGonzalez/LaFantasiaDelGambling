@@ -52,6 +52,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   // Estados para pago
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState('');
+  const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
 
   // Manejar código de deep link
   useEffect(() => {
@@ -144,6 +145,12 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         divisionPremium
       );
       
+      // Extraer session_id de la URL de checkout
+      const sessionId = checkoutUrl.match(/cs_[a-zA-Z0-9_]+/)?.[0];
+      if (sessionId) {
+        setPendingSessionId(sessionId);
+      }
+      
       // Abrir WebView con la URL de pago
       setPaymentUrl(checkoutUrl);
       setShowPremiumForm(false);
@@ -166,13 +173,17 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
     try {
       const nuevaLiga = await LigaService.crearLiga({ 
         name: nombreLigaPremium, 
-        division: divisionPremium 
+        division: divisionPremium,
+        isPremium: true
       });
       
       // Limpiar y cerrar
       setNombreLigaPremium('');
       setShowPaymentWebView(false);
       setShowPremiumModal(false);
+      setShowPremiumForm(false);
+      setPaymentUrl('');
+      setPendingSessionId(null);
       
       CustomAlertManager.alert(
         '¡Pago exitoso!',
@@ -531,7 +542,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.modalPrimaryButtonText, loadingCrearPremium && styles.primaryButtonTextDisabled]}>
-                  {loadingCrearPremium ? 'Procesando...' : 'Continuar al Pago (10€)'}
+                  {loadingCrearPremium ? 'Procesando...' : 'Continuar al Pago (0,50€)'}
                 </Text>
               </TouchableOpacity>
 
@@ -583,7 +594,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
               justifyContent: 'space-between',
             }}>
               <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
-                Pago Seguro - 10€
+                Pago Seguro - 0,50€
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -611,35 +622,21 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
             </View>
             
             {paymentUrl ? (
-              <WebView
-                source={{ uri: paymentUrl }}
-                onNavigationStateChange={(navState) => {
-                  console.log('WebView URL:', navState.url);
-                  
-                  // Detectar si el pago fue exitoso
-                  if (navState.url.includes('fantasiagambling://payment/success') || 
-                      navState.url.includes('/payment/success')) {
-                    handlePaymentComplete();
-                  } else if (navState.url.includes('fantasiagambling://payment/cancel') || 
-                             navState.url.includes('/payment/cancel')) {
-                    setShowPaymentWebView(false);
-                    setPaymentUrl('');
-                    CustomAlertManager.alert(
-                      'Pago cancelado',
-                      'El pago ha sido cancelado.',
-                      [{ text: 'OK', onPress: () => {}, style: 'default' }],
-                      { icon: 'alert-circle', iconColor: '#f59e0b' }
-                    );
-                  }
-                }}
-                onShouldStartLoadWithRequest={(request) => {
-                  // Interceptar URLs con el esquema de la app
-                  if (request.url.startsWith('fantasiagambling://')) {
-                    if (request.url.includes('/success')) {
+              <>
+                <WebView
+                  source={{ uri: paymentUrl }}
+                  onNavigationStateChange={(navState) => {
+                    console.log('WebView URL:', navState.url);
+                    
+                    // Detectar si el pago fue exitoso
+                    if (navState.url.includes('fantasiagambling://payment/success') || 
+                        navState.url.includes('/payment/success')) {
                       handlePaymentComplete();
-                    } else if (request.url.includes('/cancel')) {
+                    } else if (navState.url.includes('fantasiagambling://payment/cancel') || 
+                               navState.url.includes('/payment/cancel')) {
                       setShowPaymentWebView(false);
                       setPaymentUrl('');
+                      setPendingSessionId(null);
                       CustomAlertManager.alert(
                         'Pago cancelado',
                         'El pago ha sido cancelado.',
@@ -647,12 +644,86 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                         { icon: 'alert-circle', iconColor: '#f59e0b' }
                       );
                     }
-                    return false; // No cargar la URL
-                  }
-                  return true; // Cargar URLs normales (Stripe)
-                }}
-                style={{ flex: 1 }}
-              />
+                  }}
+                  onShouldStartLoadWithRequest={(request) => {
+                    // Interceptar URLs con el esquema de la app
+                    if (request.url.startsWith('fantasiagambling://')) {
+                      if (request.url.includes('/success')) {
+                        handlePaymentComplete();
+                      } else if (request.url.includes('/cancel')) {
+                        setShowPaymentWebView(false);
+                        setPaymentUrl('');
+                        setPendingSessionId(null);
+                        CustomAlertManager.alert(
+                          'Pago cancelado',
+                          'El pago ha sido cancelado.',
+                          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                          { icon: 'alert-circle', iconColor: '#f59e0b' }
+                        );
+                      }
+                      return false; // No cargar la URL
+                    }
+                    return true; // Cargar URLs normales (Stripe)
+                  }}
+                  style={{ flex: 1 }}
+                />
+                
+                {/* Botón de verificación manual */}
+                <View style={{ backgroundColor: '#1f2937', padding: 16 }}>
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#10b981',
+                      padding: 16,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                    }}
+                    onPress={async () => {
+                      if (!pendingSessionId) {
+                        CustomAlertManager.alert(
+                          'Error',
+                          'No se encontró información del pago',
+                          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                          { icon: 'alert-circle', iconColor: '#ef4444' }
+                        );
+                        return;
+                      }
+
+                      try {
+                        setLoadingCrearPremium(true);
+                        
+                        // Verificar el pago en el servidor
+                        const paymentInfo = await PaymentService.verifyPayment(pendingSessionId);
+                        
+                        if (paymentInfo.paid) {
+                          // El pago fue exitoso, crear la liga
+                          await handlePaymentComplete();
+                        } else {
+                          CustomAlertManager.alert(
+                            'Pago pendiente',
+                            'El pago aún no se ha completado. Por favor, completa el pago primero.',
+                            [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                            { icon: 'alert-circle', iconColor: '#f59e0b' }
+                          );
+                        }
+                      } catch (error: any) {
+                        CustomAlertManager.alert(
+                          'Error',
+                          error.message || 'No se pudo verificar el pago',
+                          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                          { icon: 'alert-circle', iconColor: '#ef4444' }
+                        );
+                      } finally {
+                        setLoadingCrearPremium(false);
+                      }
+                    }}
+                    disabled={loadingCrearPremium}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
+                      {loadingCrearPremium ? '⏳ Verificando...' : '✅ He completado el pago'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             ) : null}
           </View>
         </Modal>
