@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { PaymentController } from '../controllers/payment.controller.js';
+import { PaymentController } from '../controllers/payment.controller';
 
 export default async function paymentRoutes(fastify: FastifyInstance) {
   /**
