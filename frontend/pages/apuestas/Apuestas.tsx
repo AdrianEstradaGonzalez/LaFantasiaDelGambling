@@ -1580,8 +1580,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
                           {/* Calcular si la apuesta requiere anuncio y mostrar boton de desbloqueo */}
                           {(() => {
-                            const requiresAdUnlock = index === 8 || index === 9;
-                            const isUnlocked = unlockedBets.has(index);
+                            // On iOS TestFlight devices ads may not show; unlock the last two bets for iOS.
+                            const lastTwoStart = Math.max(0, groupedBets.length - 2);
+                            const requiresAdUnlock = Platform.OS === 'ios' ? index >= lastTwoStart : (index === 8 || index === 9);
+                            const isUnlocked = unlockedBets.has(index) || (Platform.OS === 'ios' && index >= lastTwoStart);
                             const hasUserBetInMatch = userBets.some((bet) => bet.matchId === b.matchId);
                             
                             if (requiresAdUnlock && !isUnlocked && !hasUserBetInMatch) {
@@ -1651,8 +1653,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
                           {/* Opciones: solo mostrar si está desbloqueada o si ya tiene apuesta */}
                           {(() => {
-                            const requiresAdUnlock = index === 8 || index === 9;
-                            const isUnlocked = unlockedBets.has(index);
+                            // Determine ad-unlock behaviour: keep Android as-is (fixed indices),
+                            // but on iOS unlock the last two bets (TestFlight may block ads).
+                            const lastTwoStart = Math.max(0, groupedBets.length - 2);
+                            const requiresAdUnlock = Platform.OS === 'ios' ? index >= lastTwoStart : (index === 8 || index === 9);
+                            const isUnlocked = unlockedBets.has(index) || (Platform.OS === 'ios' && index >= lastTwoStart);
                             const hasUserBetInMatch = userBets.some((bet) => bet.matchId === b.matchId);
                             
                             // Si requiere anuncio y no está desbloqueada y no tiene apuesta, ocultar opciones
@@ -1708,8 +1713,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             const isInCurrentCombi = isInCombi(b.matchId, b.type, option.label);
                             const matchInCombi = isMatchBlockedByCombi(b.matchId); // Verificar si el partido tiene opciones en combi
                             
-                            const isUnlocked = unlockedBets.has(index);
-                            const requiresAdUnlock = index === 8 || index === 9;
+                            const lastTwoStart = Math.max(0, groupedBets.length - 2);
+                            const requiresAdUnlock = Platform.OS === 'ios' ? index >= lastTwoStart : (index === 8 || index === 9);
+                            const isUnlocked = unlockedBets.has(index) || (Platform.OS === 'ios' && index >= lastTwoStart);
                             const isBlockedByAd = requiresAdUnlock && !isUnlocked && !userBet;
                             const isBlockedByBet = (groupHasBet || anyBetInMatch) && !userBet && !isUnlocked;
                             const isBlockedByCombi = matchInCombi && !userBet; // Bloquear si el partido está en combi
