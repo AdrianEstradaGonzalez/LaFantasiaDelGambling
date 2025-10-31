@@ -351,6 +351,8 @@ interface MatchBets {
   idPartido: number;
   equipoLocal: string;
   equipoVisitante: string;
+  equipoLocalCrest?: string;
+  equipoVisitanteCrest?: string;
   apuestas: BetOption[];
 }
 
@@ -371,7 +373,13 @@ async function fetchFixtures(jornada: number, leagueApiId: number = LA_LIGA_LEAG
   return response.data.response;
 }
 
-async function fetchOddsForFixture(fixtureId: number, homeTeam: string, awayTeam: string): Promise<MatchBets | null> {
+async function fetchOddsForFixture(
+  fixtureId: number, 
+  homeTeam: string, 
+  awayTeam: string,
+  homeTeamCrest?: string,
+  awayTeamCrest?: string
+): Promise<MatchBets | null> {
   try {
     const url = `${API_BASE}/odds`;
     const params = { fixture: fixtureId };
@@ -524,11 +532,13 @@ async function fetchOddsForFixture(fixtureId: number, homeTeam: string, awayTeam
       idPartido: fixtureId,
       equipoLocal: homeTeam,
       equipoVisitante: awayTeam,
+      equipoLocalCrest: homeTeamCrest,
+      equipoVisitanteCrest: awayTeamCrest,
       apuestas: validBets
     };
   } catch (error: any) {
     console.error(`Error obteniendo cuotas para partido ${fixtureId}:`, error.message);
-    return createSyntheticOnlyBets(fixtureId, homeTeam, awayTeam);
+    return createSyntheticOnlyBets(fixtureId, homeTeam, awayTeam, homeTeamCrest, awayTeamCrest);
   }
 }
 
@@ -557,7 +567,13 @@ function addSyntheticBets(validBets: BetOption[]) {
   );
 }
 
-function createSyntheticOnlyBets(fixtureId: number, homeTeam: string, awayTeam: string): MatchBets {
+function createSyntheticOnlyBets(
+  fixtureId: number, 
+  homeTeam: string, 
+  awayTeam: string,
+  homeTeamCrest?: string,
+  awayTeamCrest?: string
+): MatchBets {
   const validBets: BetOption[] = [];
   addSyntheticBets(validBets);
   
@@ -565,6 +581,8 @@ function createSyntheticOnlyBets(fixtureId: number, homeTeam: string, awayTeam: 
     idPartido: fixtureId,
     equipoLocal: homeTeam,
     equipoVisitante: awayTeam,
+    equipoLocalCrest: homeTeamCrest,
+    equipoVisitanteCrest: awayTeamCrest,
     apuestas: validBets
   };
 }
@@ -609,6 +627,8 @@ async function generateBetOptionsForLeague(
         matchId: matchBets.idPartido,
         homeTeam: matchBets.equipoLocal,
         awayTeam: matchBets.equipoVisitante,
+        homeTeamCrest: matchBets.equipoLocalCrest,
+        awayTeamCrest: matchBets.equipoVisitanteCrest,
         betType: bet.tipo,
         betLabel: bet.opcion,
         odd: parseFloat(bet.cuota)
@@ -630,6 +650,8 @@ async function saveBetOptions(
     matchId: number;
     homeTeam: string;
     awayTeam: string;
+    homeTeamCrest?: string;
+    awayTeamCrest?: string;
     betType: string;
     betLabel: string;
     odd: number;
@@ -649,6 +671,8 @@ async function saveBetOptions(
         matchId: opt.matchId,
         homeTeam: opt.homeTeam,
         awayTeam: opt.awayTeam,
+        homeTeamCrest: opt.homeTeamCrest,
+        awayTeamCrest: opt.awayTeamCrest,
         betType: opt.betType,
         betLabel: opt.betLabel,
         odd: opt.odd,
@@ -700,7 +724,9 @@ export async function generateBetOptionsForAllLeagues(jornada: number): Promise<
           const matchBets = await fetchOddsForFixture(
             fixture.fixture.id,
             fixture.teams.home.name,
-            fixture.teams.away.name
+            fixture.teams.away.name,
+            fixture.teams.home.logo,
+            fixture.teams.away.logo
           );
           
           if (matchBets) {
@@ -739,7 +765,9 @@ export async function generateBetOptionsForAllLeagues(jornada: number): Promise<
           const matchBets = await fetchOddsForFixture(
             fixture.fixture.id,
             fixture.teams.home.name,
-            fixture.teams.away.name
+            fixture.teams.away.name,
+            fixture.teams.home.logo,
+            fixture.teams.away.logo
           );
           
           if (matchBets) {
@@ -805,7 +833,9 @@ export async function generateBetOptionsForLeaguePublic(leagueId: string, jornad
       const matchBets = await fetchOddsForFixture(
         fixture.fixture.id,
         fixture.teams.home.name,
-        fixture.teams.away.name
+        fixture.teams.away.name,
+        fixture.teams.home.logo,
+        fixture.teams.away.logo
       );
       if (matchBets) allMatchBets.push(matchBets);
       await new Promise(resolve => setTimeout(resolve, 1000));

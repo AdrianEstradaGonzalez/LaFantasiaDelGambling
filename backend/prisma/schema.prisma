@@ -332,18 +332,20 @@ model BetCombi {
 }
 
 model bet_option {
-  id        String   @id
-  leagueId  String
-  jornada   Int
-  matchId   Int
-  homeTeam  String
-  awayTeam  String
-  betType   String
-  betLabel  String
-  odd       Float    @default(1.0)
-  createdAt DateTime @default(now())
-  options   Json?
-  League    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  id            String   @id
+  leagueId      String
+  jornada       Int
+  matchId       Int
+  homeTeam      String
+  awayTeam      String
+  homeTeamCrest String?
+  awayTeamCrest String?
+  betType       String
+  betLabel      String
+  odd           Float    @default(1.0)
+  createdAt     DateTime @default(now())
+  options       Json?
+  League        League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
 
   @@index([leagueId, jornada])
   @@index([matchId])
