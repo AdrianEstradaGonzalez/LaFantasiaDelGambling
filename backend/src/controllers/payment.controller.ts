@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PaymentService } from '../services/payment.service';
+import { PaymentService } from '../services/payment.service.js';
 
 interface CreateCheckoutBody {
   leagueName: string;
