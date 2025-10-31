@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
 import { LeagueController } from "../controllers/league.controller.js";
+import { getRealtimePoints } from "../controllers/realtime.controller.js";
 
 const leagueRoutes: FastifyPluginAsync = async (app) => {
   // proteger todas con JWT
@@ -14,6 +15,7 @@ const leagueRoutes: FastifyPluginAsync = async (app) => {
   app.get("/:leagueId/members", LeagueController.listMembers);    // listar miembros
   app.get("/:leagueId/classifications", LeagueController.getAllClassifications); // obtener todas las clasificaciones
   app.post("/:leagueId/calculate-realtime", LeagueController.calculateRealTimePoints); // calcular puntos en tiempo real (lee datos ya calculados)
+  app.get("/:leagueId/realtime", getRealtimePoints); // obtener puntos en tiempo real desde caché
   app.post("/trigger-points-calculation", LeagueController.triggerPointsCalculation); // disparar cálculo de puntos para todas las ligas
   app.get("/user/:userId", LeagueController.getByUser);
 

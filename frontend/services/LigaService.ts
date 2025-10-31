@@ -315,26 +315,23 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
   // 🔄 Calcular puntos en tiempo real consultando API-Football
   // Solo funciona cuando la jornada está cerrada (partidos en curso)
   static async calculateRealTimePoints(leagueId: string) {
+    // Read realtime cached points from backend endpoint instead of triggering heavy recalculation
     try {
       const token = await this.getAccessToken();
       if (!token) throw new Error('Usuario no autenticado');
 
-      console.log('🔄 LigaService.calculateRealTimePoints - Calculando puntos en tiempo real...');
-
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutos timeout (puede tardar)
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s
 
-      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/${leagueId}/calculate-realtime`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/${leagueId}/realtime`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
-      console.log('🔄 LigaService.calculateRealTimePoints - Status:', res.status);
+
+      if (res.status === 204) return { players: [], lastUpdate: null };
 
       const json = await res.json().catch(() => ({}));
 
@@ -343,16 +340,10 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
         throw new Error(friendlyMessage);
       }
 
-      console.log('✅ LigaService.calculateRealTimePoints - Cálculo completado');
-      return json;
+      return json.players ?? [];
     } catch (error: any) {
-      console.warn('LigaService.calculateRealTimePoints:', error);
-      
-      if (error.name === 'AbortError') {
-        throw new Error('El cálculo tardó demasiado. Intenta de nuevo.');
-      }
-      
-      throw new Error(error?.message || 'No se pudieron calcular los puntos en tiempo real');
+      if (error.name === 'AbortError') throw new Error('La conexión tardó demasiado. Intenta de nuevo.');
+      throw new Error(error?.message || 'No se pudieron obtener los puntos en tiempo real');
     }
   }
 
