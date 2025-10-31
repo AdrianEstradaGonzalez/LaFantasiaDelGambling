@@ -315,15 +315,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           </Text>
 
           <TouchableOpacity
-            style={[styles.premiumButton, { opacity: 0.5 }]}
-            onPress={() => {
-              CustomAlertManager.alert(
-                'Próximamente',
-                'Las ligas premium estarán disponibles muy pronto.',
-                [{ text: 'OK', onPress: () => {}, style: 'default' }],
-                { icon: 'information-circle', iconColor: '#3b82f6' }
-              );
-            }}
+            style={styles.premiumButton}
+            onPress={() => setShowPremiumModal(true)}
             activeOpacity={0.8}
           >
             <TrophyStarIcon size={20} color="#1f2937" />

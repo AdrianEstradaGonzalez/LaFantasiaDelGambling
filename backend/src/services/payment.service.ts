@@ -21,7 +21,7 @@ export const PaymentService = {
             price_data: {
               currency: 'eur',
               product_data: {
-                name: 'Liga Premium - La Fantasía del Gambling',
+                name: 'Liga Premium - DreamLeague',
                 description: `Liga Premium: ${leagueName}`,
               },
               unit_amount: 50, // 0.50 EUR (en centavos)
