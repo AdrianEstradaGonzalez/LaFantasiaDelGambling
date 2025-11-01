@@ -39,26 +39,27 @@ function calculatePlayerPoints(playerData: any, position: string): number {
 }
 
 /**
- * Obtiene los partidos en vivo de La Liga
+ * Obtiene los partidos EN CURSO de la jornada actual de La Liga
  */
-async function getLiveMatches(): Promise<any[]> {
+async function getLiveMatchesFromCurrentJornada(jornada: number): Promise<any[]> {
   try {
-    console.log('🔍 Buscando partidos en vivo...');
+    console.log(`🔍 Buscando partidos en curso de la jornada ${jornada}...`);
     const { data } = await axios.get(`${API_BASE}/fixtures`, {
       headers: HEADERS,
       params: {
         league: LA_LIGA_LEAGUE_ID,
         season: SEASON,
-        live: 'all',
+        round: `Regular Season - ${jornada}`,
+        live: 'all', // Partidos en vivo
       },
       timeout: 10000,
     });
 
     const fixtures = data?.response || [];
-    console.log(`✅ Encontrados ${fixtures.length} partidos en vivo`);
+    console.log(`✅ Encontrados ${fixtures.length} partidos en curso`);
     return fixtures;
   } catch (error) {
-    console.error('❌ Error obteniendo partidos en vivo:', error);
+    console.error('❌ Error obteniendo partidos en curso:', error);
     return [];
   }
 }
@@ -117,7 +118,8 @@ async function getFixturePlayerStats(fixtureId: number): Promise<Map<number, Pla
 }
 
 /**
- * Guarda o actualiza las estadísticas de un jugador en la base de datos
+ * Guarda o actualiza las estadísticas TEMPORALES de un jugador en la base de datos
+ * NOTA: Estas son stats en vivo, se actualizarán cuando el partido termine
  */
 async function savePlayerStatsToDb(
   playerId: number,
@@ -228,32 +230,55 @@ function getJornadaFromFixture(fixture: any): number | null {
 }
 
 /**
- * Actualiza los puntos de todas las ligas de Primera División
+ * Obtiene la jornada actual consultando una liga de Primera División
  */
-async function updateLeagueRankings() {
+async function getCurrentJornada(): Promise<number | null> {
   try {
-    console.log('\n🚀 Iniciando actualización de rankings...');
+    // Buscar cualquier liga de Primera División para obtener su jornada actual
+    const league = await prisma.league.findFirst({
+      where: { division: 'primera' },
+      select: { currentJornada: true },
+    });
+
+    if (league?.currentJornada) {
+      console.log(`📅 Jornada actual obtenida de BD: ${league.currentJornada}`);
+      return league.currentJornada;
+    }
+
+    console.log('⚠️  No se pudo obtener la jornada actual de la BD');
+    return null;
+  } catch (error) {
+    console.error('❌ Error obteniendo jornada actual:', error);
+    return null;
+  }
+}
+
+/**
+ * Actualiza los puntos EN VIVO de todas las ligas de Primera División
+ */
+async function updateLiveLeagueRankings() {
+  try {
+    console.log('\n🚀 Iniciando actualización de rankings EN VIVO...');
     console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}\n`);
 
-    // 1. Obtener partidos en vivo
-    const liveFixtures = await getLiveMatches();
+    // 1. Obtener la jornada actual
+    const jornada = await getCurrentJornada();
+    if (!jornada) {
+      console.log('⚠️  No se pudo determinar la jornada actual. Finalizando...\n');
+      return;
+    }
+
+    // 2. Obtener partidos EN CURSO de la jornada actual
+    const liveFixtures = await getLiveMatchesFromCurrentJornada(jornada);
     
     if (liveFixtures.length === 0) {
-      console.log('⏸️  No hay partidos en vivo. Esperando...\n');
+      console.log('⏸️  No hay partidos en curso en la jornada actual. Esperando...\n');
       return;
     }
 
-    console.log(`⚽ Partidos en vivo: ${liveFixtures.map((f: any) => `${f.teams.home.name} vs ${f.teams.away.name}`).join(', ')}\n`);
+    console.log(`⚽ Partidos en curso: ${liveFixtures.map((f: any) => `${f.teams.home.name} vs ${f.teams.away.name} (${f.fixture.status.elapsed}')`).join(', ')}\n`);
 
-    // Obtener la jornada desde el primer fixture (todos deberían ser de la misma jornada)
-    const jornada = getJornadaFromFixture(liveFixtures[0]);
-    if (!jornada) {
-      console.log('⚠️  No se pudo determinar la jornada actual\n');
-      return;
-    }
-    console.log(`📅 Jornada actual: ${jornada}\n`);
-
-    // 2. Obtener todas las estadísticas de jugadores de los partidos en vivo
+    // 3. Obtener todas las estadísticas de jugadores de los partidos en curso
     const allPlayerStats = new Map<number, PlayerStats>();
     
     for (const fixture of liveFixtures) {
@@ -274,8 +299,8 @@ async function updateLeagueRankings() {
 
     console.log(`✨ Total de jugadores únicos procesados: ${allPlayerStats.size}`);
 
-    // 3. Guardar estadísticas individuales en la base de datos
-    console.log('\n💾 Guardando estadísticas individuales en BD...');
+    // 3. Guardar estadísticas individuales en la base de datos (temporales, se actualizarán)
+    console.log('\n💾 Guardando estadísticas EN VIVO en BD...');
     let savedStats = 0;
     for (const [playerId, stats] of allPlayerStats) {
       await savePlayerStatsToDb(
@@ -288,7 +313,7 @@ async function updateLeagueRankings() {
       );
       savedStats++;
     }
-    console.log(`✅ ${savedStats} jugadores guardados en PlayerStats\n`);
+    console.log(`✅ ${savedStats} jugadores actualizados en PlayerStats (EN VIVO)\n`);
 
     // 4. Obtener todas las ligas de Primera División con sus miembros y squads
     const primeraLeagues = await prisma.league.findMany({
@@ -307,7 +332,7 @@ async function updateLeagueRankings() {
       console.log(`\n📋 Procesando liga: ${league.name}`);
       
       for (const member of league.members) {
-        // Obtener el squad del miembro
+        // Obtener el squad del miembro con información del capitán
         const squad = await prisma.squad.findUnique({
           where: {
             userId_leagueId: {
@@ -319,6 +344,7 @@ async function updateLeagueRankings() {
             players: {
               select: {
                 playerId: true,
+                isCaptain: true, // Incluir información de capitán
               },
             },
           },
@@ -327,45 +353,45 @@ async function updateLeagueRankings() {
         if (!squad) continue;
 
         let totalPoints = 0;
-        const squadPlayerIds = squad.players.map((sp: any) => sp.playerId);
 
-        // Sumar puntos de los jugadores que están en vivo
-        for (const playerId of squadPlayerIds) {
-          const playerStats = allPlayerStats.get(playerId);
+        // Sumar puntos de los jugadores de esta jornada (x2 si es capitán)
+        for (const squadPlayer of squad.players) {
+          const playerStats = allPlayerStats.get(squadPlayer.playerId);
           if (playerStats) {
-            totalPoints += playerStats.points;
+            const points = squadPlayer.isCaptain 
+              ? playerStats.points * 2  // Capitán: puntos x2
+              : playerStats.points;      // Jugador normal
+            totalPoints += points;
           }
         }
 
-        // Solo actualizar si hay puntos nuevos
-        if (totalPoints > 0) {
-          await prisma.leagueMember.update({
-            where: {
-              leagueId_userId: {
-                leagueId: member.leagueId,
-                userId: member.userId,
-              },
+        // Actualizar con el total de puntos de la jornada (no sumar a puntos anteriores)
+        await prisma.leagueMember.update({
+          where: {
+            leagueId_userId: {
+              leagueId: member.leagueId,
+              userId: member.userId,
             },
-            data: { points: member.points + totalPoints },
-          });
-          
-          // Obtener el nombre del usuario
-          const user = await prisma.user.findUnique({
-            where: { id: member.userId },
-            select: { name: true, email: true },
-          });
-          
-          const userName = user?.name || user?.email || 'Usuario';
-          console.log(`  ✅ ${userName}: +${totalPoints} puntos (Total: ${member.points + totalPoints})`);
-          updatedMembers++;
-        }
+          },
+          data: { points: totalPoints }, // Reemplazar, no sumar
+        });
+        
+        // Obtener el nombre del usuario
+        const user = await prisma.user.findUnique({
+          where: { id: member.userId },
+          select: { name: true, email: true },
+        });
+        
+        const userName = user?.name || user?.email || 'Usuario';
+        console.log(`  ✅ ${userName}: ${totalPoints} puntos EN VIVO`);
+        updatedMembers++;
       }
     }
 
-    console.log(`\n🎉 Actualización completada. ${updatedMembers} miembros actualizados\n`);
+    console.log(`\n🎉 Actualización EN VIVO completada. ${updatedMembers} miembros actualizados\n`);
     console.log('═'.repeat(70));
   } catch (error) {
-    console.error('\n❌ Error en updateLeagueRankings:', error);
+    console.error('\n❌ Error en updateLiveLeagueRankings:', error);
   }
 }
 
@@ -374,10 +400,10 @@ async function updateLeagueRankings() {
  */
 async function main() {
   console.log('\n' + '═'.repeat(70));
-  console.log('🔄 WORKER DE ACTUALIZACIÓN DE RANKINGS EN VIVO');
+  console.log('🔴 WORKER DE ACTUALIZACIÓN DE RANKINGS (PARTIDOS EN CURSO)');
   console.log('═'.repeat(70));
 
-  await updateLeagueRankings();
+  await updateLiveLeagueRankings();
   await prisma.$disconnect();
 }
 
