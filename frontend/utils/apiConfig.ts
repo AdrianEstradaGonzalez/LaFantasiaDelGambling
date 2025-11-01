@@ -7,6 +7,6 @@ const BASE_PRODUCTION = 'https://lafantasiadelgambling.onrender.com'
 // Cambia esto según el entorno de ejecución
 // En producción podrías usar variables de entorno o un archivo .env
 export const ApiConfig = {
-  BASE_URL: BASE_PRODUCTION, 
+  BASE_URL: BASE_LOCAL, 
   // Para producción, usa: BASE_PRODUCTION
 };
