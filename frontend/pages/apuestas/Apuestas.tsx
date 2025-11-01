@@ -2036,8 +2036,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         marginTop: 8,
                                       }}>
                                         {betsForOption.map((bf) => (
-                                          <Text key={bf.id} style={{ color: '#e5e7eb', paddingVertical: 4 }} numberOfLines={2}>
-                                            {(bf.userName || 'Jugador') + ' ha apostado ' + bf.amount + 'M'}
+                                          <Text key={bf.id} style={{ color: '#e5e7eb', paddingVertical: 4 }} numberOfLines={3}>
+                                            {(bf.userName || 'Jugador') + ' ha apostado ' + bf.amount + 'M en ' + bf.betType + ' - ' + bf.betLabel}
                                           </Text>
                                         ))}
                                       </View>
