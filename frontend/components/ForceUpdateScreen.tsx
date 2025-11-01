@@ -2,14 +2,15 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Linking, Platform } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
-const ForceUpdateScreen: React.FC<{ latestVersion: string }> = ({ latestVersion }) => {
+const ForceUpdateScreen: React.FC<{ latestVersion: string; storeUrl?: string }> = ({ latestVersion, storeUrl }) => {
   const openStore = () => {
-    // Try to open the app store page - apps should replace the URL with the real one
-    const url = Platform.select({
+    // Use the storeUrl provided by backend if available, otherwise fall back to placeholders
+    const fallback = Platform.select({
       ios: 'https://apps.apple.com/app/idYOUR_APP_ID',
-      android: 'https://play.google.com/store/apps/details?id=YOUR_PACKAGE_NAME',
+      android: 'https://play.google.com/store/apps/details?id=com.dreamleague',
     }) as string;
 
+    const url = storeUrl || fallback;
     Linking.openURL(url).catch(() => null);
   };
 

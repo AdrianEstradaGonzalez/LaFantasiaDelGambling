@@ -19,6 +19,11 @@ const envSchema = z.object({
   // App versioning for forced updates
   APP_LATEST_VERSION: z.string().default('1.0.0'),
   APP_MIN_SUPPORTED_VERSION: z.string().default('1.0.0'),
+  // Optional platform-specific minimums and store links
+  APP_MIN_ANDROID_VERSION: z.string().optional(),
+  APP_MIN_IOS_VERSION: z.string().optional(),
+  STORE_URL_ANDROID: z.string().optional(),
+  STORE_URL_IOS: z.string().optional(),
   RESET_CODE_TTL_MINUTES: z.coerce.number().min(1).default(30),
   RESET_CODE_MAX_ATTEMPTS: z.coerce.number().min(1).default(5),
 });
@@ -37,6 +42,10 @@ export const env = envSchema.parse({
   EMAIL_FROM: process.env.EMAIL_FROM,
   
   APP_ORIGIN: process.env.APP_ORIGIN,
+  APP_MIN_ANDROID_VERSION: process.env.APP_MIN_ANDROID_VERSION,
+  APP_MIN_IOS_VERSION: process.env.APP_MIN_IOS_VERSION,
+  STORE_URL_ANDROID: process.env.STORE_URL_ANDROID,
+  STORE_URL_IOS: process.env.STORE_URL_IOS,
   RESET_CODE_TTL_MINUTES: process.env.RESET_CODE_TTL_MINUTES,
   RESET_CODE_MAX_ATTEMPTS: process.env.RESET_CODE_MAX_ATTEMPTS,
 });
