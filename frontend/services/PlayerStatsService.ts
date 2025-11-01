@@ -3,6 +3,9 @@ import { ApiConfig } from '../utils/apiConfig';
 
 const API_URL = ApiConfig.BASE_URL;
 
+// Simple in-memory cache for player jornada stats: key = `${playerId}-${jornada}`
+const PlayerStatsServiceClassCache: Map<string, any> = new Map();
+
 /**
  * SERVICIO DE ESTADÍSTICAS DE JUGADORES (FRONTEND)
  * 
@@ -109,9 +112,16 @@ class PlayerStatsServiceClass {
       if (options?.season) queryParams.append('season', String(options.season));
       if (options?.refresh) queryParams.append('refresh', 'true');
 
-      const url = `${API_URL}/player-stats/${playerId}/jornada/${jornada}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      const cacheKey = `${playerId}-${jornada}`;
 
-      console.log('[PlayerStatsService] Solicitando estadísticas:', { playerId, jornada, url });
+      // Usar cache en memoria para evitar múltiples llamadas repetidas
+      if (!options?.refresh && PlayerStatsServiceClassCache.has(cacheKey)) {
+        // console.log('[PlayerStatsService] Cache hit:', cacheKey);
+        return PlayerStatsServiceClassCache.get(cacheKey) as PlayerStats;
+      }
+
+      const url = `${API_URL}/player-stats/${playerId}/jornada/${jornada}${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+      // console.log('[PlayerStatsService] Solicitando estadísticas:', { playerId, jornada, url });
 
       const response = await fetch(url, {
         method: 'GET',
@@ -134,7 +144,11 @@ class PlayerStatsServiceClass {
       }
 
       const result = await response.json();
-      console.log('[PlayerStatsService] Estadísticas obtenidas correctamente');
+      // Guardar en cache (no-cache si options.refresh)
+      try {
+        PlayerStatsServiceClassCache.set(cacheKey, result.data);
+      } catch {}
+
       return result.data;
     } catch (error) {
       console.error('[PlayerStatsService] Error en getPlayerJornadaStats:', error);

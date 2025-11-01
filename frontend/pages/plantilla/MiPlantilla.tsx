@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AdBanner } from '../../components/AdBanner';
 // ✨ NUEVO: Importar servicio de estadísticas del backend
 import { PlayerStatsService } from '../../services/PlayerStatsService';
+import { LigaService } from '../../services/LigaService';
 
 type Formation = {
   id: string;
@@ -477,71 +478,76 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     }
     
     try {
+      // Normalize player ids to string keys to avoid number/string mismatches
       const playerIds = Object.values(players)
-        .filter(p => p && p.id)
-        .map(p => p.id);
-      
+        .filter(p => p && p.id !== undefined && p.id !== null)
+        .map(p => String(p.id));
+
       if (playerIds.length === 0) {
         console.warn('[MiPlantilla] ⚠️ No hay jugadores para cargar');
         if (isInitialLoad) setIsLoadingPoints(false);
         return;
       }
-      
+
       console.log(`[MiPlantilla] ${isInitialLoad ? '📥 Carga inicial' : '🔄 Actualizando'} puntos jornada ${currentMatchday} para ${playerIds.length} jugadores`);
-      console.log('[MiPlantilla] Player IDs:', playerIds);
-      
-  const pointsMap: Record<number, { points: number | null; minutes: number | null }> = {};
-      const failedPlayers: number[] = [];
-      
-      // Cargar puntos para cada jugador con reintentos
-      await Promise.all(
-        playerIds.map(async (playerId) => {
-          let retries = 3;
-          let lastError: any = null;
-          
-          while (retries > 0) {
-            try {
-              console.log(`[MiPlantilla] Cargando stats para jugador ${playerId}, jornada ${currentMatchday}`);
-              // ✅ Pedir refresh solo si la jornada está cerrada (partidos en curso)
-              const shouldRefresh = jornadaStatus === 'closed';
-              const stats = await PlayerStatsService.getPlayerJornadaStats(playerId, currentMatchday, { refresh: shouldRefresh });
-              
-              // Solo agregar al map si existe stats (el jugador ya jugó o está jugando)
-              if (stats) {
-                pointsMap[playerId] = {
-                  points: stats.totalPoints ?? null,
-                  minutes: stats.minutes ?? null,
-                };
-                console.log(`[MiPlantilla] ✅ Jugador ${playerId}: points=${pointsMap[playerId].points} minutes=${pointsMap[playerId].minutes}`);
-                break; // Éxito, salir del loop de reintentos
-              } else {
-                console.log(`[MiPlantilla] ⚠️ Jugador ${playerId} sin stats`);
-                // Guardar explícitamente nulls para indicar ausencia
-                pointsMap[playerId] = { points: null, minutes: null };
-                break;
-              }
-            } catch (error) {
-              lastError = error;
-              retries--;
-              console.warn(`[MiPlantilla] ❌ Error cargando puntos de jugador ${playerId}:`, error);
-              
-              if (retries > 0) {
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              } else {
-                failedPlayers.push(playerId);
-              }
-            }
-          }
-        })
-      );
-      
-      if (failedPlayers.length > 0) {
-        console.error(`[MiPlantilla] ⚠️ ${failedPlayers.length} jugadores no pudieron cargarse:`, failedPlayers);
+
+      const pointsMap: Record<number, { points: number | null; minutes: number | null }> = {};
+
+      // 1) Try realtime cached players from backend
+      let realtimePlayersAny: any = [];
+      try {
+        realtimePlayersAny = await LigaService.calculateRealTimePoints(ligaId);
+      } catch (err) {
+        realtimePlayersAny = [];
+        console.warn('[MiPlantilla] LigaService.calculateRealTimePoints fallo:', err);
       }
-      
+
+      // normalize shape: backend may return { players: [...], lastUpdate } or an array
+      const realtimePlayers: any[] = Array.isArray(realtimePlayersAny)
+        ? realtimePlayersAny
+        : (realtimePlayersAny && Array.isArray(realtimePlayersAny.players) ? realtimePlayersAny.players : []);
+
+      // Use string keys for consistency with selectedPlayers map
+      const rtMap = new Map<string, { points: number | null; minutes: number | null }>();
+      for (const p of realtimePlayers || []) {
+        const pid = p?.playerId ?? p?.playerId === 0 ? p.playerId : null;
+        if (pid != null) {
+          const key = String(pid);
+          rtMap.set(key, {
+            points: p.points ?? null,
+            minutes: p.rawStats?.games?.minutes != null ? Number(p.rawStats.games.minutes) : (p.minutes ?? null),
+          });
+        }
+      }
+
+      const missing: string[] = [];
+      for (const id of playerIds) {
+        if (rtMap.has(id)) pointsMap[Number(id)] = rtMap.get(id) as any;
+        else missing.push(id);
+      }
+
+      // 2) Load missing players from DB/backend in chunks to avoid burst
+      const chunkSize = 6;
+      for (let i = 0; i < missing.length; i += chunkSize) {
+        const batch = missing.slice(i, i + chunkSize);
+        const promises = batch.map(pidStr => {
+          const pid = Number(pidStr);
+          return PlayerStatsService.getPlayerJornadaStats(pid, currentMatchday, { refresh: false })
+            .then(s => ({ pid, s }))
+            .catch(err => {
+              console.warn('[MiPlantilla] Error cargando stats player', pid, err?.message || err);
+              return { pid, s: null };
+            });
+        });
+        const results = await Promise.all(promises);
+        for (const r of results) {
+          if (r.s) pointsMap[r.pid] = { points: r.s.totalPoints ?? null, minutes: r.s.minutes ?? null };
+          else pointsMap[r.pid] = { points: null, minutes: null };
+        }
+      }
+
       setPlayerCurrentPoints(pointsMap);
       console.log('[MiPlantilla] 🎯 Puntos finales cargados:', pointsMap);
-      console.log(`[MiPlantilla] 📊 Resumen: ${Object.keys(pointsMap).length}/${playerIds.length} jugadores con datos`);
     } catch (error) {
       console.error('[MiPlantilla] Error al cargar puntos de jornada actual:', error);
     } finally {
