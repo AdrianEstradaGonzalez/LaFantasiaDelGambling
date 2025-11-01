@@ -594,6 +594,40 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType);
   };
 
+  // Formatear etiqueta para asegurar que incluya el mercado cuando falte
+  const formatLabelWithType = (rawLabel: string, type?: string) => {
+    if (!rawLabel) return rawLabel;
+    const label = rawLabel.trim();
+    const l = label.toLowerCase();
+
+    // If label already contains a clear unit/word, return as-is
+    const hasUnit = /\b(goles|tarjetas|c[oó]rners|c[oó]rner|c[oó]rnes|porteria|portería|goles totales|córners|tarjeta|faltas|tiros a puerta)\b/i.test(l);
+    if (hasUnit) return label;
+
+    // If label contains explicit words like 'más de' or a number, append unit based on type
+    const isOverUnder = /más de|menos de|more than|less than|over|under/i.test(l);
+    const hasNumber = /[0-9]+(\.[0-9]+)?/.test(l);
+
+    const mapUnit = (t?: string) => {
+      if (!t) return '';
+      const tt = t.toLowerCase();
+      if (tt.includes('tarjeta')) return ' tarjetas';
+      if (tt.includes('córner') || tt.includes('corner') || tt.includes('c[oó]rners')) return ' córners';
+      if (tt.includes('goles')) return ' goles';
+      if (tt.includes('resultado')) return '';
+      return '';
+    };
+
+    const unit = mapUnit(type);
+    if ((isOverUnder || hasNumber) && unit) {
+      // Avoid duplicating if label already ends with number or unit-like word
+      if (new RegExp(unit.trim() + '$', 'i').test(label)) return label;
+      return `${label}${unit}`;
+    }
+
+    return label;
+  };
+
   // Regla global: una sola apuesta por partido
   const hasAnyBetInMatch = (matchId: number): boolean => {
     return userBets.some((bet) => bet.matchId === matchId);
@@ -1124,7 +1158,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           {bet.homeTeam} {bet.homeGoals}-{bet.awayGoals} {bet.awayTeam}
                                         </Text>
                                         <Text style={{ color: '#94a3b8', fontSize: 11 }}>
-                                          {bet.betLabel} ({bet.odd})
+                                          {formatLabelWithType(bet.betLabel, bet.betType)} ({bet.odd})
                                         </Text>
                                       </View>
                                       <Text style={{
@@ -1166,7 +1200,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           {bet.homeTeam} {bet.homeGoals}-{bet.awayGoals} {bet.awayTeam}
                                         </Text>
                                         <Text style={{ color: '#94a3b8', fontSize: 11 }}>
-                                          {bet.betLabel} ({bet.odd})
+                                          {formatLabelWithType(bet.betLabel, bet.betType)} ({bet.odd})
                                         </Text>
                                       </View>
                                       <Text style={{
@@ -1208,7 +1242,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           {bet.homeTeam} - {bet.awayTeam}
                                         </Text>
                                         <Text style={{ color: '#94a3b8', fontSize: 11 }}>
-                                          {bet.betLabel} ({bet.odd})
+                                          {formatLabelWithType(bet.betLabel, bet.betType)} ({bet.odd})
                                         </Text>
                                       </View>
                                       <Text style={{
@@ -1278,7 +1312,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                       <View style={{ flex: 1 }}>
                                         <Text style={{ color: '#cbd5e1', fontSize: 11, marginBottom: 2 }}>
-                                          {bet.betLabel}
+                                          {formatLabelWithType(bet.betLabel, bet.betType)}
                                         </Text>
                                         <Text style={{ color: '#94a3b8', fontSize: 10 }}>
                                           Cuota: {bet.odd} • Apostado: {bet.amount}M
@@ -1737,7 +1771,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 {/* Label y Cuota */}
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                   <Text style={{ color: isBlocked ? '#64748b' : '#e5e7eb', fontWeight: '600', fontSize: 15, flex: 1 }}>
-                                    {option.label}
+                                    {formatLabelWithType(option.label, b.type)}
                                   </Text>
                                   <View style={{
                                     backgroundColor: 'transparent',
@@ -2086,7 +2120,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         </Text>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text style={{ color: '#94a3b8', fontSize: 12, flex: 1 }}>
-                            {sel.betLabel}
+                            {formatLabelWithType(sel.betLabel, sel.betType)}
                           </Text>
                           <Text style={{ color: '#ef4444', fontSize: 14, fontWeight: '800' }}>
                             {sel.odd.toFixed(2)}
