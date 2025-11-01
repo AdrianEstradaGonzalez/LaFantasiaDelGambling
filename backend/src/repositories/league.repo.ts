@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 async function getCurrentJornadaFromAPI(): Promise<number> {
     try {
         const API_BASE = 'https://v3.football.api-sports.io';
-        const API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';
+        const API_KEY = process.env.FOOTBALL_API_KEY || '';
         
         const { data } = await axios.get(`${API_BASE}/fixtures`, {
             headers: {

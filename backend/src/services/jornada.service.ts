@@ -44,7 +44,7 @@ function mapSquadRole(role: string | null | undefined): "Goalkeeper" | "Defender
 
 export class JornadaService {
   private static API_BASE = 'https://v3.football.api-sports.io';
-  private static API_KEY = process.env.FOOTBALL_API_KEY || '099ef4c6c0803639d80207d4ac1ad5da';
+  private static API_KEY = process.env.FOOTBALL_API_KEY || '';
   private static SEASON = 2025; // Temporada actual de La Liga
 
   /**
