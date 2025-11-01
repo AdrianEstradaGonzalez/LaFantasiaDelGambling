@@ -24,6 +24,10 @@ const envSchema = z.object({
   APP_MIN_IOS_VERSION: z.string().optional(),
   STORE_URL_ANDROID: z.string().optional(),
   STORE_URL_IOS: z.string().optional(),
+  // Realtime cache active window and interval (hours in 0-23, interval in ms)
+  REALTIME_ACTIVE_START_HOUR: z.coerce.number().min(0).max(23).default(13),
+  REALTIME_ACTIVE_END_HOUR: z.coerce.number().min(0).max(23).default(1),
+  REALTIME_REFRESH_MS: z.coerce.number().min(1000).default(60000),
   RESET_CODE_TTL_MINUTES: z.coerce.number().min(1).default(30),
   RESET_CODE_MAX_ATTEMPTS: z.coerce.number().min(1).default(5),
 });
@@ -46,6 +50,9 @@ export const env = envSchema.parse({
   APP_MIN_IOS_VERSION: process.env.APP_MIN_IOS_VERSION,
   STORE_URL_ANDROID: process.env.STORE_URL_ANDROID,
   STORE_URL_IOS: process.env.STORE_URL_IOS,
+  REALTIME_ACTIVE_START_HOUR: process.env.REALTIME_ACTIVE_START_HOUR,
+  REALTIME_ACTIVE_END_HOUR: process.env.REALTIME_ACTIVE_END_HOUR,
+  REALTIME_REFRESH_MS: process.env.REALTIME_REFRESH_MS,
   RESET_CODE_TTL_MINUTES: process.env.RESET_CODE_TTL_MINUTES,
   RESET_CODE_MAX_ATTEMPTS: process.env.RESET_CODE_MAX_ATTEMPTS,
 });

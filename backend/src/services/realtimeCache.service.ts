@@ -7,6 +7,27 @@ const DEFAULT_CACHE_TTL_MS = Number(process.env.FOOTBALL_API_CACHE_TTL_MS ?? 60_
 const DEFAULT_REFRESH_INTERVAL_MS = Number(process.env.REALTIME_REFRESH_MS ?? 60_000);
 const DEFAULT_REQUEST_DELAY_MS = Number(process.env.FOOTBALL_API_DELAY_MS ?? 250);
 
+// Active window defaults: start at 13:00, end at 01:00 (wraps past midnight)
+const DEFAULT_ACTIVE_START_HOUR = Number(process.env.REALTIME_ACTIVE_START_HOUR ?? 13);
+const DEFAULT_ACTIVE_END_HOUR = Number(process.env.REALTIME_ACTIVE_END_HOUR ?? 1);
+
+function isWithinActiveWindow(now: Date = new Date()) {
+  const start = Number(process.env.REALTIME_ACTIVE_START_HOUR ?? DEFAULT_ACTIVE_START_HOUR);
+  const end = Number(process.env.REALTIME_ACTIVE_END_HOUR ?? DEFAULT_ACTIVE_END_HOUR);
+  const hour = now.getHours(); // 0-23 server local time
+
+  if (start === end) {
+    // equal means full-day active
+    return true;
+  }
+  if (start < end) {
+    // e.g. 9 -> 21
+    return hour >= start && hour < end;
+  }
+  // wrap-around e.g. 13 -> 1 (means 13..23 and 0..0)
+  return hour >= start || hour < end;
+}
+
 function buildHeaders() {
   const candidates = [
     process.env.FOOTBALL_API_KEY,
@@ -79,6 +100,15 @@ async function fetchPlayerStats(playerId: number) {
 
 export async function refreshRealtimeCache() {
   try {
+    // Check active window: skip fetching outside configured hours to avoid unnecessary calls
+    if (!isWithinActiveWindow()) {
+      // skip actual API calls outside the active window
+      // keep existing cache untouched
+      // eslint-disable-next-line no-console
+      console.log(`[realtimeCache] Outside active window. Skipping refresh at ${new Date().toISOString()}`);
+      return;
+    }
+
     const fixtures = await fetchLiveFixtures();
 
     if (!fixtures || fixtures.length === 0) {
@@ -195,7 +225,13 @@ export function startRealtimeCache() {
   // run immediately and then on interval
   (async () => {
     try {
-      await refreshRealtimeCache();
+      // only run immediate refresh if we're within active window
+      if (isWithinActiveWindow()) {
+        await refreshRealtimeCache();
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('[realtimeCache] Immediate refresh skipped (outside active window)');
+      }
     } catch (err) {
       // ignore
     }
@@ -204,15 +240,17 @@ export function startRealtimeCache() {
   if (intervalRef) clearInterval(intervalRef);
   intervalRef = setInterval(async () => {
     try {
-      await refreshRealtimeCache();
-      // eslint-disable-next-line no-console
-      console.log("[realtimeCache] refreshed");
+      if (isWithinActiveWindow()) {
+        await refreshRealtimeCache();
+        // eslint-disable-next-line no-console
+        console.log('[realtimeCache] refreshed');
+      } else {
+        // eslint-disable-next-line no-console
+        console.log('[realtimeCache] periodic refresh skipped (outside active window)');
+      }
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.warn(
-        "[realtimeCache] refresh error:",
-        err instanceof Error ? err.message : String(err)
-      );
+      console.warn('[realtimeCache] refresh error:', err instanceof Error ? err.message : String(err));
     }
   }, DEFAULT_REFRESH_INTERVAL_MS);
 }
