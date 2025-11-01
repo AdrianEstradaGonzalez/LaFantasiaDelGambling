@@ -16,7 +16,7 @@ const SEASON_DEFAULT = 2025;
 
 // Nota: por simplicidad usamos la key proporcionada; idealmente cargar desde .env o almacenamiento seguro
 export const HEADERS = {
-  "x-apisports-key": "66ba89a63115cb5dc1155294ad753e09"
+  "x-apisports-key": "07bc9c707fe2d6169fff6e17d4a9e6fd"
 };
 
 export type Partido = {
