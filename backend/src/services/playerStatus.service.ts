@@ -10,7 +10,7 @@ import axios from 'axios';
 const prisma = new PrismaClient();
 
 const API_BASE = 'https://v3.football.api-sports.io';
-const FALLBACK_APISPORTS_KEY = '099ef4c6c0803639d80207d4ac1ad5da';
+const FALLBACK_APISPORTS_KEY = '07bc9c707fe2d6169fff6e17d4a9e6fd';
 
 function buildHeaders() {
   const candidates = [
