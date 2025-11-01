@@ -153,12 +153,13 @@ export async function buildApp() {
   const appRoutes = await import('./routes/app.routes.js');
   await app.register((appRoutes as any).default);
 
-  // In-memory realtime cache: start background refresh (will no-op if no live fixtures)
-  try {
-    startRealtimeCache();
-  } catch (err) {
-    app.log.warn('Failed to start realtime cache')
-  }
+  // ❌ DESHABILITADO: In-memory realtime cache (ahora usamos worker centralizado)
+  // El worker scripts/update-live-rankings.ts actualiza LeagueMember.points cada 2 minutos
+  // try {
+  //   startRealtimeCache();
+  // } catch (err) {
+  //   app.log.warn('Failed to start realtime cache')
+  // }
 
   return app;
 }

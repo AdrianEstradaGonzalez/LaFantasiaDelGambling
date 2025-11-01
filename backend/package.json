@@ -12,7 +12,8 @@
     "prisma:deploy": "prisma migrate deploy && prisma generate",
     "prisma:push": "prisma db push --accept-data-loss && prisma generate",
     "sync-players": "tsx src/scripts/sync-players.ts",
-    "load-stats": "tsx scripts/load-all-player-stats.ts"
+    "load-stats": "tsx scripts/load-all-player-stats.ts",
+    "update-rankings": "tsx scripts/update-live-rankings.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",

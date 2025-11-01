@@ -27,4 +27,37 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
   // Bet evaluation
   app.post("/leagues/:leagueId/evaluate-bets", { preHandler: adminAuth }, adminController.evaluateBets.bind(adminController));
   app.post("/evaluate-all-bets", { preHandler: adminAuth }, adminController.evaluateAllBets.bind(adminController));
+
+  // Live rankings update (for cron job)
+  app.get("/update-rankings", async (req, reply) => {
+    try {
+      console.log('🔄 Endpoint /update-rankings llamado');
+      
+      // Importar y ejecutar el worker
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execPromise = promisify(exec);
+      
+      const { stdout, stderr } = await execPromise('npm run update-rankings', {
+        cwd: process.cwd(),
+      });
+      
+      console.log('✅ Worker ejecutado con éxito');
+      if (stdout) console.log('STDOUT:', stdout);
+      if (stderr) console.error('STDERR:', stderr);
+      
+      return reply.send({ 
+        success: true, 
+        message: 'Rankings actualizados correctamente',
+        output: stdout 
+      });
+    } catch (error: any) {
+      console.error('❌ Error ejecutando worker:', error);
+      return reply.status(500).send({ 
+        success: false, 
+        error: error.message,
+        output: error.stdout,
+      });
+    }
+  });
 };

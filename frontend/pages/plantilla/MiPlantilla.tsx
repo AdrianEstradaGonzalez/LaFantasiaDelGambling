@@ -493,43 +493,13 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
       const pointsMap: Record<number, { points: number | null; minutes: number | null }> = {};
 
-      // 1) Try realtime cached players from backend
-      let realtimePlayersAny: any = [];
-      try {
-        realtimePlayersAny = await LigaService.calculateRealTimePoints(ligaId);
-      } catch (err) {
-        realtimePlayersAny = [];
-        console.warn('[MiPlantilla] LigaService.calculateRealTimePoints fallo:', err);
-      }
-
-      // normalize shape: backend may return { players: [...], lastUpdate } or an array
-      const realtimePlayers: any[] = Array.isArray(realtimePlayersAny)
-        ? realtimePlayersAny
-        : (realtimePlayersAny && Array.isArray(realtimePlayersAny.players) ? realtimePlayersAny.players : []);
-
-      // Use string keys for consistency with selectedPlayers map
-      const rtMap = new Map<string, { points: number | null; minutes: number | null }>();
-      for (const p of realtimePlayers || []) {
-        const pid = p?.playerId ?? p?.playerId === 0 ? p.playerId : null;
-        if (pid != null) {
-          const key = String(pid);
-          rtMap.set(key, {
-            points: p.points ?? null,
-            minutes: p.rawStats?.games?.minutes != null ? Number(p.rawStats.games.minutes) : (p.minutes ?? null),
-          });
-        }
-      }
-
-      const missing: string[] = [];
-      for (const id of playerIds) {
-        if (rtMap.has(id)) pointsMap[Number(id)] = rtMap.get(id) as any;
-        else missing.push(id);
-      }
-
-      // 2) Load missing players from DB/backend in chunks to avoid burst
-      const chunkSize = 6;
-      for (let i = 0; i < missing.length; i += chunkSize) {
-        const batch = missing.slice(i, i + chunkSize);
+      // ✅ Solo cargar desde BD (NO calcular en tiempo real)
+      // El worker centralizado actualiza LeagueMember.points cada 2 minutos
+      // Para ver puntos individuales por jugador, solo leer desde BD (PlayerStats)
+      
+      const chunkSize = 8;
+      for (let i = 0; i < playerIds.length; i += chunkSize) {
+        const batch = playerIds.slice(i, i + chunkSize);
         const promises = batch.map(pidStr => {
           const pid = Number(pidStr);
           return PlayerStatsService.getPlayerJornadaStats(pid, currentMatchday, { refresh: false })
@@ -541,8 +511,12 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         });
         const results = await Promise.all(promises);
         for (const r of results) {
-          if (r.s) pointsMap[r.pid] = { points: r.s.totalPoints ?? null, minutes: r.s.minutes ?? null };
-          else pointsMap[r.pid] = { points: null, minutes: null };
+          if (r.s) {
+            pointsMap[r.pid] = { points: r.s.totalPoints ?? null, minutes: r.s.minutes ?? null };
+            console.log(`[MiPlantilla] 📊 Jugador ${r.pid}: ${r.s.totalPoints ?? 0} pts, ${r.s.minutes ?? 0} min`);
+          } else {
+            pointsMap[r.pid] = { points: null, minutes: null };
+          }
         }
       }
 
@@ -1777,9 +1751,14 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                       >
                         {(() => {
                           const ptsObj = playerCurrentPoints[player.id];
-                          const showDash = !ptsObj || ptsObj.minutes == null || ptsObj.minutes === 0;
-                          if (jornadaStatus === 'closed' && !showDash) {
-                            const ptsNum = ptsObj!.points ?? 0;
+                          // Mostrar puntos si:
+                          // 1. Jornada cerrada (en juego) Y
+                          // 2. Tenemos datos del jugador (ptsObj existe) Y
+                          // 3. Los puntos no son null (puede ser 0)
+                          const hasData = ptsObj && ptsObj.points !== null && ptsObj.points !== undefined;
+                          
+                          if (jornadaStatus === 'closed' && hasData) {
+                            const ptsNum = ptsObj.points ?? 0;
                             const displayNum = player.isCaptain ? ptsNum * 2 : ptsNum;
                             return (
                               <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>{displayNum}</Text>

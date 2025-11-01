@@ -176,54 +176,27 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
             try {
               const pointsWithDefaults: Record<number, { points: number | null; minutes: number | null }> = {};
 
-              // 1) Intentar obtener datos en vivo desde la caché del backend (más eficiente)
-              let realtimePlayersAny: any = [];
-              try {
-                realtimePlayersAny = await LigaService.calculateRealTimePoints(ligaId);
-              } catch (err) {
-                // Si falla, seguir con la carga normal desde BD
-                realtimePlayersAny = [];
-                console.warn('[VerPlantillaUsuario] LigaService.calculateRealTimePoints fallo:', err);
-              }
-
-              const realtimePlayers: any[] = Array.isArray(realtimePlayersAny)
-                ? realtimePlayersAny
-                : (realtimePlayersAny && Array.isArray(realtimePlayersAny.players) ? realtimePlayersAny.players : []);
-
-              const rtMap = new Map<string, { points: number | null; minutes: number | null }>();
-              for (const p of realtimePlayers || []) {
-                const pid = p?.playerId ?? null;
-                if (pid != null) {
-                  rtMap.set(String(pid), {
-                    points: p.points ?? null,
-                    minutes: p.rawStats?.games?.minutes != null ? Number(p.rawStats.games.minutes) : (p.minutes ?? null),
-                  });
-                }
-              }
-
-              // 2) Rellenar para los jugadores del squad: usar realtime si existe; si no, pedir al backend (BD)
-              const missingIds: number[] = [];
-              for (const id of ids) {
-                const key = String(id);
-                if (rtMap.has(key)) {
-                  const val = rtMap.get(key)!;
-                  pointsWithDefaults[id] = { points: val.points, minutes: val.minutes };
-                } else {
-                  missingIds.push(id);
-                }
-              }
-
-              // 3) Para los jugadores faltantes, pedir stats al backend en paralelo por lotes para no saturar
-              const chunkSize = 6;
+              // ✅ Solo obtener datos desde la BD (NO calcular en tiempo real)
+              // El worker centralizado ya actualiza LeagueMember.points cada 2 minutos
+              // Para ver puntos individuales por jugador, solo leer desde BD (PlayerStats)
+              
+              const chunkSize = 8;
               const batches: number[][] = [];
-              for (let i = 0; i < missingIds.length; i += chunkSize) batches.push(missingIds.slice(i, i + chunkSize));
+              for (let i = 0; i < ids.length; i += chunkSize) batches.push(ids.slice(i, i + chunkSize));
 
               for (const batch of batches) {
-                const promises = batch.map(pid => PlayerStatsService.getPlayerJornadaStats(pid, currentJornada).then(s => ({ pid, s })).catch(() => ({ pid, s: null })));
+                const promises = batch.map(pid => 
+                  PlayerStatsService.getPlayerJornadaStats(pid, currentJornada)
+                    .then(s => ({ pid, s }))
+                    .catch(() => ({ pid, s: null }))
+                );
                 const results = await Promise.all(promises);
                 for (const r of results) {
                   if (r.s) {
-                    pointsWithDefaults[r.pid] = { points: r.s.totalPoints ?? null, minutes: r.s.minutes ?? null };
+                    pointsWithDefaults[r.pid] = { 
+                      points: r.s.totalPoints ?? null, 
+                      minutes: r.s.minutes ?? null 
+                    };
                   } else {
                     pointsWithDefaults[r.pid] = { points: null, minutes: null };
                   }

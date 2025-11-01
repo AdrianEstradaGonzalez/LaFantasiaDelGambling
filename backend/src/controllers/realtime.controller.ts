@@ -1,38 +1,52 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { getCachedPointsForLeague } from "../services/realtimeCache.service.js";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+/**
+ * Obtiene los puntos en tiempo real de una liga
+ * Ahora lee directamente de LeagueMember.points (actualizado por el worker centralizado)
+ * en lugar de usar el caché en memoria (que hacía llamadas a la API)
+ */
 export async function getRealtimePoints(request: FastifyRequest, reply: FastifyReply) {
   const { leagueId } = request.params as any;
 
-  // Try exact match (caller might pass API-Football league id)
-  let cached = getCachedPointsForLeague(String(leagueId));
+  try {
+    // Obtener todos los miembros de la liga con sus puntos actuales
+    const members = await prisma.leagueMember.findMany({
+      where: { leagueId: String(leagueId) },
+      select: {
+        userId: true,
+        points: true,
+        user: {
+          select: {
+            name: true,
+          }
+        }
+      }
+    });
 
-  // If not found, try numeric conversion
-  if (!cached) {
-    const numeric = Number(leagueId);
-    if (!Number.isNaN(numeric)) cached = getCachedPointsForLeague(String(numeric));
-  }
-
-  // If still not found, attempt to resolve internal league -> external API league mapping
-  if (!cached) {
-    try {
-      const league = await prisma.league.findUnique({ where: { id: String(leagueId) }, select: { id: true } });
-      // If we have a default external league configured, use it
-      const configured = process.env.FOOTBALL_API_LEAGUE_ID || process.env.API_FOOTBALL_LEAGUE_ID || process.env.API_LEAGUE_ID || '140';
-      cached = getCachedPointsForLeague(String(configured));
-    } catch (err) {
-      // ignore
+    if (!members || members.length === 0) {
+      return reply.status(204).send({ message: "No data available for this league" });
     }
-  }
 
-  if (!cached) {
-    return reply.status(204).send({ message: "No live data available" });
-  }
+    // Formatear respuesta compatible con el formato anterior
+    const players = members.map(member => ({
+      userId: member.userId,
+      userName: member.user.name,
+      points: member.points || 0,
+    }));
 
-  return reply.send({ lastUpdate: cached.lastUpdate, players: cached.players });
+    return reply.send({ 
+      lastUpdate: Date.now(), 
+      players 
+    });
+  } catch (error) {
+    console.error('[getRealtimePoints] Error:', error);
+    return reply.status(500).send({ 
+      error: "Error al obtener puntos en tiempo real" 
+    });
+  }
 }
 
 export default {
