@@ -30,7 +30,7 @@ export class PlayerService {
   private static BASE_URL = `${ApiConfig.BASE_URL}/players`;
 
   /**
-   * Obtener todos los jugadores con precios
+   * Obtener todos los jugadores con precios 
    */
   static async getAllPlayers(filters?: {
     position?: string;
