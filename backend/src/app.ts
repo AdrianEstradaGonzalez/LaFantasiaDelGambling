@@ -149,6 +149,9 @@ export async function buildApp() {
   await app.register(playerStatsRoutes, { prefix: "/" });
   await app.register(playerStatusRoutes, { prefix: "/players" });
   await app.register(paymentRoutes, { prefix: "/payment" });
+  // Rutas públicas extra (app metadata)
+  const appRoutes = await import('./routes/app.routes.js');
+  await app.register((appRoutes as any).default);
 
   // In-memory realtime cache: start background refresh (will no-op if no live fixtures)
   try {

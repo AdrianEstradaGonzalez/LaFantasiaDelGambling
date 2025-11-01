@@ -3,6 +3,9 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Linking } from 'react-native';
+import { ApiConfig } from '../utils/apiConfig';
+import ForceUpdateScreen from '../components/ForceUpdateScreen';
+import { APP_VERSION } from '../utils/appVersion';
 
 // 🧩 Importa tus pantallas
 import { Home } from '../pages/home/Home';
@@ -53,6 +56,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const AppNavigator = () => {
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
+  const [forceUpdateInfo, setForceUpdateInfo] = useState<{ required: boolean; latest?: string } | null>(null);
   useEffect(() => {
     // Prefetch equipos y jugadores al iniciar la app para minimizar peticiones posteriores
     FootballService.prefetchAllData().catch(() => {});
@@ -75,9 +79,55 @@ export const AppNavigator = () => {
     })();
   }, []);
 
+  // Check app version on startup and force update if required
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${ApiConfig.BASE_URL}/app/version`);
+        if (!res.ok) return;
+        const json = await res.json();
+        const latest = json.latest as string | undefined;
+        const minSupported = json.minSupported as string | undefined;
+  const current = APP_VERSION as string;
+
+        // Simple semver compare: convert to numeric parts
+        const parse = (v = '') => v.split('.').map(n => parseInt(n || '0', 10));
+        const cmp = (a: number[], b: number[]) => {
+          for (let i = 0; i < Math.max(a.length, b.length); i++) {
+            const ai = a[i] || 0;
+            const bi = b[i] || 0;
+            if (ai > bi) return 1;
+            if (ai < bi) return -1;
+          }
+          return 0;
+        };
+
+        const currParts = parse(current);
+        const minParts = parse(minSupported || '0.0.0');
+        const latestParts = parse(latest || current);
+
+        const mustUpdate = cmp(currParts, minParts) < 0;
+        if (mustUpdate) {
+          setForceUpdateInfo({ required: true, latest: latest || undefined });
+        } else {
+          setForceUpdateInfo({ required: false, latest: latest || undefined });
+        }
+      } catch (err) {
+        // ignore errors; don't block app if endpoint unreachable
+        console.warn('Failed to check app version', err);
+        setForceUpdateInfo({ required: false });
+      }
+    })();
+  }, []);
+
   if (initialRoute === null) {
     // still determining initial route
     return null;
+  }
+
+  // If we detected that an update is required, render a blocking screen
+  if (forceUpdateInfo && forceUpdateInfo.required) {
+    return <ForceUpdateScreen latestVersion={forceUpdateInfo.latest || 'Nueva versión'} />;
   }
 
   // Configuración de deep linking

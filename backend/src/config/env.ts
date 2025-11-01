@@ -16,6 +16,9 @@ const envSchema = z.object({
   
   // App config
   APP_ORIGIN: z.string().url(),
+  // App versioning for forced updates
+  APP_LATEST_VERSION: z.string().default('1.0.0'),
+  APP_MIN_SUPPORTED_VERSION: z.string().default('1.0.0'),
   RESET_CODE_TTL_MINUTES: z.coerce.number().min(1).default(30),
   RESET_CODE_MAX_ATTEMPTS: z.coerce.number().min(1).default(5),
 });
