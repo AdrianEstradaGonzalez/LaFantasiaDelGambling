@@ -386,12 +386,13 @@ class PlayerStatsServiceClass {
    */
   async getAveragesByPosition(): Promise<any> {
     try {
-      const token = await EncryptedStorage.getItem('user_session');
+      const token = await EncryptedStorage.getItem('accessToken');
       if (!token) {
+        console.warn('[PlayerStatsService] No hay sesión activa para obtener promedios');
         throw new Error('No hay sesión activa');
       }
 
-      const response = await fetch(`${API_URL}/api/player-stats/averages-by-position`, {
+      const response = await fetch(`${API_URL}/player-stats/averages-by-position`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -400,6 +401,7 @@ class PlayerStatsServiceClass {
       });
 
       if (!response.ok) {
+        console.error('[PlayerStatsService] Error en respuesta de promedios:', response.status);
         throw new Error('Error al obtener promedios por posición');
       }
 
@@ -416,13 +418,14 @@ class PlayerStatsServiceClass {
    */
   async getNextOpponentAnalysis(playerId: number, currentJornada: number): Promise<any> {
     try {
-      const token = await EncryptedStorage.getItem('user_session');
+      const token = await EncryptedStorage.getItem('accessToken');
       if (!token) {
+        console.warn('[PlayerStatsService] No hay sesión activa para análisis de rival');
         throw new Error('No hay sesión activa');
       }
 
       const response = await fetch(
-        `${API_URL}/api/player-stats/${playerId}/next-opponent?jornada=${currentJornada}`,
+        `${API_URL}/player-stats/${playerId}/next-opponent?jornada=${currentJornada}`,
         {
           method: 'GET',
           headers: {
@@ -433,6 +436,7 @@ class PlayerStatsServiceClass {
       );
 
       if (!response.ok) {
+        console.error('[PlayerStatsService] Error en respuesta de análisis rival:', response.status);
         throw new Error('Error al obtener análisis del próximo rival');
       }
 
