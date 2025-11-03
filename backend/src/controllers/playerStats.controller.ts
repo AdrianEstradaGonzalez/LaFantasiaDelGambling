@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { PlayerStatsService } from '../services/playerStats.service.js';
 import { AppError } from '../utils/errors.js';
 import axios from 'axios';
-import { updateLiveLeagueRankings } from '../../scripts/update-live-rankings-in-progress.js';
+import { updateLiveLeagueRankings } from '../workers/update-live-rankings-in-progress.js';
 
 // Helper para obtener jornada actual de la API
 async function getCurrentJornadaFromAPI(): Promise<number> {

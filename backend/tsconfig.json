@@ -9,6 +9,6 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src", "scripts/update-live-rankings-in-progress.ts"],
-  "exclude": ["scripts/cambiar-jornada.ts", "scripts/recalculate-jornada-10.ts", "src/scripts"]
+  "include": ["src"],
+  "exclude": ["src/scripts/**"]
 }
