@@ -41,6 +41,13 @@ export const playerStatsRoutes: FastifyPluginAsync = async (app) => {
     PlayerStatsController.updateJornadaStats
   );
 
+  // Actualizar jornada vía GET (para cron jobs que solo soportan GET)
+  app.get(
+    '/player-stats/update-jornada',
+    { preHandler: cronAuth },
+    PlayerStatsController.updateJornadaStats
+  );
+
   // Obtener promedios por posición (todas las estadísticas)
   app.get(
     '/player-stats/averages-by-position',

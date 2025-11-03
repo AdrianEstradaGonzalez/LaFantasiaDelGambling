@@ -221,13 +221,10 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             console.warn('[PlayerDetail] Error cargando promedios:', error);
           }
           
-          // 🆕 Cargar análisis del próximo rival
-          // Si la jornada está cerrada, analizar la siguiente (currentJornada + 1)
-          // Si está abierta, analizar la actual
+          // 🆕 Cargar análisis del próximo rival (siempre usar jornada actual de la API)
           try {
-            const jornadaParaAnalisis = jornadaStatus === 'closed' ? currentJornada + 1 : currentJornada;
-            console.log('[PlayerDetail] Analizando rival para jornada:', jornadaParaAnalisis, 'Estado:', jornadaStatus);
-            const analysis = await PlayerStatsService.getNextOpponentAnalysis(player.id, jornadaParaAnalisis);
+            console.log('[PlayerDetail] Analizando rival para jornada actual:', currentJornada);
+            const analysis = await PlayerStatsService.getNextOpponentAnalysis(player.id, currentJornada);
             console.log('[PlayerDetail] Análisis del próximo rival cargado:', analysis);
             setNextOpponentAnalysis(analysis);
           } catch (error) {
@@ -1434,36 +1431,6 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
               <Text style={{ color: '#94a3b8', fontSize: 12 }}>Promedio del jugador:</Text>
               <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
                 {playerStats.avgPoints.toFixed(1)}
-              </Text>
-            </View>
-          </View>
-
-          <View style={{ 
-            backgroundColor: '#0f172a', 
-            borderRadius: 6, 
-            padding: 8,
-            alignItems: 'center'
-          }}>
-            <Text style={{ color: '#64748b', fontSize: 10, marginBottom: 4 }}>
-              CONFIANZA DE LA PREDICCIÓN
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{ 
-                height: 6, 
-                backgroundColor: '#334155', 
-                borderRadius: 3,
-                width: 100,
-                overflow: 'hidden',
-                marginRight: 8
-              }}>
-                <View style={{
-                  height: '100%',
-                  width: `${prediction.confidence}%`,
-                  backgroundColor: '#0892D0'
-                }} />
-              </View>
-              <Text style={{ color: '#0892D0', fontSize: 12, fontWeight: '700' }}>
-                {prediction.confidence}%
               </Text>
             </View>
           </View>
