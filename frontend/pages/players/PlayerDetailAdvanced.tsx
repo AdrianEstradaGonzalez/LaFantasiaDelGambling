@@ -190,15 +190,23 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
 
           const pointsData: MatchdayPoints[] = matchdays.map((matchday, index) => {
             const stats = statsArray[index];
+            const jornadaPoints = stats?.totalPoints ?? 0;
+            
+            // Debug: verificar puntos de cada jornada
+            if (stats) {
+              console.log(`[PlayerDetail] Jornada ${matchday}: ${jornadaPoints} pts`, stats);
+            }
+            
             return {
               matchday,
-              points: stats?.totalPoints ?? 0,
+              points: jornadaPoints,
               stats: stats,
             };
           });
 
           const total = pointsData.reduce((sum, item) => sum + item.points, 0);
           console.log('[PlayerDetail] Estadísticas obtenidas. Total de puntos:', total);
+          console.log('[PlayerDetail] Desglose por jornada:', pointsData.map(p => `J${p.matchday}: ${p.points}pts`).join(', '));
 
           setMatchdayPoints(pointsData);
           setTotalPoints(total);
@@ -531,28 +539,29 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
     ? matchdayPoints.find(mp => mp.matchday === selectedMatchday)
     : null;
 
-  // Componente de Gráfico de Evolución de Puntos
+  // Componente de Gráfico de Evolución de Puntos (MEJORADO)
   const EvolutionChart = () => {
     if (matchdayPoints.length === 0) return null;
 
-    const chartWidth = 320;
-    const chartHeight = 200;
-    const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+    const chartWidth = 340;
+    const chartHeight = 220;
+    const padding = { top: 30, right: 30, bottom: 50, left: 50 };
     const innerWidth = chartWidth - padding.left - padding.right;
     const innerHeight = chartHeight - padding.top - padding.bottom;
 
-    // Calcular min y max para el escalado
+    // DEBUG: Mostrar los datos que se están graficando
+    console.log('[EvolutionChart] Datos del gráfico:', matchdayPoints.map(mp => ({ j: mp.matchday, pts: mp.points })));
+
+    // Calcular estadísticas
     const points = matchdayPoints.map(mp => mp.points);
     const maxPoints = Math.max(...points, 10);
-    const minPoints = Math.min(...points, 0);
-    const pointsRange = maxPoints - minPoints;
+    const minPoints = Math.min(...points, -5);
+    const pointsRange = maxPoints - minPoints || 10;
+    const avgPoints = points.reduce((a, b) => a + b, 0) / points.length;
 
     // Función para escalar coordenadas
     const scaleX = (index: number) => padding.left + (index / (matchdayPoints.length - 1)) * innerWidth;
-    const scaleY = (points: number) => {
-      if (pointsRange === 0) return padding.top + innerHeight / 2;
-      return padding.top + innerHeight - ((points - minPoints) / pointsRange) * innerHeight;
-    };
+    const scaleY = (pts: number) => padding.top + innerHeight - ((pts - minPoints) / pointsRange) * innerHeight;
 
     // Generar path del gráfico
     const pathData = matchdayPoints.map((mp, index) => {
@@ -563,153 +572,414 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
 
     // Generar path del área bajo la línea
     const areaPathData = pathData + 
-      ` L ${scaleX(matchdayPoints.length - 1)} ${padding.top + innerHeight}` +
-      ` L ${padding.left} ${padding.top + innerHeight} Z`;
+      ` L ${scaleX(matchdayPoints.length - 1)} ${scaleY(0)}` +
+      ` L ${padding.left} ${scaleY(0)} Z`;
+
+    // Línea del promedio
+    const avgY = scaleY(avgPoints);
+    
+    // Línea del cero (siempre visible)
+    const zeroY = scaleY(0);
+
+    // Etiquetas del eje Y (incluir siempre el 0 + valor intermedio)
+    const midPointAboveZero = maxPoints / 2; // Punto medio entre 0 y el máximo
+    const yLabels = [
+      { value: maxPoints, y: padding.top },
+      { value: midPointAboveZero, y: scaleY(midPointAboveZero) },
+      { value: 0, y: zeroY },
+      { value: minPoints, y: padding.top + innerHeight }
+    ];
 
     return (
       <View style={{ backgroundColor: '#0b1a2e', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-          📈 EVOLUCIÓN DE PUNTOS
-        </Text>
-        <Svg width={chartWidth} height={chartHeight}>
-          {/* Líneas de guía horizontales */}
-          <Line x1={padding.left} y1={padding.top} x2={chartWidth - padding.right} y2={padding.top} stroke="#334155" strokeWidth="1" strokeDasharray="5,5" />
-          <Line x1={padding.left} y1={padding.top + innerHeight / 2} x2={chartWidth - padding.right} y2={padding.top + innerHeight / 2} stroke="#334155" strokeWidth="1" strokeDasharray="5,5" />
-          <Line x1={padding.left} y1={padding.top + innerHeight} x2={chartWidth - padding.right} y2={padding.top + innerHeight} stroke="#334155" strokeWidth="1" />
+        <View style={{ marginBottom: 12 }}>
+          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 4 }}>
+            📈 EVOLUCIÓN DE PUNTOS
+          </Text>
+          <Text style={{ color: '#94a3b8', fontSize: 11, lineHeight: 16 }}>
+            Rendimiento a lo largo de las {matchdayPoints.length} jornadas • Promedio: {avgPoints.toFixed(1)} pts
+          </Text>
+        </View>
 
-          {/* Área bajo la línea */}
-          <Path d={areaPathData} fill="#0892D040" />
-
-          {/* Línea del gráfico */}
-          <Path d={pathData} stroke="#0892D0" strokeWidth="3" fill="none" />
-
-          {/* Puntos en el gráfico */}
-          {matchdayPoints.map((mp, index) => {
-            const x = scaleX(index);
-            const y = scaleY(mp.points);
-            const isSelected = selectedMatchday === mp.matchday;
-            return (
-              <React.Fragment key={mp.matchday}>
-                <Circle cx={x} cy={y} r={isSelected ? 6 : 4} fill={mp.points >= 0 ? '#10b981' : '#ef4444'} />
-                {isSelected && <Circle cx={x} cy={y} r={8} fill="none" stroke="#0892D0" strokeWidth="2" />}
+        <View style={{ alignItems: 'center' }}>
+          <Svg width={chartWidth} height={chartHeight}>
+            {/* Grid horizontal */}
+            {yLabels.map((label, i) => (
+              <React.Fragment key={i}>
+                <Line 
+                  x1={padding.left} 
+                  y1={label.y} 
+                  x2={chartWidth - padding.right} 
+                  y2={label.y} 
+                  stroke={label.value === 0 ? '#64748b' : '#334155'} 
+                  strokeWidth={label.value === 0 ? '2' : '1'} 
+                  strokeDasharray={label.value === 0 ? '0' : '3,3'} 
+                  opacity={label.value === 0 ? 0.8 : 0.5}
+                />
               </React.Fragment>
-            );
-          })}
+            ))}
 
-          {/* Etiquetas del eje Y */}
-          <SvgText x={padding.left - 10} y={padding.top} fill="#94a3b8" fontSize="10" textAnchor="end">{maxPoints}</SvgText>
-          <SvgText x={padding.left - 10} y={padding.top + innerHeight / 2} fill="#94a3b8" fontSize="10" textAnchor="end">0</SvgText>
-          <SvgText x={padding.left - 10} y={padding.top + innerHeight} fill="#94a3b8" fontSize="10" textAnchor="end">{minPoints}</SvgText>
+            {/* Línea del promedio */}
+            <Line 
+              x1={padding.left} 
+              y1={avgY} 
+              x2={chartWidth - padding.right} 
+              y2={avgY} 
+              stroke="#f59e0b" 
+              strokeWidth="1.5" 
+              strokeDasharray="5,5" 
+            />
 
-          {/* Etiquetas del eje X (primera y última jornada) */}
-          <SvgText x={padding.left} y={chartHeight - 10} fill="#94a3b8" fontSize="10" textAnchor="start">J{matchdayPoints[0].matchday}</SvgText>
-          <SvgText x={chartWidth - padding.right} y={chartHeight - 10} fill="#94a3b8" fontSize="10" textAnchor="end">J{matchdayPoints[matchdayPoints.length - 1].matchday}</SvgText>
-        </Svg>
+            {/* Área bajo la línea (gradiente) */}
+            <Path d={areaPathData} fill="#0892D020" />
+
+            {/* Línea del gráfico */}
+            <Path d={pathData} stroke="#0892D0" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+
+            {/* Puntos en el gráfico */}
+            {matchdayPoints.map((mp, index) => {
+              const x = scaleX(index);
+              const y = scaleY(mp.points);
+              const isSelected = selectedMatchday === mp.matchday;
+              const isPositive = mp.points > avgPoints;
+              
+              return (
+                <React.Fragment key={mp.matchday}>
+                  {/* Punto */}
+                  <Circle 
+                    cx={x} 
+                    cy={y} 
+                    r={isSelected ? 7 : 5} 
+                    fill={isPositive ? '#10b981' : mp.points >= 0 ? '#0892D0' : '#ef4444'} 
+                    stroke={isSelected ? '#fff' : 'none'}
+                    strokeWidth={isSelected ? 2 : 0}
+                  />
+                  {/* Anillo de selección */}
+                  {isSelected && (
+                    <Circle cx={x} cy={y} r={10} fill="none" stroke="#0892D0" strokeWidth="2" opacity={0.6} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+
+            {/* Etiquetas del eje Y */}
+            {yLabels.map((label, i) => (
+              <SvgText 
+                key={i}
+                x={padding.left - 8} 
+                y={label.y + 4} 
+                fill="#94a3b8" 
+                fontSize="11" 
+                fontWeight="600"
+                textAnchor="end"
+              >
+                {label.value.toFixed(0)}
+              </SvgText>
+            ))}
+
+            {/* Etiquetas del eje X */}
+            {matchdayPoints.filter((_, i) => {
+              // Mostrar primera, última y 2-3 intermedias con espaciado uniforme
+              if (i === 0 || i === matchdayPoints.length - 1) return true;
+              const step = Math.max(2, Math.floor(matchdayPoints.length / 4));
+              return i % step === 0;
+            }).map((mp) => {
+              const index = matchdayPoints.indexOf(mp);
+              const x = scaleX(index);
+              return (
+                <SvgText 
+                  key={mp.matchday}
+                  x={x} 
+                  y={chartHeight - 15} 
+                  fill="#94a3b8" 
+                  fontSize="10" 
+                  fontWeight="600"
+                  textAnchor="middle"
+                >
+                  {mp.matchday}
+                </SvgText>
+              );
+            })}
+
+            {/* Etiqueta del promedio */}
+            <SvgText 
+              x={chartWidth - padding.right + 5} 
+              y={avgY + 4} 
+              fill="#f59e0b" 
+              fontSize="10" 
+              fontWeight="700"
+              textAnchor="start"
+            >
+              Prom
+            </SvgText>
+
+            {/* Título del eje Y */}
+            <SvgText 
+              x={15} 
+              y={chartHeight / 2} 
+              fill="#64748b" 
+              fontSize="10" 
+              fontWeight="700"
+              textAnchor="middle"
+              transform={`rotate(-90, 15, ${chartHeight / 2})`}
+            >
+              PUNTOS
+            </SvgText>
+
+            {/* Título del eje X */}
+            <SvgText 
+              x={chartWidth / 2} 
+              y={chartHeight - 3} 
+              fill="#64748b" 
+              fontSize="10" 
+              fontWeight="700"
+              textAnchor="middle"
+            >
+              JORNADAS
+            </SvgText>
+          </Svg>
+        </View>
+
+        {/* Leyenda */}
+        <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12, flexWrap: 'wrap' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16, marginBottom: 4 }}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#10b981', marginRight: 6 }} />
+            <Text style={{ color: '#94a3b8', fontSize: 10 }}>Sobre promedio</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16, marginBottom: 4 }}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#0892D0', marginRight: 6 }} />
+            <Text style={{ color: '#94a3b8', fontSize: 10 }}>Positivos</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#ef4444', marginRight: 6 }} />
+            <Text style={{ color: '#94a3b8', fontSize: 10 }}>Negativos</Text>
+          </View>
+        </View>
       </View>
     );
   };
 
-  // Componente de Gráfico de Barras de Contribución
-  const ContributionChart = () => {
-    if (!selectedData?.stats) return null;
+  // Componente de Gráfico Radar de Rendimiento (NUEVO)
+  const PerformanceRadarChart = () => {
+    if (matchdayPoints.length === 0) return null;
 
-    const stats = selectedData.stats;
-    const chartWidth = 320;
-    const chartHeight = 180;
-    const padding = { top: 20, right: 20, bottom: 40, left: 40 };
-    const innerHeight = chartHeight - padding.top - padding.bottom;
+    // Calcular estadísticas agregadas
+    const jornadasJugadas = matchdayPoints.filter(mp => mp.stats && (mp.stats.minutes ?? 0) > 0);
+    if (jornadasJugadas.length === 0) return null;
 
-    // Datos según la posición
-    let chartData: { label: string; value: number; color: string }[] = [];
+    const totalMinutos = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.minutes ?? 0), 0);
+    const partidosCompletos = totalMinutos / 90;
+
+    // Calcular métricas normalizadas (0-100)
+    let metrics: { label: string; value: number; maxValue: number; description: string }[] = [];
 
     if (position === 'Goalkeeper') {
-      chartData = [
-        { label: 'Paradas', value: stats.saves ?? 0, color: '#0892D0' },
-        { label: 'Goles Enc.', value: stats.conceded ?? 0, color: '#ef4444' },
-        { label: 'Pen. Parados', value: stats.penaltySaved ?? 0, color: '#10b981' }
+      const totalParadas = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.saves ?? 0), 0);
+      const totalGolesEncajados = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.conceded ?? 0), 0);
+      const porteriasACero = jornadasJugadas.filter(mp => (mp.stats?.conceded ?? 0) === 0 && (mp.stats?.minutes ?? 0) >= 60).length;
+      const tirosRecibidos = totalParadas + totalGolesEncajados;
+      const savePercentage = tirosRecibidos > 0 ? (totalParadas / tirosRecibidos) * 100 : 0;
+      const golesEncajadosPorPartido = totalGolesEncajados / partidosCompletos;
+      
+      // Fiabilidad mejorada: 
+      // - 0 goles/partido = 100 (perfecto)
+      // - 0.5 goles/partido = 60 (bueno)
+      // - 1 gol/partido = 20 (malo)
+      // - 2+ goles/partido = 0 (muy malo)
+      const fiabilidad = Math.max(0, Math.min(100, 100 - (golesEncajadosPorPartido * 80)));
+
+      metrics = [
+        { label: 'Paradas', value: (totalParadas / partidosCompletos) * 20, maxValue: 100, description: `${(totalParadas / partidosCompletos).toFixed(1)}/partido` },
+        { label: 'Save %', value: savePercentage, maxValue: 100, description: `${savePercentage.toFixed(0)}%` },
+        { label: 'P. a Cero', value: (porteriasACero / jornadasJugadas.length) * 100, maxValue: 100, description: `${porteriasACero}/${jornadasJugadas.length}` },
+        { label: 'Fiabilidad', value: fiabilidad, maxValue: 100, description: `${golesEncajadosPorPartido.toFixed(1)} goles/p` },
+        { label: 'Minutos', value: (totalMinutos / (jornadasJugadas.length * 90)) * 100, maxValue: 100, description: `${(totalMinutos / jornadasJugadas.length).toFixed(0)} min` },
       ];
     } else if (position === 'Defender') {
-      chartData = [
-        { label: 'Goles', value: stats.goals ?? 0, color: '#10b981' },
-        { label: 'Asist.', value: stats.assists ?? 0, color: '#0892D0' },
-        { label: 'Tiros', value: stats.shotsOn ?? 0, color: '#f59e0b' },
-        { label: 'Duelos', value: Math.min(stats.duelsWon ?? 0, 15), color: '#8b5cf6' }
+      const totalIntercepciones = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.tacklesInterceptions ?? 0), 0);
+      const totalEntradas = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.tacklesTotal ?? 0), 0);
+      const totalDuelosGanados = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.duelsWon ?? 0), 0);
+      const totalBloqueos = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.tacklesBlocks ?? 0), 0);
+      const porteriasACero = jornadasJugadas.filter(mp => (mp.stats?.conceded ?? 0) === 0 && (mp.stats?.minutes ?? 0) >= 60).length;
+
+      metrics = [
+        { label: 'Intercepciones', value: (totalIntercepciones / partidosCompletos) * 15, maxValue: 100, description: `${(totalIntercepciones / partidosCompletos).toFixed(1)}/partido` },
+        { label: 'Entradas', value: (totalEntradas / partidosCompletos) * 15, maxValue: 100, description: `${(totalEntradas / partidosCompletos).toFixed(1)}/partido` },
+        { label: 'Duelos', value: (totalDuelosGanados / partidosCompletos) * 10, maxValue: 100, description: `${(totalDuelosGanados / partidosCompletos).toFixed(1)}/partido` },
+        { label: 'Bloqueos', value: (totalBloqueos / partidosCompletos) * 30, maxValue: 100, description: `${(totalBloqueos / partidosCompletos).toFixed(1)}/partido` },
+        { label: 'P. a Cero', value: (porteriasACero / jornadasJugadas.length) * 100, maxValue: 100, description: `${porteriasACero}/${jornadasJugadas.length}` },
+        { label: 'Minutos', value: (totalMinutos / (jornadasJugadas.length * 90)) * 100, maxValue: 100, description: `${(totalMinutos / jornadasJugadas.length).toFixed(0)} min` },
       ];
-    } else {
-      // Midfielder y Attacker
-      chartData = [
-        { label: 'Goles', value: stats.goals ?? 0, color: '#10b981' },
-        { label: 'Asist.', value: stats.assists ?? 0, color: '#0892D0' },
-        { label: 'Tiros', value: stats.shotsOn ?? 0, color: '#f59e0b' },
-        { label: 'Regates', value: stats.dribblesSuccess ?? 0, color: '#8b5cf6' }
+    } else if (position === 'Midfielder') {
+      const totalGoles = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.goals ?? 0), 0);
+      const totalAsistencias = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.assists ?? 0), 0);
+      const totalPasesClave = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.passesKey ?? 0), 0);
+      const totalTiros = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.shotsOn ?? 0), 0);
+      const totalDuelosGanados = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.duelsWon ?? 0), 0);
+
+      metrics = [
+        { label: 'Goles', value: (totalGoles / partidosCompletos) * 100, maxValue: 100, description: `${(totalGoles / partidosCompletos).toFixed(2)}/partido` },
+        { label: 'Asistencias', value: (totalAsistencias / partidosCompletos) * 100, maxValue: 100, description: `${(totalAsistencias / partidosCompletos).toFixed(2)}/partido` },
+        { label: 'Creatividad', value: (totalPasesClave / partidosCompletos) * 20, maxValue: 100, description: `${(totalPasesClave / partidosCompletos).toFixed(1)} p.clave/p` },
+        { label: 'Tiros', value: (totalTiros / partidosCompletos) * 25, maxValue: 100, description: `${(totalTiros / partidosCompletos).toFixed(1)}/partido` },
+        { label: 'Duelos', value: (totalDuelosGanados / partidosCompletos) * 10, maxValue: 100, description: `${(totalDuelosGanados / partidosCompletos).toFixed(1)}/partido` },
+        { label: 'Minutos', value: (totalMinutos / (jornadasJugadas.length * 90)) * 100, maxValue: 100, description: `${(totalMinutos / jornadasJugadas.length).toFixed(0)} min` },
+      ];
+    } else if (position === 'Attacker') {
+      const totalGoles = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.goals ?? 0), 0);
+      const totalAsistencias = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.assists ?? 0), 0);
+      const totalTiros = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.shotsOn ?? 0), 0);
+      const totalRegates = jornadasJugadas.reduce((sum, mp) => sum + (mp.stats?.dribblesSuccess ?? 0), 0);
+      const conversionRate = totalTiros > 0 ? (totalGoles / totalTiros) * 100 : 0;
+
+      metrics = [
+        { label: 'Goles', value: (totalGoles / partidosCompletos) * 50, maxValue: 100, description: `${(totalGoles / partidosCompletos).toFixed(2)}/partido` },
+        { label: 'Asistencias', value: (totalAsistencias / partidosCompletos) * 100, maxValue: 100, description: `${(totalAsistencias / partidosCompletos).toFixed(2)}/partido` },
+        { label: 'Tiros', value: (totalTiros / partidosCompletos) * 20, maxValue: 100, description: `${(totalTiros / partidosCompletos).toFixed(1)}/partido` },
+        { label: 'Efectividad', value: conversionRate, maxValue: 100, description: `${conversionRate.toFixed(0)}% conversión` },
+        { label: 'Regates', value: (totalRegates / partidosCompletos) * 25, maxValue: 100, description: `${(totalRegates / partidosCompletos).toFixed(1)}/partido` },
+        { label: 'Minutos', value: (totalMinutos / (jornadasJugadas.length * 90)) * 100, maxValue: 100, description: `${(totalMinutos / jornadasJugadas.length).toFixed(0)} min` },
       ];
     }
 
-    const maxValue = Math.max(...chartData.map(d => d.value), 5);
-    const barWidth = 50;
-    const barSpacing = 20;
-    const totalWidth = chartData.length * (barWidth + barSpacing) - barSpacing;
-    const startX = padding.left + (chartWidth - padding.left - padding.right - totalWidth) / 2;
+    // Limitar valores a 100
+    metrics = metrics.map(m => ({ ...m, value: Math.min(m.value, 100) }));
+
+    const chartSize = 280;
+    const center = chartSize / 2;
+    const radius = 90;
+    const numMetrics = metrics.length;
+    const angleStep = (Math.PI * 2) / numMetrics;
+
+    // Calcular puntos del polígono
+    const points = metrics.map((metric, i) => {
+      const angle = i * angleStep - Math.PI / 2;
+      const value = (metric.value / 100) * radius;
+      return {
+        x: center + Math.cos(angle) * value,
+        y: center + Math.sin(angle) * value,
+      };
+    });
+
+    // Path del polígono de datos
+    const dataPath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z';
 
     return (
       <View style={{ backgroundColor: '#0b1a2e', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', marginBottom: 12 }}>
-          📊 CONTRIBUCIÓN (Jornada {selectedData.matchday})
-        </Text>
-        <Svg width={chartWidth} height={chartHeight}>
-          {/* Línea base */}
-          <Line 
-            x1={padding.left} 
-            y1={padding.top + innerHeight} 
-            x2={chartWidth - padding.right} 
-            y2={padding.top + innerHeight} 
-            stroke="#334155" 
-            strokeWidth="2" 
-          />
+        <View style={{ marginBottom: 12 }}>
+          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 4 }}>
+            🎯 RADAR DE RENDIMIENTO
+          </Text>
+          <Text style={{ color: '#94a3b8', fontSize: 11, lineHeight: 16 }}>
+            Perfil de habilidades basado en {jornadasJugadas.length} jornadas jugadas
+          </Text>
+        </View>
 
-          {/* Barras */}
-          {chartData.map((data, index) => {
-            const x = startX + index * (barWidth + barSpacing);
-            const barHeight = (data.value / maxValue) * innerHeight;
-            const y = padding.top + innerHeight - barHeight;
+        <View style={{ alignItems: 'center' }}>
+          <Svg width={chartSize} height={chartSize}>
+            {/* Círculos concéntricos de referencia */}
+            {[0.25, 0.5, 0.75, 1].map((factor, i) => (
+              <Circle 
+                key={i}
+                cx={center} 
+                cy={center} 
+                r={radius * factor} 
+                fill="none" 
+                stroke="#334155" 
+                strokeWidth="1" 
+                strokeDasharray={i === 3 ? "0" : "3,3"}
+                opacity={0.4}
+              />
+            ))}
 
-            return (
-              <React.Fragment key={data.label}>
-                {/* Barra */}
-                <Rect
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={barHeight}
-                  fill={data.color}
-                  opacity={0.8}
-                  rx={4}
+            {/* Líneas radiales */}
+            {metrics.map((_, i) => {
+              const angle = i * angleStep - Math.PI / 2;
+              const x = center + Math.cos(angle) * radius;
+              const y = center + Math.sin(angle) * radius;
+              return (
+                <Line 
+                  key={i}
+                  x1={center} 
+                  y1={center} 
+                  x2={x} 
+                  y2={y} 
+                  stroke="#334155" 
+                  strokeWidth="1" 
+                  opacity={0.3}
                 />
-                {/* Valor encima de la barra */}
-                <SvgText
-                  x={x + barWidth / 2}
-                  y={y - 5}
-                  fill="#fff"
-                  fontSize="14"
-                  fontWeight="bold"
-                  textAnchor="middle"
-                >
-                  {data.value}
-                </SvgText>
-                {/* Etiqueta debajo */}
-                <SvgText
-                  x={x + barWidth / 2}
-                  y={chartHeight - 10}
-                  fill="#94a3b8"
-                  fontSize="11"
-                  textAnchor="middle"
-                >
-                  {data.label}
-                </SvgText>
-              </React.Fragment>
-            );
-          })}
-        </Svg>
+              );
+            })}
+
+            {/* Polígono de datos */}
+            <Path 
+              d={dataPath} 
+              fill="#0892D030" 
+              stroke="#0892D0" 
+              strokeWidth="2.5" 
+              strokeLinejoin="round"
+            />
+
+            {/* Puntos de datos */}
+            {points.map((p, i) => (
+              <Circle 
+                key={i}
+                cx={p.x} 
+                cy={p.y} 
+                r={5} 
+                fill="#0892D0" 
+                stroke="#fff"
+                strokeWidth="2"
+              />
+            ))}
+
+            {/* Etiquetas de métricas */}
+            {metrics.map((metric, i) => {
+              const angle = i * angleStep - Math.PI / 2;
+              const labelDistance = radius + 35;
+              const x = center + Math.cos(angle) * labelDistance;
+              const y = center + Math.sin(angle) * labelDistance;
+              
+              return (
+                <React.Fragment key={i}>
+                  <SvgText 
+                    x={x} 
+                    y={y} 
+                    fill="#fff" 
+                    fontSize="11" 
+                    fontWeight="700"
+                    textAnchor="middle"
+                  >
+                    {metric.label}
+                  </SvgText>
+                  <SvgText 
+                    x={x} 
+                    y={y + 12} 
+                    fill="#64748b" 
+                    fontSize="9" 
+                    textAnchor="middle"
+                  >
+                    {metric.description}
+                  </SvgText>
+                </React.Fragment>
+              );
+            })}
+          </Svg>
+        </View>
+
+        {/* Escala de referencia */}
+        <View style={{ 
+          flexDirection: 'row', 
+          justifyContent: 'center', 
+          marginTop: 12,
+          backgroundColor: '#1e293b',
+          borderRadius: 8,
+          padding: 10
+        }}>
+          <Text style={{ color: '#64748b', fontSize: 10, textAlign: 'center', lineHeight: 14 }}>
+            💡 Los valores están normalizados de 0-100 para permitir comparación visual entre diferentes métricas
+          </Text>
+        </View>
       </View>
     );
   };
@@ -1964,7 +2234,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           {activeTab === 'advanced' && (
             <View style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
               <EvolutionChart />
-              <ContributionChart />
+              <PerformanceRadarChart />
               <XStatsComponent />
               <NextOpponentAnalysis />
             </View>
