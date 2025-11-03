@@ -15,7 +15,9 @@
     "sync-players": "tsx src/scripts/sync-players.ts",
     "load-stats": "tsx scripts/load-all-player-stats.ts",
     "update-rankings": "tsx scripts/update-live-rankings.ts",
-    "full-backup": "tsx scripts/full-database-backup.ts"
+    "full-backup": "tsx scripts/full-database-backup.ts",
+    "clean-all-data": "tsx scripts/clean-all-data.ts",
+    "restore-backup": "tsx scripts/restore-from-backup.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",
