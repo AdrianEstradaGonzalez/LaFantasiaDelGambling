@@ -251,6 +251,7 @@ export const PlayersMarket = ({ navigation, route }: {
   const [squadPlayerIds, setSquadPlayerIds] = useState<Set<number>>(new Set());
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
   const [sortType, setSortType] = useState<'price' | 'points'>('price');
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Indicador de carga en segundo plano
   
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -273,18 +274,7 @@ export const PlayersMarket = ({ navigation, route }: {
     try {
       setLoading(true);
       
-      // Cargar jugadores directamente con la división recibida (sin llamada extra)
-      const playersData = await PlayerService.getAllPlayers({ division });
-      
-      // Extraer equipos únicos de los jugadores cargados
-      const uniqueTeams = Array.from(
-        new Set(playersData.map(p => JSON.stringify({ id: p.teamId, name: p.teamName })))
-      ).map(str => JSON.parse(str));
-      
-      setPlayers(playersData);
-      setTeams(uniqueTeams);
-      
-      // Cargar estado de jornada, presupuesto y plantilla en paralelo si tenemos ligaId
+      // Cargar estado de jornada, presupuesto y plantilla primero (son rápidos)
       if (ligaId) {
         try {
           const [status, budgetData, squad] = await Promise.all([
@@ -302,10 +292,39 @@ export const PlayersMarket = ({ navigation, route }: {
             setSquadPlayerIds(playerIds);
           }
         } catch (error) {
-          console.error('Error cargando presupuesto:', error);
+          console.error('Error cargando datos de liga:', error);
           setBudget(0);
         }
       }
+      
+      // 🚀 Cargar jugadores de forma progresiva
+      const playersData = await PlayerService.getAllPlayers({ division });
+      
+      // Extraer equipos únicos
+      const uniqueTeams = Array.from(
+        new Set(playersData.map(p => JSON.stringify({ id: p.teamId, name: p.teamName })))
+      ).map(str => JSON.parse(str));
+      setTeams(uniqueTeams);
+      
+      // ✅ ESTRATEGIA: Mostrar primeros 30 inmediatamente
+      const initialBatch = playersData.slice(0, 30);
+      setPlayers(initialBatch);
+      setLoading(false); // UI visible rápido
+      
+      // 🔄 Cargar resto en segundo plano por lotes
+      setIsLoadingMore(true);
+      
+      // Cargar de 30 en 30 con pequeños delays para no bloquear UI
+      const batchSize = 50;
+      for (let i = 30; i < playersData.length; i += batchSize) {
+        await new Promise(resolve => setTimeout(resolve, 50)); // 50ms entre lotes
+        const nextBatch = playersData.slice(0, i + batchSize);
+        setPlayers(nextBatch);
+      }
+      
+      // Asegurar que tenemos todos al final
+      setPlayers(playersData);
+      setIsLoadingMore(false);
 
     } catch (error) {
       CustomAlertManager.alert(
@@ -315,10 +334,10 @@ export const PlayersMarket = ({ navigation, route }: {
         { icon: 'alert-circle', iconColor: '#ef4444' }
       );
       console.error(error);
-    } finally {
       setLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [ligaId]);
+  }, [ligaId, division]);
 
   useEffect(() => {
     loadPlayers();
@@ -1195,6 +1214,28 @@ export const PlayersMarket = ({ navigation, route }: {
               <Text style={{ color: '#94a3b8', textAlign: 'center', marginTop: 20 }}>
                 No hay jugadores con los filtros actuales
               </Text>
+            }
+            ListFooterComponent={
+              isLoadingMore ? (
+                <View style={{ 
+                  paddingVertical: 20,
+                  alignItems: 'center',
+                  backgroundColor: '#0f172a',
+                  borderRadius: 12,
+                  marginTop: 8,
+                  marginBottom: 16,
+                  borderWidth: 1,
+                  borderColor: '#334155'
+                }}>
+                  <ActivityIndicator size="small" color="#10b981" />
+                  <Text style={{ color: '#94a3b8', fontSize: 13, marginTop: 8 }}>
+                    Cargando más jugadores...
+                  </Text>
+                  <Text style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
+                    {players.length} de ~600 jugadores
+                  </Text>
+                </View>
+              ) : null
             }
             showsVerticalScrollIndicator={true}
           />
