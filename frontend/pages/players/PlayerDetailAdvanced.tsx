@@ -79,7 +79,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
   const [isBuying, setIsBuying] = useState(false);
   const [playerInSquad, setPlayerInSquad] = useState(isAlreadyInSquad || false);
   const [budget, setBudget] = useState(initialBudget);
-  const [activeTab, setActiveTab] = useState<'overview' | 'stats' | 'advanced'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'advanced'>('overview');
   const matchdayScrollRef = useRef<ScrollView>(null);
   
   // Promedios reales por posición desde la BD
@@ -1847,26 +1847,6 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => setActiveTab('stats')}
-              style={{
-                flex: 1,
-                paddingVertical: 14,
-                borderBottomWidth: 3,
-                borderBottomColor: activeTab === 'stats' ? '#0892D0' : 'transparent',
-                alignItems: 'center'
-              }}
-            >
-              <Text style={{
-                color: activeTab === 'stats' ? '#0892D0' : '#94a3b8',
-                fontSize: 14,
-                fontWeight: '800',
-                letterSpacing: 0.5
-              }}>
-                ESTADÍSTICAS
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
               onPress={() => setActiveTab('advanced')}
               style={{
                 flex: 1,
@@ -1975,72 +1955,65 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                 </ScrollView>
                 )}
               </View>
-            </>
-          )}
 
-          {/* CONTENIDO DE PESTAÑA ESTADÍSTICAS */}
-          {activeTab === 'stats' && selectedData && (
-            <View style={{ marginBottom: 20 }}>
-              <View style={{
-                backgroundColor: '#0f172a',
-                paddingVertical: 14,
-                paddingHorizontal: 20,
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderBottomWidth: 1,
-                borderBottomColor: '#334155'
-              }}>
-                <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800' }}>
-                  JORNADA {selectedData.matchday}
-                </Text>
-                <View style={{
-                  backgroundColor: selectedData.points >= 0 ? '#10b98130' : '#ef444430',
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 8
-                }}>
-                  <Text style={{ 
-                    color: selectedData.points >= 0 ? '#10b981' : '#ef4444', 
-                    fontSize: 18, 
-                    fontWeight: '900' 
+              {/* DESGLOSE DE ESTADÍSTICAS DE LA JORNADA SELECCIONADA */}
+              {selectedData && selectedData.stats && (
+                <View style={{ marginBottom: 20 }}>
+                  <View style={{
+                    backgroundColor: '#0f172a',
+                    paddingVertical: 14,
+                    paddingHorizontal: 20,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    borderBottomWidth: 1,
+                    borderBottomColor: '#334155'
                   }}>
-                    {selectedData.points}
-                  </Text>
-                </View>
-              </View>
+                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800' }}>
+                      JORNADA {selectedData.matchday}
+                    </Text>
+                    <View style={{
+                      backgroundColor: selectedData.points >= 0 ? '#10b98130' : '#ef444430',
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      borderRadius: 8
+                    }}>
+                      <Text style={{ 
+                        color: selectedData.points >= 0 ? '#10b981' : '#ef4444', 
+                        fontSize: 18, 
+                        fontWeight: '900' 
+                      }}>
+                        {selectedData.points}
+                      </Text>
+                    </View>
+                  </View>
 
-              <ScrollView style={{ backgroundColor: '#0f172a' }}>
-                <View style={{
-                  flexDirection: 'row',
-                  paddingVertical: 14,
-                  paddingHorizontal: 16,
-                  backgroundColor: '#1e293b',
-                  borderBottomWidth: 2,
-                  borderBottomColor: '#0892D0'
-                }}>
-                  <View style={{ width: 70, alignItems: 'center' }}>
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>
-                      CANTIDAD
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1, paddingHorizontal: 12 }}>
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>
-                      ESTADÍSTICA
-                    </Text>
-                  </View>
-                  <View style={{ width: 70, alignItems: 'center' }}>
-                    <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>
-                      PUNTOS
-                    </Text>
-                  </View>
-                </View>
+                  <ScrollView style={{ backgroundColor: '#0f172a' }}>
+                    <View style={{
+                      flexDirection: 'row',
+                      paddingVertical: 14,
+                      paddingHorizontal: 16,
+                      backgroundColor: '#1e293b',
+                      borderBottomWidth: 2,
+                      borderBottomColor: '#0892D0'
+                    }}>
+                      <View style={{ width: 70, alignItems: 'center' }}>
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>
+                          CANTIDAD
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1, paddingHorizontal: 12 }}>
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>
+                          ESTADÍSTICA
+                        </Text>
+                      </View>
+                      <View style={{ width: 70, alignItems: 'center' }}>
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>
+                          PUNTOS
+                        </Text>
+                      </View>
+                    </View>
 
-                {/* ✨ NUEVO: Mostrar estadísticas usando PlayerStats del backend */}
-                {selectedData.stats && (
-                  <>
-                    {/* ========== ESTADÍSTICAS COMUNES (TODAS LAS POSICIONES) ========== */}
-                    
                     {/* Minutos jugados */}
                     <StatRow
                       cantidad={Math.min(selectedData.stats.minutes ?? 0, 90)}
@@ -2062,19 +2035,14 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                       puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Asistencias')}
                     />
 
-                    {/* ========== ESTADÍSTICAS ESPECÍFICAS POR POSICIÓN ========== */}
-                    
                     {/* PORTERO */}
                     {position === 'Goalkeeper' && (
                       <>
-                        {/* Paradas */}
                         <StatRow
                           cantidad={selectedData.stats.saves ?? 0}
                           estadistica="Paradas"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Paradas')}
                         />
-                        
-                        {/* Goles encajados (incluye puntos de portería a cero si aplica) */}
                         <StatRow
                           cantidad={selectedData.stats.conceded ?? 0}
                           estadistica="Goles encajados"
@@ -2083,8 +2051,6 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                             (Number(getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Portería a cero')) || 0)
                           }
                         />
-                        
-                        {/* Penaltis parados */}
                         <StatRow
                           cantidad={selectedData.stats.penaltySaved ?? 0}
                           estadistica="Penaltis parados"
@@ -2096,28 +2062,21 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                     {/* DEFENSA */}
                     {position === 'Defender' && (
                       <>
-                        {/* Goles encajados del equipo (incluye puntos de portería a cero si aplica) */}
                         <StatRow
                           cantidad={selectedData.stats.conceded ?? 0}
                           estadistica="Goles encajados"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Portería a cero')}
                         />
-                        
-                        {/* Tiros a puerta */}
                         <StatRow
                           cantidad={selectedData.stats.shotsOn ?? 0}
                           estadistica="Tiros a puerta"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tiros a puerta')}
                         />
-                        
-                        {/* Duelos ganados */}
                         <StatRow
                           cantidad={selectedData.stats.duelsWon ?? 0}
                           estadistica="Duelos ganados"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Duelos ganados')}
                         />
-                        
-                        {/* Intercepciones */}
                         <StatRow
                           cantidad={selectedData.stats.tacklesInterceptions ?? 0}
                           estadistica="Intercepciones"
@@ -2129,35 +2088,26 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                     {/* CENTROCAMPISTA */}
                     {position === 'Midfielder' && (
                       <>
-                        {/* Tiros a puerta */}
                         <StatRow
                           cantidad={selectedData.stats.shotsOn ?? 0}
                           estadistica="Tiros a puerta"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tiros a puerta')}
                         />
-                        
-                        {/* Pases clave */}
                         <StatRow
                           cantidad={selectedData.stats.passesKey ?? 0}
                           estadistica="Pases clave"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Pases clave')}
                         />
-                        
-                        {/* Regates exitosos */}
                         <StatRow
                           cantidad={selectedData.stats.dribblesSuccess ?? 0}
                           estadistica="Regates exitosos"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Regates exitosos')}
                         />
-                        
-                        {/* Faltas recibidas */}
                         <StatRow
                           cantidad={selectedData.stats.foulsDrawn ?? 0}
                           estadistica="Faltas recibidas"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Faltas recibidas')}
                         />
-                        
-                        {/* Intercepciones */}
                         <StatRow
                           cantidad={selectedData.stats.tacklesInterceptions ?? 0}
                           estadistica="Intercepciones"
@@ -2169,28 +2119,21 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                     {/* DELANTERO */}
                     {position === 'Attacker' && (
                       <>
-                        {/* Tiros a puerta */}
                         <StatRow
                           cantidad={selectedData.stats.shotsOn ?? 0}
                           estadistica="Tiros a puerta"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tiros a puerta')}
                         />
-                        
-                        {/* Pases clave */}
                         <StatRow
                           cantidad={selectedData.stats.passesKey ?? 0}
                           estadistica="Pases clave"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Pases clave')}
                         />
-                        
-                        {/* Regates exitosos */}
                         <StatRow
                           cantidad={selectedData.stats.dribblesSuccess ?? 0}
                           estadistica="Regates exitosos"
                           puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Regates exitosos')}
                         />
-                        
-                        {/* Faltas recibidas */}
                         <StatRow
                           cantidad={selectedData.stats.foulsDrawn ?? 0}
                           estadistica="Faltas recibidas"
@@ -2199,8 +2142,6 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                       </>
                     )}
 
-                    {/* ========== ESTADÍSTICAS COMUNES (CONTINUACIÓN) ========== */}
-                    
                     {/* Tarjetas amarillas */}
                     <StatRow
                       cantidad={selectedData.stats.yellowCards ?? 0}
@@ -2221,13 +2162,10 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                       estadistica="Penaltis fallados"
                       puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis fallados')}
                     />
-
-                  </>
-                )}
-
-                {/* ✨ Los puntos individuales se obtienen del breakdown calculado por el backend */}
-              </ScrollView>
-            </View>
+                  </ScrollView>
+                </View>
+              )}
+            </>
           )}
 
           {/* CONTENIDO DE PESTAÑA AVANZADO */}
