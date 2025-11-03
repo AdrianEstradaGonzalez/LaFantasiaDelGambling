@@ -14,7 +14,7 @@ import Register from '../pages/register/Register';
 import Clasificacion from '../pages/liga/Clasificacion';
 import PlayersList from '../pages/players/PlayersList';
 import PlayersMarket from '../pages/players/PlayersMarket';
-import PlayerDetail from '../pages/players/PlayerDetail';
+import PlayerDetailAdvanced from '../pages/players/PlayerDetailAdvanced';
 import MiPlantilla from '../pages/plantilla/MiPlantilla';
 import VerPlantillaUsuario from '../pages/plantilla/VerPlantillaUsuario';
 import FootballService from '../services/FutbolService';
@@ -166,7 +166,7 @@ export const AppNavigator = () => {
         <Stack.Screen name="PlayersMarket" component={PlayersMarket} options={{
           animation: 'slide_from_right',
         }} />
-        <Stack.Screen name="PlayerDetail" component={PlayerDetail} options={{
+        <Stack.Screen name="PlayerDetail" component={PlayerDetailAdvanced} options={{
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="MiPlantilla" component={MiPlantilla} options={{

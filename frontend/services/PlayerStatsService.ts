@@ -380,6 +380,69 @@ class PlayerStatsServiceClass {
 
     return display;
   }
+
+  /**
+   * Obtener promedios por posición de todos los jugadores
+   */
+  async getAveragesByPosition(): Promise<any> {
+    try {
+      const token = await EncryptedStorage.getItem('user_session');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(`${API_URL}/api/player-stats/averages-by-position`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al obtener promedios por posición');
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('[PlayerStatsService] Error obteniendo promedios:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener análisis del próximo rival para un jugador
+   */
+  async getNextOpponentAnalysis(playerId: number, currentJornada: number): Promise<any> {
+    try {
+      const token = await EncryptedStorage.getItem('user_session');
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      const response = await fetch(
+        `${API_URL}/api/player-stats/${playerId}/next-opponent?jornada=${currentJornada}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Error al obtener análisis del próximo rival');
+      }
+
+      const result = await response.json();
+      return result.data;
+    } catch (error) {
+      console.error('[PlayerStatsService] Error obteniendo análisis del próximo rival:', error);
+      throw error;
+    }
+  }
 }
 
 export const PlayerStatsService = new PlayerStatsServiceClass();

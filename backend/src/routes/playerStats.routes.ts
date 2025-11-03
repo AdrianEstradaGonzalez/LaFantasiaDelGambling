@@ -39,4 +39,18 @@ export const playerStatsRoutes: FastifyPluginAsync = async (app) => {
     { preHandler: adminAuth },
     PlayerStatsController.updateJornadaStats
   );
+
+  // Obtener promedios por posición (todas las estadísticas)
+  app.get(
+    '/player-stats/averages-by-position',
+    { preHandler: jwtAuth },
+    PlayerStatsController.getAveragesByPosition
+  );
+
+  // Obtener análisis del próximo rival
+  app.get(
+    '/player-stats/:playerId/next-opponent',
+    { preHandler: jwtAuth },
+    PlayerStatsController.getNextOpponentAnalysis
+  );
 };

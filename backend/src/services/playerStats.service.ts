@@ -762,8 +762,494 @@ export async function updateAllPlayersStatsForJornada(jornada: number) {
   };
 }
 
+/**
+ * Calcular promedios por posición basados en todas las estadísticas de la BD
+ */
+async function calculateAveragesByPosition() {
+  console.log('[PlayerStatsService] Calculando promedios por posición...');
+
+  // Obtener todas las estadísticas con información del jugador
+  const allStats = await prisma.playerStats.findMany({
+    where: {
+      minutes: { gt: 0 }, // Solo partidos jugados
+    },
+    include: {
+      player: {
+        select: {
+          position: true,
+        },
+      },
+    },
+  });
+
+  console.log(`[PlayerStatsService] ${allStats.length} registros de estadísticas encontrados`);
+
+  // Agrupar por posición
+  const statsByPosition: Record<string, typeof allStats> = {
+    Goalkeeper: [],
+    Defender: [],
+    Midfielder: [],
+    Attacker: [],
+  };
+
+  allStats.forEach((stat) => {
+    const position = stat.player?.position;
+    if (position && statsByPosition[position]) {
+      statsByPosition[position].push(stat);
+    }
+  });
+
+  const averages: any = {};
+
+  // Calcular promedios para cada posición
+  for (const [position, stats] of Object.entries(statsByPosition)) {
+    if (stats.length === 0) continue;
+
+    const totalMatches = stats.length;
+    let totalGoals = 0;
+    let totalAssists = 0;
+    let totalShots = 0;
+    let totalKeyPasses = 0;
+    let totalCleanSheets = 0;
+    let totalGoalsAgainst = 0;
+    let totalSaves = 0;
+    let totalMinutes = 0;
+
+    stats.forEach((stat) => {
+      totalGoals += stat.goals || 0;
+      totalAssists += stat.assists || 0;
+      totalShots += stat.shotsOn || 0;
+      totalKeyPasses += stat.passesKey || 0;
+      totalMinutes += stat.minutes || 0;
+
+      // Clean sheets (solo si jugó más de 60 minutos)
+      if ((stat.minutes || 0) >= 60 && (stat.conceded || 0) === 0) {
+        totalCleanSheets++;
+      }
+
+      totalGoalsAgainst += stat.conceded || 0;
+      totalSaves += stat.saves || 0;
+    });
+
+    const matchesCompleted = totalMinutes / 90;
+
+    if (position === 'Attacker' || position === 'Midfielder') {
+      // Calcular tasas de conversión reales
+      const conversionRate = totalShots > 0 ? totalGoals / totalShots : 0;
+      const assistRate = totalKeyPasses > 0 ? totalAssists / totalKeyPasses : 0;
+
+      averages[position] = {
+        goalsPerMatch: totalGoals / matchesCompleted,
+        assistsPerMatch: totalAssists / matchesCompleted,
+        shotsPerMatch: totalShots / matchesCompleted,
+        keyPassesPerMatch: totalKeyPasses / matchesCompleted,
+        conversionRate, // % de tiros que se convierten en gol
+        assistRate, // % de pases clave que se convierten en asistencia
+        totalPlayers: new Set(stats.map(s => s.playerId)).size,
+        totalMatches: matchesCompleted,
+      };
+    } else if (position === 'Defender') {
+      averages[position] = {
+        cleanSheetsPerMatch: totalCleanSheets / matchesCompleted,
+        goalsAgainstPerMatch: totalGoalsAgainst / matchesCompleted,
+        totalPlayers: new Set(stats.map(s => s.playerId)).size,
+        totalMatches: matchesCompleted,
+      };
+    } else if (position === 'Goalkeeper') {
+      const totalShotsAgainst = totalSaves + totalGoalsAgainst;
+      const savePercentage = totalShotsAgainst > 0 ? (totalSaves / totalShotsAgainst) * 100 : 70;
+
+      averages[position] = {
+        cleanSheetsPerMatch: totalCleanSheets / matchesCompleted,
+        savePercentage,
+        savesPerMatch: totalSaves / matchesCompleted,
+        goalsAgainstPerMatch: totalGoalsAgainst / matchesCompleted,
+        totalPlayers: new Set(stats.map(s => s.playerId)).size,
+        totalMatches: matchesCompleted,
+      };
+    }
+  }
+
+  console.log('[PlayerStatsService] Promedios calculados:', JSON.stringify(averages, null, 2));
+
+  return averages;
+}
+
+/**
+ * Obtener análisis del próximo rival para un jugador
+ * Incluye estadísticas del equipo rival y predicción de rendimiento
+ */
+async function getNextOpponentAnalysis(playerId: number, currentJornada: number) {
+  console.log(`[PlayerStatsService] Analizando próximo rival para jugador ${playerId}, jornada actual: ${currentJornada}`);
+
+  // Obtener información del jugador
+  const player = await prisma.player.findUnique({
+    where: { id: playerId },
+    select: { id: true, name: true, teamId: true, teamName: true, position: true },
+  });
+
+  if (!player) {
+    throw new AppError(404, 'PLAYER_NOT_FOUND', 'Jugador no encontrado');
+  }
+
+  const nextJornada = currentJornada + 1;
+  
+  // Obtener el próximo partido del equipo del jugador desde la API
+  const headers = buildHeaders();
+  const season = 2024;
+  const leagueId = 140; // La Liga
+
+  try {
+    // Obtener fixtures de la próxima jornada
+    const response = await api.get('/fixtures', {
+      params: {
+        league: leagueId,
+        season,
+        round: `Regular Season - ${nextJornada}`,
+      },
+      headers,
+    });
+
+    const fixtures = response.data?.response || [];
+    
+    // Buscar el partido del equipo del jugador
+    const nextMatch = fixtures.find((f: any) => 
+      f.teams.home.id === player.teamId || f.teams.away.id === player.teamId
+    );
+
+    if (!nextMatch) {
+      return {
+        hasNextMatch: false,
+        message: 'No hay próximo partido disponible',
+      };
+    }
+
+    const isHome = nextMatch.teams.home.id === player.teamId;
+    const opponentTeam = isHome ? nextMatch.teams.away : nextMatch.teams.home;
+    const playerTeam = isHome ? nextMatch.teams.home : nextMatch.teams.away;
+
+    // Obtener estadísticas históricas del equipo rival (últimas 5 jornadas)
+    const opponentStats = await getTeamRecentStats(opponentTeam.id, currentJornada, 5);
+    const playerTeamStats = await getTeamRecentStats(player.teamId, currentJornada, 5);
+
+    // Obtener estadísticas promedio del jugador
+    const playerAvgStats = await getPlayerAverageStats(playerId, currentJornada);
+
+    // CALCULAR ÍNDICES DE RENDIMIENTO
+    // 1. Índice de Fortaleza del Rival (0-100, mayor = más difícil)
+    const opponentStrength = calculateTeamStrength(opponentStats);
+    
+    // 2. Índice de Forma del Jugador (0-100, mayor = mejor forma)
+    const playerForm = calculatePlayerForm(playerAvgStats);
+
+    // 3. Predicción de rendimiento basada en:
+    //    - Fortaleza defensiva rival (para atacantes/medios)
+    //    - Fortaleza ofensiva rival (para defensas/porteros)
+    //    - Forma actual del jugador
+    //    - Ventaja de local/visitante
+    const prediction = calculatePerformancePrediction(
+      player.position,
+      playerAvgStats,
+      opponentStats,
+      playerTeamStats,
+      isHome
+    );
+
+    return {
+      hasNextMatch: true,
+      match: {
+        jornada: nextJornada,
+        date: nextMatch.fixture.date,
+        venue: nextMatch.fixture.venue.name,
+        isHome,
+        playerTeam: {
+          id: playerTeam.id,
+          name: playerTeam.name,
+          logo: playerTeam.logo,
+        },
+        opponent: {
+          id: opponentTeam.id,
+          name: opponentTeam.name,
+          logo: opponentTeam.logo,
+        },
+      },
+      opponentStats: {
+        strength: opponentStrength,
+        wins: opponentStats.wins,
+        draws: opponentStats.draws,
+        losses: opponentStats.losses,
+        goalsScored: opponentStats.goalsScored,
+        goalsConceded: opponentStats.goalsConceded,
+        cleanSheets: opponentStats.cleanSheets,
+        avgGoalsScored: opponentStats.avgGoalsScored,
+        avgGoalsConceded: opponentStats.avgGoalsConceded,
+        form: opponentStats.form,
+      },
+      playerStats: {
+        form: playerForm,
+        avgPoints: playerAvgStats.avgPoints,
+        avgGoals: playerAvgStats.avgGoals,
+        avgAssists: playerAvgStats.avgAssists,
+        avgMinutes: playerAvgStats.avgMinutes,
+        matchesPlayed: playerAvgStats.matchesPlayed,
+      },
+      prediction: {
+        expectedPoints: prediction.expectedPoints,
+        confidence: prediction.confidence,
+        difficulty: prediction.difficulty, // 'Fácil', 'Medio', 'Difícil'
+        factors: prediction.factors,
+      },
+    };
+  } catch (error: any) {
+    console.error('[PlayerStatsService] Error obteniendo análisis del próximo rival:', error);
+    return {
+      hasNextMatch: false,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Obtener estadísticas recientes de un equipo
+ */
+async function getTeamRecentStats(teamId: number, currentJornada: number, numMatches: number) {
+  const startJornada = Math.max(1, currentJornada - numMatches + 1);
+  
+  // Obtener todas las estadísticas de jugadores de este equipo en el rango de jornadas
+  const stats = await prisma.playerStats.findMany({
+    where: {
+      teamId,
+      jornada: { gte: startJornada, lte: currentJornada },
+    },
+  });
+
+  if (stats.length === 0) {
+    return {
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      goalsScored: 0,
+      goalsConceded: 0,
+      cleanSheets: 0,
+      avgGoalsScored: 0,
+      avgGoalsConceded: 0,
+      matchesPlayed: 0,
+      form: 0,
+    };
+  }
+
+  // Agrupar por jornada para calcular estadísticas del equipo
+  const matchesByJornada: Record<number, typeof stats> = {};
+  stats.forEach(stat => {
+    if (!matchesByJornada[stat.jornada]) {
+      matchesByJornada[stat.jornada] = [];
+    }
+    matchesByJornada[stat.jornada].push(stat);
+  });
+
+  let wins = 0;
+  let draws = 0;
+  let losses = 0;
+  let totalGoalsScored = 0;
+  let totalGoalsConceded = 0;
+  let cleanSheets = 0;
+
+  Object.values(matchesByJornada).forEach(matchStats => {
+    // Goles marcados por el equipo
+    const goalsScored = matchStats.reduce((sum, s) => sum + (s.goals || 0), 0);
+    totalGoalsScored += goalsScored;
+
+    // Goles encajados (tomamos el del portero o el máximo)
+    const goalsConceded = Math.max(...matchStats.map(s => s.conceded || 0));
+    totalGoalsConceded += goalsConceded;
+
+    if (goalsConceded === 0) cleanSheets++;
+
+    // Determinar resultado (simplificado)
+    if (goalsScored > goalsConceded) wins++;
+    else if (goalsScored < goalsConceded) losses++;
+    else draws++;
+  });
+
+  const matchesPlayed = Object.keys(matchesByJornada).length;
+  const form = ((wins * 3 + draws) / (matchesPlayed * 3)) * 100; // % de puntos obtenidos
+
+  return {
+    wins,
+    draws,
+    losses,
+    goalsScored: totalGoalsScored,
+    goalsConceded: totalGoalsConceded,
+    cleanSheets,
+    avgGoalsScored: totalGoalsScored / matchesPlayed,
+    avgGoalsConceded: totalGoalsConceded / matchesPlayed,
+    matchesPlayed,
+    form,
+  };
+}
+
+/**
+ * Obtener estadísticas promedio de un jugador
+ */
+async function getPlayerAverageStats(playerId: number, currentJornada: number) {
+  const stats = await prisma.playerStats.findMany({
+    where: {
+      playerId,
+      jornada: { lte: currentJornada },
+      minutes: { gt: 0 },
+    },
+    orderBy: { jornada: 'desc' },
+    take: 5, // Últimos 5 partidos
+  });
+
+  if (stats.length === 0) {
+    return {
+      avgPoints: 0,
+      avgGoals: 0,
+      avgAssists: 0,
+      avgMinutes: 0,
+      matchesPlayed: 0,
+    };
+  }
+
+  const totalPoints = stats.reduce((sum, s) => sum + s.totalPoints, 0);
+  const totalGoals = stats.reduce((sum, s) => sum + (s.goals || 0), 0);
+  const totalAssists = stats.reduce((sum, s) => sum + (s.assists || 0), 0);
+  const totalMinutes = stats.reduce((sum, s) => sum + (s.minutes || 0), 0);
+
+  return {
+    avgPoints: totalPoints / stats.length,
+    avgGoals: totalGoals / stats.length,
+    avgAssists: totalAssists / stats.length,
+    avgMinutes: totalMinutes / stats.length,
+    matchesPlayed: stats.length,
+  };
+}
+
+/**
+ * Calcular índice de fortaleza del equipo (0-100)
+ */
+function calculateTeamStrength(teamStats: any): number {
+  if (teamStats.matchesPlayed === 0) return 50;
+
+  // Factores:
+  // - Forma reciente (40%)
+  // - Goles a favor vs goles en contra (30%)
+  // - Porterías a cero (30%)
+  
+  const formScore = teamStats.form; // Ya es 0-100
+  
+  const goalDiff = teamStats.goalsScored - teamStats.goalsConceded;
+  const goalScore = Math.min(100, Math.max(0, 50 + (goalDiff * 10)));
+  
+  const cleanSheetRate = (teamStats.cleanSheets / teamStats.matchesPlayed) * 100;
+  
+  const strength = (formScore * 0.4) + (goalScore * 0.3) + (cleanSheetRate * 0.3);
+  
+  return Math.round(Math.min(100, Math.max(0, strength)));
+}
+
+/**
+ * Calcular índice de forma del jugador (0-100)
+ */
+function calculatePlayerForm(playerStats: any): number {
+  if (playerStats.matchesPlayed === 0) return 50;
+  
+  // Basado en puntos promedio
+  // Escala: 0 pts = 0, 10+ pts = 100
+  const form = Math.min(100, (playerStats.avgPoints / 10) * 100);
+  
+  return Math.round(form);
+}
+
+/**
+ * Calcular predicción de rendimiento
+ */
+function calculatePerformancePrediction(
+  position: string,
+  playerStats: any,
+  opponentStats: any,
+  playerTeamStats: any,
+  isHome: boolean
+) {
+  const opponentStrength = calculateTeamStrength(opponentStats);
+  const playerForm = calculatePlayerForm(playerStats);
+  
+  // Factor local/visitante (+10% / -5%)
+  const homeAdvantage = isHome ? 1.10 : 0.95;
+  
+  // Para atacantes/medios: más difícil contra defensas fuertes
+  // Para defensas/porteros: más difícil contra ataques fuertes
+  let difficultyMultiplier = 1.0;
+  
+  if (position === 'Attacker' || position === 'Midfielder') {
+    // Defensas fuertes = menos goles esperados
+    difficultyMultiplier = 1 - ((opponentStrength - 50) / 100) * 0.5;
+  } else if (position === 'Defender' || position === 'Goalkeeper') {
+    // Ataques fuertes = más difícil mantener portería a cero
+    difficultyMultiplier = 1 - ((opponentStrength - 50) / 100) * 0.5;
+  }
+  
+  // Puntos esperados = promedio * forma * local/visitante * dificultad
+  const basePoints = playerStats.avgPoints;
+  const formFactor = playerForm / 100;
+  const expectedPoints = basePoints * formFactor * homeAdvantage * difficultyMultiplier;
+  
+  // Confianza basada en consistencia (más partidos = más confianza)
+  const confidence = Math.min(100, (playerStats.matchesPlayed / 5) * 100);
+  
+  // Clasificación de dificultad
+  let difficulty = 'Medio';
+  if (opponentStrength < 40) difficulty = 'Fácil';
+  else if (opponentStrength > 65) difficulty = 'Difícil';
+  
+  // Factores explicativos
+  const factors = [];
+  
+  if (isHome) {
+    factors.push({ label: 'Ventaja de local', impact: '+10%', type: 'positive' });
+  } else {
+    factors.push({ label: 'Juega como visitante', impact: '-5%', type: 'neutral' });
+  }
+  
+  if (opponentStrength > 65) {
+    factors.push({ label: 'Rival muy fuerte', impact: '-25%', type: 'negative' });
+  } else if (opponentStrength < 40) {
+    factors.push({ label: 'Rival débil', impact: '+25%', type: 'positive' });
+  }
+  
+  if (playerForm > 70) {
+    factors.push({ label: 'Excelente forma reciente', impact: `+${Math.round((playerForm - 50) / 2)}%`, type: 'positive' });
+  } else if (playerForm < 40) {
+    factors.push({ label: 'Forma baja', impact: `-${Math.round((50 - playerForm) / 2)}%`, type: 'negative' });
+  }
+  
+  if (position === 'Attacker' || position === 'Midfielder') {
+    if (opponentStats.avgGoalsConceded > 1.5) {
+      factors.push({ label: 'Defensa rival vulnerable', impact: '+15%', type: 'positive' });
+    } else if (opponentStats.avgGoalsConceded < 0.8) {
+      factors.push({ label: 'Defensa rival sólida', impact: '-15%', type: 'negative' });
+    }
+  } else {
+    if (opponentStats.avgGoalsScored > 2.0) {
+      factors.push({ label: 'Ataque rival potente', impact: '-20%', type: 'negative' });
+    } else if (opponentStats.avgGoalsScored < 1.0) {
+      factors.push({ label: 'Ataque rival débil', impact: '+20%', type: 'positive' });
+    }
+  }
+  
+  return {
+    expectedPoints: Math.round(expectedPoints * 10) / 10,
+    confidence: Math.round(confidence),
+    difficulty,
+    factors,
+  };
+}
+
 export const PlayerStatsService = {
   getPlayerStatsForJornada,
   getPlayerStatsForMultipleJornadas,
   updateAllPlayersStatsForJornada,
+  calculateAveragesByPosition,
+  getNextOpponentAnalysis,
 };

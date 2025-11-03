@@ -125,4 +125,55 @@ export class PlayerStatsController {
       });
     }
   }
+
+  /**
+   * Obtener promedios por posición basados en todas las estadísticas de la BD
+   * GET /api/player-stats/averages-by-position
+   */
+  static async getAveragesByPosition(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const averages = await PlayerStatsService.calculateAveragesByPosition();
+
+      return reply.status(200).send({
+        success: true,
+        data: averages,
+      });
+    } catch (error: any) {
+      console.error('Error calculando promedios por posición:', error);
+
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al calcular promedios',
+      });
+    }
+  }
+
+  /**
+   * Obtener análisis del próximo rival para un jugador
+   * GET /api/player-stats/:playerId/next-opponent
+   */
+  static async getNextOpponentAnalysis(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      const { playerId } = req.params as { playerId: string };
+      const query = req.query as any;
+      const currentJornada = query.jornada ? Number(query.jornada) : 1;
+
+      const analysis = await PlayerStatsService.getNextOpponentAnalysis(
+        Number(playerId),
+        currentJornada
+      );
+
+      return reply.status(200).send({
+        success: true,
+        data: analysis,
+      });
+    } catch (error: any) {
+      console.error('Error obteniendo análisis del próximo rival:', error);
+
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al analizar próximo rival',
+      });
+    }
+  }
 }
