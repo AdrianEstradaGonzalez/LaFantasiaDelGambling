@@ -49,6 +49,26 @@ export async function buildApp() {
     }
   });
 
+  // Configurar parser para application/x-www-form-urlencoded (para cron jobs)
+  app.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string' }, function (req, body, done) {
+    try {
+      // Para cron jobs, el body puede estar vacío o contener form data
+      if (body === '') {
+        done(null, {});
+      } else {
+        const params = new URLSearchParams(body as string);
+        const result: any = {};
+        params.forEach((value, key) => {
+          result[key] = value;
+        });
+        done(null, result);
+      }
+    } catch (err: any) {
+      err.statusCode = 400;
+      done(err, undefined);
+    }
+  });
+
   // Plugins de seguridad
   await app.register(cors, {
     origin: env.APP_ORIGIN,

@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { PlayerStatsController } from '../controllers/playerStats.controller.js';
+import { cronAuth } from '../middleware/cronAuth.js';
 
 // JWT Auth
 async function jwtAuth(req: any, reply: any) {
@@ -33,10 +34,17 @@ export const playerStatsRoutes: FastifyPluginAsync = async (app) => {
     PlayerStatsController.getPlayerMultipleJornadasStats
   );
 
-  // Actualizar todas las estadísticas de una jornada (admin)
+  // Actualizar todas las estadísticas de una jornada (cron token)
   app.post(
     '/player-stats/update-jornada',
-    { preHandler: adminAuth },
+    { preHandler: cronAuth },
+    PlayerStatsController.updateJornadaStats
+  );
+
+  // Actualizar jornada vía GET (para cron jobs que solo soportan GET)
+  app.get(
+    '/player-stats/update-jornada',
+    { preHandler: cronAuth },
     PlayerStatsController.updateJornadaStats
   );
 
