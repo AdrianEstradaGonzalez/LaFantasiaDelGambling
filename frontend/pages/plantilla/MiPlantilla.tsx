@@ -1611,9 +1611,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         textShadowColor: '#000',
                         textShadowOffset: { width: 0, height: 1 },
                         textShadowRadius: 3,
-                        maxWidth: 70
+                        width: 70
                       }}
                       numberOfLines={1}
+                      ellipsizeMode="tail"
                     >
                       {player.name}
                     </Text>
@@ -1781,9 +1782,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         textShadowColor: '#000',
                         textShadowOffset: { width: 0, height: 1 },
                         textShadowRadius: 3,
-                        maxWidth: 70
+                        width: 70
                       }}
                       numberOfLines={1}
+                      ellipsizeMode="tail"
                     >
                       {player.name}
                     </Text>

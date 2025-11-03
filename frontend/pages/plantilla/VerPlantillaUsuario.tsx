@@ -421,7 +421,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                           </View>
                           {/* (crest arriba-izq ya mostrado o x2 si capitán) */}
                         </View>
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginTop: 8 }} numberOfLines={1}>
+                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginTop: 8, maxWidth: 80 }} numberOfLines={1} ellipsizeMode="tail">
                           {player.playerName}
                         </Text>
                         <View style={{ backgroundColor: roleColor(player.role || position.role), paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginTop: 4 }}>

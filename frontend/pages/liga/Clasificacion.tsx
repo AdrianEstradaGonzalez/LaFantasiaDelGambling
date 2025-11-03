@@ -421,7 +421,7 @@ export const Clasificacion = () => {
                       textShadowOffset: { width: 0, height: 0 },
                       textShadowRadius: 8
                     }
-                  ]} numberOfLines={1}>
+                  ]} numberOfLines={1} ellipsizeMode="tail">
                     {jugador.nombre}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

@@ -599,30 +599,162 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (!rawLabel) return rawLabel;
     const label = rawLabel.trim();
     const l = label.toLowerCase();
+    const t = type?.toLowerCase() || '';
 
-    // If label already contains a clear unit/word, return as-is
+    // CASOS ESPECIALES: Convertir "Yes/No" según el tipo de apuesta
+    const isYesNo = l === 'yes' || l === 'sí' || l === 'si' || l === 'no';
+    
+    if (isYesNo) {
+      const isYes = l === 'yes' || l === 'sí' || l === 'si';
+      
+      // Ambos Equipos Marcan
+      if (t.includes('ambos') || t.includes('both') || t.includes('btts')) {
+        return isYes ? 'Marcan ambos' : 'No marcan ambos';
+      }
+      
+      // Portería a Cero / Clean Sheet
+      if (t.includes('clean sheet') || t.includes('portería a cero') || t.includes('porteria a cero')) {
+        if (t.includes('local') || t.includes('home')) {
+          return isYes ? 'Portería a cero Local' : 'Local encaja gol';
+        }
+        if (t.includes('visitante') || t.includes('away')) {
+          return isYes ? 'Portería a cero Visitante' : 'Visitante encaja gol';
+        }
+        return isYes ? 'Portería a cero' : 'Ambos marcan';
+      }
+      
+      // Ganar sin Encajar / Win to Nil
+      if (t.includes('win to nil') || t.includes('ganar sin encajar')) {
+        if (t.includes('local') || t.includes('home')) {
+          return isYes ? 'Local gana sin encajar' : 'Local no gana sin encajar';
+        }
+        if (t.includes('visitante') || t.includes('away')) {
+          return isYes ? 'Visitante gana sin encajar' : 'Visitante no gana sin encajar';
+        }
+        return isYes ? 'Gana sin encajar' : 'No gana sin encajar';
+      }
+      
+      // Gol en Ambas Partes / Goal in Both Halves
+      if (t.includes('goal in both halves') || t.includes('gol en ambas partes')) {
+        return isYes ? 'Gol en ambas partes' : 'No gol en ambas partes';
+      }
+      
+      // Marcar en Ambas Partes / Score in Both Halves
+      if (t.includes('score in both halves') || t.includes('marcar en ambas partes')) {
+        if (t.includes('local') || t.includes('home')) {
+          return isYes ? 'Local marca en ambas partes' : 'Local no marca en ambas partes';
+        }
+        if (t.includes('visitante') || t.includes('away')) {
+          return isYes ? 'Visitante marca en ambas partes' : 'Visitante no marca en ambas partes';
+        }
+        return isYes ? 'Marcan en ambas partes' : 'No marcan en ambas partes';
+      }
+      
+      // Equipo marca gol / Team Score a Goal
+      if (t.includes('score a goal') || t.includes('marca un gol') || t.includes('marca gol')) {
+        if (t.includes('local') || t.includes('home')) {
+          return isYes ? 'Local marca' : 'Local no marca';
+        }
+        if (t.includes('visitante') || t.includes('away')) {
+          return isYes ? 'Visitante marca' : 'Visitante no marca';
+        }
+        return isYes ? 'Marca gol' : 'No marca gol';
+      }
+      
+      // Penalti / Penalty
+      if (t.includes('penalty') || t.includes('penalti') || t.includes('penal')) {
+        return isYes ? 'Habrá penalti' : 'No habrá penalti';
+      }
+      
+      // Tarjeta Roja / Red Card
+      if (t.includes('red card') || t.includes('tarjeta roja')) {
+        return isYes ? 'Habrá tarjeta roja' : 'No habrá tarjeta roja';
+      }
+      
+      // VAR
+      if (t.includes('var')) {
+        return isYes ? 'Habrá VAR' : 'No habrá VAR';
+      }
+      
+      // Ganar Alguna Parte / Win Either Half
+      if (t.includes('win either half') || t.includes('ganar alguna parte')) {
+        if (t.includes('local') || t.includes('home')) {
+          return isYes ? 'Local gana alguna parte' : 'Local no gana ninguna parte';
+        }
+        if (t.includes('visitante') || t.includes('away')) {
+          return isYes ? 'Visitante gana alguna parte' : 'Visitante no gana ninguna parte';
+        }
+        return isYes ? 'Gana alguna parte' : 'No gana ninguna parte';
+      }
+      
+      // Ganar Ambas Partes / Win Both Halves
+      if (t.includes('win both halves') || t.includes('ganar ambas partes')) {
+        if (t.includes('local') || t.includes('home')) {
+          return isYes ? 'Local gana ambas partes' : 'Local no gana ambas partes';
+        }
+        if (t.includes('visitante') || t.includes('away')) {
+          return isYes ? 'Visitante gana ambas partes' : 'Visitante no gana ambas partes';
+        }
+        return isYes ? 'Gana ambas partes' : 'No gana ambas partes';
+      }
+      
+      // Ganar Remontando / Win From Behind
+      if (t.includes('win from behind') || t.includes('ganar remontando')) {
+        if (t.includes('local') || t.includes('home')) {
+          return isYes ? 'Local gana remontando' : 'Local no gana remontando';
+        }
+        if (t.includes('visitante') || t.includes('away')) {
+          return isYes ? 'Visitante gana remontando' : 'Visitante no gana remontando';
+        }
+        return isYes ? 'Gana remontando' : 'No gana remontando';
+      }
+      
+      // Si no coincide con ningún caso específico, mantener el Yes/No con contexto del tipo
+      if (t) {
+        return isYes ? `Sí (${type})` : `No (${type})`;
+      }
+    }
+
+    // CASO ESPECIAL: Identificar si es una apuesta de una parte específica
+    let partePrefix = '';
+    if (t.includes('primera parte') || t.includes('first half')) {
+      partePrefix = 'Primera Parte - ';
+    } else if (t.includes('segunda parte') || t.includes('second half')) {
+      partePrefix = 'Segunda Parte - ';
+    }
+
+    // Si ya tiene unidades claras, añadir prefijo de parte si aplica
     const hasUnit = /\b(goles|tarjetas|c[oó]rners|c[oó]rner|c[oó]rnes|porteria|portería|goles totales|córners|tarjeta|faltas|tiros a puerta)\b/i.test(l);
-    if (hasUnit) return label;
+    if (hasUnit) {
+      return partePrefix + label;
+    }
 
-    // If label contains explicit words like 'más de' or a number, append unit based on type
+    // Si contiene "más de" o "menos de", añadir unidad según tipo
     const isOverUnder = /más de|menos de|more than|less than|over|under/i.test(l);
     const hasNumber = /[0-9]+(\.[0-9]+)?/.test(l);
 
     const mapUnit = (t?: string) => {
       if (!t) return '';
       const tt = t.toLowerCase();
-      if (tt.includes('tarjeta')) return ' tarjetas';
-      if (tt.includes('córner') || tt.includes('corner') || tt.includes('c[oó]rners')) return ' córners';
-      if (tt.includes('goles')) return ' goles';
+      if (tt.includes('tarjeta') || tt.includes('card')) return ' tarjetas';
+      if (tt.includes('córner') || tt.includes('corner')) return ' córners';
+      if (tt.includes('goles') || tt.includes('goals')) return ' goles';
       if (tt.includes('resultado')) return '';
       return '';
     };
 
     const unit = mapUnit(type);
     if ((isOverUnder || hasNumber) && unit) {
-      // Avoid duplicating if label already ends with number or unit-like word
-      if (new RegExp(unit.trim() + '$', 'i').test(label)) return label;
-      return `${label}${unit}`;
+      // Evitar duplicar si ya termina con la unidad
+      if (new RegExp(unit.trim() + '$', 'i').test(label)) {
+        return partePrefix + label;
+      }
+      return partePrefix + `${label}${unit}`;
+    }
+
+    // Si es una apuesta de parte específica pero no tiene unidad, añadir prefijo
+    if (partePrefix) {
+      return partePrefix + label;
     }
 
     return label;
