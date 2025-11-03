@@ -87,6 +87,9 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
   
   // Análisis del próximo rival
   const [nextOpponentAnalysis, setNextOpponentAnalysis] = useState<any>(null);
+  
+  // Estado para desplegables de fórmulas (por índice de estadística)
+  const [expandedFormulas, setExpandedFormulas] = useState<Set<number>>(new Set());
 
   const position = normalizePosition(player.position);
   const posColor = position ? posColors[position] : '#64748b';
@@ -1053,7 +1056,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           actual: totalGoles,
           expected: parseFloat(xG.toFixed(2)),
           description: `Con ${totalTiros} tiros a puerta en ${partidosCompletos.toFixed(1)} partidos, se esperan ${xG.toFixed(2)} goles`,
-          formula: `${totalTiros} tiros × ${(conversionRate * 100).toFixed(1)}% conversión promedio de ${posAvg.totalPlayers || 'todos los'} delanteros`,
+          formula: `xG = Tiros a Puerta × Tasa de Conversión\n\nDatos del jugador:\n• Tiros a puerta: ${totalTiros} (en ${jornadasJugadas.length} jornadas)\n• Partidos completos: ${partidosCompletos.toFixed(2)}\n\n¿De dónde sale la tasa de conversión?\n• Se calcula de TODOS los delanteros de La Liga\n• Fórmula: Total Goles / Total Tiros a Puerta\n• Basada en ${posAvg.totalPlayers || 'N/A'} delanteros\n• Resultado: ${(conversionRate * 100).toFixed(1)}% de los tiros se convierten en gol\n• Es decir: cada 100 tiros, ${(conversionRate * 100).toFixed(1)} son gol\n\nCálculo final:\nxG = ${totalTiros} tiros × ${(conversionRate * 100).toFixed(1)}% = ${xG.toFixed(2)} goles esperados`,
           interpretation: totalGoles > xG 
             ? `${((totalGoles / (xG || 1) - 1) * 100).toFixed(0)}% mejor que el promedio de delanteros`
             : totalGoles < xG
@@ -1068,7 +1071,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           actual: totalAsistencias,
           expected: parseFloat(xA.toFixed(2)),
           description: `Con ${totalPasesClave} pases clave generados, se esperan ${xA.toFixed(2)} asistencias`,
-          formula: `${totalPasesClave} pases clave × ${(assistRate * 100).toFixed(1)}% conversión promedio de ${posAvg.totalPlayers || 'todos los'} delanteros`,
+          formula: `xA = Pases Clave × Tasa de Asistencia\n\nDatos del jugador:\n• Pases clave: ${totalPasesClave} (en ${jornadasJugadas.length} jornadas)\n• Pases clave por partido: ${(totalPasesClave / partidosCompletos).toFixed(2)}\n\n¿De dónde sale la tasa de asistencia?\n• Se calcula de TODOS los delanteros de La Liga\n• Fórmula: Total Asistencias / Total Pases Clave\n• Basada en ${posAvg.totalPlayers || 'N/A'} delanteros\n• Resultado: ${(assistRate * 100).toFixed(1)}% de pases clave generan asistencia\n• Es decir: cada 100 pases clave, ${(assistRate * 100).toFixed(1)} son asistencia\n\nCálculo final:\nxA = ${totalPasesClave} pases × ${(assistRate * 100).toFixed(1)}% = ${xA.toFixed(2)} asistencias esperadas`,
           interpretation: totalAsistencias > xA
             ? `${((totalAsistencias / (xA || 1) - 1) * 100).toFixed(0)}% mejor que el promedio de delanteros`
             : totalAsistencias < xA
@@ -1092,7 +1095,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           actual: totalAsistencias,
           expected: parseFloat(xA.toFixed(2)),
           description: `Con ${totalPasesClave} pases clave en ${partidosCompletos.toFixed(1)} partidos, se esperan ${xA.toFixed(2)} asistencias`,
-          formula: `${totalPasesClave} pases clave × ${(assistRate * 100).toFixed(1)}% conversión promedio de ${posAvg.totalPlayers || 'todos los'} centrocampistas`,
+          formula: `xA = Pases Clave × Tasa de Asistencia\n\nDatos del jugador:\n• Pases clave: ${totalPasesClave} (en ${jornadasJugadas.length} jornadas)\n• Pases clave por partido: ${(totalPasesClave / partidosCompletos).toFixed(2)}\n\n¿De dónde sale la tasa de asistencia?\n• Se calcula de TODOS los centrocampistas de La Liga\n• Fórmula: Total Asistencias / Total Pases Clave\n• Basada en ${posAvg.totalPlayers || 'N/A'} centrocampistas\n• Resultado: ${(assistRate * 100).toFixed(1)}% de pases clave generan asistencia\n• Es decir: cada 100 pases clave, ${(assistRate * 100).toFixed(1)} son asistencia\n\nCálculo final:\nxA = ${totalPasesClave} pases × ${(assistRate * 100).toFixed(1)}% = ${xA.toFixed(2)} asistencias esperadas`,
           interpretation: totalAsistencias > xA
             ? `${((totalAsistencias / (xA || 1) - 1) * 100).toFixed(0)}% mejor que el promedio de centrocampistas`
             : totalAsistencias < xA
@@ -1106,7 +1109,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           actual: totalGoles,
           expected: parseFloat(xG.toFixed(2)),
           description: `Con ${totalTiros} tiros a puerta, se esperan ${xG.toFixed(2)} goles para un centrocampista`,
-          formula: `${totalTiros} tiros × ${(conversionRate * 100).toFixed(1)}% conversión promedio de ${posAvg.totalPlayers || 'todos los'} centrocampistas`,
+          formula: `xG = Tiros a Puerta × Tasa de Conversión\n\nDatos del jugador:\n• Tiros a puerta: ${totalTiros} (en ${jornadasJugadas.length} jornadas)\n• Tiros por partido: ${(totalTiros / partidosCompletos).toFixed(2)}\n\n¿De dónde sale la tasa de conversión?\n• Se calcula de TODOS los centrocampistas de La Liga\n• Fórmula: Total Goles / Total Tiros a Puerta\n• Basada en ${posAvg.totalPlayers || 'N/A'} centrocampistas\n• Resultado: ${(conversionRate * 100).toFixed(1)}% de los tiros se convierten en gol\n• Es decir: cada 100 tiros, ${(conversionRate * 100).toFixed(1)} son gol\n\nCálculo final:\nxG = ${totalTiros} tiros × ${(conversionRate * 100).toFixed(1)}% = ${xG.toFixed(2)} goles esperados`,
           interpretation: totalGoles > xG
             ? `${((totalGoles / (xG || 1) - 1) * 100).toFixed(0)}% mejor que el promedio de centrocampistas`
             : totalGoles < xG
@@ -1127,7 +1130,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           actual: porteriasACero,
           expected: parseFloat(xCS.toFixed(2)),
           description: `En ${partidosCompletos.toFixed(1)} partidos, se esperan ${xCS.toFixed(2)} porterías a cero basado en ${posAvg.totalPlayers || 'todos los'} defensas`,
-          formula: `${partidosCompletos.toFixed(1)} partidos × ${(cleanSheetsRate * 100).toFixed(1)}% promedio de clean sheets de defensas`,
+          formula: `xCS = Partidos Completos × Tasa de Clean Sheets\n\nDatos del jugador:\n• Partidos completos: ${partidosCompletos.toFixed(2)}\n• Minutos jugados: ${totalMinutos}\n• Goles encajados totales: ${totalGolesEncajados}\n\n¿De dónde sale la tasa de clean sheets?\n• Se calcula de TODOS los defensas de La Liga\n• Fórmula: Total Porterías a Cero / Total Partidos\n• Solo cuenta si jugó +60 minutos y no encajó goles\n• Basada en ${posAvg.totalPlayers || 'N/A'} defensas\n• Resultado: ${(cleanSheetsRate * 100).toFixed(1)}% de partidos sin goles\n• Es decir: cada 100 partidos, ${(cleanSheetsRate * 100).toFixed(1)} son a cero\n\nCálculo final:\nxCS = ${partidosCompletos.toFixed(2)} partidos × ${(cleanSheetsRate * 100).toFixed(1)}% = ${xCS.toFixed(2)} porterías a cero esperadas`,
           interpretation: porteriasACero > xCS
             ? `${((porteriasACero / (xCS || 1) - 1) * 100).toFixed(0)}% mejor que el promedio de defensas`
             : porteriasACero < xCS
@@ -1152,7 +1155,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           actual: porteriasACero,
           expected: parseFloat(xCS.toFixed(2)),
           description: `En ${partidosCompletos.toFixed(1)} partidos con ${savePercentage.toFixed(1)}% efectividad, se esperan ${xCS.toFixed(2)} porterías a cero basado en ${posAvg.totalPlayers || 'todos los'} porteros`,
-          formula: `${partidosCompletos.toFixed(1)} partidos × ${(cleanSheetsRate * 100).toFixed(1)}% promedio de clean sheets de porteros`,
+          formula: `xCS = Partidos Completos × Tasa de Clean Sheets\n\nDatos del jugador:\n• Partidos completos: ${partidosCompletos.toFixed(2)}\n• Minutos jugados: ${totalMinutos}\n• Paradas: ${totalParadas}\n• Goles encajados: ${totalGolesEncajados}\n• Tiros recibidos: ${tirosRecibidos}\n• Efectividad de paradas: ${savePercentage.toFixed(1)}%\n\n¿De dónde sale la tasa de clean sheets?\n• Se calcula de TODOS los porteros de La Liga\n• Fórmula: Total Porterías a Cero / Total Partidos\n• Solo cuenta si jugó +60 minutos y no encajó goles\n• Basada en ${posAvg.totalPlayers || 'N/A'} porteros\n• Resultado: ${(cleanSheetsRate * 100).toFixed(1)}% de partidos sin goles\n• Es decir: cada 100 partidos, ${(cleanSheetsRate * 100).toFixed(1)} son a cero\n\nCálculo final:\nxCS = ${partidosCompletos.toFixed(2)} partidos × ${(cleanSheetsRate * 100).toFixed(1)}% = ${xCS.toFixed(2)} porterías a cero esperadas`,
           interpretation: porteriasACero > xCS
             ? `${((porteriasACero / (xCS || 1) - 1) * 100).toFixed(0)}% mejor que el promedio de porteros`
             : porteriasACero < xCS
@@ -1261,31 +1264,70 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                 </View>
               </View>
 
-              {/* Descripción y fórmula */}
+              {/* Descripción y fórmula colapsable */}
               <View style={{ 
                 backgroundColor: '#0f172a', 
                 borderRadius: 8, 
-                padding: 12,
                 marginBottom: 10,
                 borderLeftWidth: 4,
-                borderLeftColor: '#0892D0'
+                borderLeftColor: '#0892D0',
+                overflow: 'hidden'
               }}>
-                <Text style={{ color: '#cbd5e1', fontSize: 12, lineHeight: 18, marginBottom: 8 }}>
-                  {stat.description}
-                </Text>
-                <View style={{ 
-                  backgroundColor: '#1e293b', 
-                  padding: 8, 
-                  borderRadius: 6,
-                  marginBottom: 8
-                }}>
-                  <Text style={{ color: '#64748b', fontSize: 10, marginBottom: 4, fontWeight: '700' }}>
-                    FÓRMULA UTILIZADA:
-                  </Text>
-                  <Text style={{ color: '#94a3b8', fontSize: 11, fontFamily: 'monospace' }}>
-                    {stat.formula}
+                <View style={{ padding: 12 }}>
+                  <Text style={{ color: '#cbd5e1', fontSize: 12, lineHeight: 18, marginBottom: 8 }}>
+                    {stat.description}
                   </Text>
                 </View>
+                
+                {/* Header desplegable de fórmula */}
+                <TouchableOpacity 
+                  onPress={() => {
+                    setExpandedFormulas(prev => {
+                      const newSet = new Set(prev);
+                      if (newSet.has(index)) {
+                        newSet.delete(index);
+                      } else {
+                        newSet.add(index);
+                      }
+                      return newSet;
+                    });
+                  }}
+                  style={{ 
+                    backgroundColor: '#1e293b',
+                    paddingVertical: 10,
+                    paddingHorizontal: 12,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <Text style={{ color: '#64748b', fontSize: 10, fontWeight: '700' }}>
+                    VER FÓRMULA UTILIZADA
+                  </Text>
+                  <View style={{ 
+                    transform: [{ rotate: expandedFormulas.has(index) ? '90deg' : '0deg' }] 
+                  }}>
+                    <ChevronRightIcon 
+                      size={16} 
+                      color="#64748b"
+                    />
+                  </View>
+                </TouchableOpacity>
+                
+                {/* Contenido de la fórmula (colapsable) */}
+                {expandedFormulas.has(index) && (
+                  <View style={{ 
+                    backgroundColor: '#1e293b', 
+                    padding: 12,
+                    paddingTop: 8,
+                    borderTopWidth: 1,
+                    borderTopColor: '#334155'
+                  }}>
+                    <Text style={{ color: '#94a3b8', fontSize: 11, fontFamily: 'monospace', lineHeight: 16 }}>
+                      {stat.formula}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Interpretación */}
