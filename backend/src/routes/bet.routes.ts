@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { BetController } from '../controllers/bet.controller.js';
+import { cronAuth } from '../middleware/cronAuth.js';
 
 export default async function betRoutes(fastify: FastifyInstance) {
   // Obtener presupuesto de apuestas
@@ -16,6 +17,15 @@ export default async function betRoutes(fastify: FastifyInstance) {
   fastify.get('/realtime/:leagueId/:jornada', {
     preHandler: [fastify.auth],
   }, BetController.evaluateBetsRealTime);
+
+  // Evaluar todas las apuestas pendientes (cron token)
+  fastify.get('/evaluate-all', {
+    preHandler: [cronAuth],
+  }, BetController.evaluateAllPendingBets);
+
+  fastify.post('/evaluate-all', {
+    preHandler: [cronAuth],
+  }, BetController.evaluateAllPendingBets);
 
   // Obtener apuestas del usuario
   fastify.get('/:leagueId', {

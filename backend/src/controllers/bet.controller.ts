@@ -257,4 +257,31 @@ export class BetController {
       return reply.status(500).send({ error: error.message });
     }
   }
+
+  /**
+   * GET/POST /api/bets/evaluate-all
+   * Evaluar todas las apuestas pendientes de todas las ligas (cron)
+   * Ejecuta el worker de evaluación de apuestas
+   */
+  static async evaluateAllPendingBets(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('\n🎲 Endpoint /bets/evaluate-all llamado');
+      console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`);
+
+      const result = await BetEvaluationService.evaluateAllPendingBets();
+
+      return reply.status(200).send({
+        success: true,
+        message: 'Evaluación de apuestas completada',
+        ...result
+      });
+    } catch (error: any) {
+      console.error('❌ Error ejecutando evaluación de apuestas:', error);
+
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al evaluar apuestas',
+      });
+    }
+  }
 }
