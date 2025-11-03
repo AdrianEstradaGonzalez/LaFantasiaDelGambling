@@ -144,10 +144,14 @@ class PlayerStatsServiceClass {
       }
 
       const result = await response.json();
-      // Guardar en cache (no-cache si options.refresh)
-      try {
-        PlayerStatsServiceClassCache.set(cacheKey, result.data);
-      } catch {}
+      
+      // ✅ Solo guardar en cache si NO es refresh
+      // Durante partidos en vivo con refresh, queremos datos frescos siempre
+      if (!options?.refresh) {
+        try {
+          PlayerStatsServiceClassCache.set(cacheKey, result.data);
+        } catch {}
+      }
 
       return result.data;
     } catch (error) {
