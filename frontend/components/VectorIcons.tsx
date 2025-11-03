@@ -636,9 +636,10 @@ export const ChartBarIcon = ({ size = 24, color = '#ffffff', isActive = false }:
       strokeWidth={isActive ? 2.5 : 2}
       strokeLinecap="round"
     />
-    {/* Estrella de rendimiento en la barra central */}
+    {/* Estrella de rendimiento en la barra central (ajustada verticalmente para evitar overflow) */}
     <Path
       d="M12 9l0.5 1.5h1.5l-1.2 0.9 0.5 1.5-1.3-1-1.3 1 0.5-1.5-1.2-0.9h1.5z"
+      transform="translate(0 -1)"
       fill={isActive ? '#0892D0' : color}
       opacity="0.6"
     />

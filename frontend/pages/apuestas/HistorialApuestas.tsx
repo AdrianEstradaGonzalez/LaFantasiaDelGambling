@@ -5,7 +5,7 @@ import { BetService, Bet as UserBet } from '../../services/BetService';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { MenuIcon, CalendarIcon, ClockIcon, FileTextIcon } from '../../components/VectorIcons';
+import { MenuIcon, CalendarIcon, ClockIcon, FileTextIcon, ChartBarIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import FootballService from '../../services/FutbolService';
@@ -265,7 +265,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                       padding: 8,
                       marginRight: 12,
                     }}>
-                      <Text style={{ fontSize: 24 }}>📊</Text>
+                      <ChartBarIcon size={24} color="#93c5fd" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: '#93c5fd', fontSize: 18, fontWeight: '800' }}>

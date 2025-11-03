@@ -11,7 +11,7 @@ import { CustomAlertManager } from '../../components/CustomAlert';
 import { SafeLayout } from '../../components/SafeLayout';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { ChevronLeftIcon } from '../../components/VectorIcons';
+import { ChevronLeftIcon, ChartBarIcon, TargetIcon, FootballIcon, CheckCircleIcon, AlertCircleIcon, AlertIcon, InformationIcon, HomeIcon, ChevronRightIcon, TrophyStarIcon, ChartBarIcon as StatsIcon, TrendingIcon, ShieldCheckIcon, CleanSheetIcon } from '../../components/VectorIcons';
 // Importar nuevo servicio de estadísticas (backend-first)
 import { PlayerStatsService, type PlayerStats } from '../../services/PlayerStatsService';
 import { AuthDebug } from '../../utils/authDebug';
@@ -158,7 +158,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           console.log('[PlayerDetail] 🔄 Jornada CERRADA - Refrescando estadísticas de la última jornada desde API...');
         }
 
-        // ✨ Usar PlayerStatsService para obtener estadísticas del backend
+  // Usar PlayerStatsService para obtener estadísticas del backend
         try {
           console.log('[PlayerDetail] Solicitando estadísticas al backend...');
           
@@ -185,7 +185,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           }
 
           if (shouldRefreshLastJornada) {
-            console.log('[PlayerDetail] ✅ Estadísticas de jornada cerrada actualizadas desde API');
+            console.log('[PlayerDetail] Estadísticas de jornada cerrada actualizadas desde API');
           }
 
           const pointsData: MatchdayPoints[] = matchdays.map((matchday, index) => {
@@ -271,7 +271,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
     (async () => {
       try {
         console.log('[PlayerDetail] Solicitando estadísticas para jornada:', selectedMatchday);
-        // ✨ NUEVO: Obtener stats específicas del backend
+  // NUEVO: Obtener stats específicas del backend
         const stats = await PlayerStatsService.getPlayerJornadaStats(
           player.id,
           selectedMatchday,
@@ -471,7 +471,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
     }
   };
 
-  // ✨ NUEVO: Helper para obtener puntos de una estadística del breakdown
+  // NUEVO: Helper para obtener puntos de una estadística del breakdown
   const getPointsFromBreakdown = (breakdown: any[] | null | undefined, statLabel: string): number | string => {
     if (!breakdown || !Array.isArray(breakdown)) return '-';
     
@@ -596,14 +596,15 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
 
     return (
       <View style={{ backgroundColor: '#0b1a2e', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-        <View style={{ marginBottom: 12 }}>
+        <View style={{ marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TargetIcon size={20} color="#fff" />
           <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 4 }}>
-            📈 EVOLUCIÓN DE PUNTOS
-          </Text>
-          <Text style={{ color: '#94a3b8', fontSize: 11, lineHeight: 16 }}>
-            Rendimiento a lo largo de las {matchdayPoints.length} jornadas • Promedio: {avgPoints.toFixed(1)} pts
+            EVOLUCIÓN DE PUNTOS
           </Text>
         </View>
+        <Text style={{ color: '#94a3b8', fontSize: 11, lineHeight: 16 }}>
+          Rendimiento a lo largo de las {matchdayPoints.length} jornadas • Promedio: {avgPoints.toFixed(1)} pts
+        </Text>
 
         <View style={{ alignItems: 'center' }}>
           <Svg width={chartWidth} height={chartHeight}>
@@ -870,14 +871,16 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
 
     return (
       <View style={{ backgroundColor: '#0b1a2e', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-        <View style={{ marginBottom: 12 }}>
+        <View style={{ marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TargetIcon size={20} color="#fff" />
           <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 4 }}>
-            🎯 RADAR DE RENDIMIENTO
-          </Text>
-          <Text style={{ color: '#94a3b8', fontSize: 11, lineHeight: 16 }}>
-            Perfil de habilidades basado en {jornadasJugadas.length} jornadas jugadas
+            RADAR DE RENDIMIENTO
           </Text>
         </View>
+        <Text style={{ color: '#94a3b8', fontSize: 11, lineHeight: 16 }}>
+          Perfil de habilidades basado en {jornadasJugadas.length} jornadas jugadas
+        </Text>
+      
 
         <View style={{ alignItems: 'center' }}>
           <Svg width={chartSize} height={chartSize}>
@@ -980,9 +983,12 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           borderRadius: 8,
           padding: 10
         }}>
-          <Text style={{ color: '#64748b', fontSize: 10, textAlign: 'center', lineHeight: 14 }}>
-            💡 Los valores están normalizados de 0-100 para permitir comparación visual entre diferentes métricas
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <InformationIcon size={14} color="#f59e0b" />
+            <Text style={{ color: '#64748b', fontSize: 10, textAlign: 'center', lineHeight: 14, marginLeft: 6 }}>
+              Los valores están normalizados de 0-100 para permitir comparación visual entre diferentes métricas
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -1026,7 +1032,8 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
       description: string;
       formula: string;
       interpretation: string;
-      icon: string;
+      // semantic icon key: 'football' | 'target' | 'shield' | 'glove' | 'chart' | 'stats'
+      icon: 'football' | 'target' | 'shield' | 'glove' | 'chart' | 'stats';
     }
 
     let xStatsData: XStatMetric[] = [];
@@ -1055,7 +1062,8 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             : totalGoles < xG
             ? `${((1 - totalGoles / (xG || 1)) * 100).toFixed(0)}% por debajo del promedio de delanteros`
             : 'En el promedio de delanteros',
-          icon: '⚽'
+          // Use chart icon for xG to avoid sharing the same football icon used in other headers
+          icon: 'chart'
         },
         {
           label: 'xA',
@@ -1069,7 +1077,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             : totalAsistencias < xA
             ? `${((1 - totalAsistencias / (xA || 1)) * 100).toFixed(0)}% por debajo del promedio de delanteros`
             : 'En el promedio de delanteros',
-          icon: '🎯'
+          icon: 'chart'
         }
       ];
     } else if (position === 'Midfielder') {
@@ -1093,7 +1101,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             : totalAsistencias < xA
             ? `${((1 - totalAsistencias / (xA || 1)) * 100).toFixed(0)}% por debajo del promedio de centrocampistas`
             : 'En el promedio de centrocampistas',
-          icon: '🎯'
+          icon: 'chart'
         },
         {
           label: 'xG',
@@ -1107,7 +1115,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             : totalGoles < xG
             ? `${((1 - totalGoles / (xG || 1)) * 100).toFixed(0)}% por debajo del promedio de centrocampistas`
             : 'En el promedio de centrocampistas',
-          icon: '⚽'
+          icon: 'chart'
         }
       ];
     } else if (position === 'Defender') {
@@ -1128,7 +1136,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             : porteriasACero < xCS
             ? `${((1 - porteriasACero / (xCS || 1)) * 100).toFixed(0)}% por debajo del promedio de defensas`
             : 'En el promedio de defensas',
-          icon: '🛡️'
+          icon: 'shield'
         }
       ];
     } else if (position === 'Goalkeeper') {
@@ -1153,7 +1161,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             : porteriasACero < xCS
             ? `${((1 - porteriasACero / (xCS || 1)) * 100).toFixed(0)}% por debajo del promedio de porteros`
             : 'En el promedio de porteros',
-          icon: '🧤'
+          icon: 'glove'
         }
       ];
     }
@@ -1162,14 +1170,16 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
 
     return (
       <View style={{ backgroundColor: '#0b1a2e', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-        <View style={{ marginBottom: 16 }}>
+        <View style={{ marginBottom: 16, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TargetIcon size={20} color="#fff" />
           <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 4 }}>
-            🎯 ANÁLISIS ESTADÍSTICO AVANZADO
-          </Text>
-          <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8, lineHeight: 18 }}>
-            Comparación entre tu rendimiento real y el esperado según modelos matemáticos basados en {jornadasJugadas.length} jornada{jornadasJugadas.length !== 1 ? 's' : ''} ({partidosCompletos.toFixed(1)} partidos completos)
+            ANÁLISIS ESTADÍSTICO AVANZADO
           </Text>
         </View>
+        <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8, lineHeight: 18 }}>
+          Comparación entre tu rendimiento real y el esperado según modelos matemáticos basados en {jornadasJugadas.length} jornada{jornadasJugadas.length !== 1 ? 's' : ''} ({partidosCompletos.toFixed(1)} partidos completos)
+        </Text>
+      
 
         {xStatsData.map((stat, index) => {
           const diferencia = stat.actual - stat.expected;
@@ -1181,7 +1191,14 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             <View key={stat.label} style={{ marginBottom: index < xStatsData.length - 1 ? 20 : 0 }}>
               {/* Header con icono y nombre */}
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ fontSize: 28, marginRight: 10 }}>{stat.icon}</Text>
+                <View style={{ width: 36, height: 36, marginRight: 10, alignItems: 'center', justifyContent: 'center' }}>
+                  {stat.icon === 'football' && <FootballIcon size={28} color="#fff" />}
+                  {stat.icon === 'target' && <TargetIcon size={28} color="#fff" />}
+                  {stat.icon === 'shield' && <ShieldCheckIcon size={28} color="#fff" />}
+                  {stat.icon === 'glove' && <CleanSheetIcon size={28} color="#fff" />}
+                  {stat.icon === 'chart' && <ChartBarIcon size={28} color="#fff" />}
+                  {!['football','target','shield','glove','chart'].includes(stat.icon) && <StatsIcon size={28} color="#fff" />}
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '900' }}>
                     {stat.label} - {stat.fullName}
@@ -1282,9 +1299,12 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                 borderLeftWidth: 4,
                 borderLeftColor: performanceColor
               }}>
-                <Text style={{ color: '#64748b', fontSize: 10, marginBottom: 4, fontWeight: '700' }}>
-                  💡 INTERPRETACIÓN:
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                  <InformationIcon size={14} color="#f59e0b" />
+                  <Text style={{ color: '#64748b', fontSize: 10, marginLeft: 8, fontWeight: '700' }}>
+                    INTERPRETACIÓN:
+                  </Text>
+                </View>
                 <Text style={{ color: '#cbd5e1', fontSize: 12, lineHeight: 18, fontWeight: '600' }}>
                   {stat.interpretation}
                 </Text>
@@ -1311,17 +1331,20 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
       prediction.difficulty === 'Difícil' ? '#ef4444' :
       '#f59e0b';
 
-    const difficultyIcon = 
-      prediction.difficulty === 'Fácil' ? '✅' :
-      prediction.difficulty === 'Difícil' ? '⚠️' :
-      '⚡';
+    const difficultyIconComponent = 
+      prediction.difficulty === 'Fácil' ? <CheckCircleIcon size={32} color={difficultyColor} /> :
+      prediction.difficulty === 'Difícil' ? <AlertCircleIcon size={32} color={difficultyColor} /> :
+      <ChartBarIcon size={32} color={difficultyColor} />;
 
     return (
       <View style={{ backgroundColor: '#0b1a2e', borderRadius: 12, padding: 16, marginBottom: 16 }}>
         <View style={{ marginBottom: 16 }}>
-          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 4 }}>
-            ⚽ ANÁLISIS DEL PRÓXIMO RIVAL
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <TargetIcon size={20} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: '900', marginBottom: 4 }}>
+              ANÁLISIS DEL PRÓXIMO RIVAL
+            </Text>
+          </View>
           <Text style={{ color: '#94a3b8', fontSize: 12, lineHeight: 18 }}>
             Predicción basada en estadísticas reales de ambos equipos en las últimas 5 jornadas
           </Text>
@@ -1351,9 +1374,12 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                 {match.playerTeam.name}
               </Text>
               {match.isHome && (
-                <Text style={{ color: '#10b981', fontSize: 10, marginTop: 4, fontWeight: '700' }}>
-                  🏠 LOCAL
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                  <HomeIcon size={12} color="#10b981" />
+                  <Text style={{ color: '#10b981', fontSize: 10, marginLeft: 6, fontWeight: '700' }}>
+                    LOCAL
+                  </Text>
+                </View>
               )}
             </View>
 
@@ -1371,9 +1397,12 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                 {match.opponent.name}
               </Text>
               {!match.isHome && (
-                <Text style={{ color: '#f59e0b', fontSize: 10, marginTop: 4, fontWeight: '700' }}>
-                  ✈️ VISITANTE
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                  <ChevronRightIcon size={12} color="#f59e0b" />
+                  <Text style={{ color: '#f59e0b', fontSize: 10, marginLeft: 6, fontWeight: '700' }}>
+                    VISITANTE
+                  </Text>
+                </View>
               )}
             </View>
           </View>
@@ -1407,7 +1436,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           borderColor: difficultyColor
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 32, marginRight: 12 }}>{difficultyIcon}</Text>
+            <View style={{ marginRight: 12 }}>{difficultyIconComponent}</View>
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '700' }}>
                 DIFICULTAD ESTIMADA
@@ -1480,10 +1509,10 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
               factor.type === 'negative' ? '#ef4444' :
               '#94a3b8';
             
-            const factorIcon = 
-              factor.type === 'positive' ? '📈' :
-              factor.type === 'negative' ? '📉' :
-              '➡️';
+            const factorIconComponent = 
+              factor.type === 'positive' ? <ChartBarIcon size={20} color={factorColor} /> :
+              factor.type === 'negative' ? <ChartBarIcon size={20} color={factorColor} /> :
+              <ChevronRightIcon size={20} color={factorColor} />;
 
             return (
               <View 
@@ -1499,7 +1528,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                   borderLeftColor: factorColor
                 }}
               >
-                <Text style={{ fontSize: 20, marginRight: 12 }}>{factorIcon}</Text>
+                <View style={{ marginRight: 12 }}>{factorIconComponent}</View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: '#cbd5e1', fontSize: 12, marginBottom: 2 }}>
                     {factor.label}
@@ -1521,9 +1550,12 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           borderLeftWidth: 4,
           borderLeftColor: '#ef4444'
         }}>
-          <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: '700', marginBottom: 12 }}>
-            📊 ESTADÍSTICAS DEL RIVAL (Últimas 5 jornadas):
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <ChartBarIcon size={16} color="#fff" />
+            <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: '700' }}>
+              ESTADÍSTICAS DEL RIVAL (Últimas 5 jornadas):
+            </Text>
+          </View>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
             <View style={{ width: '50%', marginBottom: 12 }}>
@@ -1595,9 +1627,12 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           borderWidth: 1,
           borderColor: '#334155'
         }}>
-          <Text style={{ color: '#64748b', fontSize: 10, lineHeight: 16 }}>
-            💡 <Text style={{ fontWeight: '700' }}>Metodología:</Text> Esta predicción se basa en el análisis matemático de las últimas 5 jornadas de ambos equipos, incluyendo rendimiento ofensivo/defensivo, forma reciente, ventaja local/visitante, y las estadísticas promedio del jugador. La confianza aumenta con más partidos jugados.
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+            <InformationIcon size={14} color="#f59e0b" />
+            <Text style={{ color: '#64748b', fontSize: 10, lineHeight: 16, marginLeft: 8 }}>
+              <Text style={{ fontWeight: '700' }}>Metodología:</Text> Esta predicción se basa en el análisis matemático de las últimas 5 jornadas de ambos equipos, incluyendo rendimiento ofensivo/defensivo, forma reciente, ventaja local/visitante, y las estadísticas promedio del jugador. La confianza aumenta con más partidos jugados.
+            </Text>
+          </View>
         </View>
       </View>
     );
@@ -1741,7 +1776,7 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                 <Text style={{ color: '#10b981', fontSize: 28, fontWeight: '900', lineHeight: 28 }}>
                   {(() => {
                     const playedMatchdays = matchdayPoints.filter((mp) => {
-                      // ✨ NUEVO: Usar nueva estructura de PlayerStats
+                      // NUEVO: Usar nueva estructura de PlayerStats
                       if (mp.stats && typeof mp.stats.minutes === 'number') {
                         return mp.stats.minutes > 0;
                       }
@@ -1860,14 +1895,17 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                 alignItems: 'center'
               }}
             >
-              <Text style={{
-                color: activeTab === 'advanced' ? '#0892D0' : '#94a3b8',
-                fontSize: 14,
-                fontWeight: '800',
-                letterSpacing: 0.5
-              }}>
-                AVANZADO 🌟
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <TrophyStarIcon size={16} color={activeTab === 'advanced' ? '#0892D0' : '#94a3b8'} />
+                <Text style={{
+                  color: activeTab === 'advanced' ? '#0892D0' : '#94a3b8',
+                  fontSize: 14,
+                  fontWeight: '800',
+                  letterSpacing: 0.5
+                }}>
+                  AVANZADO
+                </Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -1877,9 +1915,12 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
               <View style={{ backgroundColor: '#0f172a', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#334155' }}>
                 {matchdayPoints.length === 0 || matchdayPoints.every(mp => mp.stats === null) ? (
                   <View style={{ paddingHorizontal: 16, paddingVertical: 20, alignItems: 'center' }}>
-                    <Text style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', marginBottom: 8 }}>
-                      ⚠️ Estadísticas no disponibles
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                      <AlertIcon size={18} color="#f59e0b" />
+                      <Text style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', marginLeft: 8 }}>
+                        Estadísticas no disponibles
+                      </Text>
+                    </View>
                     <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center' }}>
                       No se encontraron datos para este jugador
                     </Text>
