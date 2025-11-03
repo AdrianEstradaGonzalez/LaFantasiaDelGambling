@@ -272,61 +272,93 @@ export const PlayersMarket = ({ navigation, route }: {
   // Cargar jugadores y equipos desde el backend
   const loadPlayers = useCallback(async () => {
     try {
+      console.time('⏱️ Carga total del mercado');
       setLoading(true);
       
-      // Cargar estado de jornada, presupuesto y plantilla primero (son rápidos)
+      console.time('⏱️ Llamada API jugadores');
+      // 🚀 OPTIMIZACIÓN 1: Cargar datos de liga Y jugadores en PARALELO
+      const loadPromises: Promise<any>[] = [
+        PlayerService.getAllPlayers({ division }) // Cargar jugadores en paralelo
+      ];
+      
+      // Solo cargar datos de liga si tenemos ligaId
       if (ligaId) {
-        try {
-          const [status, budgetData, squad] = await Promise.all([
-            JornadaService.getJornadaStatus(ligaId),
-            SquadService.getUserBudget(ligaId),
-            SquadService.getUserSquad(ligaId)
-          ]);
-          
-          setJornadaStatus((status.status as 'open' | 'closed'));
-          setBudget(budgetData);
-          
-          // Guardar IDs de jugadores ya fichados
-          if (squad && squad.players) {
-            const playerIds = new Set(squad.players.map(p => p.playerId));
-            setSquadPlayerIds(playerIds);
-          }
-        } catch (error) {
-          console.error('Error cargando datos de liga:', error);
-          setBudget(0);
+        loadPromises.push(
+          JornadaService.getJornadaStatus(ligaId),
+          SquadService.getUserBudget(ligaId),
+          SquadService.getUserSquad(ligaId)
+        );
+      }
+      
+      const results = await Promise.all(loadPromises);
+      console.timeEnd('⏱️ Llamada API jugadores');
+      
+      console.time('⏱️ Procesamiento de datos');
+      // Extraer resultados
+      const playersData = results[0] as PlayerWithPrice[];
+      console.log(`📊 Jugadores recibidos: ${playersData.length}`);
+      
+      if (ligaId) {
+        const status = results[1];
+        const budgetData = results[2];
+        const squad = results[3];
+        
+        setJornadaStatus((status.status as 'open' | 'closed'));
+        setBudget(budgetData);
+        
+        // Guardar IDs de jugadores ya fichados
+        if (squad && squad.players) {
+          const playerIds: Set<number> = new Set(squad.players.map((p: any) => p.playerId));
+          setSquadPlayerIds(playerIds);
         }
       }
       
-      // 🚀 Cargar jugadores de forma progresiva
-      const playersData = await PlayerService.getAllPlayers({ division });
-      
-      // Extraer equipos únicos
+      // 🚀 OPTIMIZACIÓN 2: Extraer equipos y mostrar primeros 30 INMEDIATAMENTE
       const uniqueTeams = Array.from(
         new Set(playersData.map(p => JSON.stringify({ id: p.teamId, name: p.teamName })))
       ).map(str => JSON.parse(str));
       setTeams(uniqueTeams);
       
-      // ✅ ESTRATEGIA: Mostrar primeros 30 inmediatamente
+      // ✅ Mostrar primeros 30 jugadores AHORA
       const initialBatch = playersData.slice(0, 30);
       setPlayers(initialBatch);
+      console.timeEnd('⏱️ Procesamiento de datos');
+      
+      console.timeEnd('⏱️ Carga total del mercado');
       setLoading(false); // UI visible rápido
       
-      // 🔄 Cargar resto en segundo plano por lotes
+      // 🔄 Cargar resto en segundo plano de forma más agresiva
       setIsLoadingMore(true);
       
-      // Cargar de 30 en 30 con pequeños delays para no bloquear UI
-      const batchSize = 50;
-      for (let i = 30; i < playersData.length; i += batchSize) {
-        await new Promise(resolve => setTimeout(resolve, 50)); // 50ms entre lotes
-        const nextBatch = playersData.slice(0, i + batchSize);
-        setPlayers(nextBatch);
-      }
+      // Usar requestAnimationFrame para no bloquear el render
+      let currentIndex = 30;
+      const batchSize = 100; // Lotes más grandes
       
-      // Asegurar que tenemos todos al final
-      setPlayers(playersData);
-      setIsLoadingMore(false);
+      const loadNextBatch = () => {
+        if (currentIndex >= playersData.length) {
+          setIsLoadingMore(false);
+          return;
+        }
+        
+        const nextBatch = playersData.slice(0, currentIndex + batchSize);
+        setPlayers(nextBatch);
+        currentIndex += batchSize;
+        
+        // Continuar con el siguiente lote
+        if (currentIndex < playersData.length) {
+          setTimeout(() => requestAnimationFrame(loadNextBatch), 30);
+        } else {
+          // Asegurar que tenemos todos al final
+          setPlayers(playersData);
+          setIsLoadingMore(false);
+        }
+      };
+      
+      // Iniciar carga progresiva después de un pequeño delay
+      setTimeout(() => requestAnimationFrame(loadNextBatch), 100);
 
     } catch (error) {
+      console.timeEnd('⏱️ Carga total del mercado');
       CustomAlertManager.alert(
         'Error',
         'No se pudieron cargar los jugadores',
