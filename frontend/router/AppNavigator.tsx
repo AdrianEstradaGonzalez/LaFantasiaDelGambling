@@ -23,6 +23,7 @@ import Apuestas from '../pages/apuestas/Apuestas';
 import HistorialApuestas from '../pages/apuestas/HistorialApuestas';
 import AdminPanel from '../pages/admin/AdminPanel';
 import { GestionJugadores } from '../pages/admin/GestionJugadores';
+import { SeleccionDivision } from '../pages/admin/SeleccionDivision';
 import GestionUsuarios from '../pages/admin/GestionUsuarios';
 import GestionLigas from '../pages/admin/GestionLigas';
 import { Reglas } from '../pages/reglas/Reglas';
@@ -44,7 +45,8 @@ export type RootStackParamList = {
   Apuestas: { ligaId?: string; ligaName?: string; isPremium?: boolean } | undefined;
   HistorialApuestas: { ligaId?: string; ligaName?: string } | undefined;
   AdminPanel: undefined;
-  GestionJugadores: undefined;
+  SeleccionDivision: undefined;
+  GestionJugadores: { division?: 'primera' | 'segunda' } | undefined;
   GestionUsuarios: undefined;
   GestionLigas: undefined;
   Reglas: undefined;
@@ -188,6 +190,9 @@ export const AppNavigator = () => {
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="AdminPanel" component={AdminPanel} options={{
+          animation: 'slide_from_right',
+        }} />
+        <Stack.Screen name="SeleccionDivision" component={SeleccionDivision} options={{
           animation: 'slide_from_right',
         }} />
         <Stack.Screen name="GestionJugadores" component={GestionJugadores} options={{

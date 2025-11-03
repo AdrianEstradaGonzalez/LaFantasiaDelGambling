@@ -360,6 +360,7 @@ export const GestionJugadores = ({ navigation, route }: {
   navigation: NativeStackNavigationProp<any>; 
   route: RouteProp<any, any>; 
 }) => {
+  const division = (route.params as any)?.division || 'primera';
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState<PlayerWithPrice[]>([]);
   const [teams, setTeams] = useState<TeamMinimal[]>([]);
@@ -377,8 +378,10 @@ export const GestionJugadores = ({ navigation, route }: {
   const loadPlayers = useCallback(async () => {
     try {
       setLoading(true);
-      const playersData = await PlayerService.getAllPlayers();
-      const teamsData = await FootballService.getLaLigaTeamsCached();
+      const playersData = await PlayerService.getAllPlayers({ division });
+      const teamsData = division === 'segunda' 
+        ? await FootballService.getLaLigaTeamsCached() // TODO: Implementar getSegundaDivisionTeamsCached
+        : await FootballService.getLaLigaTeamsCached();
       
       setPlayers(playersData);
       setTeams(teamsData);
@@ -393,7 +396,7 @@ export const GestionJugadores = ({ navigation, route }: {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [division]);
 
   useEffect(() => {
     loadPlayers();
@@ -562,9 +565,14 @@ export const GestionJugadores = ({ navigation, route }: {
             <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 12 }}>
               <ChevronLeftIcon size={28} color="#0892D0" />
             </TouchableOpacity>
-            <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>
-              GESTIÓN DE JUGADORES
-            </Text>
+            <View>
+              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>
+                GESTIÓN DE JUGADORES
+              </Text>
+              <Text style={{ color: division === 'segunda' ? '#f59e0b' : '#0892D0', fontSize: 12, fontWeight: '700', marginTop: 2 }}>
+                {division === 'segunda' ? 'LALIGA HYPERMOTION' : 'LA LIGA EA SPORTS'}
+              </Text>
+            </View>
           </View>
         </View>
       </View>

@@ -363,7 +363,7 @@ const AdminPanel: React.FC = () => {
 
         {/* Gestión de Jugadores */}
         <TouchableOpacity
-          onPress={() => (navigation as any).navigate('GestionJugadores')}
+          onPress={() => (navigation as any).navigate('SeleccionDivision')}
           style={{
             backgroundColor: '#1e293b',
             borderRadius: 16,
@@ -397,7 +397,7 @@ const AdminPanel: React.FC = () => {
               lineHeight: 20,
             }}
           >
-            Edita precios y posiciones de todos los jugadores de La Liga.
+            Edita precios, posiciones y equipos de jugadores de Primera y Segunda División.
           </Text>
         </TouchableOpacity>
         {/* Bloquear Cambios (antes "Cerrar Jornada") */}
