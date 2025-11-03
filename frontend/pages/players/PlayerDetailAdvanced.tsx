@@ -1360,47 +1360,34 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
             JORNADA {match.jornada}
           </Text>
           
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          {/* Mostrar siempre en formato Local - Visitante */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+            {/* Equipo Local */}
             <View style={{ flex: 1, alignItems: 'center' }}>
               <Text style={{ 
                 color: match.isHome ? '#0892D0' : '#94a3b8', 
-                fontSize: 14, 
-                fontWeight: '900',
+                fontSize: match.isHome ? 15 : 13, 
+                fontWeight: match.isHome ? '900' : '700',
                 textAlign: 'center'
               }}>
-                {match.playerTeam.name}
+                {match.isHome ? match.playerTeam.name : match.opponent.name}
               </Text>
-              {match.isHome && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                  <HomeIcon size={12} color="#10b981" />
-                  <Text style={{ color: '#10b981', fontSize: 10, marginLeft: 6, fontWeight: '700' }}>
-                    LOCAL
-                  </Text>
-                </View>
-              )}
             </View>
 
-            <View style={{ paddingHorizontal: 16 }}>
-              <Text style={{ color: '#94a3b8', fontSize: 16, fontWeight: '900' }}>VS</Text>
+            <View style={{ paddingHorizontal: 12 }}>
+              <Text style={{ color: '#64748b', fontSize: 16, fontWeight: '900' }}>-</Text>
             </View>
 
+            {/* Equipo Visitante */}
             <View style={{ flex: 1, alignItems: 'center' }}>
               <Text style={{ 
                 color: !match.isHome ? '#0892D0' : '#94a3b8', 
-                fontSize: 14, 
-                fontWeight: '900',
+                fontSize: !match.isHome ? 15 : 13, 
+                fontWeight: !match.isHome ? '900' : '700',
                 textAlign: 'center'
               }}>
-                {match.opponent.name}
+                {!match.isHome ? match.playerTeam.name : match.opponent.name}
               </Text>
-              {!match.isHome && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                  <ChevronRightIcon size={12} color="#f59e0b" />
-                  <Text style={{ color: '#f59e0b', fontSize: 10, marginLeft: 6, fontWeight: '700' }}>
-                    VISITANTE
-                  </Text>
-                </View>
-              )}
             </View>
           </View>
 
