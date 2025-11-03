@@ -1,6 +1,39 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { PlayerStatsService } from '../services/playerStats.service.js';
 import { AppError } from '../utils/errors.js';
+import axios from 'axios';
+
+// Helper para obtener jornada actual de la API
+async function getCurrentJornadaFromAPI(): Promise<number> {
+  const API_BASE = 'https://v3.football.api-sports.io';
+  const API_KEY = process.env.FOOTBALL_API_KEY || '';
+  
+  const { data } = await axios.get(`${API_BASE}/fixtures`, {
+    headers: {
+      'x-rapidapi-key': API_KEY,
+      'x-rapidapi-host': 'v3.football.api-sports.io',
+    },
+    params: {
+      league: 140, // La Liga
+      season: 2025,
+      next: 50
+    },
+    timeout: 5000
+  });
+
+  const fixtures = data?.response || [];
+  if (fixtures.length > 0) {
+    const upcomingMatch = fixtures.find((f: any) => 
+      ['NS', '1H', '2H', 'HT', 'ET', 'P', 'LIVE'].includes(f?.fixture?.status?.short)
+    );
+    
+    if (upcomingMatch) {
+      return upcomingMatch.league.round.replace('Regular Season - ', '');
+    }
+  }
+  
+  throw new Error('No se pudo determinar la jornada actual');
+}
 
 export class PlayerStatsController {
   /**
@@ -101,19 +134,40 @@ export class PlayerStatsController {
   static async updateJornadaStats(req: FastifyRequest, reply: FastifyReply) {
     try {
       const body = req.body as any;
+      const queryParams = req.query as any;
 
-      if (!body.jornada || typeof body.jornada !== 'number') {
+      // Obtener jornada del body (POST) o query params (GET)
+      let jornada = body?.jornada || queryParams?.jornada;
+
+      // Si no se proporciona jornada, obtener la jornada actual de la API
+      if (!jornada) {
+        try {
+          const currentJornada = await getCurrentJornadaFromAPI();
+          jornada = currentJornada;
+          console.log(`[UpdateJornada] Usando jornada actual de la API: ${jornada}`);
+        } catch (error) {
+          return reply.status(400).send({
+            success: false,
+            message: 'No se pudo obtener la jornada actual. Proporciona el parámetro "jornada".',
+          });
+        }
+      }
+
+      // Convertir a número si viene como string
+      jornada = typeof jornada === 'string' ? parseInt(jornada, 10) : jornada;
+
+      if (typeof jornada !== 'number' || isNaN(jornada)) {
         return reply.status(400).send({
           success: false,
-          message: 'Se requiere el número de jornada',
+          message: 'El número de jornada no es válido',
         });
       }
 
-      const result = await PlayerStatsService.updateAllPlayersStatsForJornada(body.jornada);
+      const result = await PlayerStatsService.updateAllPlayersStatsForJornada(jornada);
 
       return reply.status(200).send({
         success: true,
-        message: `Estadísticas actualizadas para jornada ${body.jornada}`,
+        message: `Estadísticas actualizadas para jornada ${jornada}`,
         data: result,
       });
     } catch (error: any) {
