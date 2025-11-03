@@ -10,6 +10,7 @@ import { DrawerMenu } from '../../components/DrawerMenu';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import FootballService from '../../services/FutbolService';
 import { SafeLayout } from '../../components/SafeLayout';
+import formatLabelWithType from '../../utils/formatBetLabel';
 
 type Bet = {
   matchId: number;
@@ -418,7 +419,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                               {bet.betType}
                             </Text>
                             <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
-                              {bet.betLabel}
+                              {formatLabelWithType(bet.betLabel, bet.betType)}
                             </Text>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
                               <Text style={{ color: '#64748b', fontSize: 11 }}>

@@ -15,6 +15,7 @@ import { SafeLayout } from '../../components/SafeLayout';
 import { AdMobService } from '../../services/AdMobService';
 import { AdBanner } from '../../components/AdBanner';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import formatLabelWithType from '../../utils/formatBetLabel';
 
 type Bet = {
   matchId: number;
@@ -594,39 +595,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType);
   };
 
-  // Formatear etiqueta para asegurar que incluya el mercado cuando falte
-  const formatLabelWithType = (rawLabel: string, type?: string) => {
-    if (!rawLabel) return rawLabel;
-    const label = rawLabel.trim();
-    const l = label.toLowerCase();
-
-    // If label already contains a clear unit/word, return as-is
-    const hasUnit = /\b(goles|tarjetas|c[oó]rners|c[oó]rner|c[oó]rnes|porteria|portería|goles totales|córners|tarjeta|faltas|tiros a puerta)\b/i.test(l);
-    if (hasUnit) return label;
-
-    // If label contains explicit words like 'más de' or a number, append unit based on type
-    const isOverUnder = /más de|menos de|more than|less than|over|under/i.test(l);
-    const hasNumber = /[0-9]+(\.[0-9]+)?/.test(l);
-
-    const mapUnit = (t?: string) => {
-      if (!t) return '';
-      const tt = t.toLowerCase();
-      if (tt.includes('tarjeta')) return ' tarjetas';
-      if (tt.includes('córner') || tt.includes('corner') || tt.includes('c[oó]rners')) return ' córners';
-      if (tt.includes('goles')) return ' goles';
-      if (tt.includes('resultado')) return '';
-      return '';
-    };
-
-    const unit = mapUnit(type);
-    if ((isOverUnder || hasNumber) && unit) {
-      // Avoid duplicating if label already ends with number or unit-like word
-      if (new RegExp(unit.trim() + '$', 'i').test(label)) return label;
-      return `${label}${unit}`;
-    }
-
-    return label;
-  };
+  // Use shared formatter from utils `frontend/utils/formatBetLabel.ts`
 
   // Regla global: una sola apuesta por partido
   const hasAnyBetInMatch = (matchId: number): boolean => {
@@ -2037,7 +2006,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       }}>
                                         {betsForOption.map((bf) => (
                                           <Text key={bf.id} style={{ color: '#e5e7eb', paddingVertical: 4 }} numberOfLines={3}>
-                                            {(bf.userName || 'Jugador') + ' ha apostado ' + bf.amount + 'M en ' + bf.betType + ' - ' + bf.betLabel}
+                                            {(bf.userName || 'Jugador') + ' ha apostado ' + bf.amount + 'M en ' + bf.betType + ' - ' + formatLabelWithType(bf.betLabel, bf.betType)}
                                           </Text>
                                         ))}
                                       </View>
