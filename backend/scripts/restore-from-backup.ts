@@ -28,99 +28,110 @@ async function restoreFromBackup(backupFileName: string) {
     // 1. Users
     if (backupData.tables.users && backupData.tables.users.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.users.length} usuarios...`);
-      for (const user of backupData.tables.users) {
-        await prisma.user.create({ data: user });
-      }
+      await prisma.user.createMany({
+        data: backupData.tables.users,
+        skipDuplicates: true
+      });
       console.log('✅ Usuarios restaurados');
     }
 
     // 2. Leagues
     if (backupData.tables.leagues && backupData.tables.leagues.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.leagues.length} ligas...`);
-      for (const league of backupData.tables.leagues) {
-        await prisma.league.create({ data: league });
-      }
+      await prisma.league.createMany({
+        data: backupData.tables.leagues,
+        skipDuplicates: true
+      });
       console.log('✅ Ligas restauradas');
     }
 
     // 3. LeagueMembers
     if (backupData.tables.leagueMembers && backupData.tables.leagueMembers.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.leagueMembers.length} miembros de ligas...`);
-      for (const member of backupData.tables.leagueMembers) {
-        await prisma.leagueMember.create({ data: member });
-      }
+      await prisma.leagueMember.createMany({
+        data: backupData.tables.leagueMembers,
+        skipDuplicates: true
+      });
       console.log('✅ Miembros de ligas restaurados');
     }
 
     // 4. Players
     if (backupData.tables.players && backupData.tables.players.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.players.length} jugadores...`);
-      for (const player of backupData.tables.players) {
-        await prisma.player.create({ data: player });
-      }
+      await prisma.player.createMany({
+        data: backupData.tables.players,
+        skipDuplicates: true
+      });
       console.log('✅ Jugadores restaurados');
     }
 
     // 5. PlayerSegunda
     if (backupData.tables.playersSegunda && backupData.tables.playersSegunda.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.playersSegunda.length} jugadores de segunda...`);
-      for (const player of backupData.tables.playersSegunda) {
-        await (prisma as any).playerSegunda.create({ data: player });
-      }
+      await (prisma as any).playerSegunda.createMany({
+        data: backupData.tables.playersSegunda,
+        skipDuplicates: true
+      });
       console.log('✅ Jugadores de segunda restaurados');
     }
 
     // 6. PlayerStats
     if (backupData.tables.playerStats && backupData.tables.playerStats.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.playerStats.length} estadísticas de jugadores...`);
-      for (const stat of backupData.tables.playerStats) {
-        await prisma.playerStats.create({ data: stat });
-      }
+      await prisma.playerStats.createMany({
+        data: backupData.tables.playerStats,
+        skipDuplicates: true
+      });
       console.log('✅ Estadísticas restauradas');
     }
 
     // 7. PlayerJornadaPoints
     if (backupData.tables.playerJornadaPoints && backupData.tables.playerJornadaPoints.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.playerJornadaPoints.length} puntos por jornada...`);
-      for (const points of backupData.tables.playerJornadaPoints) {
-        await prisma.playerJornadaPoints.create({ data: points });
-      }
+      await prisma.playerJornadaPoints.createMany({
+        data: backupData.tables.playerJornadaPoints,
+        skipDuplicates: true
+      });
       console.log('✅ Puntos por jornada restaurados');
     }
 
     // 8. Squads
     if (backupData.tables.squads && backupData.tables.squads.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.squads.length} plantillas...`);
-      for (const squad of backupData.tables.squads) {
-        await prisma.squad.create({ data: squad });
-      }
+      await prisma.squad.createMany({
+        data: backupData.tables.squads,
+        skipDuplicates: true
+      });
       console.log('✅ Plantillas restauradas');
     }
 
     // 9. SquadPlayers
     if (backupData.tables.squadPlayers && backupData.tables.squadPlayers.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.squadPlayers.length} jugadores de plantillas...`);
-      for (const sp of backupData.tables.squadPlayers) {
-        await prisma.squadPlayer.create({ data: sp });
-      }
+      await prisma.squadPlayer.createMany({
+        data: backupData.tables.squadPlayers,
+        skipDuplicates: true
+      });
       console.log('✅ Jugadores de plantillas restaurados');
     }
 
     // 10. BetOptions
     if (backupData.tables.betOptions && backupData.tables.betOptions.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.betOptions.length} opciones de apuestas...`);
-      for (const option of backupData.tables.betOptions) {
-        await prisma.bet_option.create({ data: option });
-      }
+      await prisma.bet_option.createMany({
+        data: backupData.tables.betOptions,
+        skipDuplicates: true
+      });
       console.log('✅ Opciones de apuestas restauradas');
     }
 
     // 11. Bets
     if (backupData.tables.bets && backupData.tables.bets.length > 0) {
       console.log(`\n📦 Restaurando ${backupData.tables.bets.length} apuestas...`);
-      for (const bet of backupData.tables.bets) {
-        await prisma.bet.create({ data: bet });
-      }
+      await prisma.bet.createMany({
+        data: backupData.tables.bets,
+        skipDuplicates: true
+      });
       console.log('✅ Apuestas restauradas');
     }
 
