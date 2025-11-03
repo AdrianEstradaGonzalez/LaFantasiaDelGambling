@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { PlayerStatsService } from '../services/playerStats.service.js';
 import { AppError } from '../utils/errors.js';
 import axios from 'axios';
+import { updateLiveLeagueRankings } from '../../scripts/update-live-rankings-in-progress.js';
 
 // Helper para obtener jornada actual de la API
 async function getCurrentJornadaFromAPI(): Promise<number> {
@@ -128,54 +129,28 @@ export class PlayerStatsController {
   }
 
   /**
-   * Actualizar estadísticas de todos los jugadores para una jornada (admin)
-   * POST /api/player-stats/update-jornada
+   * Actualizar estadísticas de todos los jugadores para una jornada (cron)
+   * GET/POST /player-stats/update-jornada
+   * Ejecuta el script de actualización de rankings EN VIVO
    */
   static async updateJornadaStats(req: FastifyRequest, reply: FastifyReply) {
     try {
-      const body = req.body as any;
-      const queryParams = req.query as any;
+      console.log('\n🔴 Endpoint /player-stats/update-jornada llamado');
+      console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`);
 
-      // Obtener jornada del body (POST) o query params (GET)
-      let jornada = body?.jornada || queryParams?.jornada;
-
-      // Si no se proporciona jornada, obtener la jornada actual de la API
-      if (!jornada) {
-        try {
-          const currentJornada = await getCurrentJornadaFromAPI();
-          jornada = currentJornada;
-          console.log(`[UpdateJornada] Usando jornada actual de la API: ${jornada}`);
-        } catch (error) {
-          return reply.status(400).send({
-            success: false,
-            message: 'No se pudo obtener la jornada actual. Proporciona el parámetro "jornada".',
-          });
-        }
-      }
-
-      // Convertir a número si viene como string
-      jornada = typeof jornada === 'string' ? parseInt(jornada, 10) : jornada;
-
-      if (typeof jornada !== 'number' || isNaN(jornada)) {
-        return reply.status(400).send({
-          success: false,
-          message: 'El número de jornada no es válido',
-        });
-      }
-
-      const result = await PlayerStatsService.updateAllPlayersStatsForJornada(jornada);
+      // Ejecutar el script de actualización de rankings en vivo
+      await updateLiveLeagueRankings();
 
       return reply.status(200).send({
         success: true,
-        message: `Estadísticas actualizadas para jornada ${jornada}`,
-        data: result,
+        message: 'Actualización de rankings EN VIVO completada',
       });
     } catch (error: any) {
-      console.error('Error actualizando estadísticas de jornada:', error);
+      console.error('❌ Error ejecutando actualización EN VIVO:', error);
 
       return reply.status(500).send({
         success: false,
-        message: error?.message || 'Error al actualizar estadísticas',
+        message: error?.message || 'Error al actualizar rankings EN VIVO',
       });
     }
   }

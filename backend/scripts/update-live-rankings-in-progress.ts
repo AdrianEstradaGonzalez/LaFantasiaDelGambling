@@ -256,7 +256,7 @@ async function getCurrentJornada(): Promise<number | null> {
 /**
  * Actualiza los puntos EN VIVO de todas las ligas de Primera División
  */
-async function updateLiveLeagueRankings() {
+export async function updateLiveLeagueRankings() {
   try {
     console.log('\n🚀 Iniciando actualización de rankings EN VIVO...');
     console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}\n`);
