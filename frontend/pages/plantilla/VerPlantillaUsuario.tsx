@@ -140,6 +140,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
   const [playerPhotos, setPlayerPhotos] = useState<Record<number, { photo?: string; teamCrest?: string; position?: string }>>({});
   const [playerPoints, setPlayerPoints] = useState<Record<number, { points: number | null; minutes: number | null }>>({});
   const [currentJornada, setCurrentJornada] = useState<number | null>(null);
+  const [jornadaStatus, setJornadaStatus] = useState<'open' | 'in_progress' | 'closed'>('open');
 
   useEffect(() => {
     (async () => {
@@ -147,11 +148,18 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         setLoading(true);
         const s = await SquadService.getSquadByUser(ligaId, userId);
         setSquad(s);
+        
         // Jornada actual
+        let jornadaActual: number | null = null;
+        let statusActual: 'open' | 'in_progress' | 'closed' = 'open';
         try {
           const status = await JornadaService.getJornadaStatus(ligaId);
-          setCurrentJornada(status.currentJornada);
+          jornadaActual = status.currentJornada;
+          statusActual = status.status as 'open' | 'in_progress' | 'closed';
+          setCurrentJornada(jornadaActual);
+          setJornadaStatus(statusActual);
         } catch {}
+        
         // Cargar fotos y puntos si hay plantilla
         if (s && s.players && s.players.length) {
           const ids = s.players.map(p => p.playerId);
@@ -172,13 +180,14 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
           } catch {}
 
           // Puntos de la jornada actual (si la tenemos)
-          if (currentJornada != null) {
+          if (jornadaActual != null) {
             try {
               const pointsWithDefaults: Record<number, { points: number | null; minutes: number | null }> = {};
 
-              // ✅ Solo obtener datos desde la BD (NO calcular en tiempo real)
-              // El worker centralizado ya actualiza LeagueMember.points cada 2 minutos
-              // Para ver puntos individuales por jugador, solo leer desde BD (PlayerStats)
+              // ✅ Durante partidos en vivo, refrescar datos desde la BD
+              // El worker centralizado actualiza PlayerStats cada 2 minutos durante matches
+              // Forzar refresh si la jornada está en progreso para obtener puntos actualizados
+              const shouldRefresh = statusActual === 'in_progress';
               
               const chunkSize = 8;
               const batches: number[][] = [];
@@ -186,7 +195,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
 
               for (const batch of batches) {
                 const promises = batch.map(pid => 
-                  PlayerStatsService.getPlayerJornadaStats(pid, currentJornada)
+                  PlayerStatsService.getPlayerJornadaStats(pid, jornadaActual!, { refresh: shouldRefresh })
                     .then(s => ({ pid, s }))
                     .catch(() => ({ pid, s: null }))
                 );
@@ -403,15 +412,16 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                           <View style={{ position: 'absolute', top: -8, right: -8, width: 32, height: 32, borderRadius: 16, backgroundColor: '#0892D0', borderWidth: 2, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, elevation: 5 }}>
                               {(() => {
                                 const pointsObj = pid != null ? playerPoints[pid] : undefined;
-                                // Mostrar '-' si no hay stats o si no jugó minutos aún (minutes === 0 o minutes == null)
-                                const showDash = !pointsObj || pointsObj.minutes == null || pointsObj.minutes === 0;
-                                if (showDash) {
+                                // ✅ Mostrar '-' solo si no hay datos o si points es null
+                                // Durante partidos en vivo, mostrar puntos aunque minutes sea 0
+                                const hasPoints = pointsObj && pointsObj.points !== null;
+                                if (!hasPoints) {
                                   return (
                                     <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>-</Text>
                                   );
                                 }
 
-                                const ptsNum = (pointsObj!.points ?? 0);
+                                const ptsNum = pointsObj!.points!;
                                 const displayNum = player.isCaptain ? ptsNum * 2 : ptsNum;
 
                                 return (

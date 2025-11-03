@@ -144,6 +144,7 @@ async function savePlayerStatsToDb(
 			updatedAt: new Date(),
 		} as any;
 
+		// Guardar en PlayerStats (fuente de verdad)
 		await prisma.playerStats.upsert({
 			where: {
 				playerId_jornada_season: {
