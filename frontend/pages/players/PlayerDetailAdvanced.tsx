@@ -222,8 +222,12 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           }
           
           // 🆕 Cargar análisis del próximo rival
+          // Si la jornada está cerrada, analizar la siguiente (currentJornada + 1)
+          // Si está abierta, analizar la actual
           try {
-            const analysis = await PlayerStatsService.getNextOpponentAnalysis(player.id, currentJornada);
+            const jornadaParaAnalisis = jornadaStatus === 'closed' ? currentJornada + 1 : currentJornada;
+            console.log('[PlayerDetail] Analizando rival para jornada:', jornadaParaAnalisis, 'Estado:', jornadaStatus);
+            const analysis = await PlayerStatsService.getNextOpponentAnalysis(player.id, jornadaParaAnalisis);
             console.log('[PlayerDetail] Análisis del próximo rival cargado:', analysis);
             setNextOpponentAnalysis(analysis);
           } catch (error) {

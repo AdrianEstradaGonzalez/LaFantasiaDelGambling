@@ -896,7 +896,7 @@ async function getNextOpponentAnalysis(playerId: number, currentJornada: number)
   
   // Obtener el próximo partido del equipo del jugador desde la API
   const headers = buildHeaders();
-  const season = 2024;
+  const season = 2025;
   const leagueId = 140; // La Liga
 
   try {
