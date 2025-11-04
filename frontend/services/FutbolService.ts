@@ -101,11 +101,14 @@ export default class FootballService {
   private static startMatchday = 9;
   // Simple caches to avoid hitting API repeatedly
   private static teamsCache: TeamMinimal[] | null = null;
+  // Cache para Segunda División
+  private static teamsCacheSegunda: TeamMinimal[] | null = null;
   private static playersCache: Player[] | null = null;
   private static teamsPromise: Promise<TeamMinimal[]> | null = null;
   private static playersPromise: Promise<Player[]> | null = null;
   private static prefetchInProgress: Promise<void> | null = null;
   private static readonly TEAMS_CACHE_KEY = 'laLiga_teams_v2';
+  private static readonly TEAMS_CACHE_KEY_SEGUNDA = 'segunda_teams_v1';
   private static readonly PLAYERS_CACHE_KEY = 'laLiga_players_v3';
   private static matchesCache: Partido[] | null = null;
   private static matchesPromise: Promise<Partido[]> | null = null;
@@ -163,6 +166,54 @@ export default class FootballService {
     }
     // No cache available
     return [];
+  }
+
+  // Nueva: obtener equipos de Segunda División desde caché/almacenamiento
+  static async getSegundaDivisionTeamsCached(): Promise<TeamMinimal[]> {
+    if (this.teamsCacheSegunda) return this.teamsCacheSegunda;
+
+    const fromStore = await this.loadFromStorage<TeamMinimal[]>(this.TEAMS_CACHE_KEY_SEGUNDA);
+    if (fromStore && fromStore.length) {
+      this.teamsCacheSegunda = fromStore;
+      return fromStore;
+    }
+
+    if (this.prefetchInProgress) {
+      try { await this.prefetchInProgress; } catch {}
+      const fromStoreAfter = await this.loadFromStorage<TeamMinimal[]>(this.TEAMS_CACHE_KEY_SEGUNDA);
+      if (fromStoreAfter && fromStoreAfter.length) {
+        this.teamsCacheSegunda = fromStoreAfter;
+        return fromStoreAfter;
+      }
+    }
+
+    // No hay cache disponible
+    return [];
+  }
+
+  // Obtener equipos de Segunda División desde la API
+  static async getSegundaDivisionTeams(): Promise<TeamMinimal[]> {
+    try {
+      const { data } = await axios.get(`${API_BASE}/teams`, {
+        headers: HEADERS,
+        timeout: 10000,
+        params: { league: SEGUNDA_DIVISION_LEAGUE_ID, season: FootballService.season },
+      });
+      const teams = (data?.response ?? []).map((t: any) => ({
+        id: t?.team?.id,
+        name: t?.team?.name,
+        crest: t?.team?.logo,
+      }));
+      // Persistir en storage
+      if (teams.length) {
+        this.teamsCacheSegunda = teams;
+        await this.saveToStorage(this.TEAMS_CACHE_KEY_SEGUNDA, teams);
+      }
+      return teams;
+    } catch (err) {
+      console.warn('Error fetching Segunda Division teams:', err);
+      return [];
+    }
   }
 
   static async getAllPlayersCached(): Promise<Player[]> {

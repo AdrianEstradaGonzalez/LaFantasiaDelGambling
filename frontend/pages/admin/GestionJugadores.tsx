@@ -373,18 +373,21 @@ export const GestionJugadores = ({ navigation, route }: {
   const [isSaving, setIsSaving] = useState(false);
   const [focusedPriceId, setFocusedPriceId] = useState<number | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+  const [sortType, setSortType] = useState<'price' | 'points'>('price');
 
   // Cargar jugadores y equipos desde el backend
   const loadPlayers = useCallback(async () => {
     try {
       setLoading(true);
       const playersData = await PlayerService.getAllPlayers({ division });
-      const teamsData = division === 'segunda' 
-        ? await FootballService.getLaLigaTeamsCached() // TODO: Implementar getSegundaDivisionTeamsCached
-        : await FootballService.getLaLigaTeamsCached();
-      
+      // Derivar equipos de los propios jugadores (igual que PlayersMarket) para asegurar
+      // que el dropdown muestre solo equipos presentes en la lista, tanto en Primera como en Segunda.
+      const uniqueTeams = Array.from(
+        new Set(playersData.map(p => JSON.stringify({ id: p.teamId, name: p.teamName, crest: p.teamCrest })))
+      ).map(str => JSON.parse(str) as TeamMinimal);
+
       setPlayers(playersData);
-      setTeams(teamsData);
+      setTeams(uniqueTeams);
     } catch (error) {
       CustomAlertManager.alert(
         'Error',
@@ -426,12 +429,18 @@ export const GestionJugadores = ({ navigation, route }: {
       list = list.filter(p => p.teamId === teamFilter);
     }
     
-    // Ordenamiento por precio
+    // Ordenamiento por precio o puntos
     if (sortOrder) {
       list.sort((a, b) => {
-        const priceA = editedPrices[a.id] ?? a.price;
-        const priceB = editedPrices[b.id] ?? b.price;
-        return sortOrder === 'asc' ? priceA - priceB : priceB - priceA;
+        if (sortType === 'price') {
+          const priceA = editedPrices[a.id] ?? a.price;
+          const priceB = editedPrices[b.id] ?? b.price;
+          return sortOrder === 'asc' ? priceA - priceB : priceB - priceA;
+        } else {
+          const aPoints = a.totalPoints ?? 0;
+          const bPoints = b.totalPoints ?? 0;
+          return sortOrder === 'asc' ? aPoints - bPoints : bPoints - aPoints;
+        }
       });
     }
     
@@ -622,33 +631,70 @@ export const GestionJugadores = ({ navigation, route }: {
           />
         </View>
 
-        {/* Botón de ordenamiento por precio */}
-        <TouchableOpacity
-          onPress={() => {
-            if (sortOrder === null) setSortOrder('desc');
-            else if (sortOrder === 'desc') setSortOrder('asc');
-            else setSortOrder(null);
-          }}
-          style={{
-            backgroundColor: '#1a2332',
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: '#334155',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8
-          }}
-        >
-          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>
-            Ordenar por precio
-          </Text>
-          {sortOrder === null && <SortNeutralIcon />}
-          {sortOrder === 'asc' && <SortAscIcon />}
-          {sortOrder === 'desc' && <SortDescIcon />}
-        </TouchableOpacity>
+        {/* Botones de ordenamiento por precio y puntos */}
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+          <TouchableOpacity
+            onPress={() => {
+              setSortType('price');
+              setSortOrder(prev => {
+                if (prev === null || sortType !== 'price') return 'desc';
+                if (prev === 'desc') return 'asc';
+                return null;
+              });
+            }}
+            style={{
+              flex: 1,
+              backgroundColor: '#1a2332',
+              borderWidth: 1,
+              borderColor: sortType === 'price' && sortOrder ? '#10b981' : '#334155',
+              paddingVertical: 12,
+              borderRadius: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8
+            }}
+          >
+            <Text style={{ color: sortType === 'price' && sortOrder ? '#10b981' : '#fff', fontSize: 13, fontWeight: '600' }}>
+              Precio
+            </Text>
+            {sortType === 'price' && sortOrder === null && <SortNeutralIcon />}
+            {sortType === 'price' && sortOrder === 'asc' && <SortAscIcon />}
+            {sortType === 'price' && sortOrder === 'desc' && <SortDescIcon />}
+            {sortType !== 'price' && <SortNeutralIcon />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              setSortType('points');
+              setSortOrder(prev => {
+                if (prev === null || sortType !== 'points') return 'desc';
+                if (prev === 'desc') return 'asc';
+                return null;
+              });
+            }}
+            style={{
+              flex: 1,
+              backgroundColor: '#1a2332',
+              borderWidth: 1,
+              borderColor: sortType === 'points' && sortOrder ? '#10b981' : '#334155',
+              paddingVertical: 12,
+              borderRadius: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8
+            }}
+          >
+            <Text style={{ color: sortType === 'points' && sortOrder ? '#10b981' : '#fff', fontSize: 13, fontWeight: '600' }}>
+              Puntos
+            </Text>
+            {sortType === 'points' && sortOrder === null && <SortNeutralIcon />}
+            {sortType === 'points' && sortOrder === 'asc' && <SortAscIcon />}
+            {sortType === 'points' && sortOrder === 'desc' && <SortDescIcon />}
+            {sortType !== 'points' && <SortNeutralIcon />}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Lista de jugadores */}

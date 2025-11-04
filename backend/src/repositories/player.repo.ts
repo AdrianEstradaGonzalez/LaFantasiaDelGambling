@@ -121,13 +121,27 @@ export class PlayerRepository {
    * Actualizar puntos de la última jornada en caché
    */
   static async updateLastJornadaPoints(id: number, points: number, jornada?: number) {
-    return prisma.player.update({
-      where: { id },
-      data: ({
-        lastJornadaPoints: points,
-        ...(Number.isInteger(jornada) ? { lastJornadaNumber: jornada } : {}),
-      } as any),
-    });
+    try {
+      return await prisma.player.update({
+        where: { id },
+        data: ({
+          lastJornadaPoints: points,
+          ...(Number.isInteger(jornada) ? { lastJornadaNumber: jornada } : {}),
+        } as any),
+      });
+    } catch (e: any) {
+      // Si no existe en la tabla principal (P2025), intentar en la tabla playerSegunda
+      if (e?.code === 'P2025') {
+        return (prisma as any).playerSegunda.update({
+          where: { id },
+          data: ({
+            lastJornadaPoints: points,
+            ...(Number.isInteger(jornada) ? { lastJornadaNumber: jornada } : {}),
+          } as any),
+        });
+      }
+      throw e;
+    }
   }
 
   /**
@@ -234,30 +248,61 @@ export class PlayerRepository {
    * Actualizar precio de un jugador
    */
   static async updatePlayerPrice(id: number, price: number) {
-    return prisma.player.update({
-      where: { id },
-      data: { price },
-    });
+    try {
+      return await prisma.player.update({
+        where: { id },
+        data: { price },
+      });
+    } catch (e: any) {
+      if (e?.code === 'P2025') {
+        // Fallback a tabla de Segunda División
+        return (prisma as any).playerSegunda.update({
+          where: { id },
+          data: { price },
+        });
+      }
+      throw e;
+    }
   }
 
   /**
    * Actualizar posición de un jugador
    */
   static async updatePlayerPosition(id: number, position: string) {
-    return prisma.player.update({
-      where: { id },
-      data: { position },
-    });
+    try {
+      return await prisma.player.update({
+        where: { id },
+        data: { position },
+      });
+    } catch (e: any) {
+      if (e?.code === 'P2025') {
+        return (prisma as any).playerSegunda.update({
+          where: { id },
+          data: { position },
+        });
+      }
+      throw e;
+    }
   }
 
   /**
    * Actualizar equipo de un jugador
    */
   static async updatePlayerTeam(id: number, teamId: number) {
-    return prisma.player.update({
-      where: { id },
-      data: { teamId },
-    });
+    try {
+      return await prisma.player.update({
+        where: { id },
+        data: { teamId },
+      });
+    } catch (e: any) {
+      if (e?.code === 'P2025') {
+        return (prisma as any).playerSegunda.update({
+          where: { id },
+          data: { teamId },
+        });
+      }
+      throw e;
+    }
   }
 
   /**

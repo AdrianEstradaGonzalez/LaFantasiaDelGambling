@@ -322,6 +322,33 @@ export const PlayersMarket = ({ navigation, route }: {
       // ✅ Mostrar primeros 30 jugadores AHORA
       const initialBatch = playersData.slice(0, 30);
       setPlayers(initialBatch);
+      // Si estamos en Segunda y algunos jugadores no tienen totalPoints, actualizarlos en background
+      const needsPoints = division === 'segunda' ? initialBatch.filter(p => p.totalPoints == null || p.totalPoints === 0) : [];
+      if (needsPoints.length > 0) {
+        // Actualizar puntos solo para los visibles (limitar para evitar demasiadas llamadas)
+        const limit = Math.min(needsPoints.length, 80); // to avoid hammering API
+        (async () => {
+          try {
+            const updated: Record<number, number> = {};
+            for (let i = 0; i < limit; i++) {
+              const pl = needsPoints[i];
+              try {
+                const fresh = await PlayerService.getPlayerById(pl.id);
+                if (fresh && typeof fresh.totalPoints === 'number') {
+                  updated[pl.id] = fresh.totalPoints;
+                }
+              } catch (e) {
+                // ignore per-player errors
+              }
+            }
+            if (Object.keys(updated).length > 0) {
+              setPlayers(prev => prev.map(p => ({ ...p, totalPoints: updated[p.id] ?? p.totalPoints })));
+            }
+          } catch (e) {
+            console.warn('Error updating totalPoints for visible players', e);
+          }
+        })();
+      }
       console.timeEnd('⏱️ Procesamiento de datos');
       
       console.timeEnd('⏱️ Carga total del mercado');
