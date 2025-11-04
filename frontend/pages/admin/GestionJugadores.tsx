@@ -696,8 +696,26 @@ export const GestionJugadores = ({ navigation, route }: {
                   </View>
                 </View>
 
-                {/* Precio editable */}
+                {/* Puntos totales y precio editable */}
                 <View style={{ alignItems: 'flex-end' }}>
+                  {/* Puntos totales */}
+                  <View style={{ marginBottom: 8 }}>
+                    <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 2 }}>Puntos totales</Text>
+                    <View style={{
+                      backgroundColor: '#10b981',
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 8,
+                      minWidth: 60,
+                      alignItems: 'center'
+                    }}>
+                      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
+                        {p.totalPoints ?? 0}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  {/* Precio editable */}
                   <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Precio</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TextInput
