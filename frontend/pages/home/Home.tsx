@@ -315,8 +315,10 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
         {/* Ligas */}
         <View style={styles.ligasList}>
-          {ligas.length > 0 ? (
-            ligas.map((liga) => (
+            {ligas.length > 0 ? (
+            ligas.map((liga) => {
+              const accentColor = liga.division === 'segunda' ? '#f59e0b' : '#3b82f6';
+              return (
               <TouchableOpacity
                 key={liga.id}
                 style={styles.ligaCard}
@@ -345,7 +347,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                   top: 0,
                   bottom: 0,
                   width: 6,
-                  backgroundColor: '#3b82f6',
+                  backgroundColor: accentColor,
                   borderTopLeftRadius: 16,
                   borderBottomLeftRadius: 16,
                 }} />
@@ -380,7 +382,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                     justifyContent: 'center',
                     marginRight: 16,
                   }}>
-                    <ShieldIcon size={34} color="#3b82f6" />
+                    <ShieldIcon size={34} color={accentColor} />
                   </View>
                   
                   {/* Nombre de la liga */}
@@ -415,11 +417,12 @@ export const Home = ({ navigation, route }: HomeProps) => {
                     marginRight: 8,
                     marginLeft: 8,
                   }}>
-                    <Text style={{ color: '#3b82f6', fontSize: 24, fontWeight: '600' }}>›</Text>
+                    <Text style={{ color: accentColor, fontSize: 24, fontWeight: '600' }}>›</Text>
                   </View>
                 </View>
               </TouchableOpacity>
-            ))
+              );
+            })
           ) : (
             <View style={{ padding: 20, alignItems: 'center' }}>
               <Text style={{ color: '#cbd5e1', textAlign: 'center', marginBottom: 8 }}>
