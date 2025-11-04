@@ -84,6 +84,19 @@ export class PlayerRepository {
    */
   static async getAllSegundaPlayers() {
     return (prisma as any).playerSegunda.findMany({
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        teamId: true,
+        teamName: true,
+        price: true,
+        photoUrl: true,
+        injured: true,
+        apiFootballId: true,
+        lastJornadaPoints: true,
+        lastJornadaNumber: true,
+      },
       orderBy: [
         { teamName: 'asc' },
         { position: 'asc' },
