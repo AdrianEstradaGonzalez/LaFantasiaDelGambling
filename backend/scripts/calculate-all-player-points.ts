@@ -31,7 +31,7 @@ async function calculateAllPlayerPoints() {
     let updated = 0;
     let alreadyCorrect = 0;
 
-    // Procesar cada jugador
+    // Procesar cada jugadorr
     for (const player of allPlayers) {
       try {
         // Obtener estadísticas de todas las jornadas hasta la actual
