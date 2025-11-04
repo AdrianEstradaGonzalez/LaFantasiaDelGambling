@@ -44,8 +44,8 @@ model League {
   code           String         @unique
   currentJornada Int            @default(1)
   jornadaStatus  String         @default("open")
-  division       String         @default("primera") // "primera" o "segunda"
-  isPremium      Boolean        @default(false) // Liga Premium (Segunda División)
+  division       String         @default("primera")
+  isPremium      Boolean        @default(false)
   leader         User           @relation("LeagueLeader", fields: [leaderId], references: [id], onDelete: Cascade)
   members        LeagueMember[]
   squads         Squad[]
@@ -55,14 +55,14 @@ model League {
 model LeagueMember {
   leagueId         String
   userId           String
-  points           Int      @default(0)
-  joinedAt         DateTime @default(now())
-  budget           Int      @default(500)
-  initialBudget    Int      @default(500)
-  bettingBudget    Int      @default(250)
+  points           Int        @default(0)
+  joinedAt         DateTime   @default(now())
+  budget           Int        @default(500)
+  initialBudget    Int        @default(500)
+  bettingBudget    Int        @default(250)
   pointsPerJornada Json?
-  league           League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league           League     @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   bets             Bet[]
   betCombis        BetCombi[]
 
@@ -108,19 +108,19 @@ model Player {
   name                String
   position            String
   teamId              Int
-  teamHistory         Int[]                 @default([])
   teamName            String
   teamCrest           String?
   nationality         String?
   shirtNumber         Int?
   photo               String?
   price               Int
-  availabilityStatus  String                @default("AVAILABLE")
-  availabilityInfo    String?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   lastJornadaPoints   Int                   @default(0)
   lastJornadaNumber   Int                   @default(0)
+  teamHistory         Int[]                 @default([])
+  availabilityInfo    String?
+  availabilityStatus  String                @default("AVAILABLE")
   PlayerJornadaPoints PlayerJornadaPoints[]
   stats               PlayerStats[]
 
@@ -299,9 +299,9 @@ model Bet {
   awayTeam     String?
   evaluatedAt  DateTime?    @db.Timestamp(6)
   homeTeam     String?
-  combiId      String?      // Referencia a BetCombi si es parte de una combinada
-  leagueMember LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
+  combiId      String?
   betCombi     BetCombi?    @relation(fields: [combiId], references: [id], onDelete: Cascade)
+  leagueMember LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
 
   @@index([leagueId, userId])
   @@index([jornada])
@@ -312,18 +312,18 @@ model Bet {
 }
 
 model BetCombi {
-  id            String       @id @default(cuid())
-  leagueId      String
-  userId        String
-  jornada       Int
-  totalOdd      Float        // Cuota total (producto de todas las cuotas)
-  amount        Int          // Cantidad apostada (máx 50M)
-  potentialWin  Int          // Ganancia potencial
-  status        String       @default("pending") // "pending", "won", "lost"
-  createdAt     DateTime     @default(now())
-  evaluatedAt   DateTime?    @db.Timestamp(6)
-  leagueMember  LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
-  selections    Bet[]        // Apuestas individuales que forman la combi
+  id           String       @id @default(cuid())
+  leagueId     String
+  userId       String
+  jornada      Int
+  totalOdd     Float
+  amount       Int
+  potentialWin Int
+  status       String       @default("pending")
+  createdAt    DateTime     @default(now())
+  evaluatedAt  DateTime?    @db.Timestamp(6)
+  selections   Bet[]
+  leagueMember LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)
 
   @@index([leagueId, userId])
   @@index([jornada])
@@ -338,13 +338,13 @@ model bet_option {
   matchId       Int
   homeTeam      String
   awayTeam      String
-  homeTeamCrest String?
-  awayTeamCrest String?
   betType       String
   betLabel      String
   odd           Float    @default(1.0)
   createdAt     DateTime @default(now())
   options       Json?
+  awayTeamCrest String?
+  homeTeamCrest String?
   League        League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
 
   @@index([leagueId, jornada])
