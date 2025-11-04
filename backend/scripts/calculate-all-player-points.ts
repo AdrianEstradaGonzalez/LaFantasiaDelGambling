@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 async function calculateAllPlayerPoints() {
   try {
-    console.log('\n⚽ CALCULANDO PUNTOS DE TODOS LOS JUGADORES...\n');
+    console.log('\n⚽ CALCULANDO PUNTOS DE JUGADORES DE SEGUNDA DIVISIÓN...\n');
 
     // Obtener jornada actual desde la primera liga
     const firstLeague = await prisma.league.findFirst();
@@ -18,12 +18,12 @@ async function calculateAllPlayerPoints() {
     const currentJornada = firstLeague.currentJornada;
     console.log(`📊 Jornada actual: ${currentJornada}\n`);
 
-    // Obtener todos los jugadores
-    const allPlayers = await prisma.player.findMany({
+    // Obtener todos los jugadores de Segunda División
+    const allPlayers = await (prisma as any).playerSegunda.findMany({
       select: { id: true, name: true, position: true }
     });
 
-    console.log(`👥 Total de jugadores a procesar: ${allPlayers.length}\n`);
+    console.log(`👥 Total de jugadores de Segunda a procesar: ${allPlayers.length}\n`);
 
     let processed = 0;
     let withStats = 0;
@@ -31,33 +31,39 @@ async function calculateAllPlayerPoints() {
     let updated = 0;
     let alreadyCorrect = 0;
 
-    // Procesar cada jugadorr
+    // Procesar cada jugador
     for (const player of allPlayers) {
       try {
         // Obtener estadísticas de todas las jornadas hasta la actual
         let totalPoints = 0;
         let jornadasJugadas = 0;
 
+        console.log(`\n🔄 Procesando ${player.name}...`);
+
         for (let jornada = 1; jornada <= currentJornada; jornada++) {
           try {
-            // Usar el mismo servicio que usa PlayerDetail
+            // Si NO existe en BD, carga desde API y lo guarda
+            // Si YA existe en BD, lo usa directamente
             const stats = await getPlayerStatsForJornada(
               player.id,
               jornada,
-              { forceRefresh: false } // No forzar API, usar BD
+              { forceRefresh: false } // Solo cargar de API si NO existe en BD
             );
 
             if (stats && stats.totalPoints !== null && stats.totalPoints !== undefined) {
               totalPoints += stats.totalPoints;
               jornadasJugadas++;
+              console.log(`  J${jornada}: ${stats.totalPoints} pts`);
+            } else {
+              console.log(`  J${jornada}: Sin datos`);
             }
           } catch (error) {
-            // Jornada sin datos para este jugador, continuar
+            console.log(`  J${jornada}: Error - ${error instanceof Error ? error.message : 'Error desconocido'}`);
           }
         }
 
-        // Obtener datos actuales del jugador
-        const currentPlayer = await prisma.player.findUnique({
+        // Obtener datos actuales del jugador de Segunda
+        const currentPlayer = await (prisma as any).playerSegunda.findUnique({
           where: { id: player.id },
           select: { lastJornadaPoints: true, lastJornadaNumber: true }
         });
@@ -69,55 +75,14 @@ async function calculateAllPlayerPoints() {
           currentPlayer.lastJornadaNumber !== currentJornada;
 
         if (needsUpdate) {
-          // Actualizar Player con puntos acumulados
-          await prisma.player.update({
+          // Actualizar PlayerSegunda con puntos acumulados
+          await (prisma as any).playerSegunda.update({
             where: { id: player.id },
             data: {
               lastJornadaPoints: totalPoints,
               lastJornadaNumber: currentJornada
             }
           });
-
-          // Actualizar o crear PlayerJornadaPoints con puntos por jornada
-          const existingPoints = await prisma.playerJornadaPoints.findUnique({
-            where: {
-              playerId_season: {
-                playerId: player.id,
-                season: 2025
-              }
-            }
-          });
-
-          // Construir objeto con puntos de cada jornada
-          const jornadaPointsData: any = {};
-          for (let j = 1; j <= currentJornada; j++) {
-            try {
-              const stats = await getPlayerStatsForJornada(player.id, j, { forceRefresh: false });
-              jornadaPointsData[`pointsJ${j}`] = stats?.totalPoints ?? 0;
-            } catch {
-              jornadaPointsData[`pointsJ${j}`] = 0;
-            }
-          }
-
-          if (existingPoints) {
-            await prisma.playerJornadaPoints.update({
-              where: {
-                playerId_season: {
-                  playerId: player.id,
-                  season: 2025
-                }
-              },
-              data: jornadaPointsData
-            });
-          } else {
-            await prisma.playerJornadaPoints.create({
-              data: {
-                playerId: player.id,
-                season: 2025,
-                ...jornadaPointsData
-              }
-            });
-          }
 
           updated++;
           console.log(`✅ ${processed + 1}/${allPlayers.length} - ${player.name}: ${totalPoints} pts (${jornadasJugadas} jornadas) - ACTUALIZADO`);

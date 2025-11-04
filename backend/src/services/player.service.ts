@@ -242,7 +242,15 @@ export class PlayerService {
       ? await PlayerRepository.getAllSegundaPlayers()
       : await PlayerRepository.getAllPlayers();
     
-    // Obtener puntuación total de cada jugador (suma de todas las jornadas)
+    if (division === 'segunda') {
+      // Para Segunda, ya tenemos lastJornadaPoints en el modelo
+      return players.map((player: any) => ({
+        ...player,
+        totalPoints: player.lastJornadaPoints || 0,
+      }));
+    }
+    
+    // Para Primera, calcular desde playerStats
     const playersWithTotalPoints = await Promise.all(
       players.map(async (player: any) => {
         const stats = await prisma.playerStats.aggregate({
