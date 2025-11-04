@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Linking, AppState, AppStateStatus } from 'react-native';
-import ForceUpdateScreen from '../components/ForceUpdateScreen';
+import { Linking, AppState, AppStateStatus, Platform } from 'react-native';
+import { CustomAlertProvider, CustomAlertManager } from '../components/CustomAlert';
+import { DownloadIcon } from '../components/VectorIcons';
 import checkAppVersion from '../utils/checkAppVersion';
 
 // 🧩 Importa tus pantallas
@@ -83,11 +84,40 @@ export const AppNavigator = () => {
   // Check app version logic (startup + when app returns to foreground)
   const checkAppVersionHandler = async () => {
     try {
-  const result = await checkAppVersion();
-  setForceUpdateInfo({ required: result.required, latest: result.latest, storeUrl: result.storeUrl });
+      const result = await checkAppVersion();
+      if (result.required) {
+        // Show CustomAlert instead of blocking screen
+        const openStore = () => {
+          const fallback = Platform.select({
+            ios: 'https://apps.apple.com/app/idYOUR_APP_ID',
+            android: 'https://play.google.com/store/apps/details?id=com.dreamleague',
+          }) as string;
+          
+          const url = result.storeUrl || fallback;
+          Linking.openURL(url).catch(() => null);
+        };
+
+        CustomAlertManager.alert(
+          '¡Actualización disponible!',
+          'Por favor, actualiza desde tu tienda para continuar.',
+          [
+            {
+              text: 'Actualizar',
+              onPress: openStore,
+              style: 'default',
+              icon: 'download'
+            }
+          ],
+          {
+            icon: 'information',
+            iconColor: '#0892D0'
+          }
+        );
+      }
+      setForceUpdateInfo({ required: result.required, latest: result.latest, storeUrl: result.storeUrl });
     } catch (err) {
       console.warn('Failed to check app version', err);
-  setForceUpdateInfo({ required: false });
+      setForceUpdateInfo({ required: false });
     }
   };
 
@@ -111,15 +141,7 @@ export const AppNavigator = () => {
     return null;
   }
 
-  // If we detected that an update is required, render a blocking screen
-  if (forceUpdateInfo && forceUpdateInfo.required) {
-    return (
-      <ForceUpdateScreen
-        latestVersion={forceUpdateInfo.latest || 'Nueva versión'}
-        storeUrl={forceUpdateInfo.storeUrl}
-      />
-    );
-  }
+  // No longer block the app with a full screen - the alert will show when needed
 
   // Configuración de deep linking
   const linking = {
@@ -137,13 +159,14 @@ export const AppNavigator = () => {
   };
 
   return (
-    <NavigationContainer linking={linking}>
-      <Stack.Navigator
-        initialRouteName={initialRoute}
-        screenOptions={{
-          headerShown: false, // oculta el header por defecto
-        }}
-      >
+    <CustomAlertProvider>
+      <NavigationContainer linking={linking}>
+        <Stack.Navigator
+          initialRouteName={initialRoute}
+          screenOptions={{
+            headerShown: false, // oculta el header por defecto
+          }}
+        >
         {/* <Stack.Screen name="Login" component={Login} /> */}
         <Stack.Screen name="Home" component={Home} />
         <Stack.Screen
@@ -210,7 +233,8 @@ export const AppNavigator = () => {
         <Stack.Screen name="PoliticaPrivacidad" component={PoliticaPrivacidad} options={{
           animation: 'slide_from_right',
         }} />
-      </Stack.Navigator>
-    </NavigationContainer>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </CustomAlertProvider>
   );
 };

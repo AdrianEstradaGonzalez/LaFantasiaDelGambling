@@ -7,13 +7,15 @@ import {
   InformationIcon, 
   CheckCircleLargeIcon, 
   ErrorCircleIcon,
-  LockIcon 
+  LockIcon,
+  DownloadIcon
 } from './VectorIcons';
 
 interface CustomAlertButton {
   text: string;
   onPress: () => void;
   style?: 'default' | 'cancel' | 'destructive';
+  icon?: string;
 }
 
 interface CustomAlertProps {
@@ -121,15 +123,18 @@ export const CustomAlert: React.FC<CustomAlertProps> = ({
                   ]}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.buttonText,
-                      isDestructive && styles.buttonTextDestructive,
-                      isCancel && styles.buttonTextCancel,
-                    ]}
-                  >
-                    {button.text}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    {button.icon === 'download' && <DownloadIcon size={18} color="#fff" />}
+                    <Text
+                      style={[
+                        styles.buttonText,
+                        isDestructive && styles.buttonTextDestructive,
+                        isCancel && styles.buttonTextCancel,
+                      ]}
+                    >
+                      {button.text}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
