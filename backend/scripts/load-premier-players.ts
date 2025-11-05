@@ -21,7 +21,7 @@ const HEADERS = {
 };
 
 const PREMIER_LEAGUE_ID = 39; // Premier League
-const CURRENT_SEASON = 2025; // La temporada 2024-2025
+const CURRENT_SEASON = 2025; // La temporada 2024-2025 (API usa año de inicio)
 
 interface Team {
   team: {

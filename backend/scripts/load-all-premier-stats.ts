@@ -15,9 +15,10 @@ async function loadAllPremierStats() {
     console.log('🚀 Iniciando carga de puntuaciones de jugadores de PREMIER LEAGUE...\n');
 
     const currentJornada = 11; // Ajustar según la jornada actual de Premier League
-    const season = 2025; // Premier League temporada 2024-2025
+    const season = 2025; // Premier League temporada 2024-2025 (API usa año de inicio)
     
     console.log(`📅 Jornada actual Premier League: ${currentJornada}`);
+    console.log(`⚽ Temporada: ${season} (2024-2025)\n`);
     console.log(`⚽ Temporada: ${season}\n`);
 
     // Obtener todos los jugadores de la Premier League
@@ -77,14 +78,24 @@ async function loadAllPremierStats() {
     let failed = 0;
     let skipped = 0;
     let processed = 0;
+    const failedPlayers = new Set<number>(); // Jugadores que fallan en la primera jornada (no existen)
 
     console.log('━'.repeat(60));
     console.log('Iniciando carga de estadísticas...');
     console.log('━'.repeat(60));
 
     for (const { player, missingJornadas } of playersWithMissingStats) {
+      // Si el jugador ya falló antes (no existe en API), saltar todas sus jornadas
+      if (failedPlayers.has(player.id)) {
+        processed += missingJornadas.length;
+        skipped += missingJornadas.length;
+        continue;
+      }
+
       console.log(`\n👤 ${player.name} (${player.teamName}) - ${missingJornadas.length} jornadas faltantes`);
       console.log(`   Jornadas: ${missingJornadas.join(', ')}`);
+
+      let playerHasData = false; // Para detectar si el jugador existe en la API
 
       for (const jornada of missingJornadas) {
         processed++;
@@ -101,8 +112,14 @@ async function loadAllPremierStats() {
           );
 
           if (stats && stats.totalPoints !== null) {
-            loaded++;
-            console.log(`   ${progress} J${jornada}: ✅ ${stats.totalPoints} puntos`);
+            playerHasData = true; // El jugador existe en la API
+            if (stats.totalPoints > 0) {
+              loaded++;
+              console.log(`   ${progress} J${jornada}: ✅ ${stats.totalPoints} puntos`);
+            } else {
+              skipped++;
+              console.log(`   ${progress} J${jornada}: ⚠️  Sin datos (no jugó)`);
+            }
           } else {
             skipped++;
             console.log(`   ${progress} J${jornada}: ⚠️  Sin datos (no jugó)`);
@@ -112,6 +129,17 @@ async function loadAllPremierStats() {
           await new Promise(resolve => setTimeout(resolve, 300));
 
         } catch (error: any) {
+          // Si falla en la primera jornada, probablemente el jugador no existe
+          if (jornada === missingJornadas[0] && error.message.includes('No se encontró ninguna versión del jugador')) {
+            failedPlayers.add(player.id);
+            console.error(`   ${progress} J${jornada}: ⚠️  Jugador no existe en API - saltando resto de jornadas`);
+            // Contar el resto de jornadas como skipped
+            const remainingJornadas = missingJornadas.length - 1;
+            skipped += remainingJornadas;
+            processed += remainingJornadas;
+            break; // Salir del loop de jornadas para este jugador
+          }
+          
           failed++;
           console.error(`   ${progress} J${jornada}: ❌ Error: ${error.message}`);
           
@@ -161,20 +189,18 @@ async function loadAllPremierStats() {
         
         // Encontrar la jornada más reciente
         const lastJornada = Math.max(...allStats.map((s: any) => s.jornada));
-        const lastJornadaStats = allStats.find((s: any) => s.jornada === lastJornada);
-        const lastJornadaPoints = lastJornadaStats?.totalPoints || 0;
 
-        // Actualizar el jugador con la suma total
+        // Actualizar el jugador con la suma total de puntos
         await (prisma as any).playerPremier.update({
           where: { id: player.id },
           data: {
-            lastJornadaPoints: lastJornadaPoints, // Puntos de la última jornada
-            lastJornadaNumber: lastJornada,       // Número de la última jornada
+            lastJornadaPoints: totalPoints,  // Suma total de todos los puntos
+            lastJornadaNumber: lastJornada,  // Número de la última jornada jugada
           }
         });
 
         playersUpdated++;
-        console.log(`✅ ${player.name}: ${totalPoints} puntos totales | Última jornada: J${lastJornada} (${lastJornadaPoints} pts)`);
+        console.log(`✅ ${player.name}: ${totalPoints} puntos totales | Última jornada: J${lastJornada}`);
 
       } catch (error: any) {
         console.error(`❌ Error actualizando ${player.name}: ${error.message}`);
