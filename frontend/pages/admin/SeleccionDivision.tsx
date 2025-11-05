@@ -99,6 +99,60 @@ export const SeleccionDivision = ({ navigation }: { navigation: NativeStackNavig
             </TouchableOpacity>
 
             {/* Segunda División */}
+            {/* Premier (nueva) */}
+            <TouchableOpacity
+              onPress={() => (navigation as any).navigate('GestionJugadores', { division: 'premier' })}
+              style={{
+                backgroundColor: '#1e293b',
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 20,
+                borderWidth: 2,
+                borderColor: '#8b5cf6',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <View style={{ 
+                  width: 56, 
+                  height: 56, 
+                  borderRadius: 28, 
+                  backgroundColor: '#8b5cf6',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginRight: 16
+                }}>
+                  <TrophyIcon size={32} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    color: '#fff',
+                    fontSize: 22,
+                    fontWeight: '900',
+                  }}>
+                    Premier
+                  </Text>
+                  <Text style={{
+                    color: '#8b5cf6',
+                    fontSize: 14,
+                    fontWeight: '700',
+                    marginTop: 2
+                  }}>
+                    PREMIER LEAGUE
+                  </Text>
+                </View>
+                <ChevronRightIcon size={28} color="#8b5cf6" />
+              </View>
+
+              <Text style={{
+                color: '#cbd5e1',
+                fontSize: 15,
+                lineHeight: 22,
+              }}>
+                Gestiona precios, posiciones y equipos de todos los jugadores de la Premier.
+              </Text>
+            </TouchableOpacity>
+
+            {/* Segunda División */}
             <TouchableOpacity
               onPress={() => (navigation as any).navigate('GestionJugadores', { division: 'segunda' })}
               style={{
