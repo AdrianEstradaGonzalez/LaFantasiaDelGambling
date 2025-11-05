@@ -19,6 +19,7 @@ const HEADERS = {
 };
 const LA_LIGA_LEAGUE_ID = 140;
 const SEGUNDA_DIVISION_LEAGUE_ID = 141;
+const PREMIER_LEAGUE_ID = 39;
 const SEASON = 2025;
 
 // Mapa de traducción de tipos de apuesta al español
@@ -817,10 +818,14 @@ export async function generateBetOptionsForLeaguePublic(leagueId: string, jornad
       select: { division: true }
     });
     
-    const isSegunda = league?.division === 'segunda';
-    const leagueApiId = isSegunda ? SEGUNDA_DIVISION_LEAGUE_ID : LA_LIGA_LEAGUE_ID;
+    const division = league?.division || 'primera';
+    const leagueApiId = division === 'segunda' 
+      ? SEGUNDA_DIVISION_LEAGUE_ID 
+      : division === 'premier'
+      ? PREMIER_LEAGUE_ID
+      : LA_LIGA_LEAGUE_ID;
     
-    console.log(`📊 Liga detectada: ${isSegunda ? 'Segunda División' : 'Primera División'} (API ID: ${leagueApiId})`);
+    console.log(`📊 Liga detectada: ${division === 'segunda' ? 'Segunda División' : division === 'premier' ? 'Premier League' : 'Primera División'} (API ID: ${leagueApiId})`);
     
     const fixtures = await fetchFixtures(jornada, leagueApiId);
     if (fixtures.length === 0) {

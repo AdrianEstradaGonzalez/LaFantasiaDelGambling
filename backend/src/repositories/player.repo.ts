@@ -155,7 +155,16 @@ export class PlayerRepository {
       where: { id },
     });
     
-    return playerSegunda;
+    if (playerSegunda) {
+      return playerSegunda;
+    }
+    
+    // Si no está, buscar en Premier League
+    const playerPremier = await (prisma as any).playerPremier.findUnique({
+      where: { id },
+    });
+    
+    return playerPremier;
   }
 
   /**
@@ -171,15 +180,29 @@ export class PlayerRepository {
         } as any),
       });
     } catch (e: any) {
-      // Si no existe en la tabla principal (P2025), intentar en la tabla playerSegunda
+      // Si no existe en Primera (P2025), intentar en Segunda
       if (e?.code === 'P2025') {
-        return (prisma as any).playerSegunda.update({
-          where: { id },
-          data: ({
-            lastJornadaPoints: points,
-            ...(Number.isInteger(jornada) ? { lastJornadaNumber: jornada } : {}),
-          } as any),
-        });
+        try {
+          return await (prisma as any).playerSegunda.update({
+            where: { id },
+            data: ({
+              lastJornadaPoints: points,
+              ...(Number.isInteger(jornada) ? { lastJornadaNumber: jornada } : {}),
+            } as any),
+          });
+        } catch (e2: any) {
+          // Si tampoco está en Segunda, intentar en Premier
+          if (e2?.code === 'P2025') {
+            return await (prisma as any).playerPremier.update({
+              where: { id },
+              data: ({
+                lastJornadaPoints: points,
+                ...(Number.isInteger(jornada) ? { lastJornadaNumber: jornada } : {}),
+              } as any),
+            });
+          }
+          throw e2;
+        }
       }
       throw e;
     }

@@ -121,8 +121,8 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         }
         
         // Obtener jornadas disponibles según la división
-        const allMatchdays = await FootballService.getAvailableMatchdays((division || 'primera') as 'primera' | 'segunda');
-        console.log(`[PlayerDetail] Jornadas disponibles de ${division === 'segunda' ? 'Segunda' : 'Primera'} División:`, allMatchdays);
+        const allMatchdays = await FootballService.getAvailableMatchdays((division || 'primera') as 'primera' | 'segunda' | 'premier');
+        console.log(`[PlayerDetail] Jornadas disponibles de ${division === 'segunda' ? 'Segunda' : division === 'premier' ? 'Premier' : 'Primera'} División:`, allMatchdays);
         
         // Filtrar solo hasta la jornada actual de la liga
         const matchdays = ligaId 

@@ -578,8 +578,8 @@ export const GestionJugadores = ({ navigation, route }: {
               <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>
                 GESTIÓN DE JUGADORES
               </Text>
-              <Text style={{ color: division === 'segunda' ? '#f59e0b' : '#0892D0', fontSize: 12, fontWeight: '700', marginTop: 2 }}>
-                {division === 'segunda' ? 'LALIGA HYPERMOTION' : 'LA LIGA EA SPORTS'}
+              <Text style={{ color: division === 'segunda' ? '#f59e0b' : division === 'premier' ? '#3730a3' : '#0892D0', fontSize: 12, fontWeight: '700', marginTop: 2 }}>
+                {division === 'segunda' ? 'LALIGA HYPERMOTION' : division === 'premier' ? 'PREMIER LEAGUE' : 'LA LIGA EA SPORTS'}
               </Text>
             </View>
           </View>

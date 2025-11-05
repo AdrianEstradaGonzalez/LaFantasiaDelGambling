@@ -104,7 +104,7 @@ export const Clasificacion = () => {
         // No es necesario hacer cálculos aquí, solo leemos LeagueMember.points
 
         // Obtener jornadas disponibles según la división
-        const matchdays = await FootballService.getAvailableMatchdays(division as 'primera' | 'segunda');
+        const matchdays = await FootballService.getAvailableMatchdays(division as 'primera' | 'segunda' | 'premier');
         setAvailableJornadas(matchdays);
         
         // Cargar TODAS las clasificaciones de una vez

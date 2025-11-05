@@ -61,6 +61,18 @@ export class SquadService {
   // Obtener plantilla del usuario con datos completos de jugadores
   static async getUserSquad(userId: string, ligaId: string) {
     try {
+      // Primero obtener la división de la liga
+      const league = await prisma.league.findUnique({
+        where: { id: ligaId },
+        select: { division: true }
+      });
+
+      if (!league) {
+        throw new AppError(404, 'NOT_FOUND', 'Liga no encontrada');
+      }
+
+      const division = league.division || 'primera';
+
       const squad = await prisma.squad.findUnique({
         where: {
           userId_leagueId: {
@@ -77,15 +89,23 @@ export class SquadService {
         return null;
       }
 
-      // Obtener datos completos de todos los jugadores de la plantilla en una sola query
+      // Obtener datos completos de todos los jugadores de la plantilla desde la tabla correcta
       const playerIds = squad.players.map(p => p.playerId);
-      const playersData = await prisma.player.findMany({
+      
+      // Determinar qué tabla de jugadores consultar según la división
+      const playerTable = division === 'segunda' 
+        ? (prisma as any).playerSegunda 
+        : division === 'premier'
+        ? (prisma as any).playerPremier
+        : prisma.player;
+
+      const playersData = await playerTable.findMany({
         where: {
           id: { in: playerIds }
         }
       });
 
-      console.log('[SquadService] Players data fetched:', playersData.map(p => ({
+      console.log('[SquadService] Players data fetched:', playersData.map((p: any) => ({
         id: p.id,
         name: p.name,
         photo: p.photo,
@@ -93,7 +113,7 @@ export class SquadService {
       })));
 
       // Crear mapa para acceso rápido
-      const playersMap = new Map(playersData.map(p => [p.id, p]));
+      const playersMap = new Map(playersData.map((p: any) => [p.id, p]));
 
       // Enriquecer squad players con datos completos
       const enrichedPlayers = squad.players.map(sp => ({
@@ -178,6 +198,25 @@ export class SquadService {
       // Bloquear si la jornada está abierta (bloqueada)
       await this.assertChangesAllowed(ligaId);
 
+      // Primero obtener la división de la liga
+      const league = await prisma.league.findUnique({
+        where: { id: ligaId },
+        select: { division: true }
+      });
+
+      if (!league) {
+        throw new AppError(404, 'NOT_FOUND', 'Liga no encontrada');
+      }
+
+      const division = league.division || 'primera';
+
+      // Determinar qué tabla de jugadores consultar según la división
+      const playerTable = division === 'segunda' 
+        ? (prisma as any).playerSegunda 
+        : division === 'premier'
+        ? (prisma as any).playerPremier
+        : prisma.player;
+
       // Verificar que la plantilla existe y pertenece al usuario
       const existingSquad = await prisma.squad.findUnique({
         where: {
@@ -206,7 +245,7 @@ export class SquadService {
         
         // Calcular dinero a devolver (precio de mercado actual de cada jugador eliminado)
         for (const removedPlayer of removedPlayers) {
-          const marketPlayer = await prisma.player.findUnique({
+          const marketPlayer = await playerTable.findUnique({
             where: { id: removedPlayer.playerId }
           });
           const refundAmount = marketPlayer?.price || removedPlayer.pricePaid;
@@ -366,6 +405,25 @@ export class SquadService {
       // Bloquear si la jornada está abierta (bloqueada)
       await this.assertChangesAllowed(ligaId);
 
+      // Primero obtener la división de la liga
+      const league = await prisma.league.findUnique({
+        where: { id: ligaId },
+        select: { division: true }
+      });
+
+      if (!league) {
+        throw new AppError(404, 'NOT_FOUND', 'Liga no encontrada');
+      }
+
+      const division = league.division || 'primera';
+
+      // Determinar qué tabla de jugadores consultar según la división
+      const playerTable = division === 'segunda' 
+        ? (prisma as any).playerSegunda 
+        : division === 'premier'
+        ? (prisma as any).playerPremier
+        : prisma.player;
+
       // Obtener plantilla
       let squad = await prisma.squad.findUnique({
         where: {
@@ -461,7 +519,7 @@ export class SquadService {
       let budgetAdjustment = -playerData.pricePaid;
       if (existingPlayer) {
         // Obtener precio actual de mercado del jugador existente
-        const existingMarketPlayer = await prisma.player.findUnique({
+        const existingMarketPlayer = await playerTable.findUnique({
           where: { id: existingPlayer.playerId }
         });
         const existingPrice = existingMarketPlayer?.price || existingPlayer.pricePaid;
@@ -471,7 +529,7 @@ export class SquadService {
       // Verificar presupuesto
       const newBudget = membership.budget + budgetAdjustment;
       if (newBudget < 0) {
-        const existingMarketPlayer = existingPlayer ? await prisma.player.findUnique({ where: { id: existingPlayer.playerId } }) : null;
+        const existingMarketPlayer = existingPlayer ? await playerTable.findUnique({ where: { id: existingPlayer.playerId } }) : null;
         const refundFromExisting = existingMarketPlayer?.price || (existingPlayer ? existingPlayer.pricePaid : 0);
         const required = playerData.pricePaid - refundFromExisting;
         throw new Error(`Presupuesto insuficiente. Necesitas ${required}M adicionales`);
@@ -526,6 +584,25 @@ export class SquadService {
       // Bloquear si la jornada está abierta (bloqueada)
       await this.assertChangesAllowed(ligaId);
 
+      // Primero obtener la división de la liga
+      const league = await prisma.league.findUnique({
+        where: { id: ligaId },
+        select: { division: true }
+      });
+
+      if (!league) {
+        throw new AppError(404, 'NOT_FOUND', 'Liga no encontrada');
+      }
+
+      const division = league.division || 'primera';
+
+      // Determinar qué tabla de jugadores consultar según la división
+      const playerTable = division === 'segunda' 
+        ? (prisma as any).playerSegunda 
+        : division === 'premier'
+        ? (prisma as any).playerPremier
+        : prisma.player;
+
       // Obtener plantilla
       const squad = await prisma.squad.findUnique({
         where: {
@@ -558,7 +635,7 @@ export class SquadService {
       }
 
       // Obtener precio actual de mercado del jugador
-      const marketPlayer = await prisma.player.findUnique({
+      const marketPlayer = await playerTable.findUnique({
         where: { id: playerToRemove.playerId }
       });
 

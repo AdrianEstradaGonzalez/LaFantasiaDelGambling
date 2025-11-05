@@ -184,7 +184,7 @@ async function checkRedCardSuspension(
 }
 
 /**
- * Actualiza el estado de un jugador en BD
+ * Actualiza el estado de un jugador en BD (busca en todas las divisiones)
  */
 export async function updatePlayerAvailability(
   playerId: number,
@@ -193,43 +193,112 @@ export async function updatePlayerAvailability(
   try {
     const availability = await getPlayerAvailabilityFromAPI(playerId, season);
     
-    await prisma.player.update({
-      where: { id: playerId },
-      data: {
-        availabilityStatus: availability.status,
-        availabilityInfo: availability.info,
-      },
-    });
+    // Intentar actualizar en Primera
+    let updated = false;
+    try {
+      await prisma.player.update({
+        where: { id: playerId },
+        data: {
+          availabilityStatus: availability.status,
+          availabilityInfo: availability.info,
+        },
+      });
+      updated = true;
+    } catch (e) {
+      // Jugador no está en Primera, continuar
+    }
 
-    console.log(`✅ Jugador ${playerId}: ${availability.status}${availability.info ? ` - ${availability.info}` : ''}`);
+    // Intentar actualizar en Segunda si no estaba en Primera
+    if (!updated) {
+      try {
+        await (prisma as any).playerSegunda.update({
+          where: { id: playerId },
+          data: {
+            availabilityStatus: availability.status,
+            availabilityInfo: availability.info,
+          },
+        });
+        updated = true;
+      } catch (e) {
+        // Jugador no está en Segunda, continuar
+      }
+    }
+
+    // Intentar actualizar en Premier si no estaba en las anteriores
+    if (!updated) {
+      try {
+        await (prisma as any).playerPremier.update({
+          where: { id: playerId },
+          data: {
+            availabilityStatus: availability.status,
+            availabilityInfo: availability.info,
+          },
+        });
+        updated = true;
+      } catch (e) {
+        // Jugador no encontrado en ninguna tabla
+      }
+    }
+
+    if (updated) {
+      console.log(`✅ Jugador ${playerId}: ${availability.status}${availability.info ? ` - ${availability.info}` : ''}`);
+    } else {
+      console.log(`⚠️ Jugador ${playerId} no encontrado en ninguna división`);
+    }
   } catch (error: any) {
     console.error(`❌ Error al actualizar jugador ${playerId}:`, error.message);
   }
 }
 
 /**
- * Actualiza el estado de todos los jugadores
+ * Actualiza el estado de todos los jugadores de todas las divisiones
  */
 export async function updateAllPlayersAvailability(season: number = 2025): Promise<void> {
   try {
-    console.log('🔄 Iniciando sincronización de estado de jugadores...\n');
+    console.log('🔄 Iniciando sincronización de estado de jugadores (todas las divisiones)...\n');
 
-    const players = await prisma.player.findMany({
+    // Obtener jugadores de las 3 divisiones
+    const playersFirsta = await prisma.player.findMany({
+      select: { id: true, name: true },
+    });
+    
+    const playersSegunda = await (prisma as any).playerSegunda.findMany({
+      select: { id: true, name: true },
+    });
+    
+    const playersPremier = await (prisma as any).playerPremier.findMany({
       select: { id: true, name: true },
     });
 
-    console.log(`📊 Total de jugadores a procesar: ${players.length}\n`);
+    const allPlayers = [
+      ...playersFirsta.map((p: any) => ({ ...p, division: 'primera' as const })),
+      ...playersSegunda.map((p: any) => ({ ...p, division: 'segunda' as const })),
+      ...playersPremier.map((p: any) => ({ ...p, division: 'premier' as const })),
+    ];
+
+    console.log(`📊 Total de jugadores a procesar:`);
+    console.log(`   - Primera: ${playersFirsta.length}`);
+    console.log(`   - Segunda: ${playersSegunda.length}`);
+    console.log(`   - Premier: ${playersPremier.length}`);
+    console.log(`   - TOTAL: ${allPlayers.length}\n`);
 
     let processed = 0;
     let available = 0;
     let injured = 0;
     let suspended = 0;
 
-    for (const player of players) {
+    for (const player of allPlayers) {
       await updatePlayerAvailability(player.id, season);
       processed++;
 
-      const updated = await prisma.player.findUnique({
+      // Buscar en la tabla correcta
+      const playerTable = player.division === 'segunda' 
+        ? (prisma as any).playerSegunda 
+        : player.division === 'premier'
+        ? (prisma as any).playerPremier
+        : prisma.player;
+
+      const updated = await playerTable.findUnique({
         where: { id: player.id },
         select: { availabilityStatus: true },
       });
@@ -241,7 +310,7 @@ export async function updateAllPlayersAvailability(season: number = 2025): Promi
       await delay(400);
 
       if (processed % 10 === 0) {
-        console.log(`\n📈 Progreso: ${processed}/${players.length} jugadores procesados`);
+        console.log(`\n📈 Progreso: ${processed}/${allPlayers.length} jugadores procesados`);
       }
     }
 
@@ -259,11 +328,11 @@ export async function updateAllPlayersAvailability(season: number = 2025): Promi
 }
 
 /**
- * Obtiene todos los jugadores con su estado
+ * Obtiene todos los jugadores con su estado (de todas las divisiones)
  */
 export async function getAllPlayersAvailability() {
   try {
-    const players = await prisma.player.findMany({
+    const playersFirsta = await prisma.player.findMany({
       select: {
         id: true,
         name: true,
@@ -274,13 +343,49 @@ export async function getAllPlayersAvailability() {
         price: true,
         photo: true,
       },
-      orderBy: [
-        { availabilityStatus: 'asc' },
-        { name: 'asc' },
-      ],
     });
 
-    return players;
+    const playersSegunda = await (prisma as any).playerSegunda.findMany({
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        teamName: true,
+        availabilityStatus: true,
+        availabilityInfo: true,
+        price: true,
+        photo: true,
+      },
+    });
+
+    const playersPremier = await (prisma as any).playerPremier.findMany({
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        teamName: true,
+        availabilityStatus: true,
+        availabilityInfo: true,
+        price: true,
+        photo: true,
+      },
+    });
+
+    const allPlayers = [
+      ...playersFirsta.map((p: any) => ({ ...p, division: 'primera' })),
+      ...playersSegunda.map((p: any) => ({ ...p, division: 'segunda' })),
+      ...playersPremier.map((p: any) => ({ ...p, division: 'premier' })),
+    ];
+
+    // Ordenar por estado y nombre
+    allPlayers.sort((a: any, b: any) => {
+      if (a.availabilityStatus !== b.availabilityStatus) {
+        return a.availabilityStatus.localeCompare(b.availabilityStatus);
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    return allPlayers;
   } catch (error: any) {
     console.error('❌ Error al obtener jugadores:', error.message);
     throw error;

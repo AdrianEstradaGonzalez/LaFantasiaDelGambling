@@ -383,9 +383,26 @@ export class JornadaService {
       // No buscar hacia atrás - si el jugador no jugó, tendrá 0 puntos
       const jornada = jornadaObjetivo;
       console.log(`    🔍 Calculando puntos para userId=${userId}, leagueId=${leagueId}, jornada=${jornada}`);
-      // Obtener jornada actual de la liga para decidir uso de cache
-      const league = await prisma.league.findUnique({ where: { id: leagueId } });
+      // Obtener jornada actual de la liga y su división
+      const league = await prisma.league.findUnique({ 
+        where: { id: leagueId },
+        select: { currentJornada: true, division: true }
+      });
       const leagueJornada = league?.currentJornada ?? jornada;
+      const division = league?.division || 'primera';
+      
+      // Determinar qué tablas usar según la división
+      const playerTable = division === 'segunda' 
+        ? (prisma as any).playerSegunda 
+        : division === 'premier'
+        ? (prisma as any).playerPremier
+        : prisma.player;
+      
+      const statsTable = division === 'segunda'
+        ? (prisma as any).playerSegundaStats
+        : division === 'premier'
+        ? (prisma as any).playerPremierStats
+        : prisma.playerStats;
       
       // Obtener la plantilla del usuario
       const squad = await prisma.squad.findUnique({
@@ -430,7 +447,7 @@ export class JornadaService {
           let playerPoints = 0;
 
           // ✅ IMPORTANTE: Solo usar cache si lastJornadaNumber coincide con la jornada que estamos cerrando
-          const localPlayer = await prisma.playerStats.findFirst({ where: {playerId: squadPlayer.playerId, jornada: jornada} });
+          const localPlayer = await statsTable.findFirst({ where: {playerId: squadPlayer.playerId, jornada: jornada} });
           if (localPlayer && leagueJornada === jornada) {
             const cachedPoints = Math.trunc(Number((localPlayer as any).totalPoints ?? 0));
             playerPointsMap.set(squadPlayer.playerId, cachedPoints);
@@ -453,7 +470,7 @@ export class JornadaService {
           let playerTeamId: number | undefined;
           let playerTeamName: string | undefined;
           try {
-            const localPlayer = await prisma.player.findUnique({ where: { id: squadPlayer.playerId } });
+            const localPlayer = await playerTable.findUnique({ where: { id: squadPlayer.playerId } });
             if (localPlayer?.teamId) {
               playerTeamId = localPlayer.teamId as unknown as number;
               playerTeamName = localPlayer.teamName || undefined;
@@ -466,6 +483,9 @@ export class JornadaService {
           // Si no lo tenemos en BD, intentamos API (fallback)
           if (!playerTeamId) {
             try {
+              // Usar el league ID correcto según la división
+              const leagueApiId = division === 'segunda' ? 141 : division === 'premier' ? 39 : 140;
+              
               const playerInfoResponse = await axios.get(`${this.API_BASE}/players`, {
                 headers: {
                   'x-rapidapi-key': this.API_KEY,
@@ -474,7 +494,7 @@ export class JornadaService {
                 params: { 
                   id: squadPlayer.playerId, 
                   season: this.SEASON,
-                  league: 140
+                  league: leagueApiId
                 },
                 timeout: 10000,
               });
@@ -497,6 +517,9 @@ export class JornadaService {
           console.log(`         🏟️ Equipo usado: ${playerTeamName ?? 'desconocido'} (ID: ${playerTeamId})`);
           
           // PASO 2: Obtener partidos de la jornada
+          // Usar el league ID correcto según la división
+          const leagueApiId = division === 'segunda' ? 141 : division === 'premier' ? 39 : 140;
+          
           // Intentar fixtures con season actual y fallback a anterior
           let fixtures: any[] = [];
           let usedSeason: number | null = null;
@@ -507,7 +530,7 @@ export class JornadaService {
                 'x-rapidapi-host': 'v3.football.api-sports.io',
               },
               params: {
-                league: 140,
+                league: leagueApiId,
                 season,
                 round: `Regular Season - ${jornada}`,
               },

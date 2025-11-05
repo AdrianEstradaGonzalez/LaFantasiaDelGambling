@@ -317,7 +317,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
         <View style={styles.ligasList}>
             {ligas.length > 0 ? (
             ligas.map((liga) => {
-              const accentColor = liga.division === 'segunda' ? '#f59e0b' : '#3b82f6';
+              const accentColor = liga.division === 'segunda' ? '#f59e0b' : liga.division === 'premier' ? '#3730a3' : '#3b82f6';
               return (
               <TouchableOpacity
                 key={liga.id}
@@ -408,7 +408,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                         letterSpacing: 0.2,
                       }}
                     >
-                      {liga.division === 'segunda' ? 'Segunda División Española' : 'Primera División Española'}
+                      {liga.division === 'segunda' ? 'Segunda División Española' : liga.division === 'premier' ? 'Premier League' : 'Primera División Española'}
                     </Text>
                   </View>
                   
