@@ -46,7 +46,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showPremiumForm, setShowPremiumForm] = useState(false);
   const [nombreLigaPremium, setNombreLigaPremium] = useState('');
-  const [divisionPremium, setDivisionPremium] = useState<'primera' | 'segunda'>('primera');
+  const [divisionPremium, setDivisionPremium] = useState<'primera' | 'segunda' | 'premier'>('primera');
   const [loadingCrearPremium, setLoadingCrearPremium] = useState(false);
   
   // Estados para pago
@@ -404,9 +404,9 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                   <View style={styles.featureItem}>
                     <TrophyIcon size={28} color="#fbbf24" />
                     <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
-                      <Text style={styles.featureTitle}>Elige tu División</Text>
+                      <Text style={styles.featureTitle}>Elige tu Liga</Text>
                       <Text style={styles.featureDescription}>
-                        Primera o Segunda División española - Tú decides con qué jugadores competir
+                        La Liga, La Liga 2 o Premier League - Compite con jugadores de tu competición favorita
                       </Text>
                     </View>
                   </View>
@@ -498,7 +498,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
               {/* Selector de división */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>División</Text>
-                <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
                   <TouchableOpacity
                     style={[
                       styles.divisionButton,
@@ -517,7 +517,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                         divisionPremium === 'primera' && styles.divisionButtonTextActive,
                         { marginLeft: 6 }
                       ]}>
-                        Primera División
+                        La Liga
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -540,7 +540,30 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                         divisionPremium === 'segunda' && styles.divisionButtonTextActive,
                         { marginLeft: 6 }
                       ]}>
-                        Segunda División
+                        La Liga 2
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.divisionButton,
+                      divisionPremium === 'premier' && styles.divisionButtonActive
+                    ]}
+                    onPress={() => setDivisionPremium('premier')}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <TrophyIcon 
+                        size={18} 
+                        color={divisionPremium === 'premier' ? '#fbbf24' : '#94a3b8'} 
+                      />
+                      <Text style={[
+                        styles.divisionButtonText,
+                        divisionPremium === 'premier' && styles.divisionButtonTextActive,
+                        { marginLeft: 6 }
+                      ]}>
+                        Premier League
                       </Text>
                     </View>
                   </TouchableOpacity>

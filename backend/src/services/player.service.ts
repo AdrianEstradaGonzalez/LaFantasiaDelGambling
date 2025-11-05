@@ -240,10 +240,12 @@ export class PlayerService {
   static async getAllPlayers(division: string = 'primera') {
     const players = division === 'segunda' 
       ? await PlayerRepository.getAllSegundaPlayers()
+      : division === 'premier'
+      ? await PlayerRepository.getAllPremierPlayers()
       : await PlayerRepository.getAllPlayers();
     
-    if (division === 'segunda') {
-      // Para Segunda, ya tenemos lastJornadaPoints en el modelo
+    if (division === 'segunda' || division === 'premier') {
+      // Para Segunda y Premier, ya tenemos lastJornadaPoints en el modelo
       return players.map((player: any) => ({
         ...player,
         totalPoints: player.lastJornadaPoints || 0,
@@ -305,6 +307,8 @@ export class PlayerService {
   static async getPlayersByTeam(teamId: number, division: string = 'primera') {
     return division === 'segunda'
       ? PlayerRepository.getSegundaPlayersByTeam(teamId)
+      : division === 'premier'
+      ? PlayerRepository.getPremierPlayersByTeam(teamId)
       : PlayerRepository.getPlayersByTeam(teamId);
   }
 
@@ -314,6 +318,8 @@ export class PlayerService {
   static async getPlayersByPosition(position: string, division: string = 'primera') {
     return division === 'segunda'
       ? PlayerRepository.getSegundaPlayersByPosition(position)
+      : division === 'premier'
+      ? PlayerRepository.getPremierPlayersByPosition(position)
       : PlayerRepository.getPlayersByPosition(position);
   }
 
@@ -323,6 +329,8 @@ export class PlayerService {
   static async searchPlayers(query: string, division: string = 'primera') {
     return division === 'segunda'
       ? PlayerRepository.searchSegundaPlayers(query)
+      : division === 'premier'
+      ? PlayerRepository.searchPremierPlayers(query)
       : PlayerRepository.searchPlayers(query);
   }
 

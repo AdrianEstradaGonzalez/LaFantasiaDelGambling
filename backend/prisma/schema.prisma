@@ -375,3 +375,77 @@ model PlayerSegunda {
   @@index([price])
   @@map("player_segunda")
 }
+
+model PlayerPremier {
+  id                 Int      @id
+  name               String
+  position           String
+  teamId             Int
+  teamHistory        Int[]    @default([])
+  teamName           String
+  teamCrest          String?
+  nationality        String?
+  shirtNumber        Int?
+  photo              String?
+  price              Int
+  availabilityStatus String   @default("AVAILABLE")
+  availabilityInfo   String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  lastJornadaPoints  Int      @default(0)
+  lastJornadaNumber  Int      @default(0)
+
+  @@index([teamId])
+  @@index([position])
+  @@index([price])
+  @@map("player_premier")
+}
+
+model PlayerPremierStats {
+  id                   String   @id @default(cuid())
+  playerId             Int
+  jornada              Int
+  season               Int      @default(2025)
+  fixtureId            Int
+  teamId               Int
+  totalPoints          Int      @default(0)
+  minutes              Int?
+  position             String?
+  rating               String?
+  captain              Boolean  @default(false)
+  substitute           Boolean  @default(false)
+  goals                Int?
+  assists              Int?
+  conceded             Int?
+  saves                Int?
+  shotsTotal           Int?
+  shotsOn              Int?
+  passesTotal          Int?
+  passesKey            Int?
+  passesAccuracy       Int?
+  tacklesTotal         Int?
+  tacklesBlocks        Int?
+  tacklesInterceptions Int?
+  duelsTotal           Int?
+  duelsWon             Int?
+  dribblesAttempts     Int?
+  dribblesSuccess      Int?
+  dribblesPast         Int?
+  foulsDrawn           Int?
+  foulsCommitted       Int?
+  yellowCards          Int?
+  redCards             Int?
+  penaltyWon           Int?
+  penaltyCommitted     Int?
+  penaltyScored        Int?
+  penaltyMissed        Int?
+  penaltySaved         Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  pointsBreakdown      Json?
+
+  @@unique([playerId, jornada, season])
+  @@index([playerId, jornada])
+  @@index([jornada, season])
+  @@map("player_premier_stats")
+}

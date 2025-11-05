@@ -109,12 +109,53 @@ export class PlayerRepository {
   }
 
   /**
-   * Obtener jugador por ID
+   * Obtener todos los jugadores de Premier League
+   */
+  static async getAllPremierPlayers() {
+    return (prisma as any).playerPremier.findMany({
+      select: {
+        id: true,
+        name: true,
+        position: true,
+        teamId: true,
+        teamName: true,
+        teamCrest: true,
+        price: true,
+        photo: true,
+        nationality: true,
+        shirtNumber: true,
+        availabilityStatus: true,
+        availabilityInfo: true,
+        lastJornadaPoints: true,
+        lastJornadaNumber: true,
+      },
+      orderBy: [
+        { teamName: 'asc' },
+        { position: 'asc' },
+        { name: 'asc' },
+      ],
+    });
+  }
+
+  /**
+   * Obtener jugador por ID (busca en ambas divisiones)
    */
   static async getPlayerById(id: number) {
-    return prisma.player.findUnique({
+    // Intentar primero en Primera División
+    const playerPrimera = await prisma.player.findUnique({
       where: { id },
     });
+    
+    if (playerPrimera) {
+      return playerPrimera;
+    }
+    
+    // Si no está, buscar en Segunda División
+    const playerSegunda = await (prisma as any).playerSegunda.findUnique({
+      where: { id },
+    });
+    
+    return playerSegunda;
   }
 
   /**
@@ -234,6 +275,47 @@ export class PlayerRepository {
    */
   static async searchSegundaPlayers(query: string) {
     return (prisma as any).playerSegunda.findMany({
+      where: {
+        name: {
+          contains: query,
+          mode: 'insensitive',
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  /**
+   * Obtener jugadores de Premier League por equipo
+   */
+  static async getPremierPlayersByTeam(teamId: number) {
+    return (prisma as any).playerPremier.findMany({
+      where: { teamId },
+      orderBy: [
+        { position: 'asc' },
+        { name: 'asc' },
+      ],
+    });
+  }
+
+  /**
+   * Obtener jugadores de Premier League por posición
+   */
+  static async getPremierPlayersByPosition(position: string) {
+    return (prisma as any).playerPremier.findMany({
+      where: { position },
+      orderBy: [
+        { teamName: 'asc' },
+        { name: 'asc' },
+      ],
+    });
+  }
+
+  /**
+   * Buscar jugadores de Premier League por nombre
+   */
+  static async searchPremierPlayers(query: string) {
+    return (prisma as any).playerPremier.findMany({
       where: {
         name: {
           contains: query,

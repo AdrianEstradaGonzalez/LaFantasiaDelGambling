@@ -10,7 +10,7 @@ export type Liga = {
 
 export type CreateLeagueData = {
   name: string;
-  division?: 'primera' | 'segunda';
+  division?: 'primera' | 'segunda' | 'premier';
   isPremium?: boolean;
 };
 

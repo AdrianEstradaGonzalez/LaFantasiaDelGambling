@@ -4,38 +4,29 @@ import { PlayerStatsService } from '../src/services/playerStats.service.js';
 const prisma = new PrismaClient();
 
 /**
- * Script para cargar las puntuaciones de TODOS los jugadores para TODAS las jornadas
- * desde la API y guardarlas en la base de datos.
+ * Script para cargar las puntuaciones de TODOS los jugadores de la PREMIER LEAGUE
+ * para TODAS las jornadas desde la API y guardarlas en la base de datos.
  * 
- * Carga todas las jornadas (1 hasta la actual) para cada jugador que esté en Player
- * pero no tenga stats en PlayerStats.
+ * Carga todas las jornadas (1 hasta la actual) para cada jugador que esté en PlayerPremier
+ * pero no tenga stats en PlayerPremierStats.
  */
 async function loadAllPlayerStats() {
   try {
-    console.log('🚀 Iniciando carga de puntuaciones de todos los jugadores para todas las jornadas...\n');
+    console.log('🚀 Iniciando carga de puntuaciones de jugadores de PREMIER LEAGUE...\n');
 
-    // Obtener la jornada actual de la liga
-    const league = await prisma.league.findFirst({
-      select: { currentJornada: true, jornadaStatus: true }
-    });
-
-    if (!league) {
-      throw new Error('No se encontró ninguna liga en la base de datos');
-    }
-
-    const currentJornada = league.currentJornada;
-    const season = Number(process.env.FOOTBALL_API_SEASON ?? 2025);
+    // Para Premier League, la jornada actual es basada en matchweeks (1-38)
+    const currentJornada = 10; // Ajustar según la jornada actual de la Premier
+    const season = 2025; // Premier League temporada 2024-2025
     
-    console.log(`📅 Jornada actual: ${currentJornada}`);
-    console.log(`🔒 Estado: ${league.jornadaStatus}`);
+    console.log(`📅 Jornada actual Premier League: ${currentJornada}`);
     console.log(`⚽ Temporada: ${season}\n`);
 
-    // Obtener todos los jugadores
-    const allPlayers = await prisma.player.findMany({
+    // Obtener todos los jugadores de la Premier League
+    const allPlayers = await (prisma as any).playerPremier.findMany({
       select: { id: true, name: true, teamName: true }
     });
 
-    console.log(`👥 Total de jugadores en BD: ${allPlayers.length}\n`);
+    console.log(`👥 Total de jugadores Premier en BD: ${allPlayers.length}\n`);
 
     // Para cada jugador, verificar qué jornadas le faltan
     let totalStatsToLoad = 0;
@@ -47,8 +38,8 @@ async function loadAllPlayerStats() {
     console.log('🔍 Analizando jornadas faltantes por jugador...\n');
 
     for (const player of allPlayers) {
-      // Obtener stats existentes para este jugador
-      const existingStats = await prisma.playerStats.findMany({
+      // Obtener stats existentes para este jugador en PlayerPremierStats
+      const existingStats = await (prisma as any).playerPremierStats.findMany({
         where: {
           playerId: player.id,
           season: season
@@ -56,7 +47,7 @@ async function loadAllPlayerStats() {
         select: { jornada: true }
       });
 
-      const existingJornadas = new Set(existingStats.map(s => s.jornada));
+      const existingJornadas = new Set(existingStats.map((s: any) => s.jornada));
       const missingJornadas: number[] = [];
 
       // Verificar qué jornadas faltan (de 1 hasta la actual)

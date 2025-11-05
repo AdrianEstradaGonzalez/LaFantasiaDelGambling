@@ -332,13 +332,22 @@ export async function getPlayerStatsForJornada(
   // forceRefresh solo se usa para protección contra sobrescritura en caso de error API
   const shouldForceRefresh = options.forceRefresh || false;
 
-  // 1. Determinar si es jugador de Primera o Segunda División
+  // 1. Determinar si es jugador de Primera, Segunda o Premier League
   let playerFromDb = await prisma.player.findUnique({ where: { id: playerId } });
-  let isSegundaDivision = false;
+  let division: 'primera' | 'segunda' | 'premier' = 'primera';
   
   if (!playerFromDb) {
     playerFromDb = await (prisma as any).playerSegunda.findUnique({ where: { id: playerId } });
-    isSegundaDivision = true;
+    if (playerFromDb) {
+      division = 'segunda';
+    }
+  }
+  
+  if (!playerFromDb) {
+    playerFromDb = await (prisma as any).playerPremier.findUnique({ where: { id: playerId } });
+    if (playerFromDb) {
+      division = 'premier';
+    }
   }
 
   if (!playerFromDb) {
@@ -346,7 +355,11 @@ export async function getPlayerStatsForJornada(
   }
 
   // 2. Buscar en la tabla correcta según la división
-  const statsTable = isSegundaDivision ? (prisma as any).playerSegundaStats : prisma.playerStats;
+  const statsTable = division === 'segunda' 
+    ? (prisma as any).playerSegundaStats 
+    : division === 'premier'
+    ? (prisma as any).playerPremierStats
+    : prisma.playerStats;
   
   const existing = await statsTable.findUnique({
     where: {
@@ -362,18 +375,18 @@ export async function getPlayerStatsForJornada(
   // Por lo tanto, SIEMPRE devolver datos de BD si existen (el worker los mantiene actualizados)
   // Solo consultar API si NO hay datos en BD (nuevo jugador o jornada sin datos)
   if (existing) {
-    console.log(`[playerStats] � Devolviendo datos de BD para jugador ${playerId} jornada ${jornada} (${existing.totalPoints} puntos) - ${isSegundaDivision ? 'Segunda' : 'Primera'} División`);
+    console.log(`[playerStats] ✅ Devolviendo datos de BD para jugador ${playerId} jornada ${jornada} (${existing.totalPoints} puntos) - ${division} División`);
     return existing;
   }
   
   // Si NO hay datos en BD, entonces sí consultar la API
-  console.log(`[playerStats] 🆕 No hay datos en BD para jugador ${playerId} jornada ${jornada}, consultando API (${isSegundaDivision ? 'Segunda' : 'Primera'} División)`);
+  console.log(`[playerStats] 🆕 No hay datos en BD para jugador ${playerId} jornada ${jornada}, consultando API (${division} División)`);
 
   // 3. Consultar API Football con la nueva lógica
   try {
-    // Determinar qué liga consultar (140 = La Liga, 141 = Segunda División)
-    const leagueId = isSegundaDivision ? 141 : 140;
-    console.log(`[playerStats] 🔍 Buscando estadísticas para ${playerFromDb.name} en ${isSegundaDivision ? 'Segunda' : 'Primera'} División (Liga ${leagueId})`);
+    // Determinar qué liga consultar (140 = La Liga, 141 = Segunda División, 39 = Premier League)
+    const leagueId = division === 'segunda' ? 141 : division === 'premier' ? 39 : 140;
+    console.log(`[playerStats] 🔍 Buscando estadísticas para ${playerFromDb.name} en ${division} División (Liga ${leagueId})`);
 
     const fixtures = await fetchMatchdayFixtures(jornada, leagueId);
 
@@ -638,7 +651,12 @@ export async function getPlayerStatsForJornada(
     });
 
     // Actualizar cache en la tabla correcta según la división
-    const playerTable = isSegundaDivision ? (prisma as any).playerSegunda : prisma.player;
+    const playerTable = division === 'segunda' 
+      ? (prisma as any).playerSegunda 
+      : division === 'premier'
+      ? (prisma as any).playerPremier
+      : prisma.player;
+      
     await playerTable.update({
       where: { id: playerId },
       data: {

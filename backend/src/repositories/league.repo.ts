@@ -70,11 +70,15 @@ export const LeagueRepo = {
         // Obtener la jornada actual desde la API de football (Primera División)
         const primeraJornada = await getCurrentJornadaFromAPI();
         
-        // Segunda división va 1 jornada por delante
-        const currentJornada = division === 'segunda' ? primeraJornada + 1 : primeraJornada;
+        // Segunda división va 1 jornada por delante, Premier va 1 por detrás
+        const currentJornada = division === 'segunda' 
+            ? primeraJornada + 1 
+            : division === 'premier'
+            ? primeraJornada - 1
+            : primeraJornada;
         
-        // isPremium viene del parámetro (pago) o si es segunda división (backward compatibility)
-        const isPremium = isPremiumParam !== undefined ? isPremiumParam : (division === 'segunda');
+        // isPremium viene del parámetro (pago) o si es segunda división/premier (backward compatibility)
+        const isPremium = isPremiumParam !== undefined ? isPremiumParam : (division === 'segunda' || division === 'premier');
         console.log(`📅 Creando liga "${name}" (División: ${division})`);
         console.log(`   Jornada Primera: ${primeraJornada}`);
         console.log(`   Jornada asignada: ${currentJornada} (Premium: ${isPremium})`);

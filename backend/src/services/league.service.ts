@@ -16,7 +16,7 @@ const generateUniqueCode = (): string => {
 };
 
 export const LeagueService = {
-  createLeague: async (name: string, leaderId: string, division: 'primera' | 'segunda' = 'primera', isPremium: boolean = false) => {
+  createLeague: async (name: string, leaderId: string, division: 'primera' | 'segunda' | 'premier' = 'primera', isPremium: boolean = false) => {
     // Generar código único, reintentar si hay colisión
     let code = generateUniqueCode();
     let attempts = 0;
