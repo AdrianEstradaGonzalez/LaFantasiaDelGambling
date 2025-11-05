@@ -14,6 +14,7 @@
     "prisma:push": "prisma db push --accept-data-loss && prisma generate",
     "sync-players": "tsx src/scripts/sync-players.ts",
     "load-stats": "tsx scripts/load-all-player-stats.ts",
+    "load-premier-stats": "tsx scripts/load-all-premier-stats.ts",
     "update-rankings": "tsx scripts/update-live-rankings.ts",
     "full-backup": "tsx scripts/full-database-backup.ts",
     "clean-all-data": "tsx scripts/clean-all-data.ts",

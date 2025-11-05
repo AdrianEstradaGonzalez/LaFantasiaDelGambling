@@ -4,29 +4,28 @@ import { PlayerStatsService } from '../src/services/playerStats.service.js';
 const prisma = new PrismaClient();
 
 /**
- * Script para cargar las puntuaciones de TODOS los jugadores de la SEGUNDA DIVISIÓN
+ * Script para cargar las puntuaciones de TODOS los jugadores de la PREMIER LEAGUE
  * para TODAS las jornadas desde la API y guardarlas en la base de datos.
  * 
- * Carga todas las jornadas (1 hasta la actual) para cada jugador que esté en PlayerSegunda
- * pero no tenga stats en PlayerSegundaStats.
+ * Carga todas las jornadas (1 hasta la actual) para cada jugador que esté en PlayerPremier
+ * pero no tenga stats en PlayerPremierStats.
  */
-async function loadAllPlayerStats() {
+async function loadAllPremierStats() {
   try {
-    console.log('🚀 Iniciando carga de puntuaciones de jugadores de SEGUNDA DIVISIÓN...\n');
+    console.log('🚀 Iniciando carga de puntuaciones de jugadores de PREMIER LEAGUE...\n');
 
-    // Para Segunda División, la jornada actual está una por delante de Primera
-    const currentJornada = 13; // Ajustar según la jornada actual de Segunda
-    const season = 2025; // Segunda División temporada 2024-2025
+    const currentJornada = 11; // Ajustar según la jornada actual de Premier League
+    const season = 2025; // Premier League temporada 2024-2025
     
-    console.log(`📅 Jornada actual Segunda División: ${currentJornada}`);
+    console.log(`📅 Jornada actual Premier League: ${currentJornada}`);
     console.log(`⚽ Temporada: ${season}\n`);
 
-    // Obtener todos los jugadores de la Segunda División
-    const allPlayers = await (prisma as any).playerSegunda.findMany({
+    // Obtener todos los jugadores de la Premier League
+    const allPlayers = await (prisma as any).playerPremier.findMany({
       select: { id: true, name: true, teamName: true }
     });
 
-    console.log(`👥 Total de jugadores Segunda en BD: ${allPlayers.length}\n`);
+    console.log(`👥 Total de jugadores Premier en BD: ${allPlayers.length}\n`);
 
     // Para cada jugador, verificar qué jornadas le faltan
     let totalStatsToLoad = 0;
@@ -38,8 +37,8 @@ async function loadAllPlayerStats() {
     console.log('🔍 Analizando jornadas faltantes por jugador...\n');
 
     for (const player of allPlayers) {
-      // Obtener stats existentes para este jugador en PlayerSegundaStats
-      const existingStats = await (prisma as any).playerSegundaStats.findMany({
+      // Obtener stats existentes para este jugador en PlayerPremierStats
+      const existingStats = await (prisma as any).playerPremierStats.findMany({
         where: {
           playerId: player.id,
           season: season
@@ -98,7 +97,7 @@ async function loadAllPlayerStats() {
           const stats = await PlayerStatsService.getPlayerStatsForJornada(
             player.id,
             jornada,
-            { season, forceRefresh: true, division: 'segunda' }
+            { season, forceRefresh: true, division: 'premier' }
           );
 
           if (stats && stats.totalPoints !== null) {
@@ -123,13 +122,71 @@ async function loadAllPlayerStats() {
     }
 
     console.log('\n' + '━'.repeat(60));
-    console.log('📊 RESUMEN FINAL');
+    console.log('📊 RESUMEN FINAL - Fase 1: Carga de estadísticas por jornada');
     console.log('━'.repeat(60));
     console.log(`✅ Cargados exitosamente: ${loaded}`);
     console.log(`⚠️  Sin datos (no jugaron): ${skipped}`);
     console.log(`❌ Errores: ${failed}`);
     console.log(`📈 Total procesados: ${loaded + skipped + failed}/${totalStatsToLoad}`);
     console.log(`👥 Jugadores procesados: ${playersWithMissingStats.length}/${allPlayers.length}`);
+    console.log('━'.repeat(60));
+
+    // ====================================================================
+    // FASE 2: Actualizar lastJornadaPoints con la suma total de todas las jornadas
+    // ====================================================================
+    console.log('\n🔄 Iniciando Fase 2: Actualización de puntos totales en PlayerPremier...\n');
+    
+    let playersUpdated = 0;
+    let playersWithoutStats = 0;
+
+    for (const player of allPlayers) {
+      try {
+        // Obtener todas las stats del jugador
+        const allStats = await (prisma as any).playerPremierStats.findMany({
+          where: {
+            playerId: player.id,
+            season: season
+          },
+          select: { totalPoints: true, jornada: true }
+        });
+
+        if (allStats.length === 0) {
+          playersWithoutStats++;
+          console.log(`⚠️  ${player.name}: Sin estadísticas para actualizar`);
+          continue;
+        }
+
+        // Calcular la suma total de puntos
+        const totalPoints = allStats.reduce((sum: number, stat: any) => sum + (stat.totalPoints || 0), 0);
+        
+        // Encontrar la jornada más reciente
+        const lastJornada = Math.max(...allStats.map((s: any) => s.jornada));
+        const lastJornadaStats = allStats.find((s: any) => s.jornada === lastJornada);
+        const lastJornadaPoints = lastJornadaStats?.totalPoints || 0;
+
+        // Actualizar el jugador con la suma total
+        await (prisma as any).playerPremier.update({
+          where: { id: player.id },
+          data: {
+            lastJornadaPoints: lastJornadaPoints, // Puntos de la última jornada
+            lastJornadaNumber: lastJornada,       // Número de la última jornada
+          }
+        });
+
+        playersUpdated++;
+        console.log(`✅ ${player.name}: ${totalPoints} puntos totales | Última jornada: J${lastJornada} (${lastJornadaPoints} pts)`);
+
+      } catch (error: any) {
+        console.error(`❌ Error actualizando ${player.name}: ${error.message}`);
+      }
+    }
+
+    console.log('\n' + '━'.repeat(60));
+    console.log('📊 RESUMEN FINAL - Fase 2: Actualización de puntos totales');
+    console.log('━'.repeat(60));
+    console.log(`✅ Jugadores actualizados: ${playersUpdated}`);
+    console.log(`⚠️  Jugadores sin stats: ${playersWithoutStats}`);
+    console.log(`👥 Total de jugadores: ${allPlayers.length}`);
     console.log('━'.repeat(60));
 
   } catch (error) {
@@ -141,7 +198,7 @@ async function loadAllPlayerStats() {
 }
 
 // Ejecutar el script
-loadAllPlayerStats()
+loadAllPremierStats()
   .then(() => {
     console.log('\n✨ Script finalizado exitosamente');
     process.exit(0);

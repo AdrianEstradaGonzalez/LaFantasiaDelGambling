@@ -324,7 +324,7 @@ async function fetchFixturePlayers(fixtureId: number) {
 export async function getPlayerStatsForJornada(
   playerId: number,
   jornada: number,
-  options: { season?: number; forceRefresh?: boolean } = {}
+  options: { season?: number; forceRefresh?: boolean; division?: 'primera' | 'segunda' | 'premier' } = {}
 ) {
   const season = options.season ?? Number(process.env.FOOTBALL_API_SEASON ?? 2025);
 
@@ -333,20 +333,34 @@ export async function getPlayerStatsForJornada(
   const shouldForceRefresh = options.forceRefresh || false;
 
   // 1. Determinar si es jugador de Primera, Segunda o Premier League
-  let playerFromDb = await prisma.player.findUnique({ where: { id: playerId } });
-  let division: 'primera' | 'segunda' | 'premier' = 'primera';
+  let playerFromDb: any = null;
+  let division: 'primera' | 'segunda' | 'premier' = options.division || 'primera';
   
-  if (!playerFromDb) {
-    playerFromDb = await (prisma as any).playerSegunda.findUnique({ where: { id: playerId } });
-    if (playerFromDb) {
-      division = 'segunda';
+  // Si se especificó la división, buscar directamente en esa tabla
+  if (options.division) {
+    const playerTable = division === 'segunda' 
+      ? (prisma as any).playerSegunda 
+      : division === 'premier'
+      ? (prisma as any).playerPremier
+      : prisma.player;
+    
+    playerFromDb = await playerTable.findUnique({ where: { id: playerId } });
+  } else {
+    // Fallback: buscar en todas las tablas (comportamiento anterior)
+    playerFromDb = await prisma.player.findUnique({ where: { id: playerId } });
+    
+    if (!playerFromDb) {
+      playerFromDb = await (prisma as any).playerSegunda.findUnique({ where: { id: playerId } });
+      if (playerFromDb) {
+        division = 'segunda';
+      }
     }
-  }
-  
-  if (!playerFromDb) {
-    playerFromDb = await (prisma as any).playerPremier.findUnique({ where: { id: playerId } });
-    if (playerFromDb) {
-      division = 'premier';
+    
+    if (!playerFromDb) {
+      playerFromDb = await (prisma as any).playerPremier.findUnique({ where: { id: playerId } });
+      if (playerFromDb) {
+        division = 'premier';
+      }
     }
   }
 
@@ -411,6 +425,7 @@ export async function getPlayerStatsForJornada(
         return await api.get('/players', {
           params: {
             id: playerId,
+            league: leagueId, // Especificar la liga para asegurar búsqueda correcta
             season: season,
           },
         });
@@ -419,10 +434,10 @@ export async function getPlayerStatsForJornada(
       allPlayerVersions = playerIdResponse.data?.response || [];
       
       if (allPlayerVersions.length > 0) {
-        console.log(`[playerStats] ✓ Jugador ${playerId} encontrado por ID directo`);
+        console.log(`[playerStats] ✓ Jugador ${playerId} encontrado por ID directo en liga ${leagueId}`);
       }
     } catch (error) {
-      console.warn(`[playerStats] Búsqueda por ID falló para ${playerId} después de reintentos, intentando por nombre...`);
+      console.warn(`[playerStats] Búsqueda por ID falló para ${playerId} en liga ${leagueId} después de reintentos, intentando por nombre...`);
     }
 
     // Fallback: Si la búsqueda por ID falla, buscar por nombre (para casos edge)
@@ -439,7 +454,7 @@ export async function getPlayerStatsForJornada(
           return await api.get('/players', {
             params: {
               search: searchTerm,
-              league: 140,
+              league: leagueId, // Usar la liga correcta según la división
               season: season,
             },
           });
@@ -748,7 +763,7 @@ export async function updateAllPlayersStatsForJornada(jornada: number) {
 
   for (const player of players) {
     try {
-      await getPlayerStatsForJornada(player.id, jornada, { forceRefresh: true });
+      await getPlayerStatsForJornada(player.id, jornada, { forceRefresh: true, division: 'primera' });
       successCount++;
       console.log(`[OK] ${player.name} - Jornada ${jornada}`);
 

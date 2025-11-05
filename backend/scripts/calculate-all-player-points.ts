@@ -47,7 +47,7 @@ async function calculateAllPlayerPoints() {
             const stats = await getPlayerStatsForJornada(
               player.id,
               jornada,
-              { forceRefresh: false } // Solo cargar de API si NO existe en BD
+              { forceRefresh: false, division: 'segunda' } // Solo cargar de API si NO existe en BD
             );
 
             if (stats && stats.totalPoints !== null && stats.totalPoints !== undefined) {
