@@ -316,11 +316,11 @@ export const Home = ({ navigation, route }: HomeProps) => {
         {/* Ligas */}
         <View style={styles.ligasList}>
             {ligas.length > 0 ? (
-            ligas.map((liga) => {
+            ligas.map((liga, idx) => {
               const accentColor = liga.division === 'segunda' ? '#f59e0b' : liga.division === 'premier' ? '#8b5cf6' : '#3b82f6';
               return (
+              <React.Fragment key={liga.id}>
               <TouchableOpacity
-                key={liga.id}
                 style={styles.ligaCard}
                 activeOpacity={0.85}
                                 onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre, division: liga.division, isPremium: liga.isPremium })}
@@ -421,6 +421,14 @@ export const Home = ({ navigation, route }: HomeProps) => {
                   </View>
                 </View>
               </TouchableOpacity>
+
+              {/* Insertar banner entre 1ª y 2ª liga */}
+              {idx === 0 && ligas.length > 1 && (
+                <View style={{ marginVertical: 12, paddingHorizontal: 16 }}>
+                  <AdBanner visible={true} size="BANNER" />
+                </View>
+              )}
+              </React.Fragment>
               );
             })
           ) : (
