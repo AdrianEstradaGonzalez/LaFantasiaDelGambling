@@ -360,11 +360,21 @@ export class PlayerRepository {
       });
     } catch (e: any) {
       if (e?.code === 'P2025') {
-        // Fallback a tabla de Segunda División
-        return (prisma as any).playerSegunda.update({
-          where: { id },
-          data: { price },
-        });
+        // Fallback: intentar Segunda, si tampoco existe intentar Premier
+        try {
+          return await (prisma as any).playerSegunda.update({
+            where: { id },
+            data: { price },
+          });
+        } catch (e2: any) {
+          if (e2?.code === 'P2025') {
+            return await (prisma as any).playerPremier.update({
+              where: { id },
+              data: { price },
+            });
+          }
+          throw e2;
+        }
       }
       throw e;
     }
@@ -381,10 +391,20 @@ export class PlayerRepository {
       });
     } catch (e: any) {
       if (e?.code === 'P2025') {
-        return (prisma as any).playerSegunda.update({
-          where: { id },
-          data: { position },
-        });
+        try {
+          return await (prisma as any).playerSegunda.update({
+            where: { id },
+            data: { position },
+          });
+        } catch (e2: any) {
+          if (e2?.code === 'P2025') {
+            return await (prisma as any).playerPremier.update({
+              where: { id },
+              data: { position },
+            });
+          }
+          throw e2;
+        }
       }
       throw e;
     }
@@ -401,10 +421,20 @@ export class PlayerRepository {
       });
     } catch (e: any) {
       if (e?.code === 'P2025') {
-        return (prisma as any).playerSegunda.update({
-          where: { id },
-          data: { teamId },
-        });
+        try {
+          return await (prisma as any).playerSegunda.update({
+            where: { id },
+            data: { teamId },
+          });
+        } catch (e2: any) {
+          if (e2?.code === 'P2025') {
+            return await (prisma as any).playerPremier.update({
+              where: { id },
+              data: { teamId },
+            });
+          }
+          throw e2;
+        }
       }
       throw e;
     }
