@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import axios from 'axios';
-import { calculatePlayerPointsTotal, normalizeRole, type Role } from '../shared/pointsCalculator.js';
+import { calculatePlayerPoints as calcPointsFull, calculatePlayerPointsTotal, normalizeRole, type Role } from '../shared/pointsCalculator.js';
 
 const prisma = new PrismaClient();
 
@@ -16,17 +16,19 @@ const HEADERS = {
 interface PlayerStats {
 	playerId: number;
 	points: number;
+	breakdown: any[];
 	fixtureId: number;
 	teamId: number;
 	rawStats: any;
 	position: string;
 }
 
-function calculatePlayerPoints(playerData: any, position: string): number {
+function computePointsWithBreakdown(playerData: any, position: string): { total: number; breakdown: any[] } {
 	const stats = playerData.statistics?.[0];
-	if (!stats) return 0;
+	if (!stats) return { total: 0, breakdown: [] };
 	const role = normalizeRole(position) as Role;
-	return calculatePlayerPointsTotal(stats, role);
+	const pointsResult = calcPointsFull(stats, role);
+	return { total: pointsResult.total, breakdown: pointsResult.breakdown };
 }
 
 async function getLiveMatchesFromCurrentJornada(jornada: number): Promise<any[]> {
@@ -74,10 +76,11 @@ async function getFixturePlayerStats(fixtureId: number): Promise<Map<number, Pla
 					select: { position: true },
 				});
 				if (!dbPlayer) continue;
-				const points = calculatePlayerPoints(playerData, dbPlayer.position);
+				const pointsResult = computePointsWithBreakdown(playerData, dbPlayer.position);
 				playerStatsMap.set(playerId, {
 					playerId,
-					points,
+					points: pointsResult.total,
+					breakdown: pointsResult.breakdown,
 					fixtureId,
 					teamId,
 					rawStats: playerData.statistics?.[0] || {},
@@ -100,16 +103,18 @@ async function savePlayerStatsToDb(
 	jornada: number,
 	teamId: number,
 	rawStats: any,
-	points: number
+	points: number,
+	breakdown: any[]
 ): Promise<void> {
 	try {
-		const statsData = {
+			const statsData = {
 			playerId,
 			fixtureId,
 			jornada,
 			season: SEASON,
 			teamId,
-			totalPoints: points,
+				totalPoints: points,
+				pointsBreakdown: breakdown && breakdown.length ? breakdown : Prisma.JsonNull,
 			minutes: rawStats.games?.minutes || 0,
 			position: rawStats.games?.position || null,
 			rating: rawStats.games?.rating ? String(rawStats.games.rating) : null,
@@ -144,7 +149,7 @@ async function savePlayerStatsToDb(
 			updatedAt: new Date(),
 		} as any;
 
-		// Guardar en PlayerStats (fuente de verdad)
+			// Guardar en PlayerStats (fuente de verdad)
 		await prisma.playerStats.upsert({
 			where: {
 				playerId_jornada_season: {
@@ -236,11 +241,12 @@ export async function updateLiveLeagueRankings() {
 		for (const [playerId, stats] of allPlayerStats) {
 			await savePlayerStatsToDb(
 				playerId,
-				stats.fixtureId,
-				jornada,
-				stats.teamId,
-				stats.rawStats,
-				stats.points
+						stats.fixtureId,
+						jornada,
+						stats.teamId,
+						stats.rawStats,
+						stats.points,
+						stats.breakdown
 			);
 			savedStats++;
 		}

@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import axios from 'axios';
 // Importar el sistema centralizado de puntos (el mismo que usa toda la app)
-import { calculatePlayerPointsTotal, normalizeRole, type Role } from '../shared/pointsCalculator.js';
+import { calculatePlayerPoints, calculatePlayerPointsTotal, normalizeRole, type Role } from '../shared/pointsCalculator.js';
 
 const prisma = new PrismaClient();
 
@@ -17,6 +17,7 @@ const HEADERS = {
 interface PlayerStats {
   playerId: number;
   points: number;
+  breakdown: any[];
   fixtureId: number;
   teamId: number; // ID del equipo
   rawStats: any; // Estadísticas completas de la API
@@ -27,15 +28,16 @@ interface PlayerStats {
  * Calcula los puntos de un jugador basándose en sus estadísticas
  * Usa el sistema centralizado de puntos de toda la aplicación
  */
-function calculatePlayerPoints(playerData: any, position: string): number {
+function computePointsWithBreakdown(playerData: any, position: string): { total: number; breakdown: any[] } {
   const stats = playerData.statistics?.[0];
-  if (!stats) return 0;
+  if (!stats) return { total: 0, breakdown: [] };
 
   // Normalizar la posición al formato Role ('Goalkeeper' | 'Defender' | 'Midfielder' | 'Attacker')
   const role = normalizeRole(position) as Role;
   
   // Usar la función centralizada que tiene toda la lógica correcta
-  return calculatePlayerPointsTotal(stats, role);
+  const pointsResult = calculatePlayerPoints(stats, role);
+  return { total: pointsResult.total, breakdown: pointsResult.breakdown };
 }
 
 /**
@@ -96,11 +98,12 @@ async function getFixturePlayerStats(fixtureId: number): Promise<Map<number, Pla
 
         if (!dbPlayer) continue;
 
-        const points = calculatePlayerPoints(playerData, dbPlayer.position);
+        const pointsResult = computePointsWithBreakdown(playerData, dbPlayer.position);
         
         playerStatsMap.set(playerId, {
           playerId,
-          points,
+          points: pointsResult.total,
+          breakdown: pointsResult.breakdown,
           fixtureId,
           teamId, // ID del equipo
           rawStats: playerData.statistics?.[0] || {}, // Guardar stats completas
@@ -127,7 +130,8 @@ async function savePlayerStatsToDb(
   jornada: number,
   teamId: number,
   rawStats: any,
-  points: number
+  points: number,
+  breakdown: any[]
 ): Promise<void> {
   try {
     // Preparar los datos para guardar (formato compatible con PlayerStats)
@@ -137,7 +141,8 @@ async function savePlayerStatsToDb(
       jornada,
       season: SEASON,
       teamId,
-      totalPoints: points,
+  totalPoints: points,
+  pointsBreakdown: breakdown && breakdown.length ? breakdown : Prisma.JsonNull,
       
       // Datos del juego
       minutes: rawStats.games?.minutes || 0,
@@ -309,7 +314,8 @@ export async function updateLiveLeagueRankings() {
         jornada,
         stats.teamId,
         stats.rawStats,
-        stats.points
+        stats.points,
+        stats.breakdown
       );
       savedStats++;
     }
