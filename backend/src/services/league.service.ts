@@ -241,6 +241,7 @@ export const LeagueService = {
     });
 
     // ✨ NUEVO: Si la jornada está cerrada, calcular puntos en tiempo real para la jornada actual
+    // Y actualizar Total = histórico + jornada actual
     if (jornadaStatus === 'closed' && currentJornada >= 1 && currentJornada <= 38) {
       console.log(`[getAllClassifications] 🔄 Calculando puntos en tiempo real para jornada ${currentJornada}`);
       
@@ -314,7 +315,20 @@ export const LeagueService = {
         const memberIndex = classifications[currentJornada].findIndex((m: any) => m.userId === userId);
         if (memberIndex >= 0) {
           classifications[currentJornada][memberIndex].points = points;
-          console.log(`[getAllClassifications] 🎯 Usuario ${userId}: ${points} pts (tiempo real)`);
+          console.log(`[getAllClassifications] 🎯 Usuario ${userId}: ${points} pts jornada actual`);
+        }
+      });
+
+      // ✨ ACTUALIZAR CLASIFICACIÓN TOTAL: histórico + jornada actual en tiempo real
+      realTimePoints.forEach(({ userId, points: currentJornadaPoints }) => {
+        const member = members.find(m => m.userId === userId);
+        const historicalPoints = member?.points || 0; // member.points contiene el acumulado de jornadas ANTERIORES (j1-j11)
+        const totalPoints = historicalPoints + currentJornadaPoints; // Total = histórico + actual
+
+        const totalIndex = classifications.Total.findIndex((m: any) => m.userId === userId);
+        if (totalIndex >= 0) {
+          classifications.Total[totalIndex].points = totalPoints;
+          console.log(`[getAllClassifications] 📊 Usuario ${userId}: Total=${totalPoints} (histórico=${historicalPoints} + actual=${currentJornadaPoints})`);
         }
       });
     }
@@ -323,6 +337,9 @@ export const LeagueService = {
     for (let j = 1; j <= 38; j++) {
       classifications[j].sort((a: any, b: any) => b.points - a.points);
     }
+
+    // Reordenar Total después de actualizar los puntos
+    classifications.Total.sort((a: any, b: any) => b.points - a.points);
 
     return {
       leagueId: league.id,
