@@ -69,8 +69,9 @@ async function getLiveMatchesFromCurrentJornada(jornada: number): Promise<any[]>
 /**
  * Obtiene las estadísticas de los jugadores de un partido
  */
-async function getFixturePlayerStats(fixtureId: number): Promise<Map<number, PlayerStats>> {
+async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, PlayerStats>> {
   try {
+    const fixtureId = fixtureObj.fixture?.id || fixtureObj.fixtureId || fixtureObj.id;
     const { data } = await axios.get(`${API_BASE}/fixtures/players`, {
       headers: HEADERS,
       params: { fixture: fixtureId },
@@ -79,6 +80,9 @@ async function getFixturePlayerStats(fixtureId: number): Promise<Map<number, Pla
 
     const teamsData = data?.response || [];
     const playerStatsMap = new Map<number, PlayerStats>();
+
+    const homeGoals = Number(fixtureObj.goals?.home ?? 0);
+    const awayGoals = Number(fixtureObj.goals?.away ?? 0);
 
     for (const teamData of teamsData) {
       const teamId = teamData.team?.id;
@@ -99,6 +103,13 @@ async function getFixturePlayerStats(fixtureId: number): Promise<Map<number, Pla
         if (!dbPlayer) continue;
 
         const pointsResult = computePointsWithBreakdown(playerData, dbPlayer.position);
+        const playerRaw = playerData.statistics?.[0] || {};
+        if (!playerRaw.goals || playerRaw.goals.conceded == null) {
+          const teamIsHome = teamData.team?.id === fixtureObj.teams?.home?.id;
+          const teamConceded = teamIsHome ? awayGoals : homeGoals;
+          if (!playerRaw.goals) playerRaw.goals = {};
+          playerRaw.goals.conceded = teamConceded;
+        }
         
         playerStatsMap.set(playerId, {
           playerId,
@@ -106,7 +117,7 @@ async function getFixturePlayerStats(fixtureId: number): Promise<Map<number, Pla
           breakdown: pointsResult.breakdown,
           fixtureId,
           teamId, // ID del equipo
-          rawStats: playerData.statistics?.[0] || {}, // Guardar stats completas
+          rawStats: playerRaw, // Guardar stats completas
           position: dbPlayer.position,
         });
       }
@@ -115,7 +126,8 @@ async function getFixturePlayerStats(fixtureId: number): Promise<Map<number, Pla
     console.log(`  📊 Calculados puntos de ${playerStatsMap.size} jugadores del partido ${fixtureId}`);
     return playerStatsMap;
   } catch (error) {
-    console.error(`❌ Error obteniendo stats del partido ${fixtureId}:`, error);
+    const fid = fixtureObj?.fixture?.id ?? fixtureObj?.id ?? 'unknown';
+    console.error(`❌ Error obteniendo stats del partido ${fid}:`, error);
     return new Map();
   }
 }
@@ -287,7 +299,7 @@ export async function updateLiveLeagueRankings() {
     const allPlayerStats = new Map<number, PlayerStats>();
     
     for (const fixture of liveFixtures) {
-      const fixtureStats = await getFixturePlayerStats(fixture.fixture.id);
+      const fixtureStats = await getFixturePlayerStats(fixture);
       
       // Mergear stats (evitando duplicados)
       for (const [playerId, stats] of fixtureStats) {
