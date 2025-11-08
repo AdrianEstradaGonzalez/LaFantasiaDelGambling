@@ -81,26 +81,84 @@ async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, Playe
 					select: { position: true },
 				});
 				if (!dbPlayer) continue;
-						// Ensure rawStats contains a conceded field that reflects team goals conceded
-								// Build playerRaw from API and inject team conceded for DEFENDERS when missing
-								const playerRaw = playerData.statistics?.[0] || {};
-								const role = normalizeRole(dbPlayer.position) as Role;
-								if ((!playerRaw.goals || playerRaw.goals.conceded == null) && role === 'Defender') {
-									const teamIsHome = teamData.team?.id === fixtureObj.teams?.home?.id;
-									const teamConceded = teamIsHome ? awayGoals : homeGoals;
-									if (!playerRaw.goals) playerRaw.goals = {};
-									playerRaw.goals.conceded = teamConceded;
-								}
+						// Build a normalized stats object (same shape used by backfill) and inject team conceded for DEFENDERS
+										const apiStats = playerData.statistics?.[0] || {};
+										const role = normalizeRole(dbPlayer.position) as Role;
 
-								// Compute points using the prepared playerRaw (so conceded is considered)
-								const pointsResult = calcPointsFull(playerRaw, role);
+										// Normalize all sub-objects to avoid missing keys and to allow the calculator to read them
+										const normalizedStats: any = {
+											games: {
+												minutes: apiStats.games?.minutes ?? 0,
+												position: apiStats.games?.position ?? null,
+												rating: apiStats.games?.rating ?? null,
+												captain: apiStats.games?.captain ?? false,
+												substitute: apiStats.games?.substitute ?? false,
+											},
+											goals: {
+												total: apiStats.goals?.total ?? 0,
+												assists: apiStats.goals?.assists ?? 0,
+												conceded: apiStats.goals?.conceded ?? 0,
+											},
+											goalkeeper: {
+												saves: apiStats.goalkeeper?.saves ?? apiStats.saves ?? 0,
+												conceded: apiStats.goalkeeper?.conceded ?? apiStats.goals?.conceded ?? 0,
+											},
+											shots: {
+												total: apiStats.shots?.total ?? apiStats.shots_total ?? 0,
+												on: apiStats.shots?.on ?? apiStats.shots_on ?? 0,
+											},
+											passes: {
+												total: apiStats.passes?.total ?? 0,
+												key: apiStats.passes?.key ?? apiStats.key_passes ?? 0,
+												accuracy: apiStats.passes?.accuracy ?? null,
+											},
+											tackles: {
+												total: apiStats.tackles?.total ?? 0,
+												blocks: apiStats.tackles?.blocks ?? 0,
+												interceptions: apiStats.tackles?.interceptions ?? 0,
+											},
+											duels: {
+												total: apiStats.duels?.total ?? 0,
+												won: apiStats.duels?.won ?? 0,
+											},
+											dribbles: {
+												attempts: apiStats.dribbles?.attempts ?? 0,
+												success: apiStats.dribbles?.success ?? 0,
+												past: apiStats.dribbles?.past ?? 0,
+											},
+											fouls: {
+												drawn: apiStats.fouls?.drawn ?? 0,
+												committed: apiStats.fouls?.committed ?? 0,
+											},
+											cards: {
+												yellow: apiStats.cards?.yellow ?? 0,
+												red: apiStats.cards?.red ?? 0,
+											},
+											penalty: {
+												won: apiStats.penalty?.won ?? 0,
+												committed: apiStats.penalty?.committed ?? 0,
+												scored: apiStats.penalty?.scored ?? 0,
+												missed: apiStats.penalty?.missed ?? 0,
+												saved: apiStats.penalty?.saved ?? 0,
+											},
+										};
+
+										// If defender and team conceded not present, inject from fixture
+										if ((!normalizedStats.goals || normalizedStats.goals.conceded == null) && role === 'Defender') {
+											const teamIsHome = teamData.team?.id === fixtureObj.teams?.home?.id;
+											const teamConceded = teamIsHome ? awayGoals : homeGoals;
+											normalizedStats.goals.conceded = teamConceded;
+										}
+
+										// Compute points using the normalized stats object
+										const pointsResult = calcPointsFull(normalizedStats, role);
 						playerStatsMap.set(playerId, {
 					playerId,
-					points: pointsResult.total,
-					breakdown: pointsResult.breakdown,
-					fixtureId,
-					teamId,
-							rawStats: playerRaw,
+							points: pointsResult.total,
+							breakdown: pointsResult.breakdown,
+							fixtureId,
+							teamId,
+									rawStats: normalizedStats,
 					position: dbPlayer.position,
 				});
 			}
@@ -141,7 +199,8 @@ async function savePlayerStatsToDb(
 			goals: rawStats.goals?.total || 0,
 			assists: rawStats.goals?.assists || 0,
 			conceded: rawStats.goals?.conceded || 0,
-			saves: rawStats.goalkeeper?.saves || 0,
+			// Prefer explicit goalkeeper.saves, fallback to rawStats.saves, otherwise try to extract from breakdown if present
+			saves: (rawStats.goalkeeper?.saves ?? rawStats.saves ?? (Array.isArray(breakdown) ? (typeof breakdown.find((b: any) => b.label === 'Paradas')?.amount === 'number' ? breakdown.find((b: any) => b.label === 'Paradas')!.amount : undefined) : undefined) ?? 0),
 			shotsTotal: rawStats.shots?.total || 0,
 			shotsOn: rawStats.shots?.on || 0,
 			passesTotal: rawStats.passes?.total || 0,
@@ -163,7 +222,8 @@ async function savePlayerStatsToDb(
 			penaltyCommitted: rawStats.penalty?.committed || 0,
 			penaltyScored: rawStats.penalty?.scored || 0,
 			penaltyMissed: rawStats.penalty?.missed || 0,
-			penaltySaved: rawStats.penalty?.saved || 0,
+			// Penalty saved: prefer rawStats.penalty.saved, fallback to breakdown
+			penaltySaved: (rawStats.penalty?.saved ?? (Array.isArray(breakdown) ? (typeof breakdown.find((b: any) => b.label === 'Penaltis parados')?.amount === 'number' ? breakdown.find((b: any) => b.label === 'Penaltis parados')!.amount : undefined) : undefined) ?? 0),
 			updatedAt: new Date(),
 		} as any;
 
