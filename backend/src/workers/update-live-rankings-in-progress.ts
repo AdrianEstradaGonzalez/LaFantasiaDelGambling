@@ -82,15 +82,18 @@ async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, Playe
 				});
 				if (!dbPlayer) continue;
 						// Ensure rawStats contains a conceded field that reflects team goals conceded
-						const pointsResult = computePointsWithBreakdown(playerData, dbPlayer.position);
-						const playerRaw = playerData.statistics?.[0] || {};
-						// If goals.conceded is missing for this player, use team-level conceded from fixture
-						if (!playerRaw.goals || playerRaw.goals.conceded == null) {
-							const teamIsHome = teamData.team?.id === fixtureObj.teams?.home?.id;
-							const teamConceded = teamIsHome ? awayGoals : homeGoals;
-							if (!playerRaw.goals) playerRaw.goals = {};
-							playerRaw.goals.conceded = teamConceded;
-						}
+								// Build playerRaw from API and inject team conceded for DEFENDERS when missing
+								const playerRaw = playerData.statistics?.[0] || {};
+								const role = normalizeRole(dbPlayer.position) as Role;
+								if ((!playerRaw.goals || playerRaw.goals.conceded == null) && role === 'Defender') {
+									const teamIsHome = teamData.team?.id === fixtureObj.teams?.home?.id;
+									const teamConceded = teamIsHome ? awayGoals : homeGoals;
+									if (!playerRaw.goals) playerRaw.goals = {};
+									playerRaw.goals.conceded = teamConceded;
+								}
+
+								// Compute points using the prepared playerRaw (so conceded is considered)
+								const pointsResult = calcPointsFull(playerRaw, role);
 						playerStatsMap.set(playerId, {
 					playerId,
 					points: pointsResult.total,

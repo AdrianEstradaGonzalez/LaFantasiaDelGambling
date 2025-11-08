@@ -102,14 +102,17 @@ async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, Playe
 
         if (!dbPlayer) continue;
 
-        const pointsResult = computePointsWithBreakdown(playerData, dbPlayer.position);
+        // Build playerRaw and inject team conceded for defenders before computing points
         const playerRaw = playerData.statistics?.[0] || {};
-        if (!playerRaw.goals || playerRaw.goals.conceded == null) {
+        const role = normalizeRole(dbPlayer.position) as Role;
+        if ((!playerRaw.goals || playerRaw.goals.conceded == null) && role === 'Defender') {
           const teamIsHome = teamData.team?.id === fixtureObj.teams?.home?.id;
           const teamConceded = teamIsHome ? awayGoals : homeGoals;
           if (!playerRaw.goals) playerRaw.goals = {};
           playerRaw.goals.conceded = teamConceded;
         }
+
+        const pointsResult = calculatePlayerPoints(playerRaw, role);
         
         playerStatsMap.set(playerId, {
           playerId,
