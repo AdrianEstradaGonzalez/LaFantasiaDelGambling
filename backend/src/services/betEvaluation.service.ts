@@ -232,11 +232,16 @@ function evaluateBet(bet: any, stats: MatchStatistics): { won: boolean; actualRe
     const bothScored = stats.homeGoals > 0 && stats.awayGoals > 0;
     
     // Determinar si la predicción es "Sí" (ambos marcan) o "No" (no ambos marcan)
-    // Si el label incluye "no" o "ninguno", es predicción negativa
-    const isNoPrediction = betLabel.includes('no ') || 
-                          betLabel.includes('no ambos') || 
-                          betLabel.includes('ninguno') ||
-                          betLabel.includes('neither');
+    // Normalizar label para comparación case-insensitive
+    const labelLower = betLabel.toLowerCase().trim();
+    
+    // Si el label es "no", "ninguno", o contiene frases negativas, es predicción negativa
+    const isNoPrediction = labelLower === 'no' || 
+                          labelLower.includes('no ') || 
+                          labelLower.includes('no ambos') || 
+                          labelLower.includes('ninguno') ||
+                          labelLower.includes('neither') ||
+                          labelLower.includes('al menos un equipo no');
     
     // Si no es predicción negativa, cualquier otra cosa implica "Sí"
     const prediction = !isNoPrediction;

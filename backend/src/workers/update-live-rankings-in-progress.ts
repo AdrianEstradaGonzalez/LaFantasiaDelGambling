@@ -69,6 +69,28 @@ async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, Playe
 			const homeGoals = Number(fixtureObj.goals?.home ?? fixtureObj.goals?.home ?? 0);
 			const awayGoals = Number(fixtureObj.goals?.away ?? fixtureObj.goals?.away ?? 0);
 
+		// 🔥 OBTENER PARADAS DEL EQUIPO desde /fixtures/statistics
+		// La API no proporciona paradas individuales en /fixtures/players, solo a nivel de equipo
+		const teamSaves = new Map<number, number>();
+		try {
+			const { data: statsData } = await axios.get(`${API_BASE}/fixtures/statistics`, {
+				headers: HEADERS,
+				params: { fixture: fixtureId },
+				timeout: 10000,
+			});
+			const statistics = statsData?.response || [];
+			for (const teamStats of statistics) {
+				const teamId = teamStats.team?.id;
+				if (!teamId) continue;
+				const stats = teamStats.statistics || [];
+				const saveStat = stats.find((s: any) => s.type === 'Goalkeeper Saves');
+				const saves = saveStat?.value ? parseInt(String(saveStat.value), 10) : 0;
+				teamSaves.set(teamId, saves);
+			}
+		} catch (error) {
+			console.error(`⚠️  Error obteniendo estadísticas del equipo para fixture ${fixtureId}:`, error);
+		}
+
 			for (const teamData of teamsData) {
 			const teamId = teamData.team?.id;
 			if (!teamId) continue;
@@ -150,6 +172,13 @@ async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, Playe
 										const teamIsHome = teamData.team?.id === fixtureObj.teams?.home?.id;
 										const teamConceded = teamIsHome ? awayGoals : homeGoals;
 										normalizedStats.goals.conceded = teamConceded;
+									}
+
+									// 🔥 INYECTAR PARADAS DEL EQUIPO para PORTEROS que jugaron
+									// La API /fixtures/players NO proporciona paradas individuales, solo /fixtures/statistics a nivel de equipo
+									if (role === 'Goalkeeper' && normalizedStats.games.minutes > 0) {
+										const teamSavesValue = teamSaves.get(teamId) ?? 0;
+										normalizedStats.goalkeeper.saves = teamSavesValue;
 									}
 
 									// Compute points using the normalized stats object
