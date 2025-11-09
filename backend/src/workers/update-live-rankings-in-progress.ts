@@ -91,6 +91,49 @@ async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, Playe
 			console.error(`⚠️  Error obteniendo estadísticas del equipo para fixture ${fixtureId}:`, error);
 		}
 
+		// 🔥 OBTENER TARJETAS DESDE EVENTOS DEL PARTIDO
+		// Los eventos incluyen TODAS las tarjetas (incluso en tiempo añadido)
+		// y nos permiten detectar dobles amarillas correctamente
+		const playerCards = new Map<number, { yellow: number; red: number }>();
+		try {
+			const { data: eventsData } = await axios.get(`${API_BASE}/fixtures/events`, {
+				headers: HEADERS,
+				params: { fixture: fixtureId },
+				timeout: 10000,
+			});
+			const events = eventsData?.response || [];
+			
+			// Contar tarjetas por jugador
+			for (const event of events) {
+				if (event.type === 'Card' && event.player?.id) {
+					const playerId = event.player.id;
+					if (!playerCards.has(playerId)) {
+						playerCards.set(playerId, { yellow: 0, red: 0 });
+					}
+					const cards = playerCards.get(playerId)!;
+					
+					if (event.detail === 'Yellow Card') {
+						cards.yellow++;
+					} else if (event.detail === 'Red Card') {
+						cards.red++;
+					}
+				}
+			}
+			
+			// ✅ Corregir doble amarilla: si un jugador tiene 2 amarillas + 1 roja, la segunda amarilla resultó en roja
+			for (const [playerId, cards] of playerCards.entries()) {
+				if (cards.yellow === 2 && cards.red === 1) {
+					// La segunda amarilla es en realidad la roja, no contar amarillas
+					cards.yellow = 0;
+					cards.red = 1;
+				}
+			}
+			
+			console.log(`✅ Tarjetas procesadas desde eventos: ${playerCards.size} jugadores con tarjetas`);
+		} catch (error) {
+			console.error(`⚠️  Error obteniendo eventos del partido ${fixtureId}:`, error);
+		}
+
 			for (const teamData of teamsData) {
 			const teamId = teamData.team?.id;
 			if (!teamId) continue;
@@ -152,20 +195,27 @@ async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, Playe
 												drawn: apiStats.fouls?.drawn ?? 0,
 												committed: apiStats.fouls?.committed ?? 0,
 											},
-											cards: {
-												yellow: apiStats.cards?.yellow ?? 0,
-												red: apiStats.cards?.red ?? 0,
-											},
-											penalty: {
-												won: apiStats.penalty?.won ?? 0,
-												committed: apiStats.penalty?.committed ?? 0,
-												scored: apiStats.penalty?.scored ?? 0,
-												missed: apiStats.penalty?.missed ?? 0,
+										cards: {
+											yellow: apiStats.cards?.yellow ?? 0,
+											red: apiStats.cards?.red ?? 0,
+										},
+										penalty: {
+											won: apiStats.penalty?.won ?? 0,
+											committed: apiStats.penalty?.committed ?? 0,
+											scored: apiStats.penalty?.scored ?? 0,
+											missed: apiStats.penalty?.missed ?? 0,
 											saved: apiStats.penalty?.saved ?? 0,
 										},
-									};
+								};
 
-									// ✅ SIEMPRE inyectar goles del equipo rival para DEFENSAS
+								// ✅ SOBRESCRIBIR tarjetas con datos de eventos (incluye tiempo añadido y dobles amarillas corregidas)
+								const eventCards = playerCards.get(playerId);
+								if (eventCards) {
+									normalizedStats.cards.yellow = eventCards.yellow;
+									normalizedStats.cards.red = eventCards.red;
+								}
+
+								// ✅ SIEMPRE inyectar goles del equipo rival para DEFENSAS
 									// La API no proporciona este dato correctamente para defensas, debemos calcularlo del fixture
 									// Para porteros la API SÍ lo proporciona correctamente en goalkeeper.conceded
 									if (role === 'Defender') {
@@ -253,12 +303,12 @@ async function savePlayerStatsToDb(
 			penaltyCommitted: rawStats.penalty?.committed || 0,
 			penaltyScored: rawStats.penalty?.scored || 0,
 			penaltyMissed: rawStats.penalty?.missed || 0,
-			// Penalty saved: prefer rawStats.penalty.saved, fallback to breakdown
-			penaltySaved: (rawStats.penalty?.saved ?? (Array.isArray(breakdown) ? (typeof breakdown.find((b: any) => b.label === 'Penaltis parados')?.amount === 'number' ? breakdown.find((b: any) => b.label === 'Penaltis parados')!.amount : undefined) : undefined) ?? 0),
-			updatedAt: new Date(),
-		} as any;
+		// Penalty saved: prefer rawStats.penalty.saved, fallback to breakdown
+		penaltySaved: (rawStats.penalty?.saved ?? (Array.isArray(breakdown) ? (typeof breakdown.find((b: any) => b.label === 'Penaltis parados')?.amount === 'number' ? breakdown.find((b: any) => b.label === 'Penaltis parados')!.amount : undefined) : undefined) ?? 0),
+		updatedAt: new Date(),
+	} as any;
 
-			// Guardar en PlayerStats (fuente de verdad)
+		// Guardar en PlayerStats (fuente de verdad)
 		await prisma.playerStats.upsert({
 			where: {
 				playerId_jornada_season: {

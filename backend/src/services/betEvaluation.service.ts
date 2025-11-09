@@ -279,6 +279,36 @@ function evaluateBet(bet: any, stats: MatchStatistics): { won: boolean; actualRe
     }
   }
 
+  // PORTERÍA A CERO (CLEAN SHEET)
+  if (betType.toLowerCase().includes('portería') && betType.toLowerCase().includes('cero')) {
+    const isLocal = betType.toLowerCase().includes('local');
+    const isVisitante = betType.toLowerCase().includes('visitante');
+    const labelLower = betLabel.toLowerCase();
+    const isSi = labelLower === 'sí' || labelLower === 'si';
+    
+    if (isLocal) {
+      // Portería a Cero - Local
+      // Sí = el local no encajó goles (awayGoals === 0)
+      // No = el local encajó goles (awayGoals > 0)
+      const cleanSheet = stats.awayGoals === 0;
+      return {
+        won: isSi ? cleanSheet : !cleanSheet,
+        actualResult: `${stats.homeTeam} encajó ${stats.awayGoals} goles`
+      };
+    }
+    
+    if (isVisitante) {
+      // Portería a Cero - Visitante
+      // Sí = el visitante no encajó goles (homeGoals === 0)
+      // No = el visitante encajó goles (homeGoals > 0)
+      const cleanSheet = stats.homeGoals === 0;
+      return {
+        won: isSi ? cleanSheet : !cleanSheet,
+        actualResult: `${stats.awayTeam} encajó ${stats.homeGoals} goles`
+      };
+    }
+  }
+
   // Si no se puede evaluar, retornar como no ganada
   return {
     won: false,
