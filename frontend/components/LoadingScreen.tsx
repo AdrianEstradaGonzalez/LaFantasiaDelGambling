@@ -176,6 +176,7 @@ const LoadingScreen = () => {
 
       {/* Logo encima de todo */}
       <Image
+        key="loading-screen-logo"
         source={require('../assets/logo.png')}
         style={styles.logo}
       />

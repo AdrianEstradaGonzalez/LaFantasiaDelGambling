@@ -1548,13 +1548,23 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           <View style={{ marginBottom: 10 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                               {b.localCrest ? (
-                                <Image source={{ uri: b.localCrest }} style={{ width: 32, height: 32, marginRight: 10 }} resizeMode="contain" />
+                                <Image
+                                  key={`local-crest-${b.matchId}`}
+                                  source={{ uri: b.localCrest }}
+                                  style={{ width: 32, height: 32, marginRight: 10 }}
+                                  resizeMode="contain"
+                                />
                               ) : null}
                               <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 16, flex: 1 }} numberOfLines={1}>{b.local}</Text>
                             </View>
                             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                               {b.visitanteCrest ? (
-                                <Image source={{ uri: b.visitanteCrest }} style={{ width: 32, height: 32, marginRight: 10 }} resizeMode="contain" />
+                                <Image
+                                  key={`visitante-crest-${b.matchId}`}
+                                  source={{ uri: b.visitanteCrest }}
+                                  style={{ width: 32, height: 32, marginRight: 10 }}
+                                  resizeMode="contain"
+                                />
                               ) : null}
                               <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 16, flex: 1 }} numberOfLines={1}>{b.visitante}</Text>
                             </View>

@@ -306,7 +306,11 @@ const TeamDropdown = ({ label, value, onValueChange, teams }: {
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           {selectedTeam?.crest && (
-            <Image source={{ uri: selectedTeam.crest }} style={{ width: 20, height: 20, marginRight: 8 }} />
+            <Image
+              key={`selected-team-crest-${selectedTeam.id}`}
+              source={{ uri: selectedTeam.crest }}
+              style={{ width: 20, height: 20, marginRight: 8 }}
+            />
           )}
           <Text style={{ color: '#fff', fontSize: 14, flex: 1 }} numberOfLines={1}>
             {selectedTeam?.name || 'Seleccionar'}
@@ -343,7 +347,11 @@ const TeamDropdown = ({ label, value, onValueChange, teams }: {
                   }}
                 >
                   {team.crest && (
-                    <Image source={{ uri: team.crest }} style={{ width: 24, height: 24, marginRight: 12 }} />
+                    <Image
+                      key={`team-picker-crest-${team.id}`}
+                      source={{ uri: team.crest }}
+                      style={{ width: 24, height: 24, marginRight: 12 }}
+                    />
                   )}
                   <Text style={{ color: '#fff', fontSize: 14, flex: 1 }}>{team.name}</Text>
                 </TouchableOpacity>
