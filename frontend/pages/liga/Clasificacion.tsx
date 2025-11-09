@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Modal, Animated } from 'react-native';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Modal, Animated, FlatList, InteractionManager } from 'react-native';
 import { ClasificacionStyles as styles } from '../../styles/ClasificacionStyles';
 import LinearGradient from 'react-native-linear-gradient';
 import { RouteProp, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -58,11 +58,18 @@ export const Clasificacion = () => {
   useFocusEffect(
     React.useCallback(() => {
       console.log('[Clasificacion] Pantalla recibió focus, forzando recarga');
-      setRefreshKey(prev => prev + 1); // Forzar re-render del useEffect
+      // Solo recargar si han pasado más de 30 segundos desde la última carga
+      const now = Date.now();
+      const lastLoad = classificationsCache?._loadedAt || 0;
+      const RELOAD_THRESHOLD = 30000; // 30 segundos
+      
+      if (now - lastLoad > RELOAD_THRESHOLD) {
+        setRefreshKey(prev => prev + 1);
+      }
       return () => {
         // Cleanup si es necesario
       };
-    }, [])
+    }, [classificationsCache])
   );
 
   // Animar drawer
@@ -112,7 +119,12 @@ export const Clasificacion = () => {
         const response = await LigaService.getAllClassifications(ligaId);
         
         console.log('📦 Clasificaciones cargadas:', Object.keys(response.classifications));
-        setClassificationsCache(response.classifications);
+        // Añadir timestamp de carga al cache
+        const cacheWithTimestamp = {
+          ...response.classifications,
+          _loadedAt: Date.now()
+        };
+        setClassificationsCache(cacheWithTimestamp);
         setCodigoLiga(response.leagueCode);
         setLigaNombre(response.leagueName);
         
@@ -162,19 +174,216 @@ export const Clasificacion = () => {
     
     console.log('[Clasificacion] 🔄 Cambiando a jornada:', selectedJornada);
     
-    const jornadaKey = selectedJornada === 'Total' ? 'Total' : selectedJornada.toString();
-    const dataForJornada = classificationsCache[jornadaKey] || [];
+    // Usar InteractionManager para mejorar la respuesta de UI
+    const task = InteractionManager.runAfterInteractions(() => {
+      const jornadaKey = selectedJornada === 'Total' ? 'Total' : selectedJornada.toString();
+      const dataForJornada = classificationsCache[jornadaKey] || [];
+      
+      const dataOrdenada = dataForJornada.map((u: any, index: number) => ({
+        id: u.userId || `jugador-${index}`,
+        nombre: u.userName || 'Jugador desconocido',
+        puntos: u.points ?? 0,
+        posicion: index + 1,
+        presupuesto: u.initialBudget ?? 500,
+      }));
+      
+      setJugadores(dataOrdenada);
+    });
     
-    const dataOrdenada = dataForJornada.map((u: any, index: number) => ({
-      id: u.userId || `jugador-${index}`,
-      nombre: u.userName || 'Jugador desconocido',
-      puntos: u.points ?? 0,
-      posicion: index + 1,
-      presupuesto: u.initialBudget ?? 500,
-    }));
-    
-    setJugadores(dataOrdenada);
+    return () => task.cancel();
   }, [selectedJornada, classificationsCache]); // Solo cuando cambia la jornada seleccionada manualmente
+  
+  // Memoizar callback para abrir plantilla de usuario
+  const handleOpenUserLineup = useCallback((jugador: UsuarioClasificacion, isCurrentUser: boolean) => {
+    // Si es el usuario actual, ir a "Mi Plantilla"
+    if (isCurrentUser) {
+      navigation.navigate('Equipo', {
+        ligaId,
+        ligaName,
+      } as any);
+      return;
+    }
+    
+    // Solo permitir ver plantillas de otros usuarios cuando la jornada está cerrada
+    if (jornadaStatus === 'open') {
+      CustomAlertManager.alert(
+        'Jornada abierta',
+        'No puedes ver las plantillas de otros jugadores mientras la jornada está abierta.',
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'lock-closed', iconColor: '#f59e0b' }
+      );
+      return;
+    }
+    
+    // Navegar a ver la plantilla de este usuario
+    navigation.navigate('VerPlantillaUsuario', {
+      ligaId,
+      ligaName,
+      userId: jugador.id,
+      userName: jugador.nombre,
+      jornada: selectedJornada === 'Total' ? undefined : selectedJornada,
+    } as any);
+  }, [navigation, ligaId, ligaName, jornadaStatus, selectedJornada]);
+  
+  // Memoizar componente de jugador
+  const renderJugadorItem = useCallback(({ item: jugador }: { item: UsuarioClasificacion }) => {
+    const isCurrentUser = jugador.id === currentUserId;
+    const posBadgeExtra = jugador.posicion === 1
+      ? styles.posBadgeFirst
+      : jugador.posicion === 2
+      ? styles.posBadgeSecond
+      : jugador.posicion === 3
+      ? styles.posBadgeThird
+      : undefined;
+
+    return (
+      <TouchableOpacity 
+        style={[
+          styles.userBox,
+          isCurrentUser && {
+            backgroundColor: 'rgba(59, 130, 246, 0.15)',
+            borderWidth: 2,
+            borderColor: '#3b82f6',
+            shadowColor: '#3b82f6',
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.5,
+            shadowRadius: 8,
+            elevation: 6,
+            transform: [{ scale: 1.02 }]
+          }
+        ]}
+        activeOpacity={0.85}
+        onPress={() => handleOpenUserLineup(jugador, isCurrentUser)}
+      >
+        {/* Badge "TÚ" para el usuario actual */}
+        {isCurrentUser && (
+          <View style={{
+            position: 'absolute',
+            top: -8,
+            right: 12,
+            backgroundColor: '#3b82f6',
+            paddingHorizontal: 12,
+            paddingVertical: 3,
+            borderRadius: 12,
+            shadowColor: '#3b82f6',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.6,
+            shadowRadius: 4,
+            elevation: 5,
+            borderWidth: 2,
+            borderColor: '#60a5fa'
+          }}>
+            <Text style={{ 
+              color: '#fff', 
+              fontSize: 10, 
+              fontWeight: '900',
+              letterSpacing: 1
+            }}>
+              TÚ
+            </Text>
+          </View>
+        )}
+        
+        <View style={styles.userRow}>
+          <View style={[
+            styles.posBadge, 
+            posBadgeExtra,
+            isCurrentUser && {
+              backgroundColor: '#3b82f6',
+              borderWidth: 2,
+              borderColor: '#60a5fa',
+              shadowColor: '#3b82f6',
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.6,
+              shadowRadius: 4,
+              elevation: 4
+            }
+          ]}>
+            <Text style={styles.positionText}>{jugador.posicion}</Text>
+          </View>
+          <Text style={[
+            styles.nameText,
+            isCurrentUser && {
+              color: '#60a5fa',
+              fontWeight: '700',
+              textShadowColor: 'rgba(59, 130, 246, 0.3)',
+              textShadowOffset: { width: 0, height: 0 },
+              textShadowRadius: 8
+            }
+          ]} numberOfLines={1} ellipsizeMode="tail">
+            {jugador.nombre}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {/* Presupuesto inicial de jornada */}
+            <View style={{
+              backgroundColor: '#0f172a',
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+              borderRadius: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              borderWidth: 1,
+              borderColor: isCurrentUser ? '#3b82f6' : '#10b981',
+              shadowColor: isCurrentUser ? '#3b82f6' : '#10b981',
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+              elevation: 3
+            }}>
+              {/* Icono de moneda */}
+              <View style={{
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                backgroundColor: isCurrentUser ? '#3b82f6' : '#10b981',
+                justifyContent: 'center',
+                alignItems: 'center',
+                shadowColor: isCurrentUser ? '#3b82f6' : '#10b981',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.5,
+                shadowRadius: 3,
+                elevation: 2
+              }}>
+                <Text style={{ color: '#fff', fontSize: 11, fontWeight: 'bold' }}>$</Text>
+              </View>
+              <Text style={{ 
+                color: isCurrentUser ? '#60a5fa' : '#10b981', 
+                fontSize: 13, 
+                fontWeight: '700', 
+                letterSpacing: 0.5 
+              }}>
+                {jugador.presupuesto}M
+              </Text>
+            </View>
+            {/* Puntos */}
+            <View style={[
+              styles.pointsChip,
+              isCurrentUser && {
+                borderWidth: 1,
+                borderColor: '#3b82f6',
+                shadowColor: '#3b82f6',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 3
+              }
+            ]}>
+              <Text style={[
+                styles.pointsText,
+                isCurrentUser && {
+                  color: '#60a5fa',
+                  fontWeight: '700'
+                }
+              ]}>
+                {jugador.puntos} pts
+              </Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  }, [currentUserId, styles, handleOpenUserLineup]);
 
   return (
     <SafeLayout backgroundColor="#181818ff">
@@ -301,208 +510,28 @@ export const Clasificacion = () => {
 
           {/* Contenido */}
           {jugadores.length > 0 ? (
-            <ScrollView
-              style={styles.container}
-              contentContainerStyle={{ paddingBottom: 200 }}
-            >
-          {jugadores.map((jugador) => {
-            const isCurrentUser = jugador.id === currentUserId;
-            const posBadgeExtra = jugador.posicion === 1
-              ? styles.posBadgeFirst
-              : jugador.posicion === 2
-              ? styles.posBadgeSecond
-              : jugador.posicion === 3
-              ? styles.posBadgeThird
-              : undefined;
-            
-            const handleOpenUserLineup = () => {
-              // Si es el usuario actual, ir a "Mi Plantilla"
-              if (isCurrentUser) {
-                navigation.navigate('Equipo', {
-                  ligaId,
-                  ligaName,
-                } as any);
-                return;
-              }
-              
-              // Solo permitir ver plantillas de otros usuarios cuando la jornada está cerrada
-              if (jornadaStatus === 'open') {
-                CustomAlertManager.alert(
-                  'Jornada abierta',
-                  'No puedes ver las plantillas de otros jugadores mientras la jornada está abierta.',
-                  [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
-                  { icon: 'lock-closed', iconColor: '#f59e0b' }
-                );
-                return;
-              }
-              
-              // Navegar a ver la plantilla de este usuario
-              navigation.navigate('VerPlantillaUsuario', {
-                ligaId,
-                ligaName,
-                userId: jugador.id,
-                userName: jugador.nombre,
-                jornada: selectedJornada === 'Total' ? undefined : selectedJornada,
-              } as any);
-            };
-
-            return (
-              <TouchableOpacity 
-                key={jugador.id} 
-                style={[
-                  styles.userBox,
-                  isCurrentUser && {
-                    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-                    borderWidth: 2,
-                    borderColor: '#3b82f6',
-                    shadowColor: '#3b82f6',
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.5,
-                    shadowRadius: 8,
-                    elevation: 6,
-                    transform: [{ scale: 1.02 }]
-                  }
-                ]}
-                activeOpacity={0.85}
-                onPress={handleOpenUserLineup}
-              >
-                {/* Badge "TÚ" para el usuario actual */}
-                {isCurrentUser && (
-                  <View style={{
-                    position: 'absolute',
-                    top: -8,
-                    right: 12,
-                    backgroundColor: '#3b82f6',
-                    paddingHorizontal: 12,
-                    paddingVertical: 3,
-                    borderRadius: 12,
-                    shadowColor: '#3b82f6',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.6,
-                    shadowRadius: 4,
-                    elevation: 5,
-                    borderWidth: 2,
-                    borderColor: '#60a5fa'
-                  }}>
-                    <Text style={{ 
-                      color: '#fff', 
-                      fontSize: 10, 
-                      fontWeight: '900',
-                      letterSpacing: 1
-                    }}>
-                      TÚ
-                    </Text>
-                  </View>
-                )}
-                
-                <View style={styles.userRow}>
-                  <View style={[
-                    styles.posBadge, 
-                    posBadgeExtra,
-                    isCurrentUser && {
-                      backgroundColor: '#3b82f6',
-                      borderWidth: 2,
-                      borderColor: '#60a5fa',
-                      shadowColor: '#3b82f6',
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowOpacity: 0.6,
-                      shadowRadius: 4,
-                      elevation: 4
-                    }
-                  ]}>
-                    <Text style={styles.positionText}>{jugador.posicion}</Text>
-                  </View>
-                  <Text style={[
-                    styles.nameText,
-                    isCurrentUser && {
-                      color: '#60a5fa',
-                      fontWeight: '700',
-                      textShadowColor: 'rgba(59, 130, 246, 0.3)',
-                      textShadowOffset: { width: 0, height: 0 },
-                      textShadowRadius: 8
-                    }
-                  ]} numberOfLines={1} ellipsizeMode="tail">
-                    {jugador.nombre}
-                  </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {/* Presupuesto inicial de jornada */}
-                    <View style={{
-                      backgroundColor: '#0f172a',
-                      paddingHorizontal: 10,
-                      paddingVertical: 5,
-                      borderRadius: 16,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 4,
-                      borderWidth: 1,
-                      borderColor: isCurrentUser ? '#3b82f6' : '#10b981',
-                      shadowColor: isCurrentUser ? '#3b82f6' : '#10b981',
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 4,
-                      elevation: 3
-                    }}>
-                      {/* Icono de moneda */}
-                      <View style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        backgroundColor: isCurrentUser ? '#3b82f6' : '#10b981',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        shadowColor: isCurrentUser ? '#3b82f6' : '#10b981',
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.5,
-                        shadowRadius: 3,
-                        elevation: 2
-                      }}>
-                        <Text style={{ color: '#fff', fontSize: 11, fontWeight: 'bold' }}>$</Text>
-                      </View>
-                      <Text style={{ 
-                        color: isCurrentUser ? '#60a5fa' : '#10b981', 
-                        fontSize: 13, 
-                        fontWeight: '700', 
-                        letterSpacing: 0.5 
-                      }}>
-                        {jugador.presupuesto}M
-                      </Text>
-                    </View>
-                    {/* Puntos */}
-                    <View style={[
-                      styles.pointsChip,
-                      isCurrentUser && {
-                        borderWidth: 1,
-                        borderColor: '#3b82f6',
-                        shadowColor: '#3b82f6',
-                        shadowOffset: { width: 0, height: 0 },
-                        shadowOpacity: 0.3,
-                        shadowRadius: 4,
-                        elevation: 3
-                      }
-                    ]}>
-                      <Text style={[
-                        styles.pointsText,
-                        isCurrentUser && {
-                          color: '#60a5fa',
-                          fontWeight: '700'
-                        }
-                      ]}>
-                        {jugador.puntos} pts
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      ) : (
-        <View style={styles.loadingContainer}>
-          <Text style={{ color: '#ccc', fontSize: 16 }}>
-            No hay jugadores en esta liga.
-          </Text>
-        </View>
-      )}
+            <FlatList
+              data={jugadores}
+              renderItem={renderJugadorItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingBottom: 200, paddingTop: 8 }}
+              initialNumToRender={10}
+              maxToRenderPerBatch={5}
+              windowSize={10}
+              removeClippedSubviews={true}
+              getItemLayout={(data, index) => ({
+                length: 80, // altura aproximada de cada item
+                offset: 80 * index,
+                index,
+              })}
+            />
+          ) : (
+            <View style={styles.loadingContainer}>
+              <Text style={{ color: '#ccc', fontSize: 16 }}>
+                No hay jugadores en esta liga.
+              </Text>
+            </View>
+          )}
 
       {/* Banner publicitario - Posición absoluta encima de la barra inferior */}
       <View style={{ 
