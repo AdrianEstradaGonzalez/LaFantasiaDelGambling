@@ -192,14 +192,24 @@ export const LeagueService = {
     console.log(`[getAllClassifications] Liga ${leagueId}: Jornada ${currentJornada}, Estado: ${jornadaStatus}`);
     
     // Preparar estructura: { Total: [...], 1: [...], 2: [...], ... }
+    // Total inicialmente carga desde member.points, pero se recalculará si la jornada está cerrada
     const classifications: any = {
-      Total: members.map(member => ({
-        userId: member.userId,
-        userName: member.user?.name || 'Usuario',
-        points: member.points || 0,
-        initialBudget: member.initialBudget || 500,
-        budget: member.budget || 500
-      })).sort((a, b) => b.points - a.points)
+      Total: members.map(member => {
+        const pointsPerJornada = ((member as any).pointsPerJornada as any) || {};
+        // Calcular total sumando todas las jornadas
+        let totalPoints = 0;
+        for (let j = 1; j <= 38; j++) {
+          totalPoints += pointsPerJornada[j.toString()] || 0;
+        }
+        
+        return {
+          userId: member.userId,
+          userName: member.user?.name || 'Usuario',
+          points: totalPoints, // Suma de todas las jornadas
+          initialBudget: member.initialBudget || 500,
+          budget: member.budget || 500
+        };
+      }).sort((a, b) => b.points - a.points)
     };
 
     // Inicializar todas las jornadas (1-38) con todos los miembros en 0
@@ -319,16 +329,27 @@ export const LeagueService = {
         }
       });
 
-      // ✨ ACTUALIZAR CLASIFICACIÓN TOTAL: histórico + jornada actual en tiempo real
+      // ✨ ACTUALIZAR CLASIFICACIÓN TOTAL: suma de TODAS las jornadas (J11 + J12 en vivo)
       realTimePoints.forEach(({ userId, points: currentJornadaPoints }) => {
         const member = members.find(m => m.userId === userId);
-        const historicalPoints = member?.points || 0; // member.points contiene el acumulado de jornadas ANTERIORES (j1-j11)
-        const totalPoints = historicalPoints + currentJornadaPoints; // Total = histórico + actual
+        const pointsPerJornada = ((member as any).pointsPerJornada as any) || {};
+        
+        // Calcular total sumando TODAS las jornadas
+        let totalPoints = 0;
+        for (let j = 1; j <= 38; j++) {
+          if (j === currentJornada) {
+            // Jornada actual: usar puntos en tiempo real
+            totalPoints += currentJornadaPoints;
+          } else {
+            // Otras jornadas: usar puntos guardados
+            totalPoints += pointsPerJornada[j.toString()] || 0;
+          }
+        }
 
         const totalIndex = classifications.Total.findIndex((m: any) => m.userId === userId);
         if (totalIndex >= 0) {
           classifications.Total[totalIndex].points = totalPoints;
-          console.log(`[getAllClassifications] 📊 Usuario ${userId}: Total=${totalPoints} (histórico=${historicalPoints} + actual=${currentJornadaPoints})`);
+          console.log(`[getAllClassifications] 📊 Usuario ${userId}: Total=${totalPoints} (J11=${pointsPerJornada['11']||0} + J12 vivo=${currentJornadaPoints})`);
         }
       });
     }

@@ -377,23 +377,44 @@ export async function updateLiveLeagueRankings() {
 				});
 				if (!squad) continue;
 
-				let totalPoints = 0;
+				// Puntos de la jornada ACTUAL en vivo
+				let currentJornadaPoints = 0;
 				for (const squadPlayer of squad.players) {
 					const playerStats = allPlayerStats.get(squadPlayer.playerId);
 					if (playerStats) {
 						const points = squadPlayer.isCaptain ? playerStats.points * 2 : playerStats.points;
-						totalPoints += points;
+						currentJornadaPoints += points;
 					}
 				}
 
+				// Obtener pointsPerJornada existente (jornadas CERRADAS)
+				const currentPointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
+				
+				// Calcular total de jornadas CERRADAS (todas excepto la actual)
+				let closedJornadasTotal = 0;
+				for (const [jornadaKey, points] of Object.entries(currentPointsPerJornada)) {
+					if (Number(jornadaKey) !== jornada) {
+						closedJornadasTotal += points || 0;
+					}
+				}
+
+				// TOTAL ACUMULADO = jornadas cerradas + jornada actual en vivo
+				const totalAccumulatedPoints = closedJornadasTotal + currentJornadaPoints;
+
+				// Actualizar pointsPerJornada con los puntos de la jornada actual en vivo
+				currentPointsPerJornada[jornada.toString()] = currentJornadaPoints;
+
 				await prisma.leagueMember.update({
 					where: { leagueId_userId: { leagueId: member.leagueId, userId: member.userId } },
-					data: { points: totalPoints },
+					data: { 
+						points: totalAccumulatedPoints,
+						pointsPerJornada: currentPointsPerJornada
+					},
 				});
 
 				const user = await prisma.user.findUnique({ where: { id: member.userId }, select: { name: true, email: true } });
 				const userName = user?.name || user?.email || 'Usuario';
-				console.log(`  ✅ ${userName}: ${totalPoints} puntos EN VIVO`);
+				console.log(`  ✅ ${userName}: ${totalAccumulatedPoints} pts TOTAL (${closedJornadasTotal} cerradas + ${currentJornadaPoints} J${jornada} en vivo)`);
 				updatedMembers++;
 			}
 		}
