@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Dimensions } from 'react-native';
 import { View, Text, ScrollView, TouchableOpacity, Image, Animated, PanResponder, ActivityIndicator, Modal } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -414,6 +415,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const isPremium = route.params?.isPremium || false; // Por defecto false
   const insets = useSafeAreaInsets();
   
+  // Ajustes de ancho del campo para ocupar todo el ancho del dispositivo
+  const windowWidth = Dimensions.get('window').width;
+  // Campo a ancho completo sin márgenes
+  const fieldWidth = windowWidth;
+  const fieldMarginLeft = 0;
   const [selectedFormation, setSelectedFormation] = useState<Formation>(formations[0]);
   const [selectedPlayers, setSelectedPlayers] = useState<Record<string, any>>({});
   const [captainPosition, setCaptainPosition] = useState<string | null>(null);
@@ -810,6 +816,17 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           setSelectedPlayers(playersMap);
           setOriginalPlayers(playersMap);
           setCaptainPosition(captainPos);
+
+          // Si la jornada que trajimos está cerrada, cargar puntos antes de quitar la pantalla de carga
+          try {
+            if (status && status.status === 'closed' && Object.keys(playersMap).length > 0) {
+              console.log('[MiPlantilla] Jornada cerrada detectada al cargar plantilla — cargando puntos iniciales...');
+              await loadCurrentJornadaPoints(playersMap, true);
+              console.log('[MiPlantilla] Puntos iniciales cargados tras cargar plantilla');
+            }
+          } catch (e) {
+            console.warn('[MiPlantilla] Error cargando puntos iniciales tras cargar plantilla:', e);
+          }
         }
       } catch (error) {
         console.error('Error al cargar plantilla existente:', error);
@@ -1391,7 +1408,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           shadowOpacity: 0.3,
           shadowRadius: 8,
           elevation: 8,
-          overflow: 'hidden'
+          overflow: 'hidden',
+          width: fieldWidth,
+          marginLeft: fieldMarginLeft,
+          alignSelf: 'center'
         }}>
           {/* LÃ­neas del campo */}
           <View style={{
@@ -1494,6 +1514,12 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             const photoUri = player?.photo || (player ? getAvatarUri(player) : undefined);
             const isCaptain = captainPosition === position.id;
             
+            // Calcular tamaño adaptativo con margen lateral del 8% a cada lado
+            const usableWidth = fieldWidth * 0.84; // 84% del ancho (dejando 8% a cada lado)
+            const playerSize = Math.min(70, usableWidth * 0.19); // Ligeramente más grande
+            const containerWidth = playerSize + 20;
+            const containerHeight = playerSize + 40;
+            
             return (
               <TouchableOpacity
                 key={position.id}
@@ -1504,10 +1530,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   position: 'absolute',
                   left: `${position.x}%`,
                   top: `${position.y}%`,
-                  width: 80,
-                  height: 105,
-                  marginLeft: -40,
-                  marginTop: -52,
+                  width: containerWidth,
+                  height: containerHeight,
+                  marginLeft: -(containerWidth / 2),
+                  marginTop: -(containerHeight / 2),
                   alignItems: 'center'
                 }}
               >
@@ -1515,9 +1541,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   <View style={{ alignItems: 'center' }}>
                     <View
                       style={{
-                        width: 70,
-                        height: 70,
-                        borderRadius: 35,
+                        width: playerSize,
+                        height: playerSize,
+                        borderRadius: playerSize / 2,
                         borderWidth: isCaptain ? 3 : 2,
                         borderColor: isCaptain ? '#ffd700' : '#fff',
                         backgroundColor: '#0b1220',
@@ -1530,13 +1556,13 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         position: 'relative'
                       }}
                     >
-                      <View style={{ overflow: 'hidden', borderRadius: 33, width: isCaptain ? 64 : 66, height: isCaptain ? 64 : 66 }}>
+                      <View style={{ overflow: 'hidden', borderRadius: (playerSize - (isCaptain ? 6 : 4)) / 2, width: playerSize - (isCaptain ? 6 : 4), height: playerSize - (isCaptain ? 6 : 4) }}>
                         <Image
                           source={{ uri: photoUri }}
                           style={{
-                            width: isCaptain ? 64 : 66,
-                            height: isCaptain ? 64 : 66,
-                            borderRadius: 33
+                            width: playerSize - (isCaptain ? 6 : 4),
+                            height: playerSize - (isCaptain ? 6 : 4),
+                            borderRadius: (playerSize - (isCaptain ? 6 : 4)) / 2
                           }}
                           resizeMode="cover"
                         />
@@ -1604,14 +1630,14 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                     <Text
                       style={{
                         color: '#fff',
-                        fontSize: 11,
+                        fontSize: Math.max(10, playerSize * 0.16),
                         fontWeight: 'bold',
                         textAlign: 'center',
                         marginTop: 4,
                         textShadowColor: '#000',
                         textShadowOffset: { width: 0, height: 1 },
                         textShadowRadius: 3,
-                        width: 70
+                        width: containerWidth
                       }}
                       numberOfLines={1}
                       ellipsizeMode="tail"
@@ -1622,9 +1648,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 ) : (
                   <View
                     style={{
-                      width: 70,
-                      height: 70,
-                      borderRadius: 35,
+                      width: playerSize,
+                      height: playerSize,
+                      borderRadius: playerSize / 2,
                       backgroundColor: '#374151',
                       borderWidth: 2,
                       borderColor: '#fff',
@@ -1637,7 +1663,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                       elevation: 6
                     }}
                   >
-                    <Text style={{ color: '#9ca3af', fontSize: 14, fontWeight: 'bold' }}>
+                    <Text style={{ color: '#9ca3af', fontSize: Math.max(12, playerSize * 0.2), fontWeight: 'bold' }}>
                       {position.role}
                     </Text>
                   </View>
@@ -1651,6 +1677,12 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             const player = selectedPlayers[position.id];
             const photoUri = player?.photo || (player ? getAvatarUri(player) : undefined);
             
+            // Calcular tamaño adaptativo con margen lateral del 8% a cada lado
+            const usableWidth = fieldWidth * 0.84; // 84% del ancho (dejando 8% a cada lado)
+            const playerSize = Math.min(70, usableWidth * 0.19); // Ligeramente más grande
+            const containerWidth = playerSize + 20;
+            const containerHeight = playerSize + 40;
+            
             return (
               <TouchableOpacity
                 key={position.id}
@@ -1659,20 +1691,22 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   position: 'absolute',
                   left: `${position.x}%`,
                   top: `${position.y}%`,
-                  width: 80,
-                  height: 105,
-                  marginLeft: -40,
-                  marginTop: -52,
-                  alignItems: 'center'
+                  width: containerWidth,
+                  height: containerHeight,
+                  marginLeft: -(containerWidth / 2),
+                  marginTop: -(containerHeight / 2),
+                  alignItems: 'center',
+                  zIndex: 50,
+                  elevation: 10
                 }}
               >
                 {player ? (
                   <View style={{ alignItems: 'center' }}>
                     <View
                       style={{
-                        width: 70,
-                        height: 70,
-                        borderRadius: 35,
+                        width: playerSize,
+                        height: playerSize,
+                        borderRadius: playerSize / 2,
                         borderWidth: 2,
                         borderColor: player.isCaptain ? '#ffd700' : '#0892D0',
                         backgroundColor: '#0b1220',
@@ -1685,13 +1719,13 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         position: 'relative'
                       }}
                     >
-                      <View style={{ overflow: 'hidden', borderRadius: 33, width: 66, height: 66 }}>
+                      <View style={{ overflow: 'hidden', borderRadius: (playerSize - 4) / 2, width: playerSize - 4, height: playerSize - 4 }}>
                         <Image
                           source={{ uri: photoUri }}
                           style={{
-                            width: 66,
-                            height: 66,
-                            borderRadius: 33
+                            width: playerSize - 4,
+                            height: playerSize - 4,
+                            borderRadius: (playerSize - 4) / 2
                           }}
                           resizeMode="cover"
                         />
@@ -1733,56 +1767,61 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                       <View
                         style={{
                           position: 'absolute',
-                          top: -8,
+                          top: -10,
                           right: -8,
-                          width: 32,
-                          height: 32,
-                          borderRadius: 16,
+                          minWidth: 36,
+                          height: 34,
+                          borderRadius: 18,
                           backgroundColor: '#0892D0',
                           borderWidth: 2,
                           borderColor: '#fff',
                           justifyContent: 'center',
                           alignItems: 'center',
+                          paddingHorizontal: 6,
                           shadowColor: '#000',
                           shadowOffset: { width: 0, height: 2 },
                           shadowOpacity: 0.4,
                           shadowRadius: 4,
-                          elevation: 5
+                          elevation: 6,
+                          zIndex: 60
                         }}
                       >
                         {(() => {
-                          const ptsObj = playerCurrentPoints[player.id];
-                          // Mostrar puntos si:
-                          // 1. Jornada cerrada (en juego) Y
-                          // 2. Tenemos datos del jugador (ptsObj existe) Y
-                          // 3. Los puntos no son null (puede ser 0)
-                          const hasData = ptsObj && ptsObj.points !== null && ptsObj.points !== undefined;
-                          
-                          if (jornadaStatus === 'closed' && hasData) {
-                            const ptsNum = ptsObj.points ?? 0;
-                            const displayNum = player.isCaptain ? ptsNum * 2 : ptsNum;
-                            return (
-                              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>{displayNum}</Text>
-                            );
-                          }
+                            const ptsObj = playerCurrentPoints[player.id];
+                            // Mostrar puntos solo si:
+                            // - Tenemos datos de puntos (no null) AND
+                            // - El jugador ha jugado > 0 minutos en la jornada actual OR la jornada está en progreso
+                            // En caso contrario mostramos '-'
+                            const hasPointsValue = ptsObj && ptsObj.points !== null && ptsObj.points !== undefined;
+                            const minutes = ptsObj?.minutes ?? null;
+                            const playedAnyMinutes = typeof minutes === 'number' && minutes > 0;
+                            const shouldShowPoints = hasPointsValue && playedAnyMinutes;
 
-                          return (
-                            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>-</Text>
-                          );
-                        })()}
+                            if (shouldShowPoints) {
+                              const ptsNum = ptsObj!.points ?? 0;
+                              const displayNum = player.isCaptain ? ptsNum * 2 : ptsNum;
+                              return (
+                                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>{displayNum}</Text>
+                              );
+                            }
+
+                            return (
+                              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>-</Text>
+                            );
+                          })()}
                       </View>
                     </View>
                     <Text
                       style={{
                         color: '#fff',
-                        fontSize: 11,
+                        fontSize: Math.max(10, playerSize * 0.16),
                         fontWeight: 'bold',
                         textAlign: 'center',
                         marginTop: 4,
                         textShadowColor: '#000',
                         textShadowOffset: { width: 0, height: 1 },
                         textShadowRadius: 3,
-                        width: 70
+                        width: containerWidth
                       }}
                       numberOfLines={1}
                       ellipsizeMode="tail"
@@ -1793,9 +1832,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 ) : (
                   <View
                     style={{
-                      width: 70,
-                      height: 70,
-                      borderRadius: 35,
+                      width: playerSize,
+                      height: playerSize,
+                      borderRadius: playerSize / 2,
                       backgroundColor: '#374151',
                       borderWidth: 2,
                       borderColor: '#64748b',
@@ -1808,7 +1847,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                       elevation: 6
                     }}
                   >
-                    <Text style={{ color: '#9ca3af', fontSize: 14, fontWeight: 'bold' }}>
+                    <Text style={{ color: '#9ca3af', fontSize: Math.max(12, playerSize * 0.2), fontWeight: 'bold' }}>
                       {position.role}
                     </Text>
                     <Text style={{ color: '#64748b', fontSize: 10, marginTop: 2 }}>

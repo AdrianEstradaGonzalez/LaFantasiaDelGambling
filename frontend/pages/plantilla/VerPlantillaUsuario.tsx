@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -141,6 +141,10 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
   const [playerPoints, setPlayerPoints] = useState<Record<number, { points: number | null; minutes: number | null }>>({});
   const [currentJornada, setCurrentJornada] = useState<number | null>(null);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'in_progress' | 'closed'>('open');
+  
+  // Calcular ancho del campo a pantalla completa
+  const windowWidth = Dimensions.get('window').width;
+  const fieldWidth = windowWidth;
 
   useEffect(() => {
     (async () => {
@@ -280,11 +284,12 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         <AdBanner />
       </View>
 
-      <View style={{ flex: 1, paddingTop: 0 }}>
+      <View style={{ flex: 1, paddingTop: 0, paddingHorizontal: 0 }}>
         {/* Campo de fútbol a pantalla completa */}
-        <View style={{ flex: 1, padding: 16 }}>
+        <View style={{ flex: 1 }}>
           <View style={{
             flex: 1,
+            width: '100%',
             backgroundColor: '#0f0f0f',
             borderRadius: 16,
             borderWidth: 3,
@@ -357,12 +362,47 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                 const pid = player?.playerId;
                 const photo = pid ? playerPhotos[pid]?.photo : undefined;
                 const crest = pid ? playerPhotos[pid]?.teamCrest : undefined;
+                
+                // Calcular tamaño adaptativo con margen lateral del 8% a cada lado
+                const usableWidth = fieldWidth * 0.84; // 84% del ancho (dejando 8% a cada lado)
+                const playerSize = Math.min(70, usableWidth * 0.19); // Ligeramente más grande
+                const containerWidth = playerSize + 20;
+                const containerHeight = playerSize + 40;
+                
                 return (
-                  <View key={position.id} style={{ position: 'absolute', left: `${position.x}%`, top: `${position.y}%`, width: 80, height: 120, marginLeft: -40, marginTop: -60, alignItems: 'center', justifyContent: 'center' }}>
+                  <View key={position.id} style={{ 
+                    position: 'absolute', 
+                    left: `${position.x}%`, 
+                    top: `${position.y}%`, 
+                    width: containerWidth, 
+                    height: containerHeight, 
+                    marginLeft: -(containerWidth / 2), 
+                    marginTop: -(containerHeight / 2), 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    zIndex: 50, 
+                    elevation: 10 
+                  }}>
                     {player ? (
                       <View style={{ alignItems: 'center' }}>
-                        <View style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 2, borderColor: player.isCaptain ? '#ffd700' : '#0892D0', backgroundColor: '#0b1220', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8, position: 'relative', overflow: 'visible' }}>
-                          <View style={{ overflow: 'hidden', borderRadius: 33, width: 66, height: 66 }}>
+                        <View style={{ 
+                          width: playerSize, 
+                          height: playerSize, 
+                          borderRadius: playerSize / 2, 
+                          borderWidth: 2, 
+                          borderColor: player.isCaptain ? '#ffd700' : '#0892D0', 
+                          backgroundColor: '#0b1220', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          shadowColor: '#000', 
+                          shadowOffset: { width: 0, height: 8 }, 
+                          shadowOpacity: 0.35, 
+                          shadowRadius: 12, 
+                          elevation: 8, 
+                          position: 'relative', 
+                          overflow: 'visible' 
+                        }}>
+                          <View style={{ overflow: 'hidden', borderRadius: (playerSize - 4) / 2, width: playerSize - 4, height: playerSize - 4 }}>
                             <TouchableOpacity
                               activeOpacity={0.8}
                               onPress={() => {
@@ -391,7 +431,11 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                                 });
                               }}
                             >
-                              <Image source={{ uri: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2` }} style={{ width: 66, height: 66, borderRadius: 33 }} resizeMode="cover" />
+                              <Image 
+                                source={{ uri: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2` }} 
+                                style={{ width: playerSize - 4, height: playerSize - 4, borderRadius: (playerSize - 4) / 2 }} 
+                                resizeMode="cover" 
+                              />
                             </TouchableOpacity>
                           </View>
                           {/* Escudo del equipo */}
@@ -409,13 +453,38 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                           )}
 
                           {/* Badge de puntos - arriba derecha */}
-                          <View style={{ position: 'absolute', top: -8, right: -8, width: 32, height: 32, borderRadius: 16, backgroundColor: '#0892D0', borderWidth: 2, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, elevation: 5 }}>
+                          <View style={{ 
+                            position: 'absolute', 
+                            top: -10, 
+                            right: -8,
+                            minWidth: 36,
+                            height: 34, 
+                            borderRadius: 18, 
+                            backgroundColor: '#0892D0', 
+                            borderWidth: 2, 
+                            borderColor: '#fff', 
+                            justifyContent: 'center', 
+                            alignItems: 'center', 
+                            paddingHorizontal: 6,
+                            shadowColor: '#000', 
+                            shadowOffset: { width: 0, height: 2 }, 
+                            shadowOpacity: 0.4, 
+                            shadowRadius: 4, 
+                            elevation: 6,
+                            zIndex: 60
+                          }}>
                               {(() => {
                                 const pointsObj = pid != null ? playerPoints[pid] : undefined;
-                                // ✅ Mostrar '-' solo si no hay datos o si points es null
-                                // Durante partidos en vivo, mostrar puntos aunque minutes sea 0
-                                const hasPoints = pointsObj && pointsObj.points !== null;
-                                if (!hasPoints) {
+                                // Mostrar '-' cuando:
+                                // - No hay datos de puntos (points es null) OR
+                                // - El jugador no ha jugado minutos en la jornada actual (minutes === 0 o null)
+                                // Excepción: si la jornada está en progreso, mostrar puntos aunque minutes === 0
+                                const hasPointsValue = pointsObj && pointsObj.points !== null && pointsObj.points !== undefined;
+                                const minutes = pointsObj?.minutes ?? null;
+                                const playedAnyMinutes = typeof minutes === 'number' && minutes > 0;
+                                const shouldShowPoints = hasPointsValue && (playedAnyMinutes || jornadaStatus === 'in_progress');
+
+                                if (!shouldShowPoints) {
                                   return (
                                     <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>-</Text>
                                   );
@@ -425,23 +494,36 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                                 const displayNum = player.isCaptain ? ptsNum * 2 : ptsNum;
 
                                 return (
-                                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>{displayNum}</Text>
+                                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '900' }}>{displayNum}</Text>
                                 );
                               })()}
                           </View>
                           {/* (crest arriba-izq ya mostrado o x2 si capitán) */}
                         </View>
-                        <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800', marginTop: 8, maxWidth: 80 }} numberOfLines={1} ellipsizeMode="tail">
+                        <Text style={{ 
+                          color: '#fff', 
+                          fontSize: Math.max(11, playerSize * 0.16), 
+                          fontWeight: '800', 
+                          marginTop: 8, 
+                          maxWidth: containerWidth,
+                          textAlign: 'center'
+                        }} numberOfLines={1} ellipsizeMode="tail">
                           {player.playerName}
                         </Text>
-                        <View style={{ backgroundColor: roleColor(player.role || position.role), paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, marginTop: 4 }}>
-                          <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 }}>{player.role || position.role}</Text>
-                        </View>
                       </View>
                     ) : (
                       <View style={{ alignItems: 'center', opacity: 0.5 }}>
-                        <View style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 2, borderColor: '#334155', backgroundColor: '#0b1220', alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ color: '#64748b', fontWeight: 'bold' }}>{position.role}</Text>
+                        <View style={{ 
+                          width: playerSize, 
+                          height: playerSize, 
+                          borderRadius: playerSize / 2, 
+                          borderWidth: 2, 
+                          borderColor: '#334155', 
+                          backgroundColor: '#0b1220', 
+                          alignItems: 'center', 
+                          justifyContent: 'center' 
+                        }}>
+                          <Text style={{ color: '#64748b', fontWeight: 'bold', fontSize: Math.max(12, playerSize * 0.2) }}>{position.role}</Text>
                         </View>
                         <Text style={{ color: '#64748b', fontSize: 12, marginTop: 8 }}>Vacío</Text>
                       </View>
