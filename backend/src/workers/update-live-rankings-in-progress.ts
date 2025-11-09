@@ -139,18 +139,20 @@ async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, Playe
 												committed: apiStats.penalty?.committed ?? 0,
 												scored: apiStats.penalty?.scored ?? 0,
 												missed: apiStats.penalty?.missed ?? 0,
-												saved: apiStats.penalty?.saved ?? 0,
-											},
-										};
+											saved: apiStats.penalty?.saved ?? 0,
+										},
+									};
 
-										// If defender and team conceded not present, inject from fixture
-										if ((!normalizedStats.goals || normalizedStats.goals.conceded == null) && role === 'Defender') {
-											const teamIsHome = teamData.team?.id === fixtureObj.teams?.home?.id;
-											const teamConceded = teamIsHome ? awayGoals : homeGoals;
-											normalizedStats.goals.conceded = teamConceded;
-										}
+									// ✅ SIEMPRE inyectar goles del equipo rival para DEFENSAS
+									// La API no proporciona este dato correctamente para defensas, debemos calcularlo del fixture
+									// Para porteros la API SÍ lo proporciona correctamente en goalkeeper.conceded
+									if (role === 'Defender') {
+										const teamIsHome = teamData.team?.id === fixtureObj.teams?.home?.id;
+										const teamConceded = teamIsHome ? awayGoals : homeGoals;
+										normalizedStats.goals.conceded = teamConceded;
+									}
 
-										// Compute points using the normalized stats object
+									// Compute points using the normalized stats object
 										const pointsResult = calcPointsFull(normalizedStats, role);
 						playerStatsMap.set(playerId, {
 					playerId,
