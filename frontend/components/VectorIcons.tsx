@@ -1201,3 +1201,29 @@ export const DownloadIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
     />
   </Svg>
 );
+
+// Icono de flecha abajo (ChevronDown) - Para expandir/contraer
+export const ChevronDownIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M6 9l6 6 6-6"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Icono de flecha arriba (ChevronUp) - Para expandir/contraer
+export const ChevronUpIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 15l-6-6-6 6"
+      stroke={color}
+      strokeWidth={2.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);

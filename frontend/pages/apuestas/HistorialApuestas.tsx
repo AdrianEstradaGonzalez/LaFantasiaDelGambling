@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, Modal, Animated } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, Modal, Animated, Dimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { BetService, Bet as UserBet } from '../../services/BetService';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { MenuIcon, CalendarIcon, ClockIcon, FileTextIcon, ChartBarIcon } from '../../components/VectorIcons';
+import { MenuIcon, CalendarIcon, ClockIcon, FileTextIcon, ChartBarIcon, ChevronDownIcon, ChevronUpIcon, CheckIcon, ErrorIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import FootballService from '../../services/FutbolService';
 import { SafeLayout } from '../../components/SafeLayout';
 import formatLabelWithType from '../../utils/formatBetLabel';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 type Bet = {
   matchId: number;
@@ -59,6 +61,17 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
+
+  // Estados para tabs (Balances / Apuestas)
+  const [activeTab, setActiveTab] = useState(0); // 0 = Balances, 1 = Apuestas
+  const tabScrollViewRef = useRef<ScrollView>(null);
+  const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
+
+  // Estados para expansión de usuarios en Balances
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+
+  // Estados para expansión de apuestas en Apuestas
+  const [expandedBets, setExpandedBets] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     let mounted = true;
@@ -138,6 +151,54 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
       }).start();
     }
   }, [isDrawerOpen, slideAnim]);
+
+  // Handlers para tabs
+  // Pressing a tab sets activeTab and animates the indicator (same UX as Reglas)
+  const handleTabPress = (index: number) => {
+    setActiveTab(index);
+    tabScrollViewRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
+    Animated.spring(tabIndicatorAnim, {
+      toValue: index,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 10,
+    }).start();
+  };
+
+  // During scroll we update the indicator position continuously and set activeTab when page index changes
+  const handleTabScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / SCREEN_WIDTH);
+    const progress = offsetX / SCREEN_WIDTH;
+    tabIndicatorAnim.setValue(progress);
+    if (index !== activeTab) setActiveTab(index);
+  };
+
+  // Handlers para expansión de usuarios
+  const toggleUserExpansion = (userName: string) => {
+    setExpandedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userName)) {
+        newSet.delete(userName);
+      } else {
+        newSet.add(userName);
+      }
+      return newSet;
+    });
+  };
+
+  // Handlers para expansión de apuestas
+  const toggleBetExpansion = (matchId: number) => {
+    setExpandedBets(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(matchId)) {
+        newSet.delete(matchId);
+      } else {
+        newSet.add(matchId);
+      }
+      return newSet;
+    });
+  };
 
   return (
     <SafeLayout backgroundColor="#181818ff">
@@ -242,199 +303,450 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
               </View>
             ) : (
               <>
-                {/* Resumen general */}
-                <View style={{
-                  backgroundColor: '#1a2332',
-                  borderWidth: 2,
-                  borderColor: '#3b82f6',
-                  borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 20,
-                }}>
-                  <View style={{
+                {/* Tabs: Balances / Apuestas */}
+                <View 
+                  style={{
                     flexDirection: 'row',
-                    alignItems: 'center',
-                    marginBottom: 12,
-                    paddingBottom: 12,
-                    borderBottomWidth: 1,
-                    borderBottomColor: '#334155',
-                  }}>
-                    <View style={{
-                      backgroundColor: '#1e3a8a',
-                      borderRadius: 8,
-                      padding: 8,
-                      marginRight: 12,
+                    position: 'relative',
+                    marginBottom: 20,
+                  }}
+                  onLayout={(e) => {
+                    const containerWidth = e.nativeEvent.layout.width;
+                    // Store tab width for indicator calculation
+                    (handleTabPress as any).tabWidth = containerWidth / 2;
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => handleTabPress(0)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 16,
+                    }}
+                  >
+                    <Text style={{
+                      color: activeTab === 0 ? '#0892D0' : '#94a3b8',
+                      fontSize: 16,
+                      fontWeight: '700',
+                      textAlign: 'center',
                     }}>
-                      <ChartBarIcon size={24} color="#93c5fd" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: '#93c5fd', fontSize: 18, fontWeight: '800' }}>
-                        RESUMEN GENERAL
-                      </Text>
-                      <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
-                        {leagueBets.length} apuesta{leagueBets.length !== 1 ? 's' : ''} realizadas
-                      </Text>
+                      Balances
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleTabPress(1)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 16,
+                    }}
+                  >
+                    <Text style={{
+                      color: activeTab === 1 ? '#0892D0' : '#94a3b8',
+                      fontSize: 16,
+                      fontWeight: '700',
+                      textAlign: 'center',
+                    }}>
+                      Apuestas
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Indicador animado */}
+                  <Animated.View
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      width: '50%',
+                      height: 3,
+                      backgroundColor: '#0892D0',
+                      transform: [
+                        {
+                          translateX: tabIndicatorAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, (SCREEN_WIDTH - 32)/ 2],
+                          }),
+                        },
+                      ],
+                    }}
+                  />
+                </View>
+
+                {/* Content ScrollView Horizontal para Tabs */}
+                <Animated.ScrollView
+                  ref={tabScrollViewRef}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onScroll={handleTabScroll}
+                  onMomentumScrollEnd={(e) => {
+                    const offsetX = e.nativeEvent.contentOffset.x;
+                    const idx = Math.round(offsetX / SCREEN_WIDTH);
+                    setActiveTab(idx);
+                    // ensure indicator snaps exactly to index after momentum
+                    Animated.spring(tabIndicatorAnim, {
+                      toValue: idx,
+                      useNativeDriver: true,
+                      tension: 65,
+                      friction: 10,
+                    }).start();
+                  }}
+                  scrollEventThrottle={16}
+                  style={{ marginHorizontal: -16 }}
+                >
+                  {/* TAB 1: BALANCES */}
+                  <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 16 }}>
+                    <View style={{
+                      backgroundColor: '#1a2332',
+                      borderWidth: 2,
+                      borderColor: '#3b82f6',
+                      borderRadius: 12,
+                      padding: 16,
+                      marginBottom: 20,
+                    }}>
+                      <View style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        marginBottom: 12,
+                        paddingBottom: 12,
+                        borderBottomWidth: 1,
+                        borderBottomColor: '#334155',
+                      }}>
+                        <View style={{
+                          backgroundColor: '#1e3a8a',
+                          borderRadius: 8,
+                          padding: 8,
+                          marginRight: 12,
+                        }}>
+                          <ChartBarIcon size={24} color="#93c5fd" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: '#93c5fd', fontSize: 18, fontWeight: '800' }}>
+                            BALANCES
+                          </Text>
+                          <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
+                            {leagueBets.length} apuesta{leagueBets.length !== 1 ? 's' : ''} realizadas
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Usuarios con sus balances */}
+                      {(() => {
+                        const betsByUser: Record<string, { bets: UserBet[], totalAmount: number, wonBets: number, lostBets: number }> = {};
+                        leagueBets.forEach((bet) => {
+                          const userName = bet.userName || 'Jugador';
+                          if (!betsByUser[userName]) {
+                            betsByUser[userName] = { bets: [], totalAmount: 0, wonBets: 0, lostBets: 0 };
+                          }
+                          betsByUser[userName].bets.push(bet);
+                          betsByUser[userName].totalAmount += bet.amount;
+                          // Contar ganadas/perdidas si el backend provee status
+                          if ((bet as any).status === 'won') betsByUser[userName].wonBets++;
+                          if ((bet as any).status === 'lost') betsByUser[userName].lostBets++;
+                        });
+
+                        // Ordenar por totalAmount descendente
+                        const sortedUsers = Object.entries(betsByUser).sort(([, a], [, b]) => b.totalAmount - a.totalAmount);
+
+                        return sortedUsers.map(([userName, data]) => {
+                          const isExpanded = expandedUsers.has(userName);
+                          return (
+                            <View key={userName}>
+                              <TouchableOpacity
+                                onPress={() => toggleUserExpansion(userName)}
+                                activeOpacity={0.7}
+                                style={{
+                                  backgroundColor: '#0f172a',
+                                  borderRadius: 8,
+                                  padding: 12,
+                                  marginBottom: 8,
+                                  borderLeftWidth: 3,
+                                  borderLeftColor: '#3b82f6',
+                                }}
+                              >
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <View style={{ flex: 1 }}>
+                                    <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 15, marginBottom: 4 }}>
+                                      {userName}
+                                    </Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                                      <Text style={{ color: '#94a3b8', fontSize: 13 }}>
+                                        Apuestas: {data.bets.length}
+                                      </Text>
+                                      {data.wonBets > 0 && (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                                          <Text style={{ color: '#94a3b8', fontSize: 13 }}>({data.wonBets}</Text>
+                                          <CheckIcon size={12} color="#22c55e" />
+                                        </View>
+                                      )}
+                                      {data.lostBets > 0 && (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                                          <Text style={{ color: '#94a3b8', fontSize: 13 }}>{data.lostBets}</Text>
+                                          <ErrorIcon size={12} color="#ef4444" />
+                                          <Text style={{ color: '#94a3b8', fontSize: 13 }}>)</Text>
+                                        </View>
+                                      )}
+                                      {data.wonBets === 0 && data.lostBets === 0 && (
+                                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>(Pendientes)</Text>
+                                      )}
+                                    </View>
+                                  </View>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                    <Text style={{ color: '#22c55e', fontWeight: '800', fontSize: 15 }}>
+                                      {data.totalAmount}M
+                                    </Text>
+                                    {isExpanded ? (
+                                      <ChevronUpIcon size={20} color="#94a3b8" />
+                                    ) : (
+                                      <ChevronDownIcon size={20} color="#94a3b8" />
+                                    )}
+                                  </View>
+                                </View>
+                              </TouchableOpacity>
+
+                              {/* Detalles expandidos del usuario */}
+                              {isExpanded && (
+                                <View style={{ paddingLeft: 16, marginBottom: 12 }}>
+                                  {/* Apuestas ganadas */}
+                                  {data.bets.filter(b => (b as any).status === 'won').length > 0 && (
+                                    <View style={{ marginBottom: 12 }}>
+                                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                                        <CheckIcon size={14} color="#22c55e" />
+                                        <Text style={{ color: '#22c55e', fontSize: 13, fontWeight: '700' }}>
+                                          Ganadas
+                                        </Text>
+                                      </View>
+                                      {data.bets.filter(b => (b as any).status === 'won').map((bet) => (
+                                        <View key={bet.id} style={{
+                                          backgroundColor: '#0a1420',
+                                          padding: 10,
+                                          borderRadius: 6,
+                                          marginBottom: 6,
+                                          borderLeftWidth: 2,
+                                          borderLeftColor: '#22c55e',
+                                        }}>
+                                          <Text style={{ color: '#cbd5e1', fontSize: 12, marginBottom: 2 }}>
+                                            {bet.betType}
+                                          </Text>
+                                          <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
+                                            {formatLabelWithType(bet.betLabel, bet.betType)}
+                                          </Text>
+                                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                                            <Text style={{ color: '#64748b', fontSize: 11 }}>
+                                              Cuota: {bet.odd.toFixed(2)}
+                                            </Text>
+                                            <Text style={{ color: '#22c55e', fontSize: 11, fontWeight: '700' }}>
+                                              +{bet.potentialWin}M
+                                            </Text>
+                                          </View>
+                                        </View>
+                                      ))}
+                                    </View>
+                                  )}
+
+                                  {/* Apuestas perdidas */}
+                                  {data.bets.filter(b => (b as any).status === 'lost').length > 0 && (
+                                    <View style={{ marginBottom: 12 }}>
+                                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                                        <ErrorIcon size={14} color="#ef4444" />
+                                        <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '700' }}>
+                                          Perdidas
+                                        </Text>
+                                      </View>
+                                      {data.bets.filter(b => (b as any).status === 'lost').map((bet) => (
+                                        <View key={bet.id} style={{
+                                          backgroundColor: '#0a1420',
+                                          padding: 10,
+                                          borderRadius: 6,
+                                          marginBottom: 6,
+                                          borderLeftWidth: 2,
+                                          borderLeftColor: '#ef4444',
+                                        }}>
+                                          <Text style={{ color: '#cbd5e1', fontSize: 12, marginBottom: 2 }}>
+                                            {bet.betType}
+                                          </Text>
+                                          <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
+                                            {formatLabelWithType(bet.betLabel, bet.betType)}
+                                          </Text>
+                                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                                            <Text style={{ color: '#64748b', fontSize: 11 }}>
+                                              Cuota: {bet.odd.toFixed(2)}
+                                            </Text>
+                                            <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '700' }}>
+                                              -{bet.amount}M
+                                            </Text>
+                                          </View>
+                                        </View>
+                                      ))}
+                                    </View>
+                                  )}
+
+                                  {/* Apuestas pendientes */}
+                                  {data.bets.filter(b => !(b as any).status || (b as any).status === 'pending').length > 0 && (
+                                    <View>
+                                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+                                        <ClockIcon size={14} color="#f59e0b" />
+                                        <Text style={{ color: '#f59e0b', fontSize: 13, fontWeight: '700' }}>
+                                          Pendientes
+                                        </Text>
+                                      </View>
+                                      {data.bets.filter(b => !(b as any).status || (b as any).status === 'pending').map((bet) => (
+                                        <View key={bet.id} style={{
+                                          backgroundColor: '#0a1420',
+                                          padding: 10,
+                                          borderRadius: 6,
+                                          marginBottom: 6,
+                                          borderLeftWidth: 2,
+                                          borderLeftColor: '#f59e0b',
+                                        }}>
+                                          <Text style={{ color: '#cbd5e1', fontSize: 12, marginBottom: 2 }}>
+                                            {bet.betType}
+                                          </Text>
+                                          <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
+                                            {formatLabelWithType(bet.betLabel, bet.betType)}
+                                          </Text>
+                                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+                                            <Text style={{ color: '#64748b', fontSize: 11 }}>
+                                              Cuota: {bet.odd.toFixed(2)}
+                                            </Text>
+                                            <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
+                                              Potencial: +{bet.potentialWin}M
+                                            </Text>
+                                          </View>
+                                        </View>
+                                      ))}
+                                    </View>
+                                  )}
+                                </View>
+                              )}
+                            </View>
+                          );
+                        });
+                      })()}
                     </View>
                   </View>
 
-                  {/* Agrupar por jugador */}
-                  {(() => {
-                    const betsByUser: Record<string, { bets: UserBet[], totalAmount: number }> = {};
-                    leagueBets.forEach((bet) => {
-                      const userName = bet.userName || 'Jugador';
-                      if (!betsByUser[userName]) {
-                        betsByUser[userName] = { bets: [], totalAmount: 0 };
-                      }
-                      betsByUser[userName].bets.push(bet);
-                      betsByUser[userName].totalAmount += bet.amount;
-                    });
+                  {/* TAB 2: APUESTAS POR PARTIDO */}
+                  <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 16 }}>
+                    <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
+                      Apuestas por Partido
+                    </Text>
 
-                    return Object.entries(betsByUser).map(([userName, data]) => (
-                      <View key={userName} style={{
-                        backgroundColor: '#0f172a',
-                        borderRadius: 8,
-                        padding: 12,
-                        marginBottom: 8,
-                        borderLeftWidth: 3,
-                        borderLeftColor: '#3b82f6',
-                      }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 15 }}>
-                            {userName}
-                          </Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                            <Text style={{ color: '#64748b', fontSize: 13 }}>
-                              {data.bets.length} apuesta{data.bets.length !== 1 ? 's' : ''}
-                            </Text>
-                            <Text style={{ color: '#22c55e', fontWeight: '800', fontSize: 15 }}>
-                              {data.totalAmount}M
-                            </Text>
-                          </View>
-                        </View>
-                      </View>
-                    ));
-                  })()}
-                </View>
+                    {(() => {
+                      // Agrupar por matchId
+                      const betsByMatch: Record<number, UserBet[]> = {};
+                      leagueBets.forEach((bet) => {
+                        if (!betsByMatch[bet.matchId]) {
+                          betsByMatch[bet.matchId] = [];
+                        }
+                        betsByMatch[bet.matchId].push(bet);
+                      });
 
-                {/* Apuestas por partido */}
-                <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
-                  Apuestas por Partido
-                </Text>
-
-                {(() => {
-                  // Agrupar por matchId
-                  const betsByMatch: Record<number, UserBet[]> = {};
-                  leagueBets.forEach((bet) => {
-                    if (!betsByMatch[bet.matchId]) {
-                      betsByMatch[bet.matchId] = [];
-                    }
-                    betsByMatch[bet.matchId].push(bet);
-                  });
-
-                  return Object.entries(betsByMatch).map(([matchIdStr, bets]) => {
-                    const matchId = parseInt(matchIdStr);
-                    // Encontrar info del partido
-                    const matchInfo = groupedBets.find((gb) => gb.matchId === matchId);
-                    
-                    return (
-                      <View key={matchId} style={{
-                        backgroundColor: '#1a2332',
-                        borderWidth: 1,
-                        borderColor: '#334155',
-                        borderRadius: 12,
-                        padding: 14,
-                        marginBottom: 12,
-                      }}>
-                        {/* Equipos del partido */}
-                        {matchInfo && (
-                          <View style={{ marginBottom: 10 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                              {matchInfo.localCrest && (
-                                <Image 
-                                  source={{ uri: matchInfo.localCrest }} 
-                                  style={{ width: 24, height: 24, marginRight: 8 }} 
-                                  resizeMode="contain" 
-                                />
-                              )}
-                              <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 15 }}>
-                                {matchInfo.local}
-                              </Text>
-                            </View>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                              {matchInfo.visitanteCrest && (
-                                <Image 
-                                  source={{ uri: matchInfo.visitanteCrest }} 
-                                  style={{ width: 24, height: 24, marginRight: 8 }} 
-                                  resizeMode="contain" 
-                                />
-                              )}
-                              <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 15 }}>
-                                {matchInfo.visitante}
-                              </Text>
-                            </View>
-                            {matchInfo.fecha && matchInfo.hora && (
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                  <CalendarIcon size={14} color="#64748b" />
-                                  <Text style={{ color: '#64748b', fontSize: 12 }}>{matchInfo.fecha}</Text>
+                      return Object.entries(betsByMatch).map(([matchIdStr, bets]) => {
+                        const matchId = parseInt(matchIdStr);
+                        // Obtener info del partido desde la primera apuesta (todas tienen los mismos equipos)
+                        const firstBet = bets[0];
+                        const isExpanded = expandedBets.has(matchId);
+                        
+                        return (
+                          <View key={matchId}>
+                            <TouchableOpacity
+                              onPress={() => toggleBetExpansion(matchId)}
+                              activeOpacity={0.7}
+                              style={{
+                                backgroundColor: '#1a2332',
+                                borderWidth: 1,
+                                borderColor: '#334155',
+                                borderRadius: 12,
+                                padding: 14,
+                                marginBottom: 12,
+                              }}
+                            >
+                              {/* Equipos del partido - Usar datos de la apuesta */}
+                              {firstBet.homeTeam && firstBet.awayTeam && (
+                                <View style={{ marginBottom: 10 }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                                    <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 15 }}>
+                                      {firstBet.homeTeam}
+                                    </Text>
+                                  </View>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                                    <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 15 }}>
+                                      {firstBet.awayTeam}
+                                    </Text>
+                                  </View>
+                                  <Text style={{ color: '#64748b', fontSize: 12 }}>
+                                    Jornada {firstBet.jornada}
+                                  </Text>
                                 </View>
-                                <Text style={{ color: '#64748b', fontSize: 12 }}>·</Text>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                  <ClockIcon size={14} color="#64748b" />
-                                  <Text style={{ color: '#64748b', fontSize: 12 }}>{matchInfo.hora}</Text>
-                                </View>
+                              )}
+
+                              {/* Resumen de apuestas contraído */}
+                              <View style={{ 
+                                paddingTop: 8, 
+                                borderTopWidth: 1, 
+                                borderTopColor: '#334155',
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}>
+                                <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '600' }}>
+                                  {bets.length} apuesta{bets.length !== 1 ? 's' : ''} realizada{bets.length !== 1 ? 's' : ''}
+                                </Text>
+                                {isExpanded ? (
+                                  <ChevronUpIcon size={20} color="#94a3b8" />
+                                ) : (
+                                  <ChevronDownIcon size={20} color="#94a3b8" />
+                                )}
+                              </View>
+                            </TouchableOpacity>
+
+                            {/* Detalles expandidos de apuestas */}
+                            {isExpanded && (
+                              <View style={{ paddingLeft: 16, marginBottom: 12 }}>
+                                {bets.map((bet, idx) => (
+                                  <View 
+                                    key={bet.id} 
+                                    style={{
+                                      backgroundColor: '#0f172a',
+                                      borderRadius: 6,
+                                      padding: 10,
+                                      marginBottom: idx < bets.length - 1 ? 8 : 0,
+                                      borderLeftWidth: 3,
+                                      borderLeftColor: '#3b82f6',
+                                    }}
+                                  >
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                      <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 13 }}>
+                                        {bet.userName || 'Jugador'}
+                                      </Text>
+                                      <Text style={{ color: '#22c55e', fontWeight: '800', fontSize: 14 }}>
+                                        {bet.amount}M
+                                      </Text>
+                                    </View>
+                                    <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
+                                      {bet.betType}
+                                    </Text>
+                                    <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
+                                      {formatLabelWithType(bet.betLabel, bet.betType)}
+                                    </Text>
+                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                                      <Text style={{ color: '#64748b', fontSize: 11 }}>
+                                        Cuota: {bet.odd.toFixed(2)}
+                                      </Text>
+                                      <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
+                                        Ganancia potencial: +{bet.potentialWin}M
+                                      </Text>
+                                    </View>
+                                  </View>
+                                ))}
                               </View>
                             )}
                           </View>
-                        )}
-
-                        <View style={{ height: 1, backgroundColor: '#334155', marginVertical: 10 }} />
-
-                        {/* Lista de apuestas */}
-                        <Text style={{ color: '#64748b', fontSize: 12, fontWeight: '600', marginBottom: 8 }}>
-                          {bets.length} apuesta{bets.length !== 1 ? 's' : ''}
-                        </Text>
-                        
-                        {bets.map((bet, idx) => (
-                          <View 
-                            key={bet.id} 
-                            style={{
-                              backgroundColor: '#0f172a',
-                              borderRadius: 6,
-                              padding: 10,
-                              marginBottom: idx < bets.length - 1 ? 8 : 0,
-                              borderLeftWidth: 3,
-                              borderLeftColor: '#3b82f6',
-                            }}
-                          >
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                              <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 13 }}>
-                                {bet.userName || 'Jugador'}
-                              </Text>
-                              <Text style={{ color: '#22c55e', fontWeight: '800', fontSize: 14 }}>
-                                {bet.amount}M
-                              </Text>
-                            </View>
-                            <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
-                              {bet.betType}
-                            </Text>
-                            <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
-                              {formatLabelWithType(bet.betLabel, bet.betType)}
-                            </Text>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                              <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                Cuota: {bet.odd.toFixed(2)}
-                              </Text>
-                              <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
-                                Ganancia potencial: +{bet.potentialWin}M
-                              </Text>
-                            </View>
-                          </View>
-                        ))}
-                      </View>
-                    );
-                  });
-                })()}
+                        );
+                      });
+                    })()}
+                  </View>
+                </Animated.ScrollView>
               </>
             )}
           </ScrollView>
