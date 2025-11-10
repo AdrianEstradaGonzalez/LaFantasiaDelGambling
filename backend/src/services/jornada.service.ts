@@ -1251,9 +1251,18 @@ export class JornadaService {
 
         if (!currentMember) continue;
 
-        // Sumar puntos de plantilla al presupuesto actual (1M por punto)
+        // FÓRMULA CORRECTA PARA NUEVA JORNADA:
+        // initialBudget = 500M (base) + resultado apuestas + 1M × puntos jornada anterior
+        
+        // 1. Calcular resultado de apuestas de esta jornada
+        const betsResult = currentMember.budget - member.budget; // Diferencia por apuestas
+        
+        // 2. Puntos de la jornada que se está cerrando = 1M por punto
         const budgetFromSquad = squadPoints;
-        const newBudget = currentMember.budget + budgetFromSquad;
+        
+        // 3. Nuevo presupuesto total = base + apuestas + puntos
+        const newInitialBudget = 500 + betsResult + budgetFromSquad;
+        const newBudget = newInitialBudget;
         
         // Los puntos totales ya están actualizados por el worker, NO los recalculamos aquí
         // Solo actualizamos presupuestos
@@ -1262,17 +1271,18 @@ export class JornadaService {
           where: { leagueId_userId: { leagueId, userId: member.userId } },
           data: {
             budget: newBudget,
-            initialBudget: newBudget, // Actualizar initialBudget con el nuevo valor calculado
+            initialBudget: newInitialBudget, // ✅ FÓRMULA: 500 + resultado apuestas + puntos J anterior
             bettingBudget: 250, // Siempre resetear a 250
             // NO actualizamos points ni pointsPerJornada - ya están actualizados por el worker
           },
         });
 
         console.log(
-          `     Presupuesto tras apuestas: ${currentMember.budget}M\n` +
-          `     Plantilla: ${squadPoints} puntos (ya calculados) = +${budgetFromSquad}M\n` +
-          `     Nuevo presupuesto: ${newBudget}M\n` +
-          `     Puntos totales en BD: ${currentMember.points}`
+          `     Budget antes de cierre: ${member.budget}M\n` +
+          `     Budget tras apuestas: ${currentMember.budget}M (${betsResult >= 0 ? '+' : ''}${betsResult}M)\n` +
+          `     Plantilla J${jornada}: ${squadPoints} puntos = +${budgetFromSquad}M\n` +
+          `     Nuevo initialBudget: 500 + ${betsResult} + ${budgetFromSquad} = ${newInitialBudget}M\n` +
+          `     Puntos totales: ${currentMember.points}`
         );
 
         updatedMembers++;
