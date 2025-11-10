@@ -970,8 +970,147 @@ export class JornadaService {
   }
 
   /**
+   * Sincronizar puntos de la jornada actual desde cálculo en tiempo real
+   * 
+   * PROPÓSITO: Antes de cerrar una jornada, asegurar que pointsPerJornada[N] 
+   * contiene los puntos correctos calculados en tiempo real (mismo algoritmo que getAllClassifications).
+   * 
+   * ALGORITMO (replica getAllClassifications cuando jornadaStatus='closed'):
+   * 1. Obtener plantilla del usuario
+   * 2. Obtener playerStats de todos los jugadores para la jornada
+   * 3. Sumar totalPoints de cada jugador (capitán × 2)
+   * 4. Si tiene < 11 jugadores → 0 puntos
+   * 5. Actualizar pointsPerJornada[jornada] y recalcular points (total)
+   */
+  private static async syncCurrentJornadaPoints(
+    leagueId: string, 
+    jornada: number
+  ): Promise<{ updated: number; skipped: number }> {
+    let updated = 0;
+    let skipped = 0;
+
+    try {
+      // Obtener todos los miembros de la liga
+      const members = await prisma.leagueMember.findMany({
+        where: { leagueId },
+        include: { user: true }
+      });
+
+      for (const member of members) {
+        try {
+          // 1. Obtener la plantilla del usuario
+          const squad = await prisma.squad.findUnique({
+            where: {
+              userId_leagueId: {
+                userId: member.userId,
+                leagueId: leagueId
+              }
+            },
+            include: {
+              players: true
+            }
+          });
+
+          // Si no tiene plantilla o tiene < 11 jugadores, puntos = 0
+          if (!squad || squad.players.length < 11) {
+            console.log(`     ⚠️  ${member.user.name}: Sin plantilla válida, J${jornada} = 0 pts`);
+            skipped++;
+            continue;
+          }
+
+          // 2. Obtener estadísticas de todos los jugadores para esta jornada
+          const playerIds = squad.players.map((p: any) => p.playerId);
+          const playerStats = await prisma.playerStats.findMany({
+            where: {
+              playerId: { in: playerIds },
+              jornada: jornada,
+              season: 2025
+            }
+          });
+
+          // 3. Calcular puntos totales (mismo algoritmo que getAllClassifications)
+          let sumPoints = 0;
+          let captainId: number | null = null;
+
+          // Encontrar el capitán
+          const captainPlayer = squad.players.find((p: any) => p.isCaptain);
+          if (captainPlayer) {
+            captainId = captainPlayer.playerId;
+          }
+
+          // Sumar puntos de cada jugador
+          playerStats.forEach((stats: any) => {
+            const points = stats.totalPoints || 0;
+            
+            // Si es el capitán, doblar los puntos
+            if (captainId && stats.playerId === captainId) {
+              sumPoints += points * 2;
+            } else {
+              sumPoints += points;
+            }
+          });
+
+          const calculatedPoints = sumPoints;
+
+          // 4. Leer pointsPerJornada actual
+          const currentPointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
+          const currentJornadaPoints = currentPointsPerJornada[jornada.toString()] || 0;
+
+          // Solo actualizar si es diferente
+          if (currentJornadaPoints !== calculatedPoints) {
+            // Actualizar pointsPerJornada[jornada]
+            const updatedPointsPerJornada = {
+              ...currentPointsPerJornada,
+              [jornada.toString()]: calculatedPoints
+            };
+
+            // Calcular nuevo total sumando todas las jornadas
+            let newTotalPoints = 0;
+            for (let j = 1; j <= 38; j++) {
+              const jornadaKey = j.toString();
+              newTotalPoints += (updatedPointsPerJornada as any)[jornadaKey] || 0;
+            }
+
+            // Actualizar en BD
+            await prisma.leagueMember.update({
+              where: {
+                leagueId_userId: {
+                  leagueId: leagueId,
+                  userId: member.userId
+                }
+              },
+              data: {
+                pointsPerJornada: updatedPointsPerJornada,
+                points: newTotalPoints
+              }
+            });
+
+            console.log(`     ✅ ${member.user.name}: J${jornada} ${currentJornadaPoints} → ${calculatedPoints} pts, Total ${member.points} → ${newTotalPoints}`);
+            updated++;
+          } else {
+            console.log(`     ⏭️  ${member.user.name}: J${jornada} = ${calculatedPoints} pts (sin cambios)`);
+            skipped++;
+          }
+
+        } catch (error) {
+          console.error(`     ❌ Error procesando ${member.user.name}:`, error);
+          skipped++;
+        }
+      }
+
+      return { updated, skipped };
+    } catch (error) {
+      console.error('❌ Error en sincronización de puntos:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Cerrar jornada (era "Abrir") - Permite apuestas y modificaciones de plantilla
    * Usa la jornada actual de la liga
+   * 
+   * NOTA: Los puntos de plantilla ya están calculados y guardados en tiempo real por el worker.
+   * Esta función solo procesa apuestas, actualiza presupuestos, limpia plantillas y abre cambios.
    */
   static async closeJornada(leagueId: string): Promise<{
     success: boolean;
@@ -995,6 +1134,11 @@ export class JornadaService {
 
       const jornada = league.currentJornada;
       console.log(`\n🔒 CERRANDO JORNADA ${jornada} para liga "${league.name}" (${leagueId})...\n`);
+
+      // 0. SINCRONIZAR puntos de la jornada actual desde tiempo real
+      console.log(`🔄 0. Sincronizando puntos de J${jornada} desde tiempo real a BD...`);
+      const syncResult = await this.syncCurrentJornadaPoints(leagueId, jornada);
+      console.log(`✅ ${syncResult.updated} usuarios actualizados, ${syncResult.skipped} sin cambios\n`);
 
       // 1. Procesar apuestas ya evaluadas (won/lost) y actualizar presupuestos
       console.log(`💰 1. Procesando apuestas ya evaluadas (won/lost)...`);
@@ -1070,8 +1214,8 @@ export class JornadaService {
       const balances = await this.calculateUserBalances(leagueId, evaluations);
       console.log(`✅ Balances calculados para ${balances.size} usuarios\n`);
 
-      // 4. Calcular puntos de plantilla para cada usuario y actualizar presupuestos
-      console.log(`⚽ 4. Calculando puntos de plantilla y actualizando presupuestos finales...`);
+      // 4. Leer puntos de plantilla YA CALCULADOS y actualizar presupuestos finales
+      console.log(`⚽ 4. Leyendo puntos de plantilla ya calculados y actualizando presupuestos finales...`);
       const allMembers = await prisma.leagueMember.findMany({
         where: { leagueId },
         include: { user: true },
@@ -1080,7 +1224,11 @@ export class JornadaService {
       let updatedMembers = 0;
 
       for (const member of allMembers) {
-        const squadPoints = await this.calculateSquadPoints(member.userId, leagueId, jornada);
+        // ✅ LEER los puntos ya calculados de pointsPerJornada (actualizados por el worker en tiempo real)
+        const pointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
+        const squadPoints = pointsPerJornada[jornada.toString()] ?? 0;
+        
+        console.log(`  👤 Usuario ${member.user.name} - Puntos J${jornada}: ${squadPoints} (leídos de BD)`);
         
         // Actualizar o crear balance del usuario
         if (!balances.has(member.userId)) {
@@ -1107,12 +1255,8 @@ export class JornadaService {
         const budgetFromSquad = squadPoints;
         const newBudget = currentMember.budget + budgetFromSquad;
         
-        // Actualizar puntos totales
-        const newTotalPoints = currentMember.points + squadPoints;
-        
-        // Actualizar puntos por jornada
-        const pointsPerJornada = (currentMember.pointsPerJornada as any) || {};
-        pointsPerJornada[jornada.toString()] = squadPoints;
+        // Los puntos totales ya están actualizados por el worker, NO los recalculamos aquí
+        // Solo actualizamos presupuestos
         
         await prisma.leagueMember.update({
           where: { leagueId_userId: { leagueId, userId: member.userId } },
@@ -1120,18 +1264,15 @@ export class JornadaService {
             budget: newBudget,
             initialBudget: newBudget, // Actualizar initialBudget con el nuevo valor calculado
             bettingBudget: 250, // Siempre resetear a 250
-            points: newTotalPoints,
-            pointsPerJornada: pointsPerJornada, // Guardar puntos de esta jornada
+            // NO actualizamos points ni pointsPerJornada - ya están actualizados por el worker
           },
         });
 
         console.log(
-          `  👤 Usuario ${member.user.name}:\n` +
           `     Presupuesto tras apuestas: ${currentMember.budget}M\n` +
-          `     Plantilla: ${squadPoints} puntos = +${budgetFromSquad}M\n` +
+          `     Plantilla: ${squadPoints} puntos (ya calculados) = +${budgetFromSquad}M\n` +
           `     Nuevo presupuesto: ${newBudget}M\n` +
-          `     Puntos J${jornada}: ${squadPoints}\n` +
-          `     Puntos totales: ${currentMember.points} → ${newTotalPoints}`
+          `     Puntos totales en BD: ${currentMember.points}`
         );
 
         updatedMembers++;
@@ -1194,10 +1335,11 @@ export class JornadaService {
       console.log(`\n🎉 JORNADA ${jornada} CERRADA EXITOSAMENTE\n`);
       console.log(`📊 Resumen:`);
       console.log(`   - ${evaluations.length} apuestas evaluadas`);
-      console.log(`   - ${updatedMembers} miembros actualizados`);
+      console.log(`   - ${updatedMembers} miembros actualizados (presupuestos)`);
       console.log(`   - ${clearedSquads} plantillas vaciadas`);
       console.log(`   - ${deletedBetOptions.count} opciones de apuestas eliminadas`);
-      console.log(`   - Jornada actual: ${nextJornada}\n`);
+      console.log(`   - Jornada actual: ${nextJornada}`);
+      console.log(`   ℹ️  Los puntos ya estaban calculados por el worker en tiempo real\n`);
 
       return {
         success: true,

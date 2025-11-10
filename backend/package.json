@@ -23,6 +23,9 @@
     "restore-points-from-backup": "tsx scripts/restore-points-from-backup.ts",
     "clean-old-jornadas": "tsx scripts/clean-old-jornadas.ts",
     "full-backup": "tsx scripts/full-database-backup.ts",
+    "backup-db": "tsx scripts/backup-database-prisma.ts",
+    "sync-j12-points": "tsx scripts/sync-j12-points-from-realtime.ts",
+    "test-sync-points": "tsx scripts/test-sync-jornada-points.ts",
     "clean-all-data": "tsx scripts/clean-all-data.ts",
     "restore-backup": "tsx scripts/restore-from-backup.ts",
     "calculate-all-points": "tsx scripts/calculate-all-player-points.ts"

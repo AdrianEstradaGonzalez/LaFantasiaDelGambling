@@ -1,0 +1,24 @@
+
+BACKUP DE BASE DE DATOS
+========================
+Fecha: 10/11/2025, 0:19:13
+Archivo: C:\Projects\LaFantasiaDelGambling\backend\backups\prisma-backup-2025-11-09T23-19-10.json
+Total de registros: 24812
+
+TABLAS:
+  - user: 36 registros
+  - player: 603 registros
+  - playerStats: 7248 registros
+  - playerSegunda: 757 registros
+  - playerSegundaStats: 8443 registros
+  - playerPremier: 671 registros
+  - playerPremierStats: 5781 registros
+  - squad: 37 registros
+  - squadPlayer: 321 registros
+  - league: 14 registros
+  - leagueMember: 48 registros
+  - bet: 318 registros
+  - bet_option: 535 registros
+
+Para restaurar este backup:
+  npm run restore-backup -- prisma-backup-2025-11-09T23-19-10.json
