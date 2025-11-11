@@ -339,34 +339,36 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             </Text>
 
             <Text style={styles.subSectionTitle}>Tipos de apuestas disponibles:</Text>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Goles totales</Text>
-            </View>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Ambos equipos marcan</Text>
-            </View>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Corners</Text>
-            </View>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Tarjetas</Text>
-            </View>
+            {/* Listado completo de mercados traducidos al español */}
+            {[
+              'Ganador del Partido',
+              'Doble Oportunidad',
+              'Gana Local o Visitante (Sin Empate)',
+              'Ambos Equipos Marcan',
+              'Más/Menos Goles',
+              'Más/Menos Goles Primera Parte',
+              'Más/Menos Goles Segunda Parte',
+              'Goles Par/Impar',
+              'Local Marca un Gol',
+              'Visitante Marca un Gol',
+              'Local Gana sin Encajar',
+              'Visitante Gana sin Encajar',
+              'Más/Menos Corners',
+              'Más/Menos Tarjetas',
+              'Portería a Cero - Local',
+              'Portería a Cero - Visitante',
+            ].map((t) => (
+              <View key={t} style={styles.bulletPoint}>
+                <Text style={styles.bullet}>•</Text>
+                <Text style={styles.bulletText}>{t}</Text>
+              </View>
+            ))}
 
             <Text style={styles.subSectionTitle}>Reglas de apuestas:</Text>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>
                 <Text style={styles.bold}>Una apuesta por partido</Text> (10 partidos por jornada = 10 apuestas disponibles)
-              </Text>
-            </View>
-            <View style={styles.bulletPoint}>
-              <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>
-                Cuotas entre <Text style={styles.highlight}>1.50 y 2.50</Text>
               </Text>
             </View>
             <View style={styles.bulletPoint}>
