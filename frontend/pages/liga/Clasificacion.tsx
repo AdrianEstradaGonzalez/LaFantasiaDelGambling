@@ -514,7 +514,7 @@ export const Clasificacion = () => {
               data={jugadores}
               renderItem={renderJugadorItem}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={{ paddingBottom: 200, paddingTop: 8 }}
+              contentContainerStyle={{ paddingBottom: 200, paddingTop: 8, paddingHorizontal: 16, }}
               initialNumToRender={10}
               maxToRenderPerBatch={5}
               windowSize={10}
