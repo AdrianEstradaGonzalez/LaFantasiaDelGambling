@@ -119,6 +119,8 @@ const BET_TYPE_TRANSLATIONS: Record<string, string> = {
   'Result & Total Goals': 'Resultado y Total de Goles',
   'Home Team Score A Goal': 'Local Marca un Gol',
   'Away Team Score A Goal': 'Visitante Marca un Gol',
+  'Home Team Score a Goal': 'Local Marca un Gol',
+  'Away Team Score a Goal': 'Visitante Marca un Gol',
   'Multigoals': 'Multigoles',
   'Home Multigoals': 'Multigoles Local',
   'Away Multigoals': 'Multigoles Visitante',
