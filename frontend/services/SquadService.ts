@@ -1,5 +1,6 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { ApiConfig } from '../utils/apiConfig';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 export interface Squad {
   id: string;
@@ -68,13 +69,13 @@ export class SquadService {
         throw new Error('No token found');
       }
 
-      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}`, {
+      const response = await fetchWithTimeout(`${ApiConfig.BASE_URL}/squads/${ligaId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-      });
+      }, 10000);
 
       if (response.status === 404) {
         return null; // No existe plantilla para esta liga
@@ -100,13 +101,13 @@ export class SquadService {
         throw new Error('No token found');
       }
 
-      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/user/${userId}`, {
+      const response = await fetchWithTimeout(`${ApiConfig.BASE_URL}/squads/${ligaId}/user/${userId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-      });
+      }, 10000);
 
       if (response.status === 404) {
         return null;
@@ -132,14 +133,14 @@ export class SquadService {
         throw new Error('No token found');
       }
 
-      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/save`, {
+      const response = await fetchWithTimeout(`${ApiConfig.BASE_URL}/squads/${ligaId}/save`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(squadData),
-      });
+      }, 15000);
 
       if (!response.ok) {
         const error = await response.json();
@@ -161,13 +162,13 @@ export class SquadService {
         throw new Error('No token found');
       }
 
-      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}`, {
+      const response = await fetchWithTimeout(`${ApiConfig.BASE_URL}/squads/${ligaId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-      });
+      }, 10000);
 
       if (!response.ok) {
         const error = await response.json();
@@ -189,7 +190,7 @@ export class SquadService {
         throw new Error('No token found');
       }
 
-      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/budget`, {
+      const response = await fetchWithTimeout(`${ApiConfig.BASE_URL}/squads/${ligaId}/budget`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -218,14 +219,14 @@ export class SquadService {
         throw new Error('No token found');
       }
 
-      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/players`, {
+      const response = await fetchWithTimeout(`${ApiConfig.BASE_URL}/squads/${ligaId}/players`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(playerData),
-      });
+      }, 10000);
 
       if (!response.ok) {
         const error = await response.json();
@@ -247,12 +248,12 @@ export class SquadService {
         throw new Error('No token found');
       }
 
-      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/players/${position}`, {
+      const response = await fetchWithTimeout(`${ApiConfig.BASE_URL}/squads/${ligaId}/players/${position}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
-      });
+      }, 10000);
 
       if (!response.ok) {
         const error = await response.json();
@@ -274,14 +275,14 @@ export class SquadService {
         throw new Error('No token found');
       }
 
-      const response = await fetch(`${ApiConfig.BASE_URL}/squads/${ligaId}/captain`, {
+      const response = await fetchWithTimeout(`${ApiConfig.BASE_URL}/squads/${ligaId}/captain`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ position }),
-      });
+      }, 10000);
 
       if (!response.ok) {
         const error = await response.json();

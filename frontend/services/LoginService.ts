@@ -1,6 +1,7 @@
 // src/services/LoginService.ts
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { ApiConfig } from '../utils/apiConfig';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 // 👇 Polyfill necesario para decodificar JWT en React Native
 import { Buffer } from 'buffer';
@@ -21,11 +22,11 @@ export class LoginService {
   static async login(
     data: LoginData
   ): Promise<{ accessToken: string; refreshToken?: string; userId?: string; payload?: any }> {
-    const res = await fetch(`${ApiConfig.BASE_URL}/auth/login`, {
+    const res = await fetchWithTimeout(`${ApiConfig.BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    });
+    }, 15000);
 
     let json: any = {};
     try { json = await res.json(); } catch {}
