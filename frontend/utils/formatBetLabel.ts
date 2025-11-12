@@ -1,3 +1,52 @@
+// Traducir tipos de apuesta de inglés a español
+function translateBetType(type: string): string {
+  const translations: Record<string, string> = {
+    // Goles
+    'AWAY TEAM SCORE A GOAL': 'Equipo Visitante Marca Gol',
+    'HOME TEAM SCORE A GOAL': 'Equipo Local Marca Gol',
+    'BOTH TEAMS SCORE': 'Ambos Equipos Marcan',
+    'GOALS OVER/UNDER': 'Goles Más/Menos',
+    'TOTAL GOALS': 'Total de Goles',
+    
+    // Resultado
+    'MATCH WINNER': 'Ganador del Partido',
+    'DOUBLE CHANCE': 'Doble Oportunidad',
+    'DRAW NO BET': 'Empate Anula Apuesta',
+    
+    // Tarjetas
+    'CARDS OVER/UNDER': 'Tarjetas Más/Menos',
+    'YELLOW CARDS': 'Tarjetas Amarillas',
+    'RED CARDS': 'Tarjetas Rojas',
+    
+    // Córners
+    'CORNERS OVER/UNDER': 'Córners Más/Menos',
+    'TOTAL CORNERS': 'Total de Córners',
+    
+    // Portería
+    'CLEAN SHEET - HOME': 'Portería a Cero - Local',
+    'CLEAN SHEET - AWAY': 'Portería a Cero - Visitante',
+    
+    // Partes
+    'FIRST HALF': 'Primera Parte',
+    'SECOND HALF': 'Segunda Parte',
+  };
+
+  // Intentar traducción directa
+  const upperType = type.toUpperCase();
+  if (translations[upperType]) {
+    return translations[upperType];
+  }
+
+  // Traducción parcial para tipos compuestos
+  let translatedType = type;
+  Object.entries(translations).forEach(([eng, esp]) => {
+    const regex = new RegExp(eng, 'gi');
+    translatedType = translatedType.replace(regex, esp);
+  });
+
+  return translatedType;
+}
+
 // Small helper to produce a clear bet label including the market when label is terse
 // e.g. converts "Si"/"No" or "Más de 1.5" into "Ambos marcan" / "No marcan ambos" or
 // "Más de 1.5 goles" depending on the market type.
@@ -6,8 +55,11 @@ export default function formatLabelWithType(rawLabel: string | undefined, type?:
   const label = rawLabel.trim();
   const l = label.toLowerCase();
 
+  // Traducir el tipo de apuesta si viene en inglés
+  const translatedType = type ? translateBetType(type) : type;
+
   // detect if betType mentions first/second half and create a suffix
-  const tt = (type || '').toLowerCase();
+  const tt = (translatedType || '').toLowerCase();
   let partSuffix = '';
   if (/\b(primera|1ª|1a|first|1st)\b/i.test(tt)) partSuffix = ' - 1ª parte';
   else if (/\b(segunda|2ª|2a|second|2nd)\b/i.test(tt)) partSuffix = ' - 2ª parte';
@@ -25,9 +77,9 @@ export default function formatLabelWithType(rawLabel: string | undefined, type?:
   const booleanNo = /^(no|not|false)$/i.test(label);
 
   // Handle boolean markets with special formatting
-  if ((booleanYes || booleanNo) && type) {
+  if ((booleanYes || booleanNo) && translatedType) {
     // try to detect team (Local/Visitante) from the bet type itself, e.g. "Portería a Cero - Local"
-    const teamFromTypeMatch = /-\s*(local|visitante|home|away)\b/i.exec(type || '');
+    const teamFromTypeMatch = /-\s*(local|visitante|home|away)\b/i.exec(translatedType || '');
     let teamFromType = '';
     if (teamFromTypeMatch) {
       const t = teamFromTypeMatch[1].toLowerCase();
@@ -59,7 +111,7 @@ export default function formatLabelWithType(rawLabel: string | undefined, type?:
     }
 
     // Fallback for boolean markets: prefix the market name and append the part
-    return booleanYes ? `${type}${partSuffix} - Si` : `${type}${partSuffix} - No`;
+    return booleanYes ? `${translatedType}${partSuffix} - Si` : `${translatedType}${partSuffix} - No`;
   }
 
   // If label contains explicit words like 'más de' or a number, append unit based on type and part
@@ -76,7 +128,7 @@ export default function formatLabelWithType(rawLabel: string | undefined, type?:
     return '';
   };
 
-  const unit = mapUnit(type);
+  const unit = mapUnit(translatedType);
   if ((isOverUnder || hasNumber) && unit) {
     // Avoid duplicating if label already ends with number or unit-like word
     if (new RegExp(unit.trim() + '$', 'i').test(label)) {
@@ -86,6 +138,6 @@ export default function formatLabelWithType(rawLabel: string | undefined, type?:
   }
 
   // Default: if none of the above matched, try to make label clearer by prefixing the type and append part
-  if (type) return `${type}${partSuffix} - ${label}`;
+  if (translatedType) return `${translatedType}${partSuffix} - ${label}`;
   return label;
 }

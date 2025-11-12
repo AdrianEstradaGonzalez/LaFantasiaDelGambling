@@ -299,6 +299,8 @@ model Bet {
   awayTeam     String?
   evaluatedAt  DateTime?    @db.Timestamp(6)
   homeTeam     String?
+  homeCrest    String?
+  awayCrest    String?
   combiId      String?
   betCombi     BetCombi?    @relation(fields: [combiId], references: [id], onDelete: Cascade)
   leagueMember LeagueMember @relation(fields: [leagueId, userId], references: [leagueId, userId], onDelete: Cascade)

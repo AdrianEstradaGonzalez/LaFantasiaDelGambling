@@ -383,12 +383,15 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     // Si es jornada histórica, cargar sus apuestas
     try {
       setLoading(true);
+      
       const [userBetsData, leagueBetsData, realtimeResult] = await Promise.all([
         BetService.getUserBetsForJornada(ligaId, newJornada),
         BetService.getLeagueBetsForJornada(ligaId, newJornada),
         BetService.evaluateBetsRealTime(ligaId, newJornada).catch(() => ({ userBalances: [], matchesEvaluated: 0 }))
       ]);
       
+      // Limpiar groupedBets para jornadas históricas (no tendremos escudos)
+      setGroupedBets([]);
       setUserBets(userBetsData);
       setLeagueBets(leagueBetsData);
       setRealtimeBalances(realtimeResult.userBalances);
@@ -449,7 +452,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     setAmountInputs((prev) => ({ ...prev, [key]: sanitized }));
   };
 
-  const handlePlaceBet = async (key: string, params: { matchId: number; homeTeam: string; awayTeam: string; betType: string; betLabel: string; odd: number }) => {
+  const handlePlaceBet = async (key: string, params: { matchId: number; homeTeam: string; awayTeam: string; homeCrest?: string; awayCrest?: string; betType: string; betLabel: string; odd: number }) => {
     if (!ligaId) return;
     const raw = amountInputs[key] ?? '';
     const amount = parseFloat(raw);
@@ -482,6 +485,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         matchId: params.matchId,
         homeTeam: params.homeTeam,
         awayTeam: params.awayTeam,
+        homeCrest: params.homeCrest,
+        awayCrest: params.awayCrest,
         betType: params.betType,
         betLabel: params.betLabel,
         odd: params.odd,
@@ -1596,7 +1601,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
                             return Object.entries(betsByMatch).map(([matchIdStr, bets]) => {
                               const matchId = parseInt(matchIdStr);
+                              // Intentar obtener info de groupedBets primero, si no usar la primera apuesta
                               const matchInfo = groupedBets.find((gb) => gb.matchId === matchId);
+                              const firstBet = bets[0];
                               const isExpanded = expandedBets.has(matchId);
                               
                               return (
@@ -1613,34 +1620,34 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       marginBottom: 12,
                                     }}
                                   >
-                                    {/* Equipos del partido */}
-                                    {matchInfo && (
+                                    {/* Equipos del partido - usar matchInfo si existe, sino firstBet */}
+                                    {(matchInfo || firstBet.homeTeam) && (
                                       <View style={{ marginBottom: 10 }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                                          {matchInfo.localCrest && (
+                                          {(matchInfo?.localCrest || firstBet.homeCrest) && (
                                             <Image 
-                                              source={{ uri: matchInfo.localCrest }} 
+                                              source={{ uri: matchInfo?.localCrest || firstBet.homeCrest }} 
                                               style={{ width: 24, height: 24, marginRight: 8 }} 
                                               resizeMode="contain" 
                                             />
                                           )}
                                           <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 15 }}>
-                                            {matchInfo.local}
+                                            {matchInfo?.local || firstBet.homeTeam}
                                           </Text>
                                         </View>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                                          {matchInfo.visitanteCrest && (
+                                          {(matchInfo?.visitanteCrest || firstBet.awayCrest) && (
                                             <Image 
-                                              source={{ uri: matchInfo.visitanteCrest }} 
+                                              source={{ uri: matchInfo?.visitanteCrest || firstBet.awayCrest }} 
                                               style={{ width: 24, height: 24, marginRight: 8 }} 
                                               resizeMode="contain" 
                                             />
                                           )}
                                           <Text style={{ color: '#e5e7eb', fontWeight: '700', fontSize: 15 }}>
-                                            {matchInfo.visitante}
+                                            {matchInfo?.visitante || firstBet.awayTeam}
                                           </Text>
                                         </View>
-                                        {matchInfo.fecha && matchInfo.hora && (
+                                        {matchInfo?.fecha && matchInfo?.hora && (
                                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                               <CalendarIcon size={14} color="#64748b" />
@@ -1666,7 +1673,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       alignItems: 'center'
                                     }}>
                                       <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '600' }}>
-                                        {bets.length} apuesta{bets.length !== 1 ? 's' : ''} realizada{bets.length !== 1 ? 's' : ''}
+                                        {bets.length} apuesta{bets.length !== 1 ? 's' : ''} realizadas{bets.length !== 1 ? 's' : ''}
                                       </Text>
                                       {isExpanded ? (
                                         <ChevronUpIcon size={20} color="#94a3b8" />
@@ -2295,6 +2302,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         matchId: b.matchId,
                                         homeTeam: b.local,
                                         awayTeam: b.visitante,
+                                        homeCrest: b.localCrest,
+                                        awayCrest: b.visitanteCrest,
                                         betType: b.type,
                                         betLabel: option.label,
                                         odd: option.odd

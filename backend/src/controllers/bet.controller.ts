@@ -59,6 +59,8 @@ export class BetController {
         matchId: number;
         homeTeam: string;
         awayTeam: string;
+        homeCrest?: string;
+        awayCrest?: string;
         betType: string;
         betLabel: string;
         odd: number;
@@ -74,12 +76,14 @@ export class BetController {
       }
 
       const { leagueId } = request.params;
-      const { matchId, homeTeam, awayTeam, betType, betLabel, odd, amount } = request.body;
+      const { matchId, homeTeam, awayTeam, homeCrest, awayCrest, betType, betLabel, odd, amount } = request.body;
 
       console.log('📥 BetController - Datos recibidos del frontend:', {
         matchId,
         homeTeam,
         awayTeam,
+        homeCrest,
+        awayCrest,
         betType,
         betLabel,
         odd,
@@ -92,6 +96,8 @@ export class BetController {
         matchId,
         homeTeam,
         awayTeam,
+        homeCrest,
+        awayCrest,
         betType,
         betLabel,
         odd,

@@ -19,6 +19,8 @@ export interface Bet {
   matchId: number;
   homeTeam?: string;
   awayTeam?: string;
+  homeCrest?: string;
+  awayCrest?: string;
   betType: string;
   betLabel: string;
   odd: number;
@@ -78,6 +80,8 @@ export class BetService {
     matchId: number;
     homeTeam: string;
     awayTeam: string;
+    homeCrest?: string;
+    awayCrest?: string;
     betType: string;
     betLabel: string;
     odd: number;
@@ -95,6 +99,8 @@ export class BetService {
           matchId: params.matchId,
           homeTeam: params.homeTeam,
           awayTeam: params.awayTeam,
+          homeCrest: params.homeCrest,
+          awayCrest: params.awayCrest,
           betType: params.betType,
           betLabel: params.betLabel,
           odd: params.odd,

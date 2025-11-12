@@ -71,6 +71,8 @@ export class BetService {
     matchId: number;
     homeTeam: string;
     awayTeam: string;
+    homeCrest?: string;
+    awayCrest?: string;
     betType: string;
     betLabel: string;
     odd: number;
@@ -111,6 +113,8 @@ export class BetService {
       matchId: b.matchId,
       homeTeam: b.homeTeam || '',
       awayTeam: b.awayTeam || '',
+      homeCrest: b.homeCrest || undefined,
+      awayCrest: b.awayCrest || undefined,
       betType: b.betType,
       betLabel: b.betLabel,
       odd: b.odd,
@@ -130,12 +134,14 @@ export class BetService {
     matchId: number;
     homeTeam: string;
     awayTeam: string;
+    homeCrest?: string;
+    awayCrest?: string;
     betType: string;
     betLabel: string;
     odd: number;
     amount: number;
   }) {
-    const { userId, leagueId, matchId, homeTeam, awayTeam, betType, betLabel, odd, amount } = params;
+    const { userId, leagueId, matchId, homeTeam, awayTeam, homeCrest, awayCrest, betType, betLabel, odd, amount } = params;
 
     // Bloquear si la jornada está abierta (bloqueada)
     await this.assertBettingAllowed(leagueId);
@@ -206,6 +212,8 @@ export class BetService {
       matchId,
       homeTeam,
       awayTeam,
+      homeCrest,
+      awayCrest,
       betType,
       betLabel,
       apiBetId: apiConfig.apiBetId,
