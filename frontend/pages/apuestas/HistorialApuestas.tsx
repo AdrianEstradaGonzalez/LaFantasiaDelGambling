@@ -703,42 +703,71 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                             {/* Detalles expandidos de apuestas */}
                             {isExpanded && (
                               <View style={{ paddingLeft: 16, marginBottom: 12 }}>
-                                {bets.map((bet, idx) => (
-                                  <View 
-                                    key={bet.id} 
-                                    style={{
-                                      backgroundColor: '#0f172a',
-                                      borderRadius: 6,
-                                      padding: 10,
-                                      marginBottom: idx < bets.length - 1 ? 8 : 0,
-                                      borderLeftWidth: 3,
-                                      borderLeftColor: '#3b82f6',
-                                    }}
-                                  >
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                      <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 13 }}>
-                                        {bet.userName || 'Jugador'}
+                                {bets.map((bet, idx) => {
+                                  const betStatus = (bet as any).status;
+                                  const isWon = betStatus === 'won';
+                                  const isLost = betStatus === 'lost';
+                                  const isPending = !betStatus || betStatus === 'pending';
+                                  
+                                  return (
+                                    <View 
+                                      key={bet.id} 
+                                      style={{
+                                        backgroundColor: '#0f172a',
+                                        borderRadius: 6,
+                                        padding: 10,
+                                        marginBottom: idx < bets.length - 1 ? 8 : 0,
+                                        borderLeftWidth: 3,
+                                        borderLeftColor: isWon ? '#22c55e' : isLost ? '#ef4444' : '#f59e0b',
+                                      }}
+                                    >
+                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                          <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 13 }}>
+                                            {bet.userName || 'Jugador'}
+                                          </Text>
+                                          {isWon && <CheckIcon size={14} color="#22c55e" />}
+                                          {isLost && <ErrorIcon size={14} color="#ef4444" />}
+                                          {isPending && <ClockIcon size={14} color="#f59e0b" />}
+                                        </View>
+                                        <Text style={{ 
+                                          color: isWon ? '#22c55e' : isLost ? '#ef4444' : '#f59e0b', 
+                                          fontWeight: '800', 
+                                          fontSize: 14 
+                                        }}>
+                                          {bet.amount}M
+                                        </Text>
+                                      </View>
+                                      
+                                      <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
+                                        {bet.betType}
                                       </Text>
-                                      <Text style={{ color: '#22c55e', fontWeight: '800', fontSize: 14 }}>
-                                        {bet.amount}M
+                                      
+                                      <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
+                                        {formatLabelWithType(bet.betLabel, bet.betType)}
                                       </Text>
+
+                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
+                                        <Text style={{ color: '#64748b', fontSize: 11 }}>
+                                          Cuota: {bet.odd.toFixed(2)}
+                                        </Text>
+                                        {isWon ? (
+                                          <Text style={{ color: '#22c55e', fontSize: 11, fontWeight: '700' }}>
+                                            Ganancia: +{bet.potentialWin}M
+                                          </Text>
+                                        ) : isLost ? (
+                                          <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '700' }}>
+                                            Pérdida: -{bet.amount}M
+                                          </Text>
+                                        ) : (
+                                          <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
+                                            Potencial: +{bet.potentialWin}M
+                                          </Text>
+                                        )}
+                                      </View>
                                     </View>
-                                    <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
-                                      {bet.betType}
-                                    </Text>
-                                    <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
-                                      {formatLabelWithType(bet.betLabel, bet.betType)}
-                                    </Text>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                                      <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                        Cuota: {bet.odd.toFixed(2)}
-                                      </Text>
-                                      <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
-                                        Ganancia potencial: +{bet.potentialWin}M
-                                      </Text>
-                                    </View>
-                                  </View>
-                                ))}
+                                  );
+                                })}
                               </View>
                             )}
                           </View>
