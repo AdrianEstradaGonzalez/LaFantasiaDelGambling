@@ -18,6 +18,12 @@ export const ADMOB_CONFIG = {
     android: __DEV__ ? TestIds.BANNER : 'ca-app-pub-9629575422824270/8928778036',
   }),
   
+  // Interstitial Ads (pantalla completa al cambiar de navegación)
+  INTERSTITIAL_NAVIGATION: Platform.select({
+    ios: __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-9629575422824270/1234567890',
+    android: __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-9629575422824270/1234567890',
+  }),
+  
   // Rewarded Ads (desbloquear apuestas bloqueadas)
   // Recompensa: 1 apuesta desbloqueada de las 2 últimas bloqueadas
   REWARDED_GENERAL: Platform.select({
@@ -35,6 +41,8 @@ export const ADMOB_CONFIG = {
 // Clase para gestionar AdMob
 export class AdMobService {
   private static initialized = false;
+  private static interstitialAd: InterstitialAd | null = null;
+  private static isLoadingInterstitial = false;
   private static rewardedAd: RewardedAd | null = null;
   private static isLoadingRewarded = false;
   private static loadAttempts = 0;
@@ -66,6 +74,112 @@ export class AdMobService {
     } catch (error) {
       console.error('❌ Error al inicializar AdMob:', error);
     }
+  }
+
+  /**
+   * Precargar anuncio intersticial (pantalla completa)
+   */
+  static async preloadInterstitial(): Promise<void> {
+    if (!ADMOB_CONFIG.INTERSTITIAL_NAVIGATION) {
+      console.warn('⚠️ No hay ID de anuncio intersticial configurado');
+      return;
+    }
+
+    if (this.isLoadingInterstitial) {
+      console.log('⏳ Ya hay una carga de intersticial en progreso...');
+      return;
+    }
+
+    this.isLoadingInterstitial = true;
+
+    try {
+      this.interstitialAd = InterstitialAd.createForAdRequest(
+        ADMOB_CONFIG.INTERSTITIAL_NAVIGATION as string
+      );
+
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout al cargar intersticial'));
+        }, 30000);
+
+        const unsubscribeLoaded = this.interstitialAd!.addAdEventListener(
+          AdEventType.LOADED,
+          () => {
+            clearTimeout(timeout);
+            unsubscribeLoaded();
+            resolve();
+          }
+        );
+
+        const unsubscribeError = this.interstitialAd!.addAdEventListener(
+          AdEventType.ERROR,
+          (error: any) => {
+            clearTimeout(timeout);
+            unsubscribeError();
+            reject(error);
+          }
+        );
+
+        this.interstitialAd!.load();
+      });
+
+      console.log('✅ Anuncio intersticial precargado');
+    } catch (error) {
+      console.error('❌ Error al precargar intersticial:', error);
+      this.interstitialAd = null;
+    } finally {
+      this.isLoadingInterstitial = false;
+    }
+  }
+
+  /**
+   * Mostrar anuncio intersticial
+   * @returns Promise con boolean indicando si se mostró
+   */
+  static async showInterstitial(): Promise<boolean> {
+    if (!this.interstitialAd) {
+      console.log('⚠️ No hay intersticial precargado');
+      return false;
+    }
+
+    try {
+      return new Promise((resolve) => {
+        const unsubscribeClosed = this.interstitialAd!.addAdEventListener(
+          AdEventType.CLOSED,
+          () => {
+            console.log('🚪 Intersticial cerrado');
+            unsubscribeClosed();
+            this.interstitialAd = null;
+            this.preloadInterstitial(); // Precargar el siguiente
+            resolve(true);
+          }
+        );
+
+        const unsubscribeError = this.interstitialAd!.addAdEventListener(
+          AdEventType.ERROR,
+          (error: any) => {
+            console.error('❌ Error al mostrar interstitial:', error);
+            unsubscribeError();
+            unsubscribeClosed();
+            this.interstitialAd = null;
+            resolve(false);
+          }
+        );
+
+        this.interstitialAd!.show();
+      });
+    } catch (error) {
+      console.error('❌ Error al mostrar interstitial:', error);
+      this.interstitialAd = null;
+      return false;
+    }
+  }
+
+  /**
+   * Verificar si hay un intersticial listo
+   */
+  static isInterstitialReady(): boolean {
+    return this.interstitialAd !== null;
   }
 
   /**

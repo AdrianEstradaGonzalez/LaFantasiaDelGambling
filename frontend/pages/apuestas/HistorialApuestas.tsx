@@ -11,6 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import FootballService from '../../services/FutbolService';
 import { SafeLayout } from '../../components/SafeLayout';
 import formatLabelWithType from '../../utils/formatBetLabel';
+import { AdBanner } from '../../components/AdBanner';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -364,6 +365,11 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                 {activeTab === 0 ? (
                   /* TAB 1: BALANCES */
                   <View>
+                    {/* Banner AdMob */}
+                    <View style={{ marginBottom: 16, alignItems: 'center' }}>
+                      <AdBanner size="BANNER" />
+                    </View>
+
                     <View style={{
                       backgroundColor: '#1a2332',
                       borderWidth: 2,
@@ -596,6 +602,11 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                 ) : (
                   /* TAB 2: APUESTAS POR PARTIDO */
                   <View>
+                    {/* Banner AdMob */}
+                    <View style={{ marginBottom: 16, alignItems: 'center' }}>
+                      <AdBanner size="BANNER" />
+                    </View>
+
                     <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
                       Apuestas por Partido
                     </Text>

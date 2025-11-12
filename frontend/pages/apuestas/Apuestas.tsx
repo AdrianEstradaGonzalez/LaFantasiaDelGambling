@@ -1135,6 +1135,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       {activeTab === 0 ? (
                         /* TAB 1: BALANCES */
                         <View>
+                          {/* Banner AdMob */}
+                          <View style={{ marginBottom: 16, alignItems: 'center' }}>
+                            <AdBanner size="BANNER" />
+                          </View>
+
                           <View style={{
                             backgroundColor: '#1a2332',
                             borderWidth: 2,
@@ -1560,6 +1565,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       ) : (
                         /* TAB 2: APUESTAS POR PARTIDO */
                         <View>
+                          {/* Banner AdMob */}
+                          <View style={{ marginBottom: 16, alignItems: 'center' }}>
+                            <AdBanner size="BANNER" />
+                          </View>
+
                           <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
                             Apuestas por Partido
                           </Text>
