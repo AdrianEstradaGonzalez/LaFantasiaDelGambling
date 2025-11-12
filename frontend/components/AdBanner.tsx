@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 import { ADMOB_CONFIG } from '../services/AdMobService';
@@ -34,7 +34,22 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   size = 'BANNER',
   visible = true,
 }) => {
-  if (!visible || !adUnitId) {
+  const [adError, setAdError] = useState(false);
+  const [shouldShow, setShouldShow] = useState(visible);
+
+  useEffect(() => {
+    // Timeout para ocultar el banner si tarda más de 5 segundos
+    const timeout = setTimeout(() => {
+      if (!adError) {
+        console.log('⚠️ Banner timeout - ocultando para no bloquear UI');
+        setShouldShow(false);
+      }
+    }, 5000);
+
+    return () => clearTimeout(timeout);
+  }, [adError]);
+
+  if (!visible || !adUnitId || adError || !shouldShow) {
     return null;
   }
 
@@ -45,6 +60,14 @@ export const AdBanner: React.FC<AdBannerProps> = ({
         size={BannerAdSize[size]}
         requestOptions={{
           requestNonPersonalizedAdsOnly: false,
+        }}
+        onAdFailedToLoad={(error) => {
+          console.log('⚠️ Error cargando banner:', error);
+          setAdError(true);
+        }}
+        onAdLoaded={() => {
+          console.log('✅ Banner cargado correctamente');
+          setShouldShow(true);
         }}
       />
     </View>

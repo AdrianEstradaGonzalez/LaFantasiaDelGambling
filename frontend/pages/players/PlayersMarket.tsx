@@ -17,6 +17,7 @@ import Svg, { Path } from 'react-native-svg';
 import { JornadaService } from '../../services/JornadaService';
 import { SafeLayout } from '../../components/SafeLayout';
 import { AdBanner } from '../../components/AdBanner';
+import { withTimeout, safeApiCall } from '../../utils/withTimeout';
 
 // Función para decodificar JWT
 function decodeJwt(token: string): any {
@@ -276,17 +277,17 @@ export const PlayersMarket = ({ navigation, route }: {
       setLoading(true);
       
       console.time('⏱️ Llamada API jugadores');
-      // 🚀 OPTIMIZACIÓN 1: Cargar datos de liga Y jugadores en PARALELO
+      // 🚀 OPTIMIZACIÓN 1: Cargar datos de liga Y jugadores en PARALELO con timeout
       const loadPromises: Promise<any>[] = [
-        PlayerService.getAllPlayers({ division }) // Cargar jugadores en paralelo
+        withTimeout(PlayerService.getAllPlayers({ division }), 15000) // 15s timeout para jugadores
       ];
       
       // Solo cargar datos de liga si tenemos ligaId
       if (ligaId) {
         loadPromises.push(
-          JornadaService.getJornadaStatus(ligaId),
-          SquadService.getUserBudget(ligaId),
-          SquadService.getUserSquad(ligaId)
+          safeApiCall(JornadaService.getJornadaStatus(ligaId), { status: 'open', currentJornada: 1, leagueName: '', division: 'primera' }, 8000),
+          safeApiCall(SquadService.getUserBudget(ligaId), 500, 8000),
+          safeApiCall(SquadService.getUserSquad(ligaId), { id: '', userId: '', leagueId: ligaId, name: '', players: [], formation: '', createdAt: '', isActive: true, updatedAt: '' }, 8000)
         );
       }
       
@@ -298,13 +299,13 @@ export const PlayersMarket = ({ navigation, route }: {
       const playersData = results[0] as PlayerWithPrice[];
       console.log(`📊 Jugadores recibidos: ${playersData.length}`);
       
-      if (ligaId) {
+      if (ligaId && results.length > 1) {
         const status = results[1];
         const budgetData = results[2];
         const squad = results[3];
         
-        setJornadaStatus((status.status as 'open' | 'closed'));
-        setBudget(budgetData);
+        setJornadaStatus((status?.status || 'open') as 'open' | 'closed');
+        setBudget(typeof budgetData === 'number' ? budgetData : 500);
         
         // Guardar IDs de jugadores ya fichados
         if (squad && squad.players) {
@@ -384,15 +385,21 @@ export const PlayersMarket = ({ navigation, route }: {
       // Iniciar carga progresiva después de un pequeño delay
       setTimeout(() => requestAnimationFrame(loadNextBatch), 100);
 
-    } catch (error) {
+    } catch (error: any) {
       console.timeEnd('⏱️ Carga total del mercado');
+      console.error('Error cargando mercado:', error);
+      
+      // Mostrar mensaje de error más informativo
+      const errorMessage = error?.message === 'Request timeout' 
+        ? 'La conexión está tardando demasiado. Por favor, verifica tu conexión a internet e intenta nuevamente.'
+        : 'No se pudieron cargar los jugadores. Por favor, intenta nuevamente.';
+      
       CustomAlertManager.alert(
         'Error',
-        'No se pudieron cargar los jugadores',
-        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        errorMessage,
+        [{ text: 'Reintentar', onPress: () => loadPlayers(), style: 'default' }],
         { icon: 'alert-circle', iconColor: '#ef4444' }
       );
-      console.error(error);
       setLoading(false);
       setIsLoadingMore(false);
     }
@@ -426,10 +433,10 @@ export const PlayersMarket = ({ navigation, route }: {
         if (ligaId) {
           try {
             const [budgetData, squad] = await Promise.all([
-              SquadService.getUserBudget(ligaId),
-              SquadService.getUserSquad(ligaId)
+              safeApiCall(SquadService.getUserBudget(ligaId), 500, 8000),
+              safeApiCall(SquadService.getUserSquad(ligaId), { id: '', userId: '', leagueId: ligaId, name: '', players: [], formation: '', createdAt: '', isActive: true, updatedAt: '' }, 8000)
             ]);
-            setBudget(budgetData);
+            setBudget(typeof budgetData === 'number' ? budgetData : 500);
             
             // Actualizar IDs de jugadores fichados
             if (squad && squad.players) {
@@ -440,6 +447,7 @@ export const PlayersMarket = ({ navigation, route }: {
             }
           } catch (error) {
             console.error('Error recargando presupuesto:', error);
+            // No mostrar alerta, solo log - la app puede funcionar con valores por defecto
           }
         }
       };
