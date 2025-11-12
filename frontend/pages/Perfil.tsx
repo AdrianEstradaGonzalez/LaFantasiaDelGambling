@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,16 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  Modal,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { SafeLayout } from '../components/SafeLayout';
 import { ApiConfig } from '../utils/apiConfig';
 import { CustomAlertManager } from '../components/CustomAlert';
-import { UsersIcon, EmailIcon, LockIcon, SaveIcon, CheckCircleIcon } from '../components/VectorIcons';
+import { UsersIcon, EmailIcon, LockIcon, SaveIcon, CheckCircleIcon, MenuIcon } from '../components/VectorIcons';
+import { DrawerMenu } from '../components/DrawerMenu';
 
 interface PerfilProps {
   navigation: any;
@@ -37,9 +40,30 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Estados para el drawer
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-300)).current;
+
   useEffect(() => {
     loadUserData();
   }, []);
+
+  // Animación del drawer
+  useEffect(() => {
+    if (isDrawerOpen) {
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: -300,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [isDrawerOpen, slideAnim]);
 
   const loadUserData = async () => {
     try {
@@ -271,6 +295,16 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Header con menú lateral */}
+            <View style={styles.topBar}>
+              <TouchableOpacity
+                style={styles.menuButton}
+                onPress={() => setIsDrawerOpen(true)}
+              >
+                <MenuIcon size={26} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.avatarLarge}>
@@ -421,17 +455,45 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
                 </>
               )}
             </View>
-
-            {/* Botón Volver */}
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Text style={styles.backButtonText}>Volver</Text>
-            </TouchableOpacity>
           </ScrollView>
         </LinearGradient>
       </KeyboardAvoidingView>
+
+      {/* Drawer Modal */}
+      <Modal
+        visible={isDrawerOpen}
+        animationType="none"
+        transparent={true}
+        onRequestClose={() => setIsDrawerOpen(false)}
+      >
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+          {/* Drawer content con animación */}
+          <Animated.View 
+            style={{ 
+              width: '75%', 
+              maxWidth: 300,
+              transform: [{ translateX: slideAnim }]
+            }}
+          >
+            <DrawerMenu 
+              navigation={{
+                ...navigation,
+                closeDrawer: () => setIsDrawerOpen(false),
+                reset: (state: any) => {
+                  navigation.reset(state);
+                  setIsDrawerOpen(false);
+                },
+              }}
+            />
+          </Animated.View>
+          {/* Overlay to close drawer */}
+          <TouchableOpacity
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' }}
+            activeOpacity={1}
+            onPress={() => setIsDrawerOpen(false)}
+          />
+        </View>
+      </Modal>
     </SafeLayout>
   );
 };
@@ -449,6 +511,24 @@ const styles = StyleSheet.create({
     marginTop: 16,
     color: '#94a3b8',
     fontSize: 16,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  menuButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
   scrollContent: {
     padding: 20,
@@ -547,16 +627,5 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
-  },
-  backButton: {
-    backgroundColor: '#374151',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  backButtonText: {
-    color: '#e2e8f0',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

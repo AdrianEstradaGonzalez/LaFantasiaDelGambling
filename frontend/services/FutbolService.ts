@@ -675,7 +675,7 @@ export default class FootballService {
 
   // Obtener apuestas con odds reales de la API para la próxima jornada
   // Solo 1 apuesta por partido, seleccionada de una amplia variedad de mercados
-  static async getApuestasProximaJornada(options?: { ligaId?: string; ligaName?: string }): Promise<Array<{
+  static async getApuestasProximaJornada(options?: { ligaId?: string; ligaName?: string; division?: 'primera' | 'segunda' | 'premier' }): Promise<Array<{
     matchId: number;
     jornada: number;
     local: string;
@@ -689,8 +689,11 @@ export default class FootballService {
     odd: number;
   }>> {
     try {
-      // Obtener todos los partidos
-      const all = await this.getAllMatchesCached();
+      const division = options?.division || 'primera';
+      console.log(`🔍 getApuestasProximaJornada - División: ${division}`);
+      
+      // Obtener todos los partidos de la división correcta
+      const all = await this.getAllMatchesCached(division);
       
       // Encontrar la próxima jornada con partidos no iniciados
       const nextJ = all

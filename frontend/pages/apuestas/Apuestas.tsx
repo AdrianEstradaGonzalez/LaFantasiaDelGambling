@@ -56,7 +56,7 @@ type ApuestasProps = {
 export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
-  const division = route.params?.division || 'primera';
+  const division: 'primera' | 'segunda' | 'premier' = (route.params?.division as 'primera' | 'segunda' | 'premier') || 'primera';
   const isPremium = route.params?.isPremium || false;
   const [loading, setLoading] = useState(true);
   const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
@@ -179,7 +179,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           console.warn('No se pudo precargar anuncio recompensado:', err)
         );
 
-        const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName });
+        console.log('🔍 Cargando mercado de apuestas - División:', division);
+        const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName, division });
+        console.log('✅ Apuestas cargadas:', apuestas.length);
 
         // Obtener presupuesto y apuestas del usuario si hay ligaId
         let budgetData = { total: 250, used: 0, available: 250 };
@@ -246,6 +248,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           }
 
           const groupedArray = Object.values(grouped);
+          console.log('🔍 Apuestas agrupadas - Muestra:', groupedArray.slice(0, 2));
           setGroupedBets(groupedArray);
           setUserBets(userBetsData);
           
@@ -322,7 +325,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         setLoading(true);
         
         // Cargar apuestas disponibles para apostar
-        const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName });
+        const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName, division });
         
         // Agrupar apuestas por matchId + type
         const grouped: Record<string, GroupedBet> = {};
