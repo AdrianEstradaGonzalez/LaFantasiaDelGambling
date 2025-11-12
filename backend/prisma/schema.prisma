@@ -451,3 +451,18 @@ model PlayerPremierStats {
   @@index([jornada, season])
   @@map("player_premier_stats")
 }
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  ligaId    String   @default("default")
+  token     String
+  platform  String   @default("android") // 'ios' or 'android'
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, ligaId])
+  @@index([ligaId])
+  @@index([userId])
+  @@map("device_token")
+}
