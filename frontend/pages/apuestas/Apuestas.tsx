@@ -113,7 +113,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
   // Estados para tabs (Balances / Apuestas)
   const [activeTab, setActiveTab] = useState(0); // 0 = Balances, 1 = Apuestas
-  const tabScrollViewRef = useRef<ScrollView>(null);
   const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
 
   // Estados para expansión de apuestas por partido
@@ -806,7 +805,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (index === activeTab) return; // Evitar re-renderizados innecesarios
     
     setActiveTab(index);
-    tabScrollViewRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
+    Animated.spring(tabIndicatorAnim, {
+      toValue: index,
+      useNativeDriver: true,
+      tension: 65,
+      friction: 10,
+    }).start();
   };
 
   // Handlers para expansión de apuestas
@@ -1127,33 +1131,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         />
                       </View>
 
-                      {/* Content ScrollView Horizontal para Tabs */}
-                      <Animated.ScrollView
-                        ref={tabScrollViewRef}
-                        horizontal
-                        pagingEnabled
-                        showsHorizontalScrollIndicator={false}
-                        onScroll={Animated.event(
-                          [{ nativeEvent: { contentOffset: { x: tabIndicatorAnim } } }],
-                          {
-                            useNativeDriver: true,
-                            listener: (e: any) => {
-                              const offsetX = e.nativeEvent.contentOffset.x;
-                              const progress = offsetX / SCREEN_WIDTH;
-                              tabIndicatorAnim.setValue(progress);
-                            }
-                          }
-                        )}
-                        onMomentumScrollEnd={(e) => {
-                          const offsetX = e.nativeEvent.contentOffset.x;
-                          const idx = Math.round(offsetX / SCREEN_WIDTH);
-                          setActiveTab(idx);
-                        }}
-                        scrollEventThrottle={16}
-                        style={{ marginHorizontal: -16 }}
-                      >
-                        {/* TAB 1: BALANCES */}
-                        <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 16 }}>
+                      {/* Content - Renderizado condicional según tab activo */}
+                      {activeTab === 0 ? (
+                        /* TAB 1: BALANCES */
+                        <View>
                           <View style={{
                             backgroundColor: '#1a2332',
                             borderWidth: 2,
@@ -1576,9 +1557,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             )}
                           </View>
                         </View>
-
-                        {/* TAB 2: APUESTAS POR PARTIDO */}
-                        <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 16 }}>
+                      ) : (
+                        /* TAB 2: APUESTAS POR PARTIDO */
+                        <View>
                           <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
                             Apuestas por Partido
                           </Text>
@@ -1752,7 +1733,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             });
                           })()}
                         </View>
-                      </Animated.ScrollView>
+                      )}
                     </>
                   )}
                 </>

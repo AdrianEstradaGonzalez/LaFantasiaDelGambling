@@ -64,7 +64,6 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
 
   // Estados para tabs (Balances / Apuestas)
   const [activeTab, setActiveTab] = useState(0); // 0 = Balances, 1 = Apuestas
-  const tabScrollViewRef = useRef<ScrollView>(null);
   const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
 
   // Estados para expansión de usuarios en Balances
@@ -153,25 +152,15 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
   }, [isDrawerOpen, slideAnim]);
 
   // Handlers para tabs
-  // Pressing a tab sets activeTab and animates the indicator (same UX as Reglas)
+  // Pressing a tab sets activeTab and animates the indicator
   const handleTabPress = (index: number) => {
     setActiveTab(index);
-    tabScrollViewRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
     Animated.spring(tabIndicatorAnim, {
       toValue: index,
       useNativeDriver: true,
       tension: 65,
       friction: 10,
     }).start();
-  };
-
-  // During scroll we update the indicator position continuously and set activeTab when page index changes
-  const handleTabScroll = (event: any) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    const index = Math.round(offsetX / SCREEN_WIDTH);
-    const progress = offsetX / SCREEN_WIDTH;
-    tabIndicatorAnim.setValue(progress);
-    if (index !== activeTab) setActiveTab(index);
   };
 
   // Handlers para expansión de usuarios
@@ -371,30 +360,10 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                   />
                 </View>
 
-                {/* Content ScrollView Horizontal para Tabs */}
-                <Animated.ScrollView
-                  ref={tabScrollViewRef}
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  onScroll={handleTabScroll}
-                  onMomentumScrollEnd={(e) => {
-                    const offsetX = e.nativeEvent.contentOffset.x;
-                    const idx = Math.round(offsetX / SCREEN_WIDTH);
-                    setActiveTab(idx);
-                    // ensure indicator snaps exactly to index after momentum
-                    Animated.spring(tabIndicatorAnim, {
-                      toValue: idx,
-                      useNativeDriver: true,
-                      tension: 65,
-                      friction: 10,
-                    }).start();
-                  }}
-                  scrollEventThrottle={16}
-                  style={{ marginHorizontal: -16 }}
-                >
-                  {/* TAB 1: BALANCES */}
-                  <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 16 }}>
+                {/* Content - Renderizado condicional según tab activo */}
+                {activeTab === 0 ? (
+                  /* TAB 1: BALANCES */
+                  <View>
                     <View style={{
                       backgroundColor: '#1a2332',
                       borderWidth: 2,
@@ -624,9 +593,9 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                       })()}
                     </View>
                   </View>
-
-                  {/* TAB 2: APUESTAS POR PARTIDO */}
-                  <View style={{ width: SCREEN_WIDTH, paddingHorizontal: 16 }}>
+                ) : (
+                  /* TAB 2: APUESTAS POR PARTIDO */
+                  <View>
                     <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
                       Apuestas por Partido
                     </Text>
@@ -775,7 +744,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                       });
                     })()}
                   </View>
-                </Animated.ScrollView>
+                )}
               </>
             )}
           </ScrollView>
