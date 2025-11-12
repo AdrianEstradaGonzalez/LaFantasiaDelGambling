@@ -56,7 +56,7 @@ interface MatchdayPoints {
 }
 
 export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, route }) => {
-  const { player, ligaId, ligaName, division, budget: initialBudget, isAlreadyInSquad, currentFormation } = route.params || {};
+  const { player, ligaId, ligaName, division, budget: initialBudget, isAlreadyInSquad, currentFormation, isPremium } = route.params || {};
   
   if (!player) {
     return (
@@ -2212,10 +2212,136 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
           {/* CONTENIDO DE PESTAÑA AVANZADO */}
           {activeTab === 'advanced' && (
             <View style={{ paddingHorizontal: 16, paddingVertical: 20 }}>
-              <EvolutionChart />
-              <PerformanceRadarChart />
-              <XStatsComponent />
-              <NextOpponentAnalysis />
+              {!isPremium ? (
+                // Mensaje de bloqueo para ligas no premium
+                <View style={{
+                  backgroundColor: '#1e293b',
+                  borderRadius: 16,
+                  padding: 24,
+                  marginTop: 20,
+                  marginBottom: 20,
+                  borderWidth: 2,
+                  borderColor: '#f59e0b',
+                  alignItems: 'center',
+                }}>
+                  <View style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 40,
+                    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 16,
+                  }}>
+                    <ShieldCheckIcon size={48} color="#f59e0b" />
+                  </View>
+                  
+                  <Text style={{
+                    fontSize: 24,
+                    fontWeight: 'bold',
+                    color: '#ffffff',
+                    marginBottom: 8,
+                    textAlign: 'center',
+                  }}>
+                    Estadísticas Avanzadas
+                  </Text>
+                  
+                  <Text style={{
+                    fontSize: 16,
+                    fontWeight: '600',
+                    color: '#f59e0b',
+                    marginBottom: 16,
+                    textAlign: 'center',
+                  }}>
+                    Solo en Ligas Premium
+                  </Text>
+                  
+                  <Text style={{
+                    fontSize: 14,
+                    color: '#94a3b8',
+                    textAlign: 'center',
+                    lineHeight: 20,
+                    marginBottom: 24,
+                  }}>
+                    Accede a estadísticas avanzadas, análisis de rendimiento, gráficos evolutivos, radar de habilidades, análisis del próximo rival y mucho más.
+                  </Text>
+                  
+                  <View style={{
+                    width: '100%',
+                    backgroundColor: '#0f172a',
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 24,
+                  }}>
+                    <Text style={{ color: '#e2e8f0', fontSize: 14, fontWeight: '600', marginBottom: 12 }}>
+                      Incluye:
+                    </Text>
+                    <View style={{ gap: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <CheckCircleIcon size={20} color="#10b981" />
+                        <Text style={{ color: '#94a3b8', fontSize: 13, marginLeft: 8 }}>
+                          Gráfico de evolución de puntos
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <CheckCircleIcon size={20} color="#10b981" />
+                        <Text style={{ color: '#94a3b8', fontSize: 13, marginLeft: 8 }}>
+                          Radar de rendimiento comparativo
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <CheckCircleIcon size={20} color="#10b981" />
+                        <Text style={{ color: '#94a3b8', fontSize: 13, marginLeft: 8 }}>
+                          Estadísticas xG y xA (Expected)
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <CheckCircleIcon size={20} color="#10b981" />
+                        <Text style={{ color: '#94a3b8', fontSize: 13, marginLeft: 8 }}>
+                          Análisis del próximo rival
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  
+                  <TouchableOpacity
+                    style={{
+                      backgroundColor: '#f59e0b',
+                      paddingVertical: 14,
+                      paddingHorizontal: 32,
+                      borderRadius: 12,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                    onPress={() => {
+                      CustomAlertManager.alert(
+                        '¡Mejora a Premium!',
+                        'Crea o únete a una liga Premium para desbloquear todas las estadísticas avanzadas y mejorar tu estrategia.',
+                        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+                        { icon: 'information', iconColor: '#f59e0b' }
+                      );
+                    }}
+                  >
+                    <TrophyStarIcon size={20} color="#000000" />
+                    <Text style={{
+                      color: '#000000',
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                    }}>
+                      Mejorar a Premium
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                // Contenido normal para ligas premium
+                <>
+                  <EvolutionChart />
+                  <PerformanceRadarChart />
+                  <XStatsComponent />
+                  <NextOpponentAnalysis />
+                </>
+              )}
             </View>
           )}
         </ScrollView>

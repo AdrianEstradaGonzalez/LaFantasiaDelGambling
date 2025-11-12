@@ -843,7 +843,8 @@ export const PlayersMarket = ({ navigation, route }: {
       division, // Pasar la división
       budget,
       isAlreadyInSquad,
-      currentFormation // Pasar la formación actual
+      currentFormation, // Pasar la formación actual
+      isPremium // Pasar si es liga premium
     });
   };
 
