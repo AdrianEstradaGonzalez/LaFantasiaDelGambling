@@ -1,4 +1,5 @@
 import { ApiConfig } from '../utils/apiConfig';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 export interface PlayerWithPrice {
   id: number;
@@ -55,7 +56,7 @@ export class PlayerService {
       const url = `${this.BASE_URL}${params.toString() ? '?' + params.toString() : ''}`;
       console.log('📡 PlayerService - URL completa:', url);
       
-      const response = await fetch(url);
+      const response = await fetchWithTimeout(url, {}, 15000);
       console.log('📡 PlayerService - Response status:', response.status, response.statusText);
       
       if (!response.ok) {
@@ -82,7 +83,7 @@ export class PlayerService {
    */
   static async getPlayerById(id: number): Promise<PlayerWithPrice> {
     try {
-      const response = await fetch(`${this.BASE_URL}/${id}`);
+      const response = await fetchWithTimeout(`${this.BASE_URL}/${id}`, {}, 15000);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -110,15 +111,19 @@ export class PlayerService {
     };
   }> {
     try {
-      const response = await fetch(`${this.BASE_URL}/${id}/jornada-points`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          matchdays,
-          refreshLast: options?.refreshLast,
-          season: options?.season,
-        }),
-      });
+      const response = await fetchWithTimeout(
+        `${this.BASE_URL}/${id}/jornada-points`, 
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matchdays,
+            refreshLast: options?.refreshLast,
+            season: options?.season,
+          }),
+        },
+        15000
+      );
 
       const json = await response.json().catch(() => ({}));
 
@@ -142,13 +147,13 @@ export class PlayerService {
         throw new Error('El precio debe estar entre 1M y 250M');
       }
 
-      const response = await fetch(`${this.BASE_URL}/${id}/price`, {
+      const response = await fetchWithTimeout(`${this.BASE_URL}/${id}/price`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ price }),
-      });
+      }, 10000);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -173,13 +178,13 @@ export class PlayerService {
         throw new Error(`La posición debe ser una de: ${validPositions.join(', ')}`);
       }
 
-      const response = await fetch(`${this.BASE_URL}/${id}/position`, {
+      const response = await fetchWithTimeout(`${this.BASE_URL}/${id}/position`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ position }),
-      });
+      }, 10000);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -199,13 +204,13 @@ export class PlayerService {
    */
   static async updatePlayerTeam(id: number, teamId: number): Promise<PlayerWithPrice> {
     try {
-      const response = await fetch(`${this.BASE_URL}/${id}/team`, {
+      const response = await fetchWithTimeout(`${this.BASE_URL}/${id}/team`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ teamId }),
-      });
+      }, 10000);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -224,11 +229,11 @@ export class PlayerService {
    * Actualizar puntos de la última jornada (cache)
    */
   static async updatePlayerLastPoints(id: number, points: number, jornada?: number): Promise<PlayerWithPrice> {
-    const response = await fetch(`${this.BASE_URL}/${id}/last-points`, {
+    const response = await fetchWithTimeout(`${this.BASE_URL}/${id}/last-points`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(jornada != null ? { points, jornada } : { points })
-    });
+    }, 10000);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData?.message || `Error ${response.status}`);
@@ -289,7 +294,7 @@ export class PlayerService {
    */
   static async getStats(): Promise<PlayerStats> {
     try {
-      const response = await fetch(`${this.BASE_URL}/stats`);
+      const response = await fetchWithTimeout(`${this.BASE_URL}/stats`, {}, 10000);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -308,9 +313,9 @@ export class PlayerService {
    */
   static async deletePlayer(id: number): Promise<void> {
     try {
-      const response = await fetch(`${this.BASE_URL}/${id}`, {
+      const response = await fetchWithTimeout(`${this.BASE_URL}/${id}`, {
         method: 'DELETE',
-      });
+      }, 10000);
 
       if (!response.ok) {
         const json = await response.json().catch(() => ({}));
@@ -334,9 +339,9 @@ export class PlayerService {
     errors: number;
   }> {
     try {
-      const response = await fetch(`${this.BASE_URL}/sync`, {
+      const response = await fetchWithTimeout(`${this.BASE_URL}/sync`, {
         method: 'POST',
-      });
+      }, 10000);
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);

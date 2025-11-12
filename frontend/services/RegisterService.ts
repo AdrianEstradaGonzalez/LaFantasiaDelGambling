@@ -1,5 +1,6 @@
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { ApiConfig } from '../utils/apiConfig';
+import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 export type RegisterData = {
   username: string;
@@ -11,7 +12,7 @@ export type RegisterData = {
 export const RegisterService = {
   register: async (data: RegisterData) => {
     try {
-      const response = await fetch(`${ApiConfig.BASE_URL}/auth/register`, {
+      const response = await fetchWithTimeout(`${ApiConfig.BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -21,7 +22,7 @@ export const RegisterService = {
           email: data.email,
           password: data.password,
         }),
-      });
+      }, 15000);
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
