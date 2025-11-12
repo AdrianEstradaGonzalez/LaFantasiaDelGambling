@@ -238,11 +238,21 @@ export class PlayerService {
    * Obtener todos los jugadores de la base de datos con puntuación total
    */
   static async getAllPlayers(division: string = 'primera') {
+    console.log('[PlayerService] getAllPlayers - Division solicitada:', division);
+    
     const players = division === 'segunda' 
       ? await PlayerRepository.getAllSegundaPlayers()
       : division === 'premier'
       ? await PlayerRepository.getAllPremierPlayers()
       : await PlayerRepository.getAllPlayers();
+    
+    console.log('[PlayerService] getAllPlayers - Jugadores encontrados:', players.length);
+    console.log('[PlayerService] getAllPlayers - Primer jugador:', players[0] ? {
+      id: players[0].id,
+      name: players[0].name,
+      position: players[0].position,
+      teamName: players[0].teamName,
+    } : 'ninguno');
     
     if (division === 'segunda' || division === 'premier') {
       // Para Segunda y Premier, ya tenemos lastJornadaPoints en el modelo
