@@ -53,17 +53,29 @@ export class BetOptionService {
    */
   static async getOrGenerateBetOptions(leagueId: string, jornada: number): Promise<BetOption[]> {
     try {
+      console.log(`📡 BetOptionService: Solicitando opciones para liga ${leagueId}, jornada ${jornada}`);
+      
       const token = await EncryptedStorage.getItem('accessToken');
       if (!token) {
+        console.error('❌ BetOptionService: No hay token de autenticación');
         throw new Error('No token found');
       }
 
-      const response = await axios.get(`${API_URL}/bet-options/${leagueId}/${jornada}/get-or-generate`, {
+      const url = `${API_URL}/bet-options/${leagueId}/${jornada}/get-or-generate`;
+      console.log(`📡 BetOptionService: GET ${url}`);
+      
+      const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
+      console.log(`✅ BetOptionService: ${response.data.length} opciones recibidas`);
       return response.data;
     } catch (error: any) {
-      console.error('Error getting or generating bet options:', error?.response?.data || error.message);
+      console.error('❌ BetOptionService Error:', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error.message,
+      });
       throw new Error(error?.response?.data?.error || 'Error al obtener opciones de apuesta');
     }
   }

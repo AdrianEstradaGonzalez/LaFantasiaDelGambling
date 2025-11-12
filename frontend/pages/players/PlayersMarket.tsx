@@ -273,10 +273,13 @@ export const PlayersMarket = ({ navigation, route }: {
   // Cargar jugadores y equipos desde el backend
   const loadPlayers = useCallback(async () => {
     try {
+      console.log('🔍 Iniciando carga de mercado de jugadores...');
+      console.log('📊 Parámetros:', { ligaId, division, selectMode });
       console.time('⏱️ Carga total del mercado');
       setLoading(true);
       
       console.time('⏱️ Llamada API jugadores');
+      console.log(`📡 Solicitando jugadores de división: ${division}`);
       // 🚀 OPTIMIZACIÓN 1: Cargar datos de liga Y jugadores en PARALELO con timeout
       const loadPromises: Promise<any>[] = [
         withTimeout(PlayerService.getAllPlayers({ division }), 15000) // 15s timeout para jugadores
@@ -387,15 +390,28 @@ export const PlayersMarket = ({ navigation, route }: {
 
     } catch (error: any) {
       console.timeEnd('⏱️ Carga total del mercado');
-      console.error('Error cargando mercado:', error);
+      console.error('❌ Error cargando mercado:', error);
+      console.error('❌ Error details:', {
+        message: error?.message,
+        status: error?.response?.status,
+        data: error?.response?.data,
+      });
       
       // Mostrar mensaje de error más informativo
-      const errorMessage = error?.message === 'Request timeout' 
-        ? 'La conexión está tardando demasiado. Por favor, verifica tu conexión a internet e intenta nuevamente.'
-        : 'No se pudieron cargar los jugadores. Por favor, intenta nuevamente.';
+      let errorMessage = 'No se pudieron cargar los jugadores. Por favor, intenta nuevamente.';
+      
+      if (error?.message === 'Request timeout') {
+        errorMessage = 'La conexión está tardando demasiado. Por favor, verifica tu conexión a internet e intenta nuevamente.';
+      } else if (error?.message?.includes('Network')) {
+        errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet e intenta nuevamente.';
+      } else if (error?.response?.status === 401) {
+        errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+      } else if (error?.response?.status === 500) {
+        errorMessage = 'Error del servidor. Por favor, intenta nuevamente en unos momentos.';
+      }
       
       CustomAlertManager.alert(
-        'Error',
+        'Error al cargar mercado',
         errorMessage,
         [{ text: 'Reintentar', onPress: () => loadPlayers(), style: 'default' }],
         { icon: 'alert-circle', iconColor: '#ef4444' }

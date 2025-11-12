@@ -41,6 +41,8 @@ export class PlayerService {
     division?: string;
   }): Promise<PlayerWithPrice[]> {
     try {
+      console.log('📡 PlayerService.getAllPlayers - Iniciando solicitud con filtros:', filters);
+      
       const params = new URLSearchParams();
       
       if (filters?.position) params.append('position', filters.position);
@@ -51,16 +53,26 @@ export class PlayerService {
       if (filters?.division) params.append('division', filters.division);
 
       const url = `${this.BASE_URL}${params.toString() ? '?' + params.toString() : ''}`;
+      console.log('📡 PlayerService - URL completa:', url);
+      
       const response = await fetch(url);
+      console.log('📡 PlayerService - Response status:', response.status, response.statusText);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ PlayerService - Error response:', errorText);
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       const json = await response.json();
+      console.log(`✅ PlayerService - Jugadores recibidos: ${json.data?.length || 0}`);
       return json.data || [];
-    } catch (error) {
-      console.error('Error obteniendo jugadores:', error);
+    } catch (error: any) {
+      console.error('❌ PlayerService - Error obteniendo jugadores:', {
+        message: error?.message,
+        name: error?.name,
+        stack: error?.stack,
+      });
       throw error;
     }
   }

@@ -713,6 +713,11 @@ export default class FootballService {
           // El backend se encarga de verificar si existen y generarlas si no
           const dbOptions = await BetOptionService.getOrGenerateBetOptions(ligaId, nextJ);
           
+          if (!dbOptions || dbOptions.length === 0) {
+            console.warn('⚠️ Backend devolvió 0 opciones de apuesta');
+            throw new Error('No hay opciones de apuesta disponibles para esta jornada');
+          }
+          
           // Enriquecer desde cache de partidos para completar crest/fecha/hora
           const matchIndex = new Map<number, Partido>();
           for (const m of jornadaMatches) matchIndex.set(m.id, m);
@@ -737,10 +742,13 @@ export default class FootballService {
           
           console.log(`✅ ${bets.length} opciones obtenidas desde backend`);
           return bets;
-        } catch (error) {
-          console.error('❌ Error obteniendo opciones del backend:', error);
-          // En caso de error, retornar array vacío (el usuario verá un mensaje)
-          return [];
+        } catch (error: any) {
+          console.error('❌ Error obteniendo opciones del backend:', {
+            message: error.message,
+            response: error?.response?.data,
+          });
+          // Relanzar el error para que se maneje en el componente
+          throw error;
         }
       }
       
