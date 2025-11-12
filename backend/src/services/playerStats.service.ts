@@ -911,22 +911,55 @@ async function calculateAveragesByPosition() {
 async function getNextOpponentAnalysis(playerId: number, currentJornada: number) {
   console.log(`[PlayerStatsService] Analizando próximo rival para jugador ${playerId}, jornada actual: ${currentJornada}`);
 
-  // Obtener información del jugador
-  const player = await prisma.player.findUnique({
+  // Primero, determinar en qué tabla está el jugador (Primera, Segunda o Premier)
+  let player: any = null;
+  let division: 'primera' | 'segunda' | 'premier' = 'primera';
+  let leagueId = 140; // La Liga por defecto
+  
+  // Buscar en Player (Primera División)
+  player = await prisma.player.findUnique({
     where: { id: playerId },
     select: { id: true, name: true, teamId: true, teamName: true, position: true },
   });
+  
+  if (player) {
+    division = 'primera';
+    leagueId = 140; // La Liga
+  } else {
+    // Buscar en PlayerSegunda
+    player = await prisma.playerSegunda.findUnique({
+      where: { id: playerId },
+      select: { id: true, name: true, teamId: true, teamName: true, position: true },
+    });
+    
+    if (player) {
+      division = 'segunda';
+      leagueId = 141; // Segunda División
+    } else {
+      // Buscar en PlayerPremier
+      player = await prisma.playerPremier.findUnique({
+        where: { id: playerId },
+        select: { id: true, name: true, teamId: true, teamName: true, position: true },
+      });
+      
+      if (player) {
+        division = 'premier';
+        leagueId = 39; // Premier League
+      }
+    }
+  }
 
   if (!player) {
     throw new AppError(404, 'PLAYER_NOT_FOUND', 'Jugador no encontrado');
   }
+
+  console.log(`[PlayerStatsService] Jugador encontrado en división: ${division}, leagueId: ${leagueId}`);
 
   const nextJornada = currentJornada + 1;
   
   // Obtener el próximo partido del equipo del jugador desde la API
   const headers = buildHeaders();
   const season = 2025;
-  const leagueId = 140; // La Liga
 
   try {
     // Obtener fixtures de la próxima jornada
@@ -958,11 +991,11 @@ async function getNextOpponentAnalysis(playerId: number, currentJornada: number)
     const playerTeam = isHome ? nextMatch.teams.home : nextMatch.teams.away;
 
     // Obtener estadísticas históricas del equipo rival (últimas 5 jornadas)
-    const opponentStats = await getTeamRecentStats(opponentTeam.id, currentJornada, 5);
-    const playerTeamStats = await getTeamRecentStats(player.teamId, currentJornada, 5);
+    const opponentStats = await getTeamRecentStats(opponentTeam.id, currentJornada, 5, division);
+    const playerTeamStats = await getTeamRecentStats(player.teamId, currentJornada, 5, division);
 
     // Obtener estadísticas promedio del jugador
-    const playerAvgStats = await getPlayerAverageStats(playerId, currentJornada);
+    const playerAvgStats = await getPlayerAverageStats(playerId, currentJornada, division);
 
     // CALCULAR ÍNDICES DE RENDIMIENTO
     // 1. Índice de Fortaleza del Rival (0-100, mayor = más difícil)
@@ -1041,16 +1074,40 @@ async function getNextOpponentAnalysis(playerId: number, currentJornada: number)
 /**
  * Obtener estadísticas recientes de un equipo
  */
-async function getTeamRecentStats(teamId: number, currentJornada: number, numMatches: number) {
+async function getTeamRecentStats(
+  teamId: number, 
+  currentJornada: number, 
+  numMatches: number,
+  division: 'primera' | 'segunda' | 'premier' = 'primera'
+) {
   const startJornada = Math.max(1, currentJornada - numMatches + 1);
   
-  // Obtener todas las estadísticas de jugadores de este equipo en el rango de jornadas
-  const stats = await prisma.playerStats.findMany({
-    where: {
-      teamId,
-      jornada: { gte: startJornada, lte: currentJornada },
-    },
-  });
+  // Seleccionar la tabla correcta según la división
+  let stats: any[] = [];
+  
+  if (division === 'segunda') {
+    stats = await prisma.playerSegundaStats.findMany({
+      where: {
+        teamId,
+        jornada: { gte: startJornada, lte: currentJornada },
+      },
+    });
+  } else if (division === 'premier') {
+    stats = await prisma.playerPremierStats.findMany({
+      where: {
+        teamId,
+        jornada: { gte: startJornada, lte: currentJornada },
+      },
+    });
+  } else {
+    // Primera división (por defecto)
+    stats = await prisma.playerStats.findMany({
+      where: {
+        teamId,
+        jornada: { gte: startJornada, lte: currentJornada },
+      },
+    });
+  }
 
   if (stats.length === 0) {
     return {
@@ -1120,16 +1177,46 @@ async function getTeamRecentStats(teamId: number, currentJornada: number, numMat
 /**
  * Obtener estadísticas promedio de un jugador
  */
-async function getPlayerAverageStats(playerId: number, currentJornada: number) {
-  const stats = await prisma.playerStats.findMany({
-    where: {
-      playerId,
-      jornada: { lte: currentJornada },
-      minutes: { gt: 0 },
-    },
-    orderBy: { jornada: 'desc' },
-    take: 5, // Últimos 5 partidos
-  });
+async function getPlayerAverageStats(
+  playerId: number, 
+  currentJornada: number,
+  division: 'primera' | 'segunda' | 'premier' = 'primera'
+) {
+  let stats: any[] = [];
+  
+  // Seleccionar la tabla correcta según la división
+  if (division === 'segunda') {
+    stats = await prisma.playerSegundaStats.findMany({
+      where: {
+        playerId,
+        jornada: { lte: currentJornada },
+        minutes: { gt: 0 },
+      },
+      orderBy: { jornada: 'desc' },
+      take: 5, // Últimos 5 partidos
+    });
+  } else if (division === 'premier') {
+    stats = await prisma.playerPremierStats.findMany({
+      where: {
+        playerId,
+        jornada: { lte: currentJornada },
+        minutes: { gt: 0 },
+      },
+      orderBy: { jornada: 'desc' },
+      take: 5, // Últimos 5 partidos
+    });
+  } else {
+    // Primera división (por defecto)
+    stats = await prisma.playerStats.findMany({
+      where: {
+        playerId,
+        jornada: { lte: currentJornada },
+        minutes: { gt: 0 },
+      },
+      orderBy: { jornada: 'desc' },
+      take: 5, // Últimos 5 partidos
+    });
+  }
 
   if (stats.length === 0) {
     return {
