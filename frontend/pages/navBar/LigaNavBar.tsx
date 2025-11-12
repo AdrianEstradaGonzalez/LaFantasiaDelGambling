@@ -56,7 +56,6 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName, division = 'p
   };
   
   const handleJugadores = async () => {
-    await showInterstitialWithProbability();
     navigation.navigate('PlayersMarket', { ligaId, ligaName, division, isPremium });
   };
   
