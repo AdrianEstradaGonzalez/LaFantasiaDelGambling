@@ -6,6 +6,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
   app.post("/login", AuthController.login);
   app.post("/refresh", AuthController.refresh);
   app.get("/me", { preHandler: app.auth }, AuthController.me);
+  app.patch("/update-profile", { preHandler: app.auth }, AuthController.updateProfile);
   app.post("/change-password", { preHandler: app.auth }, AuthController.changePassword);
 
   // Reset por código

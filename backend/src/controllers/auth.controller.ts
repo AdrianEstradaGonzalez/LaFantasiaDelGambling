@@ -40,13 +40,28 @@ export async function me(req: any) {
   return AuthService.me((req.user as any).sub);
 }
 
+export async function updateProfile(req: any, reply: any) {
+  try {
+    const { name, email } = req.body;
+    const sub = (req.user as any).sub;
+    const data = await AuthService.updateProfile(sub, { name, email });
+    reply.send(data);
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    reply.code(statusCode).send({ 
+      error: error.message || 'Error al actualizar perfil',
+      message: error.message || 'Error al actualizar perfil'
+    });
+  }
+}
+
 export async function changePassword(req: any, reply: any) {
   try {
     const input = changePwdDTO.parse(req.body);
     const sub = (req.user as any).sub;
     await AuthService.changePassword(sub, input);
     const tokens = await AuthService.issueTokens(sub);
-    reply.send({ ok: true, ...tokens });
+    reply.send({ ok: true, message: 'Contraseña actualizada correctamente', ...tokens });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
     reply.code(statusCode).send({ 

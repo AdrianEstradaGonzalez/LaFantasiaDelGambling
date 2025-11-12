@@ -45,6 +45,36 @@ export async function me(userId: string) {
   return { user: u ? { id: u.id, email: u.email, name: u.name, isAdmin: u.isAdmin || false } : null };
 }
 
+export async function updateProfile(userId: string, { name, email }: { name?: string; email?: string }) {
+  const user = await UserRepo.findById(userId);
+  if (!user) {
+    const error: any = new Error("Usuario no encontrado");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Si se intenta cambiar el email, verificar que no exista
+  if (email && email !== user.email) {
+    const exists = await UserRepo.findByEmail(email);
+    if (exists) {
+      const error: any = new Error("Este correo ya está registrado");
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(name !== undefined && { name }),
+      ...(email !== undefined && { email }),
+    },
+    select: { id: true, email: true, name: true, isAdmin: true }
+  });
+
+  return { user: updated };
+}
+
 export async function changePassword(userId: string, { currentPassword, newPassword }: { currentPassword: string; newPassword: string }) {
   const user = await UserRepo.findById(userId);
   if (!user) {

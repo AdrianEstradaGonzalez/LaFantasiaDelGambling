@@ -301,6 +301,16 @@ export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
             iconColor="#60a5fa"
           />
 
+          <MenuItem
+            icon={<UsersIcon size={24} color="#10b981" />}
+            label="Mi Perfil"
+            onPress={() => {
+              navigation.closeDrawer();
+              navigation.navigate('Perfil');
+            }}
+            iconColor="#10b981"
+          />
+
           {isAdmin && (
             <MenuItem
               icon={<ShieldCheckIcon size={24} color="#ef4444" />}
