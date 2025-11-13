@@ -224,9 +224,9 @@ export class JornadaService {
           const won = await this.evaluateBet(bet);
           
           // Calcular ganancia
-          // Si gana: suma lo ganado (potentialWin)
+          // Si gana: suma potentialWin COMPLETO
           // Si pierde: resta lo apostado (amount)
-          const profit = won ? (bet.amount * bet.odd) : -bet.amount;
+          const profit = won ? bet.potentialWin : -bet.amount;
 
           evaluations.push({
             betId: bet.id,
@@ -741,10 +741,10 @@ export class JornadaService {
         const userBalance = balances.get(combi.userId)!;
         
         if (combi.status === 'won') {
-          // Ganó la combi: sumar ganancia neta (potentialWin - amount apostado)
-          userBalance.totalProfit += (combi.potentialWin - combi.amount);
+          // Ganó la combi: sumar potentialWin COMPLETO
+          userBalance.totalProfit += combi.potentialWin;
           userBalance.wonBets++;
-          console.log(`  💰 Usuario ${combi.userId}: Combi ganada +${combi.potentialWin - combi.amount}M (apostó ${combi.amount}M, ganó ${combi.potentialWin}M)`);
+          console.log(`  💰 Usuario ${combi.userId}: Combi ganada +${combi.potentialWin}M (apostó ${combi.amount}M)`);
         } else if (combi.status === 'lost') {
           // Perdió la combi: restar lo apostado
           userBalance.totalProfit -= combi.amount;
@@ -1255,12 +1255,14 @@ export class JornadaService {
         // initialBudget = 500M (base) + resultado apuestas + 1M × puntos jornada anterior
         
         // 1. Calcular resultado de apuestas de esta jornada
-        const betsResult = currentMember.budget - member.budget; // Diferencia por apuestas
+        // member.initialBudget es el presupuesto base de la jornada (debería ser 500M)
+        // currentMember.budget es lo que tiene ahora después de apuestas
+        const betsResult = currentMember.budget - member.initialBudget; // Diferencia por apuestas
         
         // 2. Puntos de la jornada que se está cerrando = 1M por punto
         const budgetFromSquad = squadPoints;
         
-        // 3. Nuevo presupuesto total = base + apuestas + puntos
+        // 3. Nuevo presupuesto total = SIEMPRE 500M base + apuestas + puntos
         const newInitialBudget = 500 + betsResult + budgetFromSquad;
         const newBudget = newInitialBudget;
         
@@ -1278,7 +1280,7 @@ export class JornadaService {
         });
 
         console.log(
-          `     Budget antes de cierre: ${member.budget}M\n` +
+          `     InitialBudget jornada ${jornada}: ${member.initialBudget}M\n` +
           `     Budget tras apuestas: ${currentMember.budget}M (${betsResult >= 0 ? '+' : ''}${betsResult}M)\n` +
           `     Plantilla J${jornada}: ${squadPoints} puntos = +${budgetFromSquad}M\n` +
           `     Nuevo initialBudget: 500 + ${betsResult} + ${budgetFromSquad} = ${newInitialBudget}M\n` +

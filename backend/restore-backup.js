@@ -1,0 +1,169 @@
+import { PrismaClient } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const prisma = new PrismaClient();
+
+async function restoreBackup() {
+  try {
+    console.log('🔄 Leyendo backup...');
+    const backupPath = path.join(__dirname, 'backups', 'prisma-backup-2025-11-10T00-54-06.json');
+    const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
+    const backup = backupData;
+
+    console.log('🗑️ Limpiando base de datos...');
+    // Limpiar en orden correcto para respetar foreign keys
+    await prisma.bet_option.deleteMany({});
+    await prisma.bet.deleteMany({});
+    await prisma.betCombi.deleteMany({});
+    await prisma.squadPlayer.deleteMany({});
+    await prisma.squad.deleteMany({});
+    await prisma.leagueMember.deleteMany({});
+    await prisma.league.deleteMany({});
+    await prisma.playerJornadaPoints.deleteMany({});
+    await prisma.playerStats.deleteMany({});
+    await prisma.playerSegundaStats.deleteMany({});
+    await prisma.playerPremierStats.deleteMany({});
+    await prisma.player.deleteMany({});
+    await prisma.playerSegunda.deleteMany({});
+    await prisma.playerPremier.deleteMany({});
+    await prisma.deviceToken.deleteMany({});
+    await prisma.passwordResetCode.deleteMany({});
+    await prisma.user.deleteMany({});
+
+    console.log('👤 Restaurando usuarios...');
+    if (backup.data.user && backup.data.user.length > 0) {
+      for (const user of backup.data.user) {
+        await prisma.user.create({ data: user });
+      }
+      console.log(`  ✓ ${backup.data.user.length} usuarios`);
+    }
+
+    console.log('⚽ Restaurando jugadores...');
+    if (backup.data.player && backup.data.player.length > 0) {
+      for (const player of backup.data.player) {
+        await prisma.player.create({ data: player });
+      }
+      console.log(`  ✓ ${backup.data.player.length} jugadores Primera`);
+    }
+
+    if (backup.data.playerSegunda && backup.data.playerSegunda.length > 0) {
+      for (const player of backup.data.playerSegunda) {
+        await prisma.playerSegunda.create({ data: player });
+      }
+      console.log(`  ✓ ${backup.data.playerSegunda.length} jugadores Segunda`);
+    }
+
+    if (backup.data.playerPremier && backup.data.playerPremier.length > 0) {
+      for (const player of backup.data.playerPremier) {
+        await prisma.playerPremier.create({ data: player });
+      }
+      console.log(`  ✓ ${backup.data.playerPremier.length} jugadores Premier`);
+    }
+
+    console.log('📊 Restaurando estadísticas...');
+    if (backup.data.playerStats && backup.data.playerStats.length > 0) {
+      for (const stat of backup.data.playerStats) {
+        await prisma.playerStats.create({ data: stat });
+      }
+      console.log(`  ✓ ${backup.data.playerStats.length} stats Primera`);
+    }
+
+    if (backup.data.playerSegundaStats && backup.data.playerSegundaStats.length > 0) {
+      for (const stat of backup.data.playerSegundaStats) {
+        await prisma.playerSegundaStats.create({ data: stat });
+      }
+      console.log(`  ✓ ${backup.data.playerSegundaStats.length} stats Segunda`);
+    }
+
+    if (backup.data.playerPremierStats && backup.data.playerPremierStats.length > 0) {
+      for (const stat of backup.data.playerPremierStats) {
+        await prisma.playerPremierStats.create({ data: stat });
+      }
+      console.log(`  ✓ ${backup.data.playerPremierStats.length} stats Premier`);
+    }
+
+    if (backup.data.playerJornadaPoints && backup.data.playerJornadaPoints.length > 0) {
+      for (const points of backup.data.playerJornadaPoints) {
+        await prisma.playerJornadaPoints.create({ data: points });
+      }
+      console.log(`  ✓ ${backup.data.playerJornadaPoints.length} puntos jornada`);
+    }
+
+    console.log('🏆 Restaurando ligas...');
+    if (backup.data.league && backup.data.league.length > 0) {
+      for (const league of backup.data.league) {
+        await prisma.league.create({ data: league });
+      }
+      console.log(`  ✓ ${backup.data.league.length} ligas`);
+    }
+
+    console.log('👥 Restaurando miembros...');
+    if (backup.data.leagueMember && backup.data.leagueMember.length > 0) {
+      for (const member of backup.data.leagueMember) {
+        await prisma.leagueMember.create({ data: member });
+      }
+      console.log(`  ✓ ${backup.data.leagueMember.length} miembros`);
+    }
+
+    console.log('⚽ Restaurando plantillas...');
+    if (backup.data.squad && backup.data.squad.length > 0) {
+      for (const squad of backup.data.squad) {
+        await prisma.squad.create({ data: squad });
+      }
+      console.log(`  ✓ ${backup.data.squad.length} plantillas`);
+    }
+
+    console.log('👤 Restaurando jugadores de plantillas...');
+    if (backup.data.squadPlayer && backup.data.squadPlayer.length > 0) {
+      for (const player of backup.data.squadPlayer) {
+        await prisma.squadPlayer.create({ data: player });
+      }
+      console.log(`  ✓ ${backup.data.squadPlayer.length} jugadores en plantillas`);
+    }
+
+    console.log('🎲 Restaurando apuestas...');
+    if (backup.data.bet && backup.data.bet.length > 0) {
+      let betCount = 0;
+      let betErrors = 0;
+      for (const bet of backup.data.bet) {
+        try {
+          await prisma.bet.create({ data: bet });
+          betCount++;
+        } catch (err) {
+          betErrors++;
+          console.log(`  ⚠️ Error en bet ${bet.id}: ${err.message}`);
+        }
+      }
+      console.log(`  ✓ ${betCount} apuestas restauradas, ${betErrors} errores`);
+    }
+
+    if (backup.data.bet_option && backup.data.bet_option.length > 0) {
+      let optionCount = 0;
+      let optionErrors = 0;
+      for (const option of backup.data.bet_option) {
+        try {
+          await prisma.bet_option.create({ data: option });
+          optionCount++;
+        } catch (err) {
+          optionErrors++;
+          console.log(`  ⚠️ Error en option ${option.id}: ${err.message}`);
+        }
+      }
+      console.log(`  ✓ ${optionCount} opciones restauradas, ${optionErrors} errores`);
+    }
+
+    console.log('✅ ¡Backup restaurado exitosamente!');
+  } catch (error) {
+    console.error('❌ Error restaurando backup:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+restoreBackup();
