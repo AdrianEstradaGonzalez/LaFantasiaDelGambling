@@ -98,14 +98,9 @@ export class AdMobService {
       );
 
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Timeout al cargar intersticial'));
-        }, 30000);
-
         const unsubscribeLoaded = this.interstitialAd!.addAdEventListener(
           AdEventType.LOADED,
           () => {
-            clearTimeout(timeout);
             unsubscribeLoaded();
             resolve();
           }
@@ -114,7 +109,6 @@ export class AdMobService {
         const unsubscribeError = this.interstitialAd!.addAdEventListener(
           AdEventType.ERROR,
           (error: any) => {
-            clearTimeout(timeout);
             unsubscribeError();
             reject(error);
           }
@@ -214,14 +208,9 @@ export class AdMobService {
       );
 
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Timeout al cargar anuncio'));
-        }, 30000); // 30 segundos timeout
-
         const unsubscribeLoaded = this.rewardedAd!.addAdEventListener(
           RewardedAdEventType.LOADED,
           () => {
-            clearTimeout(timeout);
             unsubscribeLoaded();
             this.loadAttempts = 0; // Reset en caso de éxito
             resolve();
@@ -231,7 +220,6 @@ export class AdMobService {
         const unsubscribeError = this.rewardedAd!.addAdEventListener(
           AdEventType.ERROR,
           (error: any) => {
-            clearTimeout(timeout);
             unsubscribeError();
             reject(error);
           }
