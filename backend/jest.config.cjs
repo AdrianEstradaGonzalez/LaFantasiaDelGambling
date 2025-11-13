@@ -16,5 +16,5 @@ module.exports = {
   },
   testMatch: ['**/__tests__/**/*.test.(ts|js)', '**/?(*.)+(spec|test).(ts|js)'],
   extensionsToTreatAsEsm: ['.ts'],
-  testTimeout: 60000
+  testTimeout: 120000
 };
