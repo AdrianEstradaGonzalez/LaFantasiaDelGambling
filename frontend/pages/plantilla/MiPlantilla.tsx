@@ -10,7 +10,7 @@ import { JornadaService } from '../../services/JornadaService';
 import { PlayerService } from '../../services/PlayerService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon, AlertIcon, LockIcon } from '../../components/VectorIcons';
+import { TacticsIcon, ChartBarIcon, DeleteIcon, CaptainIcon, MenuIcon, AlertIcon, LockIcon, ContentCopyIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -19,6 +19,8 @@ import { AdBanner } from '../../components/AdBanner';
 // ✨ NUEVO: Importar servicio de estadísticas del backend
 import { PlayerStatsService } from '../../services/PlayerStatsService';
 import { LigaService } from '../../services/LigaService';
+import EncryptedStorage from 'react-native-encrypted-storage';
+import { FlatList } from 'react-native';
 
 type Formation = {
   id: string;
@@ -448,6 +450,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [isLoadingPoints, setIsLoadingPoints] = useState(false);
   const isLoadingPointsRef = useRef(false); // Evitar múltiples cargas simultáneas
   const lastLoadedJornada = useRef<number | null>(null); // Tracking de última jornada cargada
+  
+  // Estados para copiar plantilla
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [userLeagues, setUserLeagues] = useState<Array<{ id: string; name: string }>>([]);
+  const [copying, setCopying] = useState(false);
   
   // PanResponder para gestos de swipe (vacío por ahora, puede extenderse)
   const panResponder = useRef(
@@ -1023,6 +1030,107 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     }
   };
 
+  // Función para abrir el modal de copiar plantilla
+  const handleOpenCopyModal = async () => {
+    try {
+      // Obtener ID del usuario autenticado
+      const currentUserId = await EncryptedStorage.getItem('userId');
+      
+      if (!currentUserId) {
+        throw new Error('Usuario no autenticado');
+      }
+      
+      // Cargar todas las ligas del usuario
+      const leagues = await LigaService.obtenerLigasPorUsuario(currentUserId);
+      
+      // Filtrar para excluir la liga actual
+      const otherLeagues = leagues.filter((l: any) => l.id !== ligaId);
+      
+      if (otherLeagues.length === 0) {
+        CustomAlertManager.alert(
+          'Sin ligas disponibles',
+          'No tienes otras ligas donde copiar esta plantilla',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'information', iconColor: '#0892D0' }
+        );
+        return;
+      }
+      
+      setUserLeagues(otherLeagues);
+      setShowCopyModal(true);
+    } catch (error) {
+      console.error('Error al cargar ligas:', error);
+      CustomAlertManager.alert(
+        'Error',
+        'No se pudieron cargar tus ligas',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+    }
+  };
+
+  // Función para copiar plantilla a otra liga
+  const handleCopyToLeague = async (targetLigaId: string, targetLigaName: string) => {
+    const playersList = Object.entries(selectedPlayers);
+    
+    if (playersList.length === 0) {
+      CustomAlertManager.alert(
+        'Plantilla vacía',
+        'No hay jugadores para copiar',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
+      return;
+    }
+
+    setCopying(true);
+    setShowCopyModal(false);
+
+    try {
+      const sourcePlayers = playersList.map(([position, player]) => ({
+        playerId: player.id,
+        playerName: player.name,
+        position,
+        role: selectedFormation.positions.find(p => p.id === position)?.role || 'DEF',
+        pricePaid: player.pricePaid,
+        isCaptain: captainPosition === position
+      }));
+
+      const result = await SquadService.copySquad(
+        targetLigaId,
+        sourcePlayers,
+        selectedFormation.id,
+        captainPosition || undefined
+      );
+
+      if (result.isNegativeBudget) {
+        CustomAlertManager.alert(
+          '⚠️ Presupuesto Negativo',
+          `Plantilla copiada a ${targetLigaName}.\n\nPresupuesto actual: ${result.budget}M (en negativo).\n\nDebes ajustar tu plantilla antes del inicio de la jornada o no puntuarás.`,
+          [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+          { icon: 'alert', iconColor: '#f59e0b' }
+        );
+      } else {
+        CustomAlertManager.alert(
+          '✅ Plantilla Copiada',
+          `La plantilla se ha copiado exitosamente a ${targetLigaName}.\n\nCosto total: ${result.totalCost}M\nPresupuesto restante: ${result.budget}M`,
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'check-circle', iconColor: '#10b981' }
+        );
+      }
+    } catch (error: any) {
+      console.error('Error al copiar plantilla:', error);
+      CustomAlertManager.alert(
+        'Error',
+        error.message || 'No se pudo copiar la plantilla',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+    } finally {
+      setCopying(false);
+    }
+  };
+
   const saveSquad = async () => {
     if (!ligaId) {
       CustomAlertManager.alert(
@@ -1082,7 +1190,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
   return (
     <SafeLayout backgroundColor="#181818ff">
-      {isLoading || isLoadingPoints ? (
+      {isLoading || isLoadingPoints || copying ? (
         <LoadingScreen />
       ) : (
         <LinearGradient colors={['#181818ff', '#181818ff']} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
@@ -1180,32 +1288,58 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
               {(() => {
                 const shouldShowButton = ligaId && hasChanges() && !isChangingFormation;
-                console.log('Render botÃ³n guardar - ligaId:', ligaId, 'hasChanges:', hasChanges(), 'isChangingFormation:', isChangingFormation, 'shouldShow:', shouldShowButton);
-                return shouldShowButton ? (
-                <TouchableOpacity
-                  onPress={saveSquad}
-                  disabled={isSaving}
-                  style={{
-                    backgroundColor: isSaving ? '#374151' : '#0892D0',
-                    paddingVertical: 8,
-                    paddingHorizontal: 14,
-                    borderRadius: 0,
-                    borderWidth: 1,
-                    borderColor: '#334155',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.18,
-                    shadowRadius: 8,
-                    elevation: 0,
-                    opacity: isSaving ? 0.6 : 1,
-                    marginTop: 4
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
-                    {isSaving ? 'Guardando...' : 'Guardar'}
-                  </Text>
-                </TouchableOpacity>
-                ) : null;
+                const hasPlayers = Object.keys(selectedPlayers).length > 0;
+                return (
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {/* Botón copiar plantilla */}
+                    {hasPlayers && !isChangingFormation && (
+                      <TouchableOpacity
+                        onPress={handleOpenCopyModal}
+                        style={{
+                          backgroundColor: '#10b981',
+                          paddingVertical: 8,
+                          paddingHorizontal: 12,
+                          borderRadius: 10,
+                          borderWidth: 1,
+                          borderColor: '#059669',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.15,
+                          shadowRadius: 6,
+                          elevation: 3,
+                        }}
+                      >
+                        <ContentCopyIcon size={20} color="#fff" />
+                      </TouchableOpacity>
+                    )}
+                    
+                    {/* Botón guardar */}
+                    {shouldShowButton && (
+                      <TouchableOpacity
+                        onPress={saveSquad}
+                        disabled={isSaving}
+                        style={{
+                          backgroundColor: isSaving ? '#374151' : '#0892D0',
+                          paddingVertical: 8,
+                          paddingHorizontal: 14,
+                          borderRadius: 10,
+                          borderWidth: 1,
+                          borderColor: '#334155',
+                          shadowColor: '#000',
+                          shadowOffset: { width: 0, height: 6 },
+                          shadowOpacity: 0.18,
+                          shadowRadius: 8,
+                          elevation: 3,
+                          opacity: isSaving ? 0.6 : 1,
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
+                          {isSaving ? 'Guardando...' : 'Guardar'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
               })()}
             </View>
           </View>
@@ -2116,6 +2250,55 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 activeOpacity={1}
                 onPress={() => setIsDrawerOpen(false)}
               />
+            </View>
+          </Modal>
+
+          {/* Modal para copiar plantilla */}
+          <Modal
+            visible={showCopyModal}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowCopyModal(false)}
+          >
+            <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' }}>
+              <View style={{ backgroundColor: '#181818', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '70%' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>Seleccionar Liga</Text>
+                  <TouchableOpacity onPress={() => setShowCopyModal(false)} activeOpacity={0.8}>
+                    <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '600' }}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <Text style={{ color: '#94a3b8', fontSize: 14, marginBottom: 16 }}>
+                  La plantilla se copiará y se descontará su valor del presupuesto de la liga seleccionada.
+                </Text>
+
+                <FlatList
+                  data={userLeagues}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      onPress={() => handleCopyToLeague(item.id, item.name)}
+                      style={{
+                        backgroundColor: '#1a2332',
+                        padding: 16,
+                        borderRadius: 12,
+                        marginBottom: 12,
+                        borderWidth: 1,
+                        borderColor: '#334155'
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{item.name}</Text>
+                    </TouchableOpacity>
+                  )}
+                  ListEmptyComponent={
+                    <Text style={{ color: '#64748b', fontSize: 14, textAlign: 'center', marginTop: 20 }}>
+                      No hay ligas disponibles
+                    </Text>
+                  }
+                />
+              </View>
             </View>
           </Modal>
           

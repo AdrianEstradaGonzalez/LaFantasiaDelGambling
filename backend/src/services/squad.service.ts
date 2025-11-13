@@ -752,4 +752,137 @@ export class SquadService {
       throw error;
     }
   }
+
+  // Copiar plantilla a otra liga del mismo usuario
+  static async copySquad(
+    userId: string, 
+    targetLigaId: string, 
+    data: {
+      players: Array<{
+        playerId: number;
+        playerName: string;
+        position: string;
+        role: string;
+        pricePaid: number;
+        isCaptain: boolean;
+      }>;
+      formation: string;
+      captainPosition?: string;
+    }
+  ) {
+    try {
+      // Verificar que la liga de destino permite cambios
+      await this.assertChangesAllowed(targetLigaId);
+
+      // Verificar que el usuario es miembro de la liga destino
+      const targetMembership = await prisma.leagueMember.findUnique({
+        where: {
+          leagueId_userId: {
+            leagueId: targetLigaId,
+            userId
+          }
+        }
+      });
+
+      if (!targetMembership) {
+        throw new AppError(403, 'FORBIDDEN', 'No eres miembro de la liga destino');
+      }
+
+      // Calcular el costo total de la plantilla copiada
+      const totalCost = data.players.reduce((sum, p) => sum + p.pricePaid, 0);
+
+      // Calcular nuevo presupuesto
+      const newBudget = targetMembership.budget - totalCost;
+
+      // Permitir presupuesto negativo pero informar
+      const isNegativeBudget = newBudget < 0;
+
+      // Obtener o crear plantilla en la liga destino
+      let targetSquad = await prisma.squad.findUnique({
+        where: {
+          userId_leagueId: {
+            userId,
+            leagueId: targetLigaId
+          }
+        },
+        include: {
+          players: true
+        }
+      });
+
+      if (!targetSquad) {
+        // Crear nueva plantilla
+        targetSquad = await prisma.squad.create({
+          data: {
+            userId,
+            leagueId: targetLigaId,
+            formation: data.formation,
+            isActive: true
+          },
+          include: {
+            players: true
+          }
+        });
+      } else {
+        // Si existe plantilla, eliminar jugadores actuales para reemplazarlos
+        await prisma.squadPlayer.deleteMany({
+          where: { squadId: targetSquad.id }
+        });
+
+        // Actualizar formación
+        await prisma.squad.update({
+          where: { id: targetSquad.id },
+          data: {
+            formation: data.formation
+          }
+        });
+      }
+
+      // Añadir los jugadores copiados
+      await prisma.squadPlayer.createMany({
+        data: data.players.map(p => ({
+          squadId: targetSquad!.id,
+          playerId: p.playerId,
+          playerName: p.playerName,
+          position: p.position,
+          role: p.role,
+          pricePaid: p.pricePaid,
+          isCaptain: p.isCaptain
+        }))
+      });
+
+      // Actualizar presupuesto
+      await prisma.leagueMember.update({
+        where: {
+          leagueId_userId: {
+            leagueId: targetLigaId,
+            userId
+          }
+        },
+        data: {
+          budget: newBudget
+        }
+      });
+
+      // Obtener plantilla actualizada
+      const updatedSquad = await prisma.squad.findUnique({
+        where: { id: targetSquad.id },
+        include: { players: true }
+      });
+
+      return {
+        success: true,
+        squad: updatedSquad,
+        budget: newBudget,
+        totalCost,
+        isNegativeBudget,
+        message: isNegativeBudget 
+          ? `Presupuesto negativo: ${newBudget}M. Debes ajustar la plantilla antes del inicio de la jornada o no puntuarás.`
+          : `Plantilla copiada exitosamente. Nuevo presupuesto: ${newBudget}M`
+      };
+    } catch (error) {
+      console.error('Error al copiar plantilla:', error);
+      throw error;
+    }
+  }
 }

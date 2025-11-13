@@ -4,6 +4,7 @@ import { calculatePlayerPointsTotal as calculatePlayerPointsService, normalizeRo
 import { PlayerService } from './player.service.js';
 import { generateBetOptionsForAllLeagues } from '../utils/betOptionsGenerator.js';
 import { BetCombiService } from './betCombi.service.js';
+import { SquadHistoryService } from './SquadHistoryService.js';
 
 const prisma = new PrismaClient();
 
@@ -834,7 +835,12 @@ export class JornadaService {
 
       console.log(`\n✨ Cambio de jornada completado: ${updatedMembers} miembros actualizados\n`);
 
-      // 5. Vaciar TODAS las plantillas de la liga (incluso usuarios sin balance)
+      // 5. Guardar snapshot de todas las plantillas ANTES de vaciarlas
+      console.log(`💾 Guardando historial de plantillas para jornada ${jornada}...`);
+      const savedSquadsCount = await SquadHistoryService.saveAllSquadsInLeague(leagueId, jornada);
+      console.log(`✅ ${savedSquadsCount} plantillas guardadas en historial\n`);
+
+      // 6. Vaciar TODAS las plantillas de la liga (incluso usuarios sin balance)
       console.log(`🗑️  Vaciando todas las plantillas de la liga ${leagueId}...\n`);
       
       const allSquads = await prisma.squad.findMany({
@@ -1291,8 +1297,13 @@ export class JornadaService {
       }
       console.log(`✅ ${updatedMembers} miembros actualizados\n`);
 
-      // 5. Vaciar TODAS las plantillas de la liga
-      console.log(`🗑️  5. Vaciando plantillas...`);
+      // 5. Guardar snapshot de todas las plantillas ANTES de vaciarlas
+      console.log(`💾 5. Guardando historial de plantillas para jornada ${jornada}...`);
+      const savedSquadsCount = await SquadHistoryService.saveAllSquadsInLeague(leagueId, jornada);
+      console.log(`✅ ${savedSquadsCount} plantillas guardadas en historial\n`);
+
+      // 6. Vaciar TODAS las plantillas de la liga
+      console.log(`🗑️  6. Vaciando plantillas...`);
       const allSquads = await prisma.squad.findMany({
         where: { leagueId },
       });
@@ -1309,8 +1320,8 @@ export class JornadaService {
       }
       console.log(`✅ ${clearedSquads} plantillas vaciadas\n`);
 
-      // 6. Eliminar opciones de apuestas de la jornada actual
-      console.log(`🗑️  6. Eliminando opciones de apuestas antiguas...`);
+      // 7. Eliminar opciones de apuestas de la jornada actual
+      console.log(`🗑️  7. Eliminando opciones de apuestas antiguas...`);
       const deletedBetOptions = await prisma.bet_option.deleteMany({
         where: {
           leagueId,

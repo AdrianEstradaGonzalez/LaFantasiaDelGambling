@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { SquadService } from '../services/squad.service.js';
+import { SquadHistoryService } from '../services/SquadHistoryService.js';
 import { AppError } from '../utils/errors.js';
 
 export class SquadController {
@@ -300,6 +301,86 @@ export class SquadController {
         reply.status(error.statusCode).send({ message: error.message });
       } else {
         console.error('Error en setCaptain:', error);
+        const message = error instanceof Error ? error.message : 'Error interno del servidor';
+        reply.status(500).send({ message });
+      }
+    }
+  }
+
+  // GET /api/squads/history/:ligaId/:userId/:jornada - Obtener plantilla histórica
+  static async getSquadHistory(req: FastifyRequest<{ 
+    Params: { ligaId: string; userId: string; jornada: string } 
+  }>, reply: FastifyReply) {
+    try {
+      const { ligaId, userId, jornada } = req.params;
+      const requesterId = (req.user as any)?.sub || (req.user as any)?.id;
+      
+      if (!requesterId) {
+        throw new AppError(401, 'UNAUTHORIZED', 'Usuario no autenticado');
+      }
+
+      const jornadaNum = parseInt(jornada, 10);
+      if (isNaN(jornadaNum)) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'Jornada inválida');
+      }
+
+      const history = await SquadHistoryService.getSquadHistory(userId, ligaId, jornadaNum);
+
+      if (!history) {
+        return reply.status(404).send({ message: 'No se encontró plantilla histórica para esta jornada' });
+      }
+
+      reply.send(history);
+    } catch (error) {
+      if (error instanceof AppError) {
+        reply.status(error.statusCode).send({ message: error.message });
+      } else {
+        console.error('Error en getSquadHistory:', error);
+        reply.status(500).send({ message: 'Error interno del servidor' });
+      }
+    }
+  }
+
+  // POST /api/squads/copy - Copiar plantilla a otra liga
+  static async copySquad(req: FastifyRequest<{ 
+    Body: { 
+      targetLigaId: string;
+      sourcePlayers: Array<{
+        playerId: number;
+        playerName: string;
+        position: string;
+        role: string;
+        pricePaid: number;
+        isCaptain: boolean;
+      }>;
+      formation: string;
+      captainPosition?: string;
+    } 
+  }>, reply: FastifyReply) {
+    try {
+      const userId = (req.user as any)?.sub || (req.user as any)?.id;
+      const { targetLigaId, sourcePlayers, formation, captainPosition } = req.body;
+      
+      if (!userId) {
+        throw new AppError(401, 'UNAUTHORIZED', 'Usuario no autenticado');
+      }
+
+      if (!targetLigaId || !sourcePlayers || !formation) {
+        throw new AppError(400, 'VALIDATION_ERROR', 'Datos incompletos');
+      }
+
+      const result = await SquadService.copySquad(userId, targetLigaId, {
+        players: sourcePlayers,
+        formation,
+        captainPosition
+      });
+
+      reply.send(result);
+    } catch (error) {
+      if (error instanceof AppError) {
+        reply.status(error.statusCode).send({ message: error.message });
+      } else {
+        console.error('Error en copySquad:', error);
         const message = error instanceof Error ? error.message : 'Error interno del servidor';
         reply.status(500).send({ message });
       }

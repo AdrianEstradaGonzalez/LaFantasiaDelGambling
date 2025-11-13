@@ -52,6 +52,16 @@ async function squadRoutes(fastify: FastifyInstance) {
   fastify.delete('/:ligaId', {
     preHandler: [fastify.auth]
   }, SquadController.deleteSquad);
+
+  // GET /api/squads/history/:ligaId/:userId/:jornada - Obtener plantilla histórica de un usuario en una jornada
+  fastify.get('/history/:ligaId/:userId/:jornada', {
+    preHandler: [fastify.auth]
+  }, SquadController.getSquadHistory);
+
+  // POST /api/squads/copy - Copiar plantilla a otra liga
+  fastify.post('/copy', {
+    preHandler: [fastify.auth]
+  }, SquadController.copySquad);
 }
 
 export default squadRoutes;

@@ -295,4 +295,110 @@ export class SquadService {
       throw error;
     }
   }
+
+  // Obtener plantilla histórica de un usuario en una jornada específica
+  static async getSquadHistory(ligaId: string, userId: string, jornada: number): Promise<{
+    formation: string;
+    players: {
+      playerId: number;
+      playerName: string;
+      position: string;
+      role: string;
+      pricePaid: number;
+      isCaptain: boolean;
+    }[];
+    totalValue: number;
+    captainPosition: string | null;
+    createdAt: string;
+  } | null> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetchWithTimeout(
+        `${ApiConfig.BASE_URL}/squads/history/${ligaId}/${userId}/${jornada}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+        10000
+      );
+
+      if (response.status === 404) {
+        return null; // No hay historial para esta jornada
+      }
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al obtener el historial de plantilla');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error en getSquadHistory:', error);
+      throw error;
+    }
+  }
+
+  // Copiar plantilla a otra liga
+  static async copySquad(
+    targetLigaId: string,
+    sourcePlayers: Array<{
+      playerId: number;
+      playerName: string;
+      position: string;
+      role: string;
+      pricePaid: number;
+      isCaptain: boolean;
+    }>,
+    formation: string,
+    captainPosition?: string
+  ): Promise<{
+    success: boolean;
+    squad: Squad;
+    budget: number;
+    totalCost: number;
+    isNegativeBudget: boolean;
+    message: string;
+  }> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await fetchWithTimeout(
+        `${ApiConfig.BASE_URL}/squads/copy`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            targetLigaId,
+            sourcePlayers,
+            formation,
+            captainPosition
+          }),
+        },
+        15000
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Error al copiar la plantilla');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error en copySquad:', error);
+      throw error;
+    }
+  }
 }

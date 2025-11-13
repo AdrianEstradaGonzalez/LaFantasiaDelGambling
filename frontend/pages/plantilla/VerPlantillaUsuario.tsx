@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Dimensions, Modal, FlatList } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,9 +10,11 @@ import { PlayerService } from '../../services/PlayerService';
 import { PlayerStatsService } from '../../services/PlayerStatsService';
 import { LigaService } from '../../services/LigaService';
 import LoadingScreen from '../../components/LoadingScreen';
-import { ChevronLeftIcon, AlertIcon } from '../../components/VectorIcons';
+import { ChevronLeftIcon, AlertIcon, ContentCopyIcon } from '../../components/VectorIcons';
 import { SafeLayout } from '../../components/SafeLayout';
 import { AdBanner } from '../../components/AdBanner';
+import { CustomAlertManager } from '../../components/CustomAlert';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 type VerPlantillaRoute = RouteProp<{ params: { ligaId: string; ligaName: string; userId: string; userName: string; jornada?: number } }, 'params'>;
 
@@ -134,13 +136,18 @@ const formationPositions: Record<string, { id: string; role: 'POR'|'DEF'|'CEN'|'
 
 const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any> }> = ({ navigation }) => {
   const route = useRoute<VerPlantillaRoute>();
-  const { ligaId, ligaName, userId, userName } = route.params;
+  const { ligaId, ligaName, userId, userName, jornada: selectedJornada } = route.params;
   const [loading, setLoading] = useState(true);
   const [squad, setSquad] = useState<Squad | null>(null);
+  const [squadValue, setSquadValue] = useState<number>(0); // Valor total de la plantilla
   const [playerPhotos, setPlayerPhotos] = useState<Record<number, { photo?: string; teamCrest?: string; position?: string }>>({});
   const [playerPoints, setPlayerPoints] = useState<Record<number, { points: number | null; minutes: number | null }>>({});
   const [currentJornada, setCurrentJornada] = useState<number | null>(null);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'in_progress' | 'closed'>('open');
+  const [isHistorical, setIsHistorical] = useState(false); // Indica si estamos viendo una plantilla histórica
+  const [showCopyModal, setShowCopyModal] = useState(false);
+  const [userLeagues, setUserLeagues] = useState<Array<{ id: string; name: string }>>([]);
+  const [copying, setCopying] = useState(false);
   
   // Calcular ancho del campo a pantalla completa
   const windowWidth = Dimensions.get('window').width;
@@ -150,8 +157,6 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
     (async () => {
       try {
         setLoading(true);
-        const s = await SquadService.getSquadByUser(ligaId, userId);
-        setSquad(s);
         
         // Jornada actual
         let jornadaActual: number | null = null;
@@ -163,6 +168,55 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
           setCurrentJornada(jornadaActual);
           setJornadaStatus(statusActual);
         } catch {}
+        
+        // Determinar si estamos viendo una jornada histórica
+        const viewingHistorical = selectedJornada && jornadaActual && selectedJornada < jornadaActual;
+        setIsHistorical(viewingHistorical || false);
+        
+        let s: Squad | null = null;
+        
+        if (viewingHistorical) {
+          // Cargar plantilla histórica
+          console.log(`[VerPlantillaUsuario] Cargando plantilla histórica: Jornada ${selectedJornada}`);
+          const history = await SquadService.getSquadHistory(ligaId, userId, selectedJornada);
+          
+          if (history) {
+            // Convertir el formato de history a Squad para compatibilidad
+            s = {
+              id: 'historical',
+              userId,
+              leagueId: ligaId,
+              name: `Plantilla J${selectedJornada}`,
+              formation: history.formation,
+              isActive: false,
+              createdAt: history.createdAt,
+              updatedAt: history.createdAt,
+              players: history.players.map(p => ({
+                id: `hist-${p.playerId}-${p.position}`,
+                squadId: 'historical',
+                playerId: p.playerId,
+                playerName: p.playerName,
+                position: p.position,
+                role: p.role,
+                pricePaid: p.pricePaid,
+                isCaptain: p.isCaptain,
+                createdAt: history.createdAt
+              }))
+            };
+            setSquadValue(history.totalValue);
+          }
+        } else {
+          // Cargar plantilla actual
+          s = await SquadService.getSquadByUser(ligaId, userId);
+          
+          // Calcular valor de la plantilla actual
+          if (s && s.players) {
+            const totalValue = s.players.reduce((sum, p) => sum + (p.pricePaid || 0), 0);
+            setSquadValue(totalValue);
+          }
+        }
+        
+        setSquad(s);
         
         // Cargar fotos y puntos si hay plantilla
         if (s && s.players && s.players.length) {
@@ -183,15 +237,16 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
             setPlayerPhotos(photosMap);
           } catch {}
 
-          // Puntos de la jornada actual (si la tenemos)
-          if (jornadaActual != null) {
+          // Puntos de la jornada seleccionada o actual
+          const jornadaToLoad = viewingHistorical ? selectedJornada : jornadaActual;
+          if (jornadaToLoad != null) {
             try {
               const pointsWithDefaults: Record<number, { points: number | null; minutes: number | null }> = {};
 
               // ✅ Durante partidos en vivo, refrescar datos desde la BD
               // El worker centralizado actualiza PlayerStats cada 2 minutos durante matches
               // Forzar refresh si la jornada está en progreso para obtener puntos actualizados
-              const shouldRefresh = statusActual === 'in_progress';
+              const shouldRefresh = statusActual === 'in_progress' && !viewingHistorical;
               
               const chunkSize = 8;
               const batches: number[][] = [];
@@ -199,7 +254,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
 
               for (const batch of batches) {
                 const promises = batch.map(pid => 
-                  PlayerStatsService.getPlayerJornadaStats(pid, jornadaActual!, { refresh: shouldRefresh })
+                  PlayerStatsService.getPlayerJornadaStats(pid, jornadaToLoad!, { refresh: shouldRefresh })
                     .then(s => ({ pid, s }))
                     .catch(() => ({ pid, s: null }))
                 );
@@ -231,7 +286,108 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
     })();
   }, [ligaId, userId, currentJornada]);
 
-  if (loading) return <LoadingScreen />;
+  // Función para abrir el modal de copiar plantilla
+  const handleOpenCopyModal = async () => {
+    try {
+      // Obtener ID del usuario autenticado
+      const currentUserId = await EncryptedStorage.getItem('userId');
+      
+      if (!currentUserId) {
+        throw new Error('Usuario no autenticado');
+      }
+      
+      // Cargar todas las ligas del usuario
+      const leagues = await LigaService.obtenerLigasPorUsuario(currentUserId);
+      
+      // Filtrar para excluir la liga actual
+      const otherLeagues = leagues.filter((l: any) => l.id !== ligaId);
+      
+      if (otherLeagues.length === 0) {
+        CustomAlertManager.alert(
+          'Sin ligas disponibles',
+          'No tienes otras ligas donde copiar esta plantilla',
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'information', iconColor: '#0892D0' }
+        );
+        return;
+      }
+      
+      setUserLeagues(otherLeagues);
+      setShowCopyModal(true);
+    } catch (error) {
+      console.error('Error al cargar ligas:', error);
+      CustomAlertManager.alert(
+        'Error',
+        'No se pudieron cargar tus ligas',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+    }
+  };
+
+  // Función para copiar plantilla a otra liga
+  const handleCopyToLeague = async (targetLigaId: string, targetLigaName: string) => {
+    if (!squad || !squad.players || squad.players.length === 0) {
+      CustomAlertManager.alert(
+        'Plantilla vacía',
+        'No hay jugadores para copiar',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
+      return;
+    }
+
+    setCopying(true);
+    setShowCopyModal(false);
+
+    try {
+      const sourcePlayers = squad.players.map(p => ({
+        playerId: p.playerId,
+        playerName: p.playerName,
+        position: p.position,
+        role: p.role,
+        pricePaid: p.pricePaid,
+        isCaptain: p.isCaptain
+      }));
+
+      const captainPosition = squad.players.find(p => p.isCaptain)?.position;
+
+      const result = await SquadService.copySquad(
+        targetLigaId,
+        sourcePlayers,
+        squad.formation,
+        captainPosition
+      );
+
+      if (result.isNegativeBudget) {
+        CustomAlertManager.alert(
+          '⚠️ Presupuesto Negativo',
+          `Plantilla copiada a ${targetLigaName}.\n\nPresupuesto actual: ${result.budget}M (en negativo).\n\nDebes ajustar tu plantilla antes del inicio de la jornada o no puntuarás.`,
+          [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+          { icon: 'alert', iconColor: '#f59e0b' }
+        );
+      } else {
+        CustomAlertManager.alert(
+          '✅ Plantilla Copiada',
+          `La plantilla se ha copiado exitosamente a ${targetLigaName}.\n\nCosto total: ${result.totalCost}M\nPresupuesto restante: ${result.budget}M`,
+          [{ text: 'OK', onPress: () => {}, style: 'default' }],
+          { icon: 'check-circle', iconColor: '#10b981' }
+        );
+      }
+    } catch (error: any) {
+      console.error('Error al copiar plantilla:', error);
+      CustomAlertManager.alert(
+        'Error',
+        error.message || 'No se pudo copiar la plantilla',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+    } finally {
+      setCopying(false);
+    }
+  };
+
+  if (loading || copying) return <LoadingScreen />;
 
   return (
     <SafeLayout backgroundColor="#181818ff">
@@ -250,8 +406,39 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700', textAlign: 'center', flex: 1 }} numberOfLines={1}>
           {userName?.toUpperCase()} <Text style={{ color: '#0892D0' }}>- {ligaName?.toUpperCase()}</Text>
         </Text>
-        <View style={{ width: 28 }} />
+        {/* Botón copiar plantilla */}
+        {squad && squad.players && squad.players.length > 0 && (
+          <TouchableOpacity onPress={handleOpenCopyModal} style={{ padding: 4 }} activeOpacity={0.8}>
+            <ContentCopyIcon size={24} color="#10b981" />
+          </TouchableOpacity>
+        )}
+        {(!squad || !squad.players || squad.players.length === 0) && <View style={{ width: 28 }} />}
       </View>
+
+      {/* Mostrar valor de la plantilla */}
+      {squad && squad.players && squad.players.length > 0 && (
+        <View
+          style={{
+            marginTop: 60,
+            marginHorizontal: 16,
+            marginBottom: 8,
+            backgroundColor: '#1a2332',
+            borderRadius: 12,
+            padding: 12,
+            borderLeftWidth: 4,
+            borderLeftColor: '#10b981',
+          }}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{ color: '#94a3b8', fontSize: 14 }}>
+              {isHistorical ? `Valor J${selectedJornada}` : 'Valor Plantilla'}
+            </Text>
+            <Text style={{ color: '#10b981', fontSize: 20, fontWeight: '700' }}>
+              {squadValue}M
+            </Text>
+          </View>
+        </View>
+      )}
 
       {/* Warning de plantilla incompleta */}
       {squad && squad.players && squad.players.length < 11 && (
@@ -540,6 +727,56 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
           </View>
         </View>
       </View>
+
+      {/* Modal para seleccionar liga destino */}
+      <Modal
+        visible={showCopyModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCopyModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: '#181818', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, maxHeight: '70%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700' }}>Seleccionar Liga</Text>
+              <TouchableOpacity onPress={() => setShowCopyModal(false)} activeOpacity={0.8}>
+                <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '600' }}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={{ color: '#94a3b8', fontSize: 14, marginBottom: 16 }}>
+              La plantilla se copiará y se descontará su valor ({squadValue}M) del presupuesto de la liga seleccionada.
+            </Text>
+
+            <FlatList
+              data={userLeagues}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => handleCopyToLeague(item.id, item.name)}
+                  style={{
+                    backgroundColor: '#1a2332',
+                    padding: 16,
+                    borderRadius: 12,
+                    marginBottom: 12,
+                    borderWidth: 1,
+                    borderColor: '#334155'
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <Text style={{ color: '#64748b', fontSize: 14, textAlign: 'center', marginTop: 20 }}>
+                  No hay ligas disponibles
+                </Text>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
+
       </LinearGradient>
     </SafeLayout>
   );

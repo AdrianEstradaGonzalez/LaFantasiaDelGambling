@@ -466,3 +466,20 @@ model DeviceToken {
   @@index([userId])
   @@map("device_token")
 }
+
+model SquadHistory {
+  id               String   @id @default(cuid())
+  userId           String
+  leagueId         String
+  jornada          Int
+  formation        String
+  players          Json     // Array de {playerId, playerName, position, role, pricePaid, isCaptain}
+  totalValue       Int      // Suma de pricePaid de todos los jugadores
+  captainPosition  String?
+  createdAt        DateTime @default(now())
+
+  @@unique([userId, leagueId, jornada])
+  @@index([leagueId, jornada])
+  @@index([userId, leagueId])
+  @@map("squad_history")
+}
