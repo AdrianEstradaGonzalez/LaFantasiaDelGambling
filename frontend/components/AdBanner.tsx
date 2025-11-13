@@ -35,21 +35,8 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   visible = true,
 }) => {
   const [adError, setAdError] = useState(false);
-  const [shouldShow, setShouldShow] = useState(visible);
 
-  useEffect(() => {
-    // Timeout para ocultar el banner si tarda más de 5 segundos
-    const timeout = setTimeout(() => {
-      if (!adError) {
-        console.log('⚠️ Banner timeout - ocultando para no bloquear UI');
-        setShouldShow(false);
-      }
-    }, 5000);
-
-    return () => clearTimeout(timeout);
-  }, [adError]);
-
-  if (!visible || !adUnitId || adError || !shouldShow) {
+  if (!visible || !adUnitId || adError) {
     return null;
   }
 
@@ -67,7 +54,6 @@ export const AdBanner: React.FC<AdBannerProps> = ({
         }}
         onAdLoaded={() => {
           console.log('✅ Banner cargado correctamente');
-          setShouldShow(true);
         }}
       />
     </View>

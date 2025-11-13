@@ -280,12 +280,46 @@ export const PlayersMarket = ({ navigation, route }: {
       
       console.time('⏱️ Llamada API jugadores');
       console.log(`📡 Solicitando jugadores de división: ${division}`);
-      // 🚀 OPTIMIZACIÓN 1: Cargar datos de liga Y jugadores en PARALELO con timeout
-      const loadPromises: Promise<any>[] = [
-        withTimeout(PlayerService.getAllPlayers({ division }), 15000) // 15s timeout para jugadores
-      ];
       
-      // Solo cargar datos de liga si tenemos ligaId
+      // 🚀 Cargar jugadores PRIMERO con timeout y mejor manejo de errores
+      let playersData: PlayerWithPrice[] = [];
+      try {
+        console.log('📡 [PlayersMarket] Iniciando getAllPlayers...');
+        playersData = await withTimeout(
+          PlayerService.getAllPlayers({ division }), 
+          35000, // 35 segundos de timeout (más que el fetch interno de 30s)
+          `Timeout al cargar jugadores de ${division}. El servidor está tardando demasiado.`
+        );
+        console.log(`✅ [PlayersMarket] Jugadores recibidos: ${playersData.length}`);
+      } catch (playerError: any) {
+        console.error('❌ [PlayerService] Error cargando jugadores:', playerError);
+        console.error('❌ [PlayerService] Error details:', {
+          message: playerError?.message,
+          name: playerError?.name,
+          stack: playerError?.stack
+        });
+        
+        // Si falla la carga de jugadores, mostrar error y salir
+        let errorMessage = 'No se pudieron cargar los jugadores.';
+        
+        if (playerError?.message?.includes('timeout') || playerError?.message?.includes('Timeout')) {
+          errorMessage = 'La conexión está tardando demasiado. El servidor puede estar iniciándose. Por favor, espera 30 segundos e intenta nuevamente.';
+        } else if (playerError?.message?.includes('Network') || playerError?.message?.includes('Failed to fetch')) {
+          errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
+        }
+        
+        setLoading(false);
+        CustomAlertManager.alert(
+          'Error al cargar mercado',
+          errorMessage,
+          [{ text: 'Reintentar', onPress: () => loadPlayers(), style: 'default' }],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
+        return; // Salir si falla la carga de jugadores
+      }
+      
+      // Cargar datos de liga en paralelo (solo si tenemos ligaId)
+      const loadPromises: Promise<any>[] = [];
       if (ligaId) {
         loadPromises.push(
           safeApiCall(JornadaService.getJornadaStatus(ligaId), { status: 'open', currentJornada: 1, leagueName: '', division: 'primera' }, 8000),
@@ -294,18 +328,17 @@ export const PlayersMarket = ({ navigation, route }: {
         );
       }
       
-      const results = await Promise.all(loadPromises);
+      const results = ligaId ? await Promise.all(loadPromises) : [];
       console.timeEnd('⏱️ Llamada API jugadores');
       
       console.time('⏱️ Procesamiento de datos');
-      // Extraer resultados
-      const playersData = results[0] as PlayerWithPrice[];
-      console.log(`📊 Jugadores recibidos: ${playersData.length}`);
+      // Extraer resultados de datos de liga
+      console.log(`📊 Jugadores totales: ${playersData.length}`);
       
-      if (ligaId && results.length > 1) {
-        const status = results[1];
-        const budgetData = results[2];
-        const squad = results[3];
+      if (ligaId && results.length > 0) {
+        const status = results[0];
+        const budgetData = results[1];
+        const squad = results[2];
         
         setJornadaStatus((status?.status || 'open') as 'open' | 'closed');
         setBudget(typeof budgetData === 'number' ? budgetData : 500);

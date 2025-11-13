@@ -65,7 +65,8 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
 
   // Estados para tabs (Balances / Apuestas)
   const [activeTab, setActiveTab] = useState(0); // 0 = Balances, 1 = Apuestas
-  const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Estados para expansión de usuarios en Balances
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
@@ -153,15 +154,19 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
   }, [isDrawerOpen, slideAnim]);
 
   // Handlers para tabs
-  // Pressing a tab sets activeTab and animates the indicator
+  // Pressing a tab scrolls to the corresponding page
   const handleTabPress = (index: number) => {
+    scrollViewRef.current?.scrollTo({
+      x: index * (SCREEN_WIDTH - 32),
+      animated: true,
+    });
+  };
+
+  // When scroll ends, update activeTab based on scroll position
+  const handleScrollEnd = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / (SCREEN_WIDTH - 32));
     setActiveTab(index);
-    Animated.spring(tabIndicatorAnim, {
-      toValue: index,
-      useNativeDriver: true,
-      tension: 65,
-      friction: 10,
-    }).start();
   };
 
   // Handlers para expansión de usuarios
@@ -351,9 +356,9 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                       backgroundColor: '#0892D0',
                       transform: [
                         {
-                          translateX: tabIndicatorAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [0, (SCREEN_WIDTH - 32)/ 2],
+                          translateX: scrollX.interpolate({
+                            inputRange: [0, SCREEN_WIDTH - 32],
+                            outputRange: [0, (SCREEN_WIDTH - 32) / 2],
                           }),
                         },
                       ],
@@ -361,10 +366,22 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                   />
                 </View>
 
-                {/* Content - Renderizado condicional según tab activo */}
-                {activeTab === 0 ? (
-                  /* TAB 1: BALANCES */
-                  <View>
+                {/* Content - ScrollView horizontal con las dos tabs */}
+                <ScrollView
+                  ref={scrollViewRef}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  scrollEventThrottle={16}
+                  onScroll={Animated.event(
+                    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                    { useNativeDriver: false }
+                  )}
+                  onMomentumScrollEnd={handleScrollEnd}
+                  style={{ flex: 1 }}
+                >
+                  {/* TAB 1: BALANCES */}
+                  <View style={{ width: SCREEN_WIDTH - 32 }}>
                     {/* Banner AdMob */}
                     <View style={{ marginBottom: 16, alignItems: 'center' }}>
                       <AdBanner size="BANNER" />
@@ -599,9 +616,9 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                       })()}
                     </View>
                   </View>
-                ) : (
-                  /* TAB 2: APUESTAS POR PARTIDO */
-                  <View>
+
+                  {/* TAB 2: APUESTAS POR PARTIDO */}
+                  <View style={{ width: SCREEN_WIDTH - 32 }}>
                     {/* Banner AdMob */}
                     <View style={{ marginBottom: 16, alignItems: 'center' }}>
                       <AdBanner size="BANNER" />
@@ -755,7 +772,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                       });
                     })()}
                   </View>
-                )}
+                </ScrollView>
               </>
             )}
           </ScrollView>

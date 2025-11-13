@@ -42,7 +42,9 @@ export class PlayerService {
     division?: string;
   }): Promise<PlayerWithPrice[]> {
     try {
-      console.log('📡 PlayerService.getAllPlayers - Iniciando solicitud con filtros:', filters);
+      console.log('📡 [PlayerService.getAllPlayers] Iniciando solicitud');
+      console.log('📡 [PlayerService.getAllPlayers] Filtros:', JSON.stringify(filters));
+      console.log('📡 [PlayerService.getAllPlayers] BASE_URL:', this.BASE_URL);
       
       const params = new URLSearchParams();
       
@@ -54,25 +56,36 @@ export class PlayerService {
       if (filters?.division) params.append('division', filters.division);
 
       const url = `${this.BASE_URL}${params.toString() ? '?' + params.toString() : ''}`;
-      console.log('📡 PlayerService - URL completa:', url);
+      console.log('📡 [PlayerService.getAllPlayers] URL completa:', url);
+      console.log('📡 [PlayerService.getAllPlayers] Iniciando fetch con timeout de 30s...');
       
-      const response = await fetchWithTimeout(url, {}, 15000);
-      console.log('📡 PlayerService - Response status:', response.status, response.statusText);
+      const startTime = Date.now();
+      const response = await fetchWithTimeout(url, {}, 30000); // 30 segundos para cold-start
+      const fetchTime = Date.now() - startTime;
+      console.log(`📡 [PlayerService.getAllPlayers] Response recibida en ${fetchTime}ms`);
+      console.log('📡 [PlayerService.getAllPlayers] Response status:', response.status, response.statusText);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ PlayerService - Error response:', errorText);
+        console.error('❌ [PlayerService.getAllPlayers] Error response:', errorText);
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
+      console.log('📡 [PlayerService.getAllPlayers] Parseando JSON...');
       const json = await response.json();
-      console.log(`✅ PlayerService - Jugadores recibidos: ${json.data?.length || 0}`);
+      console.log(`✅ [PlayerService.getAllPlayers] Jugadores recibidos: ${json.data?.length || 0}`);
+      
+      if (!json.data || !Array.isArray(json.data)) {
+        console.error('❌ [PlayerService.getAllPlayers] Respuesta inválida:', json);
+        throw new Error('Respuesta del servidor no contiene datos de jugadores');
+      }
+      
       return json.data || [];
     } catch (error: any) {
-      console.error('❌ PlayerService - Error obteniendo jugadores:', {
+      console.error('❌ [PlayerService.getAllPlayers] Error:', {
         message: error?.message,
         name: error?.name,
-        stack: error?.stack,
+        stack: error?.stack?.substring(0, 200),
       });
       throw error;
     }
