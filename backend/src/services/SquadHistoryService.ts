@@ -82,7 +82,7 @@ export async function getSquadHistory(userId: string, leagueId: string, jornada:
   
   return {
     formation: history.formation,
-    players: history.players as SquadHistoryPlayer[],
+    players: history.players as unknown as SquadHistoryPlayer[],
     totalValue: history.totalValue,
     captainPosition: history.captainPosition,
     createdAt: history.createdAt
