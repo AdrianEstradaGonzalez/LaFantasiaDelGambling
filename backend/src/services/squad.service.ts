@@ -791,12 +791,6 @@ export class SquadService {
       // Calcular el costo total de la plantilla copiada
       const totalCost = data.players.reduce((sum, p) => sum + p.pricePaid, 0);
 
-      // Calcular nuevo presupuesto
-      const newBudget = targetMembership.budget - totalCost;
-
-      // Permitir presupuesto negativo pero informar
-      const isNegativeBudget = newBudget < 0;
-
       // Obtener o crear plantilla en la liga destino
       let targetSquad = await prisma.squad.findUnique({
         where: {
@@ -809,6 +803,20 @@ export class SquadService {
           players: true
         }
       });
+
+      // Si ya existe una plantilla, calcular su valor para devolverlo al presupuesto
+      let oldSquadValue = 0;
+      if (targetSquad && targetSquad.players.length > 0) {
+        oldSquadValue = targetSquad.players.reduce((sum, p) => sum + p.pricePaid, 0);
+        console.log(`[CopySquad] Plantilla existente encontrada con valor: ${oldSquadValue}M`);
+      }
+
+      // Calcular nuevo presupuesto: presupuesto actual + valor plantilla vieja - valor plantilla nueva
+      const newBudget = targetMembership.budget + oldSquadValue - totalCost;
+      console.log(`[CopySquad] Presupuesto actual: ${targetMembership.budget}M, Valor viejo: ${oldSquadValue}M, Costo nuevo: ${totalCost}M, Resultado: ${newBudget}M`);
+
+      // Permitir presupuesto negativo pero informar
+      const isNegativeBudget = newBudget < 0;
 
       if (!targetSquad) {
         // Crear nueva plantilla

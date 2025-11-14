@@ -453,7 +453,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   
   // Estados para copiar plantilla
   const [showCopyModal, setShowCopyModal] = useState(false);
-  const [userLeagues, setUserLeagues] = useState<Array<{ id: string; name: string }>>([]);
+  const [userLeagues, setUserLeagues] = useState<Array<{ id: string; name: string; division?: string; isPremium?: boolean }>>([]);
   const [copying, setCopying] = useState(false);
   
   // PanResponder para gestos de swipe (vacío por ahora, puede extenderse)
@@ -1105,20 +1105,35 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
         captainPosition || undefined
       );
 
+      // Encontrar los datos completos de la liga destino
+      const targetLeague = userLeagues.find((l: any) => l.id === targetLigaId);
+
+      // Función para navegar a la liga destino
+      const navigateToTargetLeague = () => {
+        if (targetLeague) {
+          navigation.replace('MiPlantilla', {
+            ligaId: targetLigaId,
+            ligaName: targetLigaName,
+            division: targetLeague.division || 'primera',
+            isPremium: targetLeague.isPremium || false
+          });
+        }
+      };
+
       if (result.isNegativeBudget) {
         CustomAlertManager.alert(
           '⚠️ Presupuesto Negativo',
-          `Plantilla copiada a ${targetLigaName}.\n\nPresupuesto actual: ${result.budget}M (en negativo).\n\nDebes ajustar tu plantilla antes del inicio de la jornada o no puntuarás.`,
-          [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+          `Plantilla copiada a ${targetLigaName}.\n\nPresupuesto actual: ${result.budget}M.\n\nDebes ajustar tu plantilla antes del inicio de la jornada o no puntuarás.`,
+          [{ 
+            text: 'Ver Plantilla', 
+            onPress: navigateToTargetLeague, 
+            style: 'default' 
+          }],
           { icon: 'alert', iconColor: '#f59e0b' }
         );
       } else {
-        CustomAlertManager.alert(
-          '✅ Plantilla Copiada',
-          `La plantilla se ha copiado exitosamente a ${targetLigaName}.\n\nCosto total: ${result.totalCost}M\nPresupuesto restante: ${result.budget}M`,
-          [{ text: 'OK', onPress: () => {}, style: 'default' }],
-          { icon: 'check-circle', iconColor: '#10b981' }
-        );
+        // Navegar directamente sin alerta
+        navigateToTargetLeague();
       }
     } catch (error: any) {
       console.error('Error al copiar plantilla:', error);
@@ -1258,8 +1273,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderWidth: 1,
-                borderColor: '#10b981',
-                shadowColor: '#10b981',
+                borderColor: budget < 0 ? '#ef4444' : '#10b981',
+                shadowColor: budget < 0 ? '#ef4444' : '#10b981',
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.3,
                 shadowRadius: 4,
@@ -1270,7 +1285,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                     width: 28,
                     height: 28,
                     borderRadius: 14,
-                    backgroundColor: '#10b981',
+                    backgroundColor: budget < 0 ? '#ef4444' : '#10b981',
                     justifyContent: 'center',
                     alignItems: 'center',
                     shadowColor: '#000',
@@ -1283,39 +1298,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   </View>
                   <View>
                     <Text style={{ color: '#94a3b8', fontSize: 10, fontWeight: '600' }}>PRESUPUESTO</Text>
-                    <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>{budget}M</Text>
+                    <Text style={{ color: budget < 0 ? '#ef4444' : '#fff', fontSize: 18, fontWeight: 'bold' }}>{budget}M</Text>
                   </View>
                 </View>
               </View>
-
-              {/* Botón guardar */}
-              {(() => {
-                const shouldShowButton = ligaId && hasChanges() && !isChangingFormation;
-                return shouldShowButton && (
-                  <TouchableOpacity
-                    onPress={saveSquad}
-                    disabled={isSaving}
-                    style={{
-                      backgroundColor: isSaving ? '#374151' : '#0892D0',
-                      paddingVertical: 8,
-                      paddingHorizontal: 14,
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      borderColor: '#334155',
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 6 },
-                      shadowOpacity: 0.18,
-                      shadowRadius: 8,
-                      elevation: 3,
-                      opacity: isSaving ? 0.6 : 1,
-                    }}
-                  >
-                    <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
-                      {isSaving ? 'Guardando...' : 'Guardar'}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })()}
             </View>
           </View>
         
