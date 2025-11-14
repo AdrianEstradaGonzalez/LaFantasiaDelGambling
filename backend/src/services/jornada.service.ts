@@ -422,13 +422,29 @@ export class JornadaService {
 
       console.log(`    📋 Plantilla encontrada con ${squad.players.length} jugadores`);
 
-      // 🔴 REGLA: Si no tiene 11 jugadores, 0 puntos
+      // Obtener el presupuesto del usuario en esta liga
+      const leagueMember = await prisma.leagueMember.findUnique({
+        where: {
+          leagueId_userId: {
+            leagueId,
+            userId
+          }
+        }
+      });
+
+      // 🔴 REGLA 1: Si tiene presupuesto negativo, 0 puntos
+      if (leagueMember && leagueMember.budget < 0) {
+        console.log(`    ❌ PRESUPUESTO NEGATIVO: ${leagueMember.budget}M - 0 puntos`);
+        return 0;
+      }
+
+      // 🔴 REGLA 2: Si no tiene 11 jugadores, 0 puntos
       if (squad.players.length < 11) {
         console.log(`    ❌ REGLA DE 11 JUGADORES: Solo ${squad.players.length}/11 jugadores - 0 puntos`);
         return 0;
       }
 
-      console.log(`    ✅ Plantilla válida (${squad.players.length} jugadores). Calculando puntos...`);
+      console.log(`    ✅ Plantilla válida (${squad.players.length} jugadores, presupuesto: ${leagueMember?.budget}M). Calculando puntos...`);
 
       let totalPoints = 0;
       const playerPointsMap = new Map<number, number>();

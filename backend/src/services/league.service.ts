@@ -309,8 +309,8 @@ export const LeagueService = {
               }
             });
 
-            // ⚠️ Si tiene menos de 11 jugadores, el total es 0
-            const totalPoints = squad.players.length < 11 ? 0 : sumPoints;
+            // ⚠️ Si tiene menos de 11 jugadores o presupuesto negativo, el total es 0
+            const totalPoints = (squad.players.length < 11 || member.budget < 0) ? 0 : sumPoints;
 
             return { userId: member.userId, points: totalPoints };
           } catch (error) {
@@ -448,8 +448,8 @@ export const LeagueService = {
               }
             });
 
-            // ⚠️ Si tiene menos de 11 jugadores, el total es 0
-            const totalPoints = squad.players.length < 11 ? 0 : sumPoints;
+            // ⚠️ Si tiene menos de 11 jugadores o presupuesto negativo, el total es 0
+            const totalPoints = (squad.players.length < 11 || member.budget < 0) ? 0 : sumPoints;
 
             return {
               ...member,
@@ -531,10 +531,15 @@ getLeaguesByUser: (userId: string) =>
             }
           });
 
-          // ✨ Solo agregar plantillas que tengan exactamente 11 jugadores
+          // ✨ Solo agregar plantillas que tengan exactamente 11 jugadores Y presupuesto no negativo
           if (squad && squad.players.length === 11) {
-            squadsByUser[member.userId] = squad;
-            squad.players.forEach((p: any) => allPlayerIds.add(p.playerId));
+            // Verificar presupuesto del usuario
+            if (member.budget >= 0) {
+              squadsByUser[member.userId] = squad;
+              squad.players.forEach((p: any) => allPlayerIds.add(p.playerId));
+            } else {
+              console.log(`[calculateRealTimePoints] ⚠️ Usuario ${member.userId} tiene PRESUPUESTO NEGATIVO (${member.budget}M), se le asignará 0 puntos`);
+            }
           } else if (squad) {
             console.log(`[calculateRealTimePoints] ⚠️ Usuario ${member.userId} tiene ${squad.players.length} jugadores (necesita 11), se le asignará 0 puntos`);
           }
@@ -639,8 +644,8 @@ getLeaguesByUser: (userId: string) =>
           };
         });
 
-        // ⚠️ Si tiene menos de 11 jugadores, mostrar los jugadores con puntos pero el total es 0
-        const totalPoints = squad.players.length < 11 ? 0 : sumPoints;
+        // ⚠️ Si tiene menos de 11 jugadores o presupuesto negativo, mostrar los jugadores con puntos pero el total es 0
+        const totalPoints = (squad.players.length < 11 || member.budget < 0) ? 0 : sumPoints;
 
         return {
           userId: member.userId,

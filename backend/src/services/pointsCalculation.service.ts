@@ -84,9 +84,24 @@ export class PointsCalculationService {
         const playerSquadMap = new Map<number, string[]>(); // playerId -> [usernames]
 
         for (const squad of squads) {
-          // Validar que tenga exactamente 11 jugadores
+          // Validar que tenga exactamente 11 jugadores y presupuesto no negativo
           if (squad.players.length !== 11) {
             console.log(`   ⚠️  Usuario "${squad.user.name}" tiene ${squad.players.length} jugadores (necesita 11), saltando...`);
+            continue;
+          }
+
+          // Obtener el presupuesto del usuario
+          const leagueMember = await prisma.leagueMember.findUnique({
+            where: {
+              leagueId_userId: {
+                leagueId: league.id,
+                userId: squad.userId
+              }
+            }
+          });
+
+          if (leagueMember && leagueMember.budget < 0) {
+            console.log(`   ⚠️  Usuario "${squad.user.name}" tiene PRESUPUESTO NEGATIVO (${leagueMember.budget}M), saltando...`);
             continue;
           }
 
