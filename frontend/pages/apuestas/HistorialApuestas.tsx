@@ -736,11 +736,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                         </Text>
                                       </View>
                                       
-                                      <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
-                                        {bet.betType}
-                                      </Text>
-                                      
-                                      <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
+                                      <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '600' }}>
                                         {formatLabelWithType(bet.betLabel, bet.betType)}
                                       </Text>
 
