@@ -48,6 +48,34 @@ export const playerStatsRoutes: FastifyPluginAsync = async (app) => {
     PlayerStatsController.updateJornadaStats
   );
 
+  // Actualizar estadísticas Segunda División (POST)
+  app.post(
+    '/player-stats/update-jornada-segunda',
+    { preHandler: cronAuth },
+    PlayerStatsController.updateJornadaStatsSegunda
+  );
+
+  // Actualizar estadísticas Segunda División (GET)
+  app.get(
+    '/player-stats/update-jornada-segunda',
+    { preHandler: cronAuth },
+    PlayerStatsController.updateJornadaStatsSegunda
+  );
+
+  // Actualizar estadísticas Premier League (POST)
+  app.post(
+    '/player-stats/update-jornada-premier',
+    { preHandler: cronAuth },
+    PlayerStatsController.updateJornadaStatsPremier
+  );
+
+  // Actualizar estadísticas Premier League (GET)
+  app.get(
+    '/player-stats/update-jornada-premier',
+    { preHandler: cronAuth },
+    PlayerStatsController.updateJornadaStatsPremier
+  );
+
   // Obtener promedios por posición (todas las estadísticas)
   app.get(
     '/player-stats/averages-by-position',

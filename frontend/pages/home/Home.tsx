@@ -400,16 +400,35 @@ export const Home = ({ navigation, route }: HomeProps) => {
                     >
                       {liga.nombre}
                     </Text>
-                    <Text
-                      style={{
-                        color: '#94a3b8',
-                        fontSize: 12,
-                        fontWeight: '600',
-                        letterSpacing: 0.2,
-                      }}
-                    >
-                      {liga.division === 'segunda' ? 'Segunda División Española' : liga.division === 'premier' ? 'Premier League' : 'Primera División Española'}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text
+                        style={{
+                          color: '#94a3b8',
+                          fontSize: 12,
+                          fontWeight: '600',
+                          letterSpacing: 0.2,
+                        }}
+                      >
+                        {liga.division === 'segunda' ? 'Segunda División Española' : liga.division === 'premier' ? 'Premier League' : 'Primera División Española'}
+                      </Text>
+                      {liga.isPremium && (
+                        <View style={{
+                          backgroundColor: '#fbbf24',
+                          paddingHorizontal: 6,
+                          paddingVertical: 2,
+                          borderRadius: 4,
+                        }}>
+                          <Text style={{
+                            color: '#000',
+                            fontSize: 9,
+                            fontWeight: '900',
+                            letterSpacing: 0.5,
+                          }}>
+                            PREMIUM
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                   
                   {/* Flecha indicadora */}

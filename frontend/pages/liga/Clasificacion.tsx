@@ -48,6 +48,7 @@ export const Clasificacion = () => {
   const [showJornadaPicker, setShowJornadaPicker] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
+  const [currentLeagueJornada, setCurrentLeagueJornada] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const slideAnim = useRef(new Animated.Value(-300)).current;
   
@@ -106,6 +107,7 @@ export const Clasificacion = () => {
         const leagueStatus = status.status as 'open' | 'closed';
         const leagueJornada = status.currentJornada;
         setJornadaStatus(leagueStatus);
+        setCurrentLeagueJornada(leagueJornada);
 
         // ✅ Los puntos en tiempo real se actualizan automáticamente por el worker centralizado
         // No es necesario hacer cálculos aquí, solo leemos LeagueMember.points
@@ -204,11 +206,19 @@ export const Clasificacion = () => {
       return;
     }
     
-    // Solo permitir ver plantillas de otros usuarios cuando la jornada está cerrada
-    if (jornadaStatus === 'open') {
+    // Determinar si se puede ver la plantilla:
+    // - Si es una jornada pasada (menor que la actual), siempre se puede ver
+    // - Si es la jornada actual o Total, depende del estado de la jornada
+    const isViewingPastJornada = typeof selectedJornada === 'number' && 
+                                  currentLeagueJornada !== null && 
+                                  selectedJornada < currentLeagueJornada;
+    
+    const canViewLineup = isViewingPastJornada || jornadaStatus === 'closed';
+    
+    if (!canViewLineup) {
       CustomAlertManager.alert(
         'Jornada abierta',
-        'No puedes ver las plantillas de otros jugadores mientras la jornada está abierta.',
+        'No puedes ver las plantillas de otros jugadores mientras la jornada actual está abierta.',
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'lock-closed', iconColor: '#f59e0b' }
       );
@@ -224,7 +234,7 @@ export const Clasificacion = () => {
       userName: jugador.nombre,
       jornada: selectedJornada === 'Total' ? undefined : selectedJornada,
     } as any);
-  }, [navigation, ligaId, ligaName, jornadaStatus, selectedJornada]);
+  }, [navigation, ligaId, ligaName, jornadaStatus, selectedJornada, currentLeagueJornada]);
   
   // Memoizar componente de jugador
   const renderJugadorItem = useCallback(({ item: jugador }: { item: UsuarioClasificacion }) => {
