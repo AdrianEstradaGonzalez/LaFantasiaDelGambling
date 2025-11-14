@@ -168,7 +168,7 @@ async function recalculateGoalkeepers() {
           },
           penalty: {
             won: stats.penalty?.won ?? 0,
-            committed: stats.penalty?.committed ?? 0,
+            committed: stats.penalty?.commited ?? stats.penalty?.committed ?? 0,
             scored: stats.penalty?.scored ?? 0,
             missed: stats.penalty?.missed ?? 0,
             saved: stats.penalty?.saved ?? 0,

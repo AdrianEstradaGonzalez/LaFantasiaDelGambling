@@ -185,7 +185,7 @@ async function savePlayerStatsToDb(
       
       // Penaltis
       penaltyWon: rawStats.penalty?.won || 0,
-      penaltyCommitted: rawStats.penalty?.committed || 0,
+      penaltyCommitted: rawStats.penalty?.commited || rawStats.penalty?.committed || 0,
       penaltyScored: rawStats.penalty?.scored || 0,
       penaltyMissed: rawStats.penalty?.missed || 0,
       penaltySaved: rawStats.penalty?.saved || 0,

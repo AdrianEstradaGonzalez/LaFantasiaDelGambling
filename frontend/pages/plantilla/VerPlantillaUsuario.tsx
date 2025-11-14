@@ -136,7 +136,7 @@ const formationPositions: Record<string, { id: string; role: 'POR'|'DEF'|'CEN'|'
 
 const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any> }> = ({ navigation }) => {
   const route = useRoute<VerPlantillaRoute>();
-  const { ligaId, ligaName, userId, userName, jornada: selectedJornada } = route.params;
+  const { ligaId, ligaName, division = 'primera', userId, userName, jornada: selectedJornada } = route.params;
   const [loading, setLoading] = useState(true);
   const [squad, setSquad] = useState<Squad | null>(null);
   const [squadValue, setSquadValue] = useState<number>(0); // Valor total de la plantilla
@@ -299,13 +299,15 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
       // Cargar todas las ligas del usuario
       const leagues = await LigaService.obtenerLigasPorUsuario(currentUserId);
       
-      // Filtrar para excluir la liga actual
-      const otherLeagues = leagues.filter((l: any) => l.id !== ligaId);
+      // Filtrar para excluir la liga actual Y solo mostrar ligas de la misma división
+      const otherLeagues = leagues.filter((l: any) => 
+        l.id !== ligaId && l.division === division
+      );
       
       if (otherLeagues.length === 0) {
         CustomAlertManager.alert(
           'Sin ligas disponibles',
-          'No tienes otras ligas donde copiar esta plantilla',
+          `No tienes otras ligas de ${division === 'primera' ? 'Primera División' : division === 'segunda' ? 'Segunda División' : 'Premier League'} donde copiar esta plantilla`,
           [{ text: 'OK', onPress: () => {}, style: 'default' }],
           { icon: 'information', iconColor: '#0892D0' }
         );

@@ -137,9 +137,9 @@ async function reprocessDeJong() {
               red: apiStats.cards?.red ?? 0,
             },
             penalty: {
-              won: apiStats.penalty?.won ?? 0,
-              committed: apiStats.penalty?.committed ?? 0,
-              scored: apiStats.penalty?.scored ?? 0,
+            won: apiStats.penalty?.won ?? 0,
+            committed: apiStats.penalty?.commited ?? apiStats.penalty?.committed ?? 0,
+            scored: apiStats.penalty?.scored ?? 0,
               missed: apiStats.penalty?.missed ?? 0,
               saved: apiStats.penalty?.saved ?? 0,
             }

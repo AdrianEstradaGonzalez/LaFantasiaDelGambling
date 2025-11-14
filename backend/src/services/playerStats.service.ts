@@ -279,7 +279,7 @@ function extractStats(stats: any) {
     
     // Penalty
     penaltyWon: Number(penalty.won ?? 0),
-    penaltyCommitted: Number(penalty.committed ?? 0),
+    penaltyCommitted: Number(penalty.commited ?? penalty.committed ?? 0), // ✅ API usa 'commited' (una 't')
     penaltyScored: Number(penalty.scored ?? 0),
     penaltyMissed: Number(penalty.missed ?? 0),
     penaltySaved: Number(penalty.saved ?? stats.goalkeeper?.saved ?? 0),

@@ -219,6 +219,7 @@ export const Clasificacion = () => {
     navigation.navigate('VerPlantillaUsuario', {
       ligaId,
       ligaName,
+      division,
       userId: jugador.id,
       userName: jugador.nombre,
       jornada: selectedJornada === 'Total' ? undefined : selectedJornada,

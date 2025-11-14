@@ -157,7 +157,7 @@ async function getFixturePlayerStats(fixtureObj: any) {
           },
           penalty: {
             won: apiStats.penalty?.won ?? 0,
-            committed: apiStats.penalty?.committed ?? 0,
+            committed: apiStats.penalty?.commited ?? apiStats.penalty?.committed ?? 0,
             scored: apiStats.penalty?.scored ?? 0,
             missed: apiStats.penalty?.missed ?? 0,
             saved: 0,

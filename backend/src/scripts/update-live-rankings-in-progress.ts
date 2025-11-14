@@ -156,7 +156,7 @@ async function getFixturePlayerStats(fixtureObj: any): Promise<Map<number, Playe
           },
           penalty: {
             won: apiStats.penalty?.won ?? 0,
-            committed: apiStats.penalty?.committed ?? 0,
+            committed: apiStats.penalty?.commited ?? apiStats.penalty?.committed ?? 0,
             scored: apiStats.penalty?.scored ?? 0,
             missed: apiStats.penalty?.missed ?? 0,
             saved: apiStats.penalty?.saved ?? 0,
@@ -263,7 +263,7 @@ async function savePlayerStatsToDb(
       
       // Penaltis
       penaltyWon: rawStats.penalty?.won || 0,
-      penaltyCommitted: rawStats.penalty?.committed || 0,
+      penaltyCommitted: rawStats.penalty?.commited || rawStats.penalty?.committed || 0,
       penaltyScored: rawStats.penalty?.scored || 0,
       penaltyMissed: rawStats.penalty?.missed || 0,
   // Penalty saved: prefer rawStats.penalty.saved, fallback to breakdown
