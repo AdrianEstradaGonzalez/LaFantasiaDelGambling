@@ -365,6 +365,22 @@ class PlayerStatsServiceClass {
       });
     }
 
+    if (stats.penaltyWon) {
+      display.push({
+        label: 'Penaltis ganados',
+        cantidad: stats.penaltyWon,
+        puntos: '+2',
+      });
+    }
+
+    if (stats.penaltyCommitted) {
+      display.push({
+        label: 'Penaltis cometidos',
+        cantidad: stats.penaltyCommitted,
+        puntos: '-2',
+      });
+    }
+
     if (stats.penaltyMissed) {
       display.push({
         label: 'Penaltis fallados',

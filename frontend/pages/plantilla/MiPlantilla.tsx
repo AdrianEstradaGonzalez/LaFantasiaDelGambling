@@ -1043,13 +1043,15 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       // Cargar todas las ligas del usuario
       const leagues = await LigaService.obtenerLigasPorUsuario(currentUserId);
       
-      // Filtrar para excluir la liga actual
-      const otherLeagues = leagues.filter((l: any) => l.id !== ligaId);
+      // Filtrar para excluir la liga actual Y solo mostrar ligas de la misma división
+      const otherLeagues = leagues.filter((l: any) => 
+        l.id !== ligaId && l.division === division
+      );
       
       if (otherLeagues.length === 0) {
         CustomAlertManager.alert(
           'Sin ligas disponibles',
-          'No tienes otras ligas donde copiar esta plantilla',
+          `No tienes otras ligas de ${division === 'primera' ? 'Primera División' : division === 'segunda' ? 'Segunda División' : 'Premier League'} donde copiar esta plantilla`,
           [{ text: 'OK', onPress: () => {}, style: 'default' }],
           { icon: 'information', iconColor: '#0892D0' }
         );
@@ -1242,7 +1244,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
 
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 150 }} scrollEnabled={!isChangingFormation}>
 
-          {/* Header con tÃ­tulo y botÃ³n guardar */}
+          {/* Header con tÃ­tulo y presupuesto */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800' }}>Mi Plantilla</Text>
@@ -1286,59 +1288,32 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                 </View>
               </View>
 
+              {/* Botón guardar */}
               {(() => {
                 const shouldShowButton = ligaId && hasChanges() && !isChangingFormation;
-                const hasPlayers = Object.keys(selectedPlayers).length > 0;
-                return (
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    {/* Botón copiar plantilla */}
-                    {hasPlayers && !isChangingFormation && (
-                      <TouchableOpacity
-                        onPress={handleOpenCopyModal}
-                        style={{
-                          backgroundColor: '#10b981',
-                          paddingVertical: 8,
-                          paddingHorizontal: 12,
-                          borderRadius: 10,
-                          borderWidth: 1,
-                          borderColor: '#059669',
-                          shadowColor: '#000',
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.15,
-                          shadowRadius: 6,
-                          elevation: 3,
-                        }}
-                      >
-                        <ContentCopyIcon size={20} color="#fff" />
-                      </TouchableOpacity>
-                    )}
-                    
-                    {/* Botón guardar */}
-                    {shouldShowButton && (
-                      <TouchableOpacity
-                        onPress={saveSquad}
-                        disabled={isSaving}
-                        style={{
-                          backgroundColor: isSaving ? '#374151' : '#0892D0',
-                          paddingVertical: 8,
-                          paddingHorizontal: 14,
-                          borderRadius: 10,
-                          borderWidth: 1,
-                          borderColor: '#334155',
-                          shadowColor: '#000',
-                          shadowOffset: { width: 0, height: 6 },
-                          shadowOpacity: 0.18,
-                          shadowRadius: 8,
-                          elevation: 3,
-                          opacity: isSaving ? 0.6 : 1,
-                        }}
-                      >
-                        <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
-                          {isSaving ? 'Guardando...' : 'Guardar'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
+                return shouldShowButton && (
+                  <TouchableOpacity
+                    onPress={saveSquad}
+                    disabled={isSaving}
+                    style={{
+                      backgroundColor: isSaving ? '#374151' : '#0892D0',
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: '#334155',
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 6 },
+                      shadowOpacity: 0.18,
+                      shadowRadius: 8,
+                      elevation: 3,
+                      opacity: isSaving ? 0.6 : 1,
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>
+                      {isSaving ? 'Guardando...' : 'Guardar'}
+                    </Text>
+                  </TouchableOpacity>
                 );
               })()}
             </View>
@@ -2001,6 +1976,36 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             );
           })}
         </View>
+
+        {/* Botón copiar plantilla - después del campo */}
+        {Object.keys(selectedPlayers).length > 0 && !isChangingFormation && (
+          <TouchableOpacity
+            onPress={handleOpenCopyModal}
+            style={{
+              backgroundColor: '#10b981',
+              paddingVertical: 14,
+              paddingHorizontal: 20,
+              borderRadius: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              borderWidth: 1,
+              borderColor: '#059669',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 6,
+              marginBottom: 20,
+            }}
+          >
+            <ContentCopyIcon size={20} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 }}>
+              Copiar plantilla
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Lista de jugadores seleccionados */}
         <View style={{ backgroundColor: '#1a2332', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#334155' }}>

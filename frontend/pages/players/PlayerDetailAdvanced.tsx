@@ -2197,6 +2197,20 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                       puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Tarjeta roja')}
                     />
                     
+                    {/* Penaltis ganados */}
+                    <StatRow
+                      cantidad={selectedData.stats.penaltyWon ?? 0}
+                      estadistica="Penaltis ganados"
+                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis ganados')}
+                    />
+                    
+                    {/* Penaltis cometidos */}
+                    <StatRow
+                      cantidad={selectedData.stats.penaltyCommitted ?? 0}
+                      estadistica="Penaltis cometidos"
+                      puntos={getPointsFromBreakdown(selectedData.stats.pointsBreakdown, 'Penaltis cometidos')}
+                    />
+                    
                     {/* Penaltis fallados */}
                     <StatRow
                       cantidad={selectedData.stats.penaltyMissed ?? 0}
