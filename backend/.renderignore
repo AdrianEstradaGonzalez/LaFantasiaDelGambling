@@ -1,0 +1,2 @@
+# Render should NOT ignore the compiled dist folder
+!dist/
