@@ -156,6 +156,80 @@ export class PlayerStatsController {
   }
 
   /**
+   * Actualizar estadísticas de Segunda División para una jornada (cron)
+   * GET/POST /player-stats/update-jornada-segunda
+   */
+  static async updateJornadaStatsSegunda(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('\n🟡 Endpoint /player-stats/update-jornada-segunda llamado');
+      console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`);
+
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execPromise = promisify(exec);
+      
+      const { stdout, stderr } = await execPromise('npx tsx scripts/update-live-rankings-segunda.ts', {
+        cwd: process.cwd(),
+      });
+      
+      console.log('✅ Actualización Segunda División completada');
+      if (stdout) console.log('STDOUT:', stdout);
+      if (stderr) console.error('STDERR:', stderr);
+
+      return reply.status(200).send({
+        success: true,
+        message: 'Actualización de rankings Segunda División completada',
+        output: stdout
+      });
+    } catch (error: any) {
+      console.error('❌ Error ejecutando actualización Segunda División:', error);
+
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al actualizar rankings Segunda División',
+        output: error.stdout
+      });
+    }
+  }
+
+  /**
+   * Actualizar estadísticas de Premier League para una jornada (cron)
+   * GET/POST /player-stats/update-jornada-premier
+   */
+  static async updateJornadaStatsPremier(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('\n🟣 Endpoint /player-stats/update-jornada-premier llamado');
+      console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`);
+
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execPromise = promisify(exec);
+      
+      const { stdout, stderr } = await execPromise('npx tsx scripts/update-live-rankings-premier.ts', {
+        cwd: process.cwd(),
+      });
+      
+      console.log('✅ Actualización Premier League completada');
+      if (stdout) console.log('STDOUT:', stdout);
+      if (stderr) console.error('STDERR:', stderr);
+
+      return reply.status(200).send({
+        success: true,
+        message: 'Actualización de rankings Premier League completada',
+        output: stdout
+      });
+    } catch (error: any) {
+      console.error('❌ Error ejecutando actualización Premier League:', error);
+
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al actualizar rankings Premier League',
+        output: error.stdout
+      });
+    }
+  }
+
+  /**
    * Obtener promedios por posición basados en todas las estadísticas de la BD
    * GET /api/player-stats/averages-by-position
    */
