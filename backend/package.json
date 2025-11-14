@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "postinstall": "prisma generate",
     "start": "node --es-module-specifier-resolution=node dist/index.js",
-    "deploy": "prisma db push --accept-data-loss --skip-generate && npm run build",
+    "deploy": "prisma db push --accept-data-loss && prisma generate && npm run build",
     "evaluate-bets": "tsx src/workers/evaluate-all-bets.ts",
     "prisma:migrate": "prisma migrate deploy || prisma migrate dev --name init && prisma generate",
     "prisma:deploy": "prisma migrate deploy && prisma generate",

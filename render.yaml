@@ -4,7 +4,7 @@ services:
     env: node
     rootDirectory: backend
     buildCommand: npm install && npm run deploy
-    startCommand: sh -c 'cd /opt/render/project/src/backend && node --es-module-specifier-resolution=node dist/index.js'
+    startCommand: npm start
     envVars:
       - key: DATABASE_URL
         sync: false
