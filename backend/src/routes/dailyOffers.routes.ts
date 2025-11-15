@@ -3,7 +3,11 @@ import { DailyOffersService } from '../services/dailyOffers.service.js';
 
 // JWT Auth
 async function jwtAuth(req: any, reply: any) {
-  await req.jwtVerify();
+  try {
+    await req.jwtVerify();
+  } catch (error) {
+    reply.status(401).send({ success: false, message: 'No autorizado' });
+  }
 }
 
 export const dailyOffersRoutes: FastifyPluginAsync = async (app) => {

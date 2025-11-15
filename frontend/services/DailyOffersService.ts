@@ -1,7 +1,8 @@
 import axios from 'axios';
 import EncryptedStorage from 'react-native-encrypted-storage';
+import { ApiConfig } from '../utils/apiConfig';
 
-const API_BASE = 'https://lafantasiadelgambling.onrender.com';
+const API_BASE = ApiConfig.BASE_URL;
 
 export interface DailyOffer {
   id: string;
