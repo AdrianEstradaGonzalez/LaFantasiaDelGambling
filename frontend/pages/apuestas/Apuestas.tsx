@@ -285,15 +285,21 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           if (ligaId) {
             try {
               const combisData = await BetService.getUserCombis(ligaId);
-              setUserCombis(combisData);
               console.log('✅ Combis cargadas:', combisData);
+              setUserCombis(combisData);
               
               // Verificar si el usuario ya tiene una combi pendiente en esta liga
-              const existingCombi = combisData.length > 0;
-              setHasExistingCombi(existingCombi);
+              if (combisData.length > 0) {
+                setHasExistingCombi(true);
+                console.log('🔗 Usuario tiene combi existente:', combisData[0]);
+              } else {
+                setHasExistingCombi(false);
+                console.log('❌ Usuario no tiene combi');
+              }
             } catch (err) {
-              console.warn('Error loading combis:', err);
+              console.warn('⚠️ Error loading combis:', err);
               setUserCombis([]);
+              setHasExistingCombi(false);
             }
           }
           
@@ -467,12 +473,20 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       // Cargar combis del usuario (sin filtrar por jornada, solo pendientes)
       try {
         const combisData = await BetService.getUserCombis(ligaId);
+        console.log('🔄 Refresh - Combis cargadas:', combisData);
         setUserCombis(combisData);
-        const existingCombi = combisData.length > 0;
-        setHasExistingCombi(existingCombi);
+        
+        if (combisData.length > 0) {
+          setHasExistingCombi(true);
+          console.log('🔗 Refresh - Usuario tiene combi existente');
+        } else {
+          setHasExistingCombi(false);
+          console.log('❌ Refresh - Usuario no tiene combi');
+        }
       } catch (err) {
-        console.warn('Error loading combis:', err);
+        console.warn('⚠️ Error loading combis:', err);
         setUserCombis([]);
+        setHasExistingCombi(false);
       }
     } catch (err: any) {
       console.warn('Error refreshing bets/budget:', err?.message || err);
@@ -938,6 +952,61 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     } finally {
       setCreatingCombi(false);
     }
+  };
+
+  const handleDeleteCombi = async () => {
+    if (userCombis.length === 0) return;
+
+    CustomAlertManager.alert(
+      'Eliminar combi',
+      '¿Estás seguro de que deseas eliminar tu combi? Se te devolverá el presupuesto apostado.',
+      [
+        { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
+        { 
+          text: 'Sí, eliminar', 
+          onPress: async () => {
+            try {
+              setCreatingCombi(true);
+              const combiToDelete = userCombis[0];
+              
+              const token = await EncryptedStorage.getItem('accessToken');
+              if (!token) throw new Error('No hay token de autenticación');
+
+              const response = await fetch(`https://lafantasiadelgambling.onrender.com/bet-combis/${combiToDelete.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
+
+              if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Error al eliminar la combi');
+              }
+
+              showSuccess('Combi eliminada correctamente');
+              
+              // Limpiar estados
+              setShowCombiModal(false);
+              setCombiSelections([]);
+              setCombiAmount('');
+              setHasExistingCombi(false);
+              setUserCombis([]);
+              
+              // Recargar todo
+              await refreshBets();
+            } catch (error: any) {
+              console.error('Error deleting combi:', error);
+              showError(error.message || 'Error al eliminar la combi');
+            } finally {
+              setCreatingCombi(false);
+            }
+          },
+          style: 'destructive' 
+        }
+      ],
+      { icon: 'alert', iconColor: '#ef4444' }
+    );
   };
 
   const clearCombi = () => {
@@ -2052,7 +2121,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   )}
 
                   {/* Botón Ver/Editar Combi - Visible cuando existe una combi */}
-                  {hasExistingCombi && combiSelections.length > 0 && isPremium && (
+                  {hasExistingCombi && userCombis.length > 0 && isPremium && (
                     <TouchableOpacity
                       onPress={handleOpenCombiModal}
                       style={{
@@ -2072,13 +2141,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           🔗 TU COMBI ACTIVA
                         </Text>
                         <Text style={{ color: '#e9d5ff', fontSize: 13, fontWeight: '600' }}>
-                          {combiSelections.length} selecciones • Cuota: {calculateCombiOdds().toFixed(2)}
+                          {userCombis[0]?.selections?.length || 0} selecciones • Cuota: {userCombis[0]?.totalOdd?.toFixed(2) || '0.00'}
                         </Text>
-                        {combiAmount && (
-                          <Text style={{ color: '#c4b5fd', fontSize: 12, marginTop: 4 }}>
-                            Apostado: {combiAmount}M • Ganancia potencial: {Math.round(parseInt(combiAmount) * calculateCombiOdds())}M
-                          </Text>
-                        )}
+                        <Text style={{ color: '#c4b5fd', fontSize: 12, marginTop: 4 }}>
+                          Apostado: {userCombis[0]?.amount || 0}M • Ganancia potencial: {userCombis[0]?.potentialWin || 0}M
+                        </Text>
                       </View>
                       <View style={{
                         backgroundColor: '#fff',
@@ -2725,7 +2792,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   maxHeight: '85%',
                 }}>
                   <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 16 }}>
-                    Crear Apuesta Combinada
+                    {hasExistingCombi ? 'Tu Combi Activa' : 'Crear Apuesta Combinada'}
                   </Text>
 
                   <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={true}>
@@ -2830,28 +2897,53 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       }}
                     >
                       <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
-                        Cancelar
+                        Cerrar
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={handleCreateCombi}
-                      disabled={creatingCombi || !combiAmount || parseInt(combiAmount) <= 0}
-                      style={{
-                        flex: 1,
-                        backgroundColor: creatingCombi ? '#374151' : '#0892D0',
-                        paddingVertical: 12,
-                        borderRadius: 8,
-                        opacity: (creatingCombi || !combiAmount || parseInt(combiAmount) <= 0) ? 0.5 : 1,
-                      }}
-                    >
-                      {creatingCombi ? (
-                        <ActivityIndicator size="small" color="#fff" />
-                      ) : (
-                        <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
-                          Crear Combi
-                        </Text>
-                      )}
-                    </TouchableOpacity>
+                    
+                    {hasExistingCombi ? (
+                      // Botón Eliminar cuando ya existe una combi
+                      <TouchableOpacity
+                        onPress={handleDeleteCombi}
+                        disabled={creatingCombi}
+                        style={{
+                          flex: 1,
+                          backgroundColor: creatingCombi ? '#374151' : '#ef4444',
+                          paddingVertical: 12,
+                          borderRadius: 8,
+                          opacity: creatingCombi ? 0.5 : 1,
+                        }}
+                      >
+                        {creatingCombi ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
+                            Eliminar Combi
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    ) : (
+                      // Botón Crear cuando no existe combi
+                      <TouchableOpacity
+                        onPress={handleCreateCombi}
+                        disabled={creatingCombi || !combiAmount || parseInt(combiAmount) <= 0}
+                        style={{
+                          flex: 1,
+                          backgroundColor: creatingCombi ? '#374151' : '#0892D0',
+                          paddingVertical: 12,
+                          borderRadius: 8,
+                          opacity: (creatingCombi || !combiAmount || parseInt(combiAmount) <= 0) ? 0.5 : 1,
+                        }}
+                      >
+                        {creatingCombi ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
+                            Crear Combi
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
                   </View>
                 </View>
               </View>

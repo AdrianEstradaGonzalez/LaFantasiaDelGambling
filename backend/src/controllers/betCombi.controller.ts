@@ -73,7 +73,7 @@ export class BetCombiController {
       const { leagueId } = request.params;
       const jornada = request.query.jornada ? parseInt(request.query.jornada) : undefined;
 
-      const combis = await BetCombiService.getUserCombis(userId, leagueId, jornada);
+      const combis = await BetCombiService.getUserCombis(leagueId, userId, jornada);
       return reply.status(200).send(combis);
     } catch (error: any) {
       if (error instanceof AppError) {
