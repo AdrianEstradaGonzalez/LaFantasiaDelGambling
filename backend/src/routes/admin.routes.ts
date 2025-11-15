@@ -125,4 +125,36 @@ export const adminRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
+  // Generate daily offers
+  app.get("/generate-daily-offers", async (req, reply) => {
+    try {
+      console.log('🎯 Endpoint /generate-daily-offers llamado');
+      
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execPromise = promisify(exec);
+      
+      const { stdout, stderr } = await execPromise('npx tsx scripts/generate-daily-offers.ts', {
+        cwd: process.cwd(),
+      });
+      
+      console.log('✅ Ofertas diarias generadas con éxito');
+      if (stdout) console.log('STDOUT:', stdout);
+      if (stderr) console.error('STDERR:', stderr);
+      
+      return reply.send({ 
+        success: true, 
+        message: 'Ofertas diarias generadas correctamente',
+        output: stdout 
+      });
+    } catch (error: any) {
+      console.error('❌ Error generando ofertas diarias:', error);
+      return reply.status(500).send({ 
+        success: false, 
+        error: error.message,
+        output: error.stdout,
+      });
+    }
+  });
+
 };
