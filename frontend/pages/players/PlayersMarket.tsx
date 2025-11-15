@@ -610,7 +610,7 @@ export const PlayersMarket = ({ navigation, route }: {
       
       // Calcular precio efectivo (con descuento si está en oferta)
       const isOnOffer = dailyOffers.has(player.id);
-      const effectivePrice = isOnOffer ? Math.round(player.price * 0.8) : player.price;
+      const effectivePrice = isOnOffer ? Math.round(player.price * 0.85) : player.price;
       
       // Verificar presupuesto
       if (budget < effectivePrice) {
@@ -788,7 +788,7 @@ export const PlayersMarket = ({ navigation, route }: {
       
       // Calcular precio efectivo (con descuento si está en oferta)
       const isOnOffer = dailyOffers.has(player.id);
-      const effectivePrice = isOnOffer ? Math.round(player.price * 0.8) : player.price;
+      const effectivePrice = isOnOffer ? Math.round(player.price * 0.85) : player.price;
       
       // Obtener plantilla actual para ver si hay jugador en esta posiciÃ³n
       const squad = await SquadService.getUserSquad(ligaId);
@@ -809,7 +809,7 @@ export const PlayersMarket = ({ navigation, route }: {
       // Verificar presupuesto
       if (availableBudget < effectivePrice) {
         const priceInfo = isOnOffer 
-          ? `\n🎁 Precio con oferta (-20%): ${effectivePrice}M (${player.price}M normal)`
+          ? `\n🎁 Precio con oferta (-15%): ${effectivePrice}M (${player.price}M normal)`
           : `\nPrecio: ${effectivePrice}M`;
         const message = existingPlayerInPosition 
           ? `No tienes suficiente dinero para fichar a ${player.name}.${priceInfo}\nTienes: ${budget}M\nValor de mercado del jugador a sustituir: ${existingPlayerMarketPrice}M\nTotal disponible: ${availableBudget}M`
@@ -961,42 +961,46 @@ export const PlayersMarket = ({ navigation, route }: {
           {/* Precio y Puntos lado a lado */}
           <View style={{ flexDirection: 'row', gap: 16, marginLeft: 8 }}>
             <View style={{ alignItems: 'center', position: 'relative' }}>
-              <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PRECIO</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, height: 24 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PRECIO</Text>
                 {dailyOffers.has(p.id) && (
                   <View style={{
-                    backgroundColor: '#f59e0b',
-                    paddingHorizontal: 5,
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    borderWidth: 1,
+                    borderColor: '#10b981',
+                    paddingHorizontal: 6,
                     paddingVertical: 2,
-                    borderRadius: 6,
-                    marginTop: 2
+                    borderRadius: 4
                   }}>
-                    <Text style={{ color: '#fff', fontSize: 9, fontWeight: '900' }}>-20%</Text>
+                    <Text style={{ color: '#10b981', fontSize: 9, fontWeight: '900', letterSpacing: 0.5 }}>-15%</Text>
                   </View>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+                {dailyOffers.has(p.id) && (
+                  <Text style={{ 
+                    color: '#64748b', 
+                    fontSize: 13, 
+                    textDecorationLine: 'line-through',
+                    fontWeight: '600'
+                  }}>
+                    {p.price}M
+                  </Text>
                 )}
                 <Text style={{ 
                   color: dailyOffers.has(p.id) ? '#10b981' : '#fbbf24', 
-                  fontSize: 18, 
-                  fontWeight: '800', 
-                  marginTop: 2 
+                  fontSize: 20, 
+                  fontWeight: '900'
                 }}>
-                  {dailyOffers.has(p.id) ? Math.round(p.price * 0.8) : p.price}M
+                  {dailyOffers.has(p.id) ? Math.round(p.price * 0.85) : p.price}M
                 </Text>
               </View>
-              {dailyOffers.has(p.id) && (
-                <Text style={{ 
-                  color: '#64748b', 
-                  fontSize: 10, 
-                  textDecorationLine: 'line-through',
-                  marginTop: 2
-                }}>
-                  {p.price}M
-                </Text>
-              )}
             </View>
             <View style={{ alignItems: 'center' }}>
-              <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PUNTOS</Text>
-              <Text style={{ color: '#10b981', fontSize: 18, fontWeight: '800', marginTop: 2 }}>{p.totalPoints ?? 0}</Text>
+              <View style={{ height: 24, justifyContent: 'center', marginBottom: 4 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PUNTOS</Text>
+              </View>
+              <Text style={{ color: '#10b981', fontSize: 18, fontWeight: '800' }}>{p.totalPoints ?? 0}</Text>
             </View>
           </View>
         </View>
@@ -1372,9 +1376,9 @@ export const PlayersMarket = ({ navigation, route }: {
                     <TouchableOpacity
                       onPress={() => setOnlyOffers(!onlyOffers)}
                       style={{
-                        backgroundColor: onlyOffers ? '#10b981' : '#1a2332',
-                        borderWidth: 1,
-                        borderColor: onlyOffers ? '#10b981' : '#334155',
+                        backgroundColor: onlyOffers ? '#10b981' : '#1e293b',
+                        borderWidth: 2,
+                        borderColor: onlyOffers ? '#10b981' : '#10b981',
                         paddingVertical: 12,
                         paddingHorizontal: 16,
                         borderRadius: 10,
@@ -1384,29 +1388,29 @@ export const PlayersMarket = ({ navigation, route }: {
                         gap: 8
                       }}
                     >
-                      <Text style={{ 
-                        color: onlyOffers ? '#fff' : '#94a3b8', 
-                        fontSize: 13, 
-                        fontWeight: '600' 
+                      <View style={{
+                        backgroundColor: onlyOffers ? '#fff' : '#10b981',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 6,
+                        transform: [{ rotate: '-10deg' }]
                       }}>
-                        {onlyOffers ? 'Mostrar todos los jugadores' : 'Mostrar ofertas diarias'}
-                      </Text>
-                      {dailyOffers.size > 0 && (
-                        <View style={{
-                          backgroundColor: onlyOffers ? '#fff' : '#10b981',
-                          paddingHorizontal: 8,
-                          paddingVertical: 3,
-                          borderRadius: 12
+                        <Text style={{ 
+                          color: onlyOffers ? '#10b981' : '#fff', 
+                          fontSize: 12, 
+                          fontWeight: '900',
+                          letterSpacing: 0.5
                         }}>
-                          <Text style={{ 
-                            color: onlyOffers ? '#10b981' : '#fff', 
-                            fontSize: 11, 
-                            fontWeight: '800' 
-                          }}>
-                            {dailyOffers.size}
-                          </Text>
-                        </View>
-                      )}
+                          -15%
+                        </Text>
+                      </View>
+                      <Text style={{ 
+                        color: onlyOffers ? '#fff' : '#10b981', 
+                        fontSize: 13, 
+                        fontWeight: '700' 
+                      }}>
+                        {onlyOffers ? 'Mostrar todos los jugadores' : 'Ofertas Diarias'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   

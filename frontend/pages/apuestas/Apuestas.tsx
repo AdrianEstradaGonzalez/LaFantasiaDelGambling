@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated, Platform, Keyboard, findNodeHandle, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import EncryptedStorage from 'react-native-encrypted-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import FootballService from '../../services/FutbolService';
 import { JornadaService } from '../../services/JornadaService';
@@ -462,10 +463,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       showError('Introduce una cantidad válida');
       return;
     }
-    if (amount > 50) {
+    if (amount > 30) {
       CustomAlertManager.alert(
         'Límite de apuesta',
-        'El máximo por apuesta es 50M',
+        'El máximo por apuesta es 30M',
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -714,7 +715,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
 
-    // Validar máximo 50M
+    // Validar máximo 30M
     if (amount > 30) {
       CustomAlertManager.alert(
         'Cantidad no válida',
@@ -738,7 +739,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
     setCreatingCombi(true);
     try {
-      const token = await AsyncStorage.getItem('authToken');
+      const token = await EncryptedStorage.getItem('accessToken');
       if (!token) throw new Error('No hay token de autenticación');
 
       const response = await fetch(`https://lafantasiadelgambling.onrender.com/bet-combis/${ligaId}`, {
@@ -2488,13 +2489,15 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   padding: 20,
                   width: '100%',
                   maxWidth: 400,
+                  maxHeight: '85%',
                 }}>
                   <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 16 }}>
                     Crear Apuesta Combinada
                   </Text>
 
-                  {/* Lista de selecciones */}
-                  <View style={{ marginBottom: 16 }}>
+                  <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={true}>
+                    {/* Lista de selecciones */}
+                    <View style={{ marginBottom: 16 }}>
                     {combiSelections.map((sel, idx) => (
                       <View key={idx} style={{
                         backgroundColor: '#0f172a',
@@ -2539,10 +2542,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     </Text>
                   </View>
 
-                  {/* Input de cantidad */}
-                  <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>
-                    Cantidad a apostar (máx. 50M)
-                  </Text>
+                    {/* Input de cantidad */}
+                    <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>
+                      Cantidad a apostar (máx. 30M)
+                    </Text>
                   <TextInput
                     value={combiAmount}
                     onChangeText={setCombiAmount}
@@ -2562,27 +2565,28 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     }}
                   />
 
-                  {/* Ganancia potencial */}
-                  {combiAmount && parseInt(combiAmount) > 0 && (
-                    <View style={{
-                      backgroundColor: '#064e3b',
-                      borderRadius: 8,
-                      padding: 12,
-                      marginBottom: 16,
-                      borderWidth: 1,
-                      borderColor: '#10b981',
-                    }}>
-                      <Text style={{ color: '#6ee7b7', fontSize: 12, marginBottom: 4 }}>
-                        Ganancia potencial
-                      </Text>
-                      <Text style={{ color: '#10b981', fontSize: 20, fontWeight: '800' }}>
-                        +{Math.round(parseInt(combiAmount) * calculateCombiOdds())}M
-                      </Text>
-                    </View>
-                  )}
+                    {/* Ganancia potencial */}
+                    {combiAmount && parseInt(combiAmount) > 0 && (
+                      <View style={{
+                        backgroundColor: '#064e3b',
+                        borderRadius: 8,
+                        padding: 12,
+                        marginBottom: 16,
+                        borderWidth: 1,
+                        borderColor: '#10b981',
+                      }}>
+                        <Text style={{ color: '#6ee7b7', fontSize: 12, marginBottom: 4 }}>
+                          Ganancia potencial
+                        </Text>
+                        <Text style={{ color: '#10b981', fontSize: 20, fontWeight: '800' }}>
+                          +{Math.round(parseInt(combiAmount) * calculateCombiOdds())}M
+                        </Text>
+                      </View>
+                    )}
+                  </ScrollView>
 
                   {/* Botones */}
-                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
                     <TouchableOpacity
                       onPress={() => setShowCombiModal(false)}
                       style={{

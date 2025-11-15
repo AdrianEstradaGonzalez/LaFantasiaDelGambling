@@ -110,7 +110,7 @@ async function generateDailyOffers() {
     
     // Crear las ofertas
     const offers = selectedPlayers.map(player => {
-      const discount = 20; // 20% de descuento
+      const discount = 15; // 15% de descuento
       const offerPrice = Math.round(player.price * (1 - discount / 100));
       
       return {
