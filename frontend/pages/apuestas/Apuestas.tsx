@@ -124,12 +124,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
   // Efecto para cargar selecciones de combi existente
   useEffect(() => {
-    if (userCombis.length > 0 && jornada != null) {
-      // Si hay una combi para esta jornada, cargar sus selecciones
-      const currentJornadaCombi = userCombis.find(c => c.jornada === jornada);
-      if (currentJornadaCombi && currentJornadaCombi.selections) {
+    if (userCombis.length > 0) {
+      // Si hay una combi pendiente (ya no filtramos por jornada), cargar sus selecciones
+      const pendingCombi = userCombis[0]; // Solo puede haber una combi pendiente
+      if (pendingCombi && pendingCombi.selections) {
         // Convertir las selecciones de la combi al formato de CombiSelection
-        const selections: CombiSelection[] = currentJornadaCombi.selections.map((sel: any) => ({
+        const selections: CombiSelection[] = pendingCombi.selections.map((sel: any) => ({
           matchId: sel.matchId,
           betType: sel.betType,
           betLabel: sel.betLabel,
@@ -138,11 +138,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           awayTeam: sel.awayTeam
         }));
         setCombiSelections(selections);
-        setCombiAmount(String(currentJornadaCombi.amount));
+        setCombiAmount(String(pendingCombi.amount));
         setHasExistingCombi(true);
       }
+    } else {
+      // Si no hay combis, limpiar las selecciones
+      setHasExistingCombi(false);
     }
-  }, [userCombis, jornada]);
+  }, [userCombis]);
 
   // Listener para el teclado
   useEffect(() => {
@@ -278,14 +281,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           setGroupedBets(groupedArray);
           setUserBets(userBetsData);
           
-          // Cargar combis del usuario si hay ligaId y jornada
-          if (ligaId && currentJornadaFromLeague != null) {
+          // Cargar combis del usuario si hay ligaId (sin filtrar por jornada, solo pendientes)
+          if (ligaId) {
             try {
-              const combisData = await BetService.getUserCombis(ligaId, currentJornadaFromLeague);
+              const combisData = await BetService.getUserCombis(ligaId);
               setUserCombis(combisData);
               console.log('✅ Combis cargadas:', combisData);
               
-              // Verificar si el usuario ya tiene una combi para esta jornada
+              // Verificar si el usuario ya tiene una combi pendiente en esta liga
               const existingCombi = combisData.length > 0;
               setHasExistingCombi(existingCombi);
             } catch (err) {
@@ -461,17 +464,15 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       setLeagueBets(leagueBetsData);
       setJornadaStatus(statusResp.status);
       
-      // Cargar combis del usuario
-      if (jornada != null) {
-        try {
-          const combisData = await BetService.getUserCombis(ligaId, jornada);
-          setUserCombis(combisData);
-          const existingCombi = combisData.length > 0;
-          setHasExistingCombi(existingCombi);
-        } catch (err) {
-          console.warn('Error loading combis:', err);
-          setUserCombis([]);
-        }
+      // Cargar combis del usuario (sin filtrar por jornada, solo pendientes)
+      try {
+        const combisData = await BetService.getUserCombis(ligaId);
+        setUserCombis(combisData);
+        const existingCombi = combisData.length > 0;
+        setHasExistingCombi(existingCombi);
+      } catch (err) {
+        console.warn('Error loading combis:', err);
+        setUserCombis([]);
       }
     } catch (err: any) {
       console.warn('Error refreshing bets/budget:', err?.message || err);
@@ -777,6 +778,26 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return combiSelections.reduce((acc, sel) => acc * sel.odd, 1);
   };
 
+  const handleOpenCombiModal = () => {
+    // Si hay una combi existente, cargar sus datos
+    if (hasExistingCombi && userCombis.length > 0) {
+      const existingCombi = userCombis[0];
+      if (existingCombi.selections) {
+        const selections: CombiSelection[] = existingCombi.selections.map((sel: any) => ({
+          matchId: sel.matchId,
+          betType: sel.betType,
+          betLabel: sel.betLabel,
+          odd: sel.odd,
+          homeTeam: sel.homeTeam,
+          awayTeam: sel.awayTeam
+        }));
+        setCombiSelections(selections);
+        setCombiAmount(String(existingCombi.amount));
+      }
+    }
+    setShowCombiModal(true);
+  };
+
   const handleCreateCombi = async () => {
     if (!ligaId || !jornada) return;
 
@@ -836,6 +857,29 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
 
+    // Si ya existe una combi, mostrar alerta de confirmación
+    if (hasExistingCombi && userCombis.length > 0) {
+      CustomAlertManager.alert(
+        'Reemplazar combi',
+        'Borrarás tu anterior combi por esta nueva. ¿Deseas continuar?',
+        [
+          { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
+          { 
+            text: 'Sí, reemplazar', 
+            onPress: () => executeCreateCombi(amount), 
+            style: 'destructive' 
+          }
+        ],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
+      return;
+    }
+
+    // Si no hay combi existente, crear directamente
+    executeCreateCombi(amount);
+  };
+
+  const executeCreateCombi = async (amount: number) => {
     setCreatingCombi(true);
     try {
       const token = await EncryptedStorage.getItem('accessToken');
@@ -2010,7 +2054,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   {/* Botón Ver/Editar Combi - Visible cuando existe una combi */}
                   {hasExistingCombi && combiSelections.length > 0 && isPremium && (
                     <TouchableOpacity
-                      onPress={() => setShowCombiModal(true)}
+                      onPress={handleOpenCombiModal}
                       style={{
                         backgroundColor: '#8b5cf6',
                         borderRadius: 12,
@@ -2640,7 +2684,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             {/* Indicador flotante de combi en construcción */}
             {combiSelections.length > 0 && (
               <TouchableOpacity
-                onPress={() => setShowCombiModal(true)}
+                onPress={handleOpenCombiModal}
                 style={{
                   position: 'absolute',
                   bottom: 80,

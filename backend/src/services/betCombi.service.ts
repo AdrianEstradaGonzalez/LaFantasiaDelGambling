@@ -49,6 +49,19 @@ export const BetCombiService = {
       throw new Error('El monto mínimo es 1M');
     }
 
+    // Verificar que no tenga ya una combi pendiente en esta liga
+    const existingCombi = await (prisma as any).betCombi.findFirst({
+      where: {
+        leagueId,
+        userId,
+        status: 'pending'
+      }
+    });
+
+    if (existingCombi) {
+      throw new Error('Ya tienes una combi pendiente en esta liga. Debes eliminarla primero para crear una nueva.');
+    }
+
     // Verificar presupuesto de apuestas
     const member = await prisma.leagueMember.findUnique({
       where: { leagueId_userId: { leagueId, userId } },
@@ -125,9 +138,10 @@ export const BetCombiService = {
 
   /**
    * Obtener combinadas de un usuario en una liga
+   * Por defecto solo devuelve combis pendientes
    */
   getUserCombis: async (leagueId: string, userId: string, jornada?: number) => {
-    const where: any = { leagueId, userId };
+    const where: any = { leagueId, userId, status: 'pending' };
     if (jornada) {
       where.jornada = jornada;
     }
