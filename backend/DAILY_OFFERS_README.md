@@ -4,7 +4,11 @@ Sistema que genera 50 ofertas diarias de jugadores con descuento del 20% en el m
 
 ## 🎯 Características
 
-- **50 ofertas diarias** de jugadores aleatorios con precio > 1M
+- **150 ofertas diarias** (50 por división):
+  - 50 jugadores de Primera División
+  - 50 jugadores de Segunda División
+  - 50 jugadores de Premier League
+- Todos con precio > 1M
 - **20% de descuento** automático en el precio
 - **No repetición**: Un jugador no puede estar en oferta dos días consecutivos
 - **Precio de venta fijo**: Cuando vendes un jugador, lo vendes por el precio que lo compraste (no por el precio actual del mercado)
@@ -142,25 +146,28 @@ await DailyOffersService.cleanOldOffers();
 
 ## 📊 Distribución de Ofertas
 
-El script selecciona jugadores aleatoriamente de todas las divisiones:
-- Primera División
-- Segunda División  
-- Premier League
+El script genera **50 ofertas por cada división**:
+- **Primera División**: 50 ofertas
+- **Segunda División**: 50 ofertas
+- **Premier League**: 50 ofertas
 
-La cantidad de ofertas por división depende de cuántos jugadores elegibles hay en cada una.
+**Total: 150 ofertas diarias**
 
 **Jugadores elegibles:**
 - Precio > 1M
 - No tuvo oferta ayer
 
+Si una división tiene menos de 50 jugadores elegibles, se generarán todas las ofertas posibles para esa división.
+
 ## 🎲 Algoritmo de Selección
 
-1. Obtener todos los jugadores con `precio > 1M`
+1. Obtener todos los jugadores con `precio > 1M` de cada división
 2. Excluir jugadores que tuvieron oferta ayer
-3. Mezclar aleatoriamente (`shuffle`)
-4. Seleccionar los primeros 50
-5. Aplicar 20% de descuento a cada uno
-6. Guardar en `daily_offer` y actualizar `offer_history`
+3. **Por cada división**:
+   - Mezclar aleatoriamente (`shuffle`)
+   - Seleccionar los primeros 50 jugadores
+4. Aplicar 20% de descuento a cada uno
+5. Guardar las 150 ofertas en `daily_offer` y actualizar `offer_history`
 
 ## 🐛 Debugging
 

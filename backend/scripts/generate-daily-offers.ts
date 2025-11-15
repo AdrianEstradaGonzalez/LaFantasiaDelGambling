@@ -89,22 +89,40 @@ async function generateDailyOffers() {
     console.log(`   Premier: ${premierPlayers.length}`);
     console.log(`   TOTAL: ${primeraPlayers.length + segundaPlayers.length + premierPlayers.length}`);
     
-    // Combinar todos los jugadores con su división
-    const allPlayers = [
-      ...primeraPlayers.map(p => ({ ...p, division: 'primera' })),
-      ...segundaPlayers.map(p => ({ ...p, division: 'segunda' })),
-      ...premierPlayers.map(p => ({ ...p, division: 'premier' }))
-    ];
+    // Seleccionar 50 jugadores de cada división
+    const selectedPrimera = primeraPlayers
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.min(50, primeraPlayers.length))
+      .map(p => ({ ...p, division: 'primera' }));
     
-    if (allPlayers.length < 50) {
-      console.warn(`⚠️  Solo hay ${allPlayers.length} jugadores elegibles (se necesitan 50)`);
+    const selectedSegunda = segundaPlayers
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.min(50, segundaPlayers.length))
+      .map(p => ({ ...p, division: 'segunda' }));
+    
+    const selectedPremier = premierPlayers
+      .sort(() => Math.random() - 0.5)
+      .slice(0, Math.min(50, premierPlayers.length))
+      .map(p => ({ ...p, division: 'premier' }));
+    
+    // Combinar todas las selecciones
+    const selectedPlayers = [...selectedPrimera, ...selectedSegunda, ...selectedPremier];
+    
+    console.log(`\n✨ Seleccionados por división:`);
+    console.log(`   Primera: ${selectedPrimera.length} ofertas`);
+    console.log(`   Segunda: ${selectedSegunda.length} ofertas`);
+    console.log(`   Premier: ${selectedPremier.length} ofertas`);
+    console.log(`   TOTAL: ${selectedPlayers.length} ofertas`);
+    
+    if (selectedPrimera.length < 50) {
+      console.warn(`⚠️  Primera División: Solo ${selectedPrimera.length}/50 jugadores elegibles`);
     }
-    
-    // Seleccionar 50 jugadores aleatorios
-    const shuffled = allPlayers.sort(() => Math.random() - 0.5);
-    const selectedPlayers = shuffled.slice(0, Math.min(50, shuffled.length));
-    
-    console.log(`\n✨ Seleccionados ${selectedPlayers.length} jugadores para ofertas`);
+    if (selectedSegunda.length < 50) {
+      console.warn(`⚠️  Segunda División: Solo ${selectedSegunda.length}/50 jugadores elegibles`);
+    }
+    if (selectedPremier.length < 50) {
+      console.warn(`⚠️  Premier League: Solo ${selectedPremier.length}/50 jugadores elegibles`);
+    }
     
     // Crear las ofertas
     const offers = selectedPlayers.map(player => {
