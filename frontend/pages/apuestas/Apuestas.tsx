@@ -739,6 +739,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             }
           }
         } else {
+          // Verificar si ya tiene 3 selecciones
+          if (currentCombi.selections.length >= 3) {
+            showError('Ya alcanzaste el máximo de 3 selecciones en tu combi');
+            return;
+          }
+          
           // Añadir selección a la combi existente
           try {
             await BetService.addSelectionToCombi(currentCombi.id, selection);
@@ -2120,43 +2126,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     </View>
                   )}
 
-                  {/* Botón Ver/Editar Combi - Visible cuando existe una combi */}
-                  {hasExistingCombi && userCombis.length > 0 && isPremium && (
-                    <TouchableOpacity
-                      onPress={handleOpenCombiModal}
-                      style={{
-                        backgroundColor: '#8b5cf6',
-                        borderRadius: 12,
-                        padding: 16,
-                        marginBottom: 16,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        borderWidth: 2,
-                        borderColor: '#a78bfa',
-                      }}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', marginBottom: 4 }}>
-                          🔗 TU COMBI ACTIVA
-                        </Text>
-                        <Text style={{ color: '#e9d5ff', fontSize: 13, fontWeight: '600' }}>
-                          {userCombis[0]?.selections?.length || 0} selecciones • Cuota: {userCombis[0]?.totalOdd?.toFixed(2) || '0.00'}
-                        </Text>
-                        <Text style={{ color: '#c4b5fd', fontSize: 12, marginTop: 4 }}>
-                          Apostado: {userCombis[0]?.amount || 0}M • Ganancia potencial: {userCombis[0]?.potentialWin || 0}M
-                        </Text>
-                      </View>
-                      <View style={{
-                        backgroundColor: '#fff',
-                        borderRadius: 8,
-                        padding: 10,
-                      }}>
-                        <Text style={{ color: '#8b5cf6', fontSize: 12, fontWeight: '800' }}>VER/EDITAR</Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-
                   {/* Banner AdMob cuando jornada está ABIERTA */}
                   {jornadaStatus === 'open' && (
                     <View style={{ marginBottom: 16 }}>
@@ -2452,11 +2421,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       padding: 12,
                                       marginBottom: 8,
                                       borderWidth: isPartOfCombi ? 2 : 0,
-                                      borderColor: isPartOfCombi ? '#8b5cf6' : 'transparent',
+                                      borderColor: isPartOfCombi ? '#0892D0' : 'transparent',
                                     }}>
                                       {isPartOfCombi && (
                                         <View style={{
-                                          backgroundColor: '#8b5cf6',
+                                          backgroundColor: '#0892D0',
                                           borderRadius: 6,
                                           paddingHorizontal: 10,
                                           paddingVertical: 4,
@@ -2652,13 +2621,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       disabled={
                                         !isPremium || 
                                         (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ||
+                                        (hasExistingCombi && userCombis.length > 0 && userCombis[0]?.selections?.length >= 3 && !isInCombi(b.matchId, b.type, option.label)) ||
                                         (!hasExistingCombi && combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
                                       }
                                       style={{
                                         backgroundColor: !isPremium
                                           ? '#374151'  // Gris si no es premium
                                           : isInCombi(b.matchId, b.type, option.label) 
-                                            ? '#8b5cf6' // Morado cuando está en la combi
+                                            ? '#0892D0' // Azul cuando está en la combi
                                             : hasExistingCombi
                                               ? '#374151' // Gris si ya hay combi y no está en ella (bloqueado por partido)
                                               : (isMatchBlockedByCombi(b.matchId) || combiSelections.length >= 3)
@@ -2669,10 +2639,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         borderRadius: 8,
                                         marginTop: 8,
                                         borderWidth: isInCombi(b.matchId, b.type, option.label) ? 0 : 1,
-                                        borderColor: hasExistingCombi ? '#8b5cf6' : '#0892D0',
+                                        borderColor: '#0892D0',
                                         opacity: (
                                           !isPremium || 
                                           (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ||
+                                          (hasExistingCombi && userCombis.length > 0 && userCombis[0]?.selections?.length >= 3 && !isInCombi(b.matchId, b.type, option.label)) ||
                                           (!hasExistingCombi && combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
                                         ) ? 0.5 : 1,
                                         flexDirection: 'row',
@@ -2691,6 +2662,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                             ? '✓ En combi' 
                                             : hasExistingCombi && isMatchBlockedByCombi(b.matchId)
                                               ? 'Partido en combi'
+                                              : hasExistingCombi && userCombis.length > 0 && userCombis[0]?.selections?.length >= 3
+                                                ? 'Máximo alcanzado'
                                               : hasExistingCombi
                                                 ? '+ Añadir a combi'
                                                 : combiSelections.length >= 3
