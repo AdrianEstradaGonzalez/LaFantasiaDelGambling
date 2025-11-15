@@ -462,5 +462,57 @@ export class BetService {
       throw new Error(error?.response?.data?.error || 'Error al obtener combis');
     }
   }
+
+  /**
+   * COMBIS - Eliminar una selección de una combi
+   */
+  static async removeSelectionFromCombi(combiId: string, betId: string): Promise<any> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.delete(`${API_URL}/bet-combis/${combiId}/selections/${betId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error removing selection from combi:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al eliminar selección de la combi');
+    }
+  }
+
+  /**
+   * COMBIS - Añadir una selección a una combi existente
+   */
+  static async addSelectionToCombi(combiId: string, selection: {
+    matchId: number;
+    betType: string;
+    betLabel: string;
+    odd: number;
+    homeTeam: string;
+    awayTeam: string;
+  }): Promise<any> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.post(`${API_URL}/bet-combis/${combiId}/selections`, 
+        { selection },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error adding selection to combi:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al añadir selección a la combi');
+    }
+  }
 }
 
