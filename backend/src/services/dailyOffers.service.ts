@@ -5,37 +5,37 @@ const prisma = new PrismaClient();
 export class DailyOffersService {
   /**
    * Obtener las ofertas del día
+   * Como se borran todas las ofertas anteriores cada día,
+   * simplemente obtenemos todas las ofertas de la tabla
    */
   static async getTodayOffers(division?: 'primera' | 'segunda' | 'premier') {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    try {
+      const where: any = {};
+      if (division) {
+        where.division = division;
+      }
 
-    const where: any = { date: today };
-    if (division) {
-      where.division = division;
+      const offers = await prisma.dailyOffer.findMany({
+        where,
+        orderBy: { playerName: 'asc' }
+      });
+
+      return offers;
+    } catch (error) {
+      console.error('Error en getTodayOffers:', error);
+      throw error;
     }
-
-    const offers = await prisma.dailyOffer.findMany({
-      where,
-      orderBy: { playerName: 'asc' }
-    });
-
-    return offers;
   }
 
   /**
-   * Verificar si un jugador está en oferta hoy
+   * Verificar si un jugador está en oferta
+   * Como se borran todas las ofertas anteriores,
+   * solo buscamos si el jugador existe en la tabla
    */
   static async isPlayerOnOffer(playerId: number): Promise<{ isOnOffer: boolean; offerPrice?: number; discount?: number }> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const offer = await prisma.dailyOffer.findUnique({
+    const offer = await prisma.dailyOffer.findFirst({
       where: {
-        date_playerId: {
-          date: today,
-          playerId: playerId
-        }
+        playerId: playerId
       }
     });
 

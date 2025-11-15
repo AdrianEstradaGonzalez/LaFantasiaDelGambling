@@ -18,37 +18,23 @@ async function generateDailyOffers() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
     console.log(`📅 Fecha: ${today.toISOString().split('T')[0]}`);
     
-    // Verificar si ya existen ofertas para hoy
-    const existingOffers = await prisma.dailyOffer.count({
-      where: { date: today }
-    });
+    // Borrar TODAS las ofertas anteriores (sin importar la fecha)
+    const existingOffers = await prisma.dailyOffer.count();
     
     if (existingOffers > 0) {
-      console.log(`⚠️  Ya existen ${existingOffers} ofertas para hoy. Eliminando...`);
-      await prisma.dailyOffer.deleteMany({
-        where: { date: today }
-      });
+      console.log(`🗑️  Eliminando ${existingOffers} ofertas anteriores...`);
+      await prisma.dailyOffer.deleteMany({});
+      console.log(`✅ Ofertas anteriores eliminadas`);
     }
     
-    // Obtener jugadores que tuvieron oferta ayer
-    const yesterdayOffers = await prisma.dailyOffer.findMany({
-      where: { date: yesterday },
-      select: { playerId: true }
-    });
-    
-    const excludedPlayerIds = yesterdayOffers.map(o => o.playerId);
-    console.log(`🚫 Excluyendo ${excludedPlayerIds.length} jugadores que tuvieron oferta ayer`);
+    console.log(`🚫 Sin exclusiones - todos los jugadores elegibles`);
     
     // Obtener jugadores elegibles de Primera División
     const primeraPlayers = await prisma.player.findMany({
       where: {
-        price: { gt: 1 },
-        id: { notIn: excludedPlayerIds }
+        price: { gt: 1 }
       },
       select: {
         id: true,
@@ -60,8 +46,7 @@ async function generateDailyOffers() {
     // Obtener jugadores elegibles de Segunda División
     const segundaPlayers = await prisma.playerSegunda.findMany({
       where: {
-        price: { gt: 1 },
-        id: { notIn: excludedPlayerIds }
+        price: { gt: 1 }
       },
       select: {
         id: true,
@@ -73,8 +58,7 @@ async function generateDailyOffers() {
     // Obtener jugadores elegibles de Premier League
     const premierPlayers = await prisma.playerPremier.findMany({
       where: {
-        price: { gt: 1 },
-        id: { notIn: excludedPlayerIds }
+        price: { gt: 1 }
       },
       select: {
         id: true,
