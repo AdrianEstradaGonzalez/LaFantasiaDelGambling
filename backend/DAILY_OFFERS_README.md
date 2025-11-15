@@ -36,23 +36,21 @@ npx tsx scripts/generate-daily-offers.ts
 
 ### Configurar cron job diario
 
-El script debe ejecutarse automáticamente cada día. Puedes configurarlo de dos formas:
+El script debe ejecutarse automáticamente cada día a medianoche. Configura un cron job externo:
 
-#### Opción 1: Cron-job.org
+#### Cron-job.org (Recomendado)
 
 1. Ve a https://console.cron-job.org
 2. Crea un nuevo job con:
-   - **URL**: `https://tudominio.com/admin/generate-daily-offers`
-   - **Schedule**: Todos los días a las 00:00 (medianoche)
+   - **URL**: `https://lafantasiadelgambling.onrender.com/player-stats/generate-daily-offers`
+   - **Schedule**: Todos los días a las 00:00 (medianoche) - `0 0 * * *`
    - **Method**: GET
-   - **Headers**: `X-Cron-Token: TU_TOKEN_DE_CRON`
+   - **Headers**: 
+     ```
+     X-Cron-Token: 7B3TFD8Vo9TtIBGXE5zU4w76j7Dhz0IuUISMJDoCXRzAHLhi3yca4CQXAyLmwoxh
+     ```
 
-#### Opción 2: Render.com (Cron Jobs)
-
-1. En el dashboard de Render, crea un nuevo "Cron Job"
-2. Configura:
-   - **Command**: `npx tsx scripts/generate-daily-offers.ts`
-   - **Schedule**: `0 0 * * *` (medianoche cada día)
+El endpoint requiere autenticación con el token de cron para seguridad.
 
 ## 🎮 Uso desde la App
 
