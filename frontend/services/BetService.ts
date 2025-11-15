@@ -514,5 +514,26 @@ export class BetService {
       throw new Error(error?.response?.data?.error || 'Error al añadir selección a la combi');
     }
   }
+
+  /**
+   * COMBIS - Eliminar una combi completa
+   */
+  static async deleteCombi(combiId: string): Promise<any> {
+    try {
+      const token = await EncryptedStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('No token found');
+      }
+
+      const response = await axios.delete(`${API_URL}/bet-combis/${combiId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('Error deleting combi:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al eliminar combi');
+    }
+  }
 }
 

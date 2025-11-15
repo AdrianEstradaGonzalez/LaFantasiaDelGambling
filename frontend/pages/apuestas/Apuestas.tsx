@@ -119,6 +119,31 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Estados para expansión de apuestas por partido
   const [expandedBets, setExpandedBets] = useState<Set<number>>(new Set());
 
+  // Estado para almacenar combis del usuario
+  const [userCombis, setUserCombis] = useState<any[]>([]);
+
+  // Efecto para cargar selecciones de combi existente
+  useEffect(() => {
+    if (userCombis.length > 0 && jornada != null) {
+      // Si hay una combi para esta jornada, cargar sus selecciones
+      const currentJornadaCombi = userCombis.find(c => c.jornada === jornada);
+      if (currentJornadaCombi && currentJornadaCombi.selections) {
+        // Convertir las selecciones de la combi al formato de CombiSelection
+        const selections: CombiSelection[] = currentJornadaCombi.selections.map((sel: any) => ({
+          matchId: sel.matchId,
+          betType: sel.betType,
+          betLabel: sel.betLabel,
+          odd: sel.odd,
+          homeTeam: sel.homeTeam,
+          awayTeam: sel.awayTeam
+        }));
+        setCombiSelections(selections);
+        setCombiAmount(String(currentJornadaCombi.amount));
+        setHasExistingCombi(true);
+      }
+    }
+  }, [userCombis, jornada]);
+
   // Listener para el teclado
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -253,12 +278,20 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           setGroupedBets(groupedArray);
           setUserBets(userBetsData);
           
-          // Verificar si el usuario ya tiene una combi para esta jornada
-          if (currentJornadaFromLeague != null) {
-            const existingCombi = userBetsData.some(bet => 
-              bet.jornada === currentJornadaFromLeague && bet.combiId != null
-            );
-            setHasExistingCombi(existingCombi);
+          // Cargar combis del usuario si hay ligaId y jornada
+          if (ligaId && currentJornadaFromLeague != null) {
+            try {
+              const combisData = await BetService.getUserCombis(ligaId, currentJornadaFromLeague);
+              setUserCombis(combisData);
+              console.log('✅ Combis cargadas:', combisData);
+              
+              // Verificar si el usuario ya tiene una combi para esta jornada
+              const existingCombi = combisData.length > 0;
+              setHasExistingCombi(existingCombi);
+            } catch (err) {
+              console.warn('Error loading combis:', err);
+              setUserCombis([]);
+            }
           }
           
           // Filtrar apuestas de la liga por la jornada actual de la liga
@@ -428,12 +461,17 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       setLeagueBets(leagueBetsData);
       setJornadaStatus(statusResp.status);
       
-      // Verificar si hay combi existente
+      // Cargar combis del usuario
       if (jornada != null) {
-        const existingCombi = userBetsData.some(bet => 
-          bet.jornada === jornada && bet.combiId != null
-        );
-        setHasExistingCombi(existingCombi);
+        try {
+          const combisData = await BetService.getUserCombis(ligaId, jornada);
+          setUserCombis(combisData);
+          const existingCombi = combisData.length > 0;
+          setHasExistingCombi(existingCombi);
+        } catch (err) {
+          console.warn('Error loading combis:', err);
+          setUserCombis([]);
+        }
       }
     } catch (err: any) {
       console.warn('Error refreshing bets/budget:', err?.message || err);
@@ -587,10 +625,18 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
   // CÃ¡lculos de ganancias potenciales los devuelve el backend con la apuesta del usuario
 
-  // FunciÃ³n auxiliar para verificar si una opciÃ³n tiene apuesta del usuario
+  // Función auxiliar para verificar si una opción tiene apuesta del usuario
+  // EXCLUYE las apuestas que forman parte de una combi
   const getUserBetForOption = (matchId: number, betType: string, betLabel: string): UserBet | undefined => {
     return userBets.find(
-      (bet) => bet.matchId === matchId && bet.betType === betType && bet.betLabel === betLabel
+      (bet) => bet.matchId === matchId && bet.betType === betType && bet.betLabel === betLabel && !bet.combiId
+    );
+  };
+
+  // Función auxiliar para obtener la combi de una apuesta
+  const getCombiForBet = (betId: string) => {
+    return userCombis.find(combi => 
+      combi.selections && combi.selections.some((sel: any) => sel.id === betId)
     );
   };
 
@@ -611,20 +657,22 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       .trim()
       .toLowerCase();
 
-  // FunciÃ³n para verificar si existe alguna apuesta en el grupo (mismo matchId + betType)
+  // Función para verificar si existe alguna apuesta en el grupo (mismo matchId + betType)
+  // EXCLUYE las apuestas que forman parte de una combi
   const hasAnyBetInGroup = (matchId: number, betType: string): boolean => {
-    return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType);
+    return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType && !bet.combiId);
   };
 
   // Use shared formatter from utils `frontend/utils/formatBetLabel.ts`
 
   // Regla global: una sola apuesta por partido
+  // EXCLUYE las apuestas que forman parte de una combi
   const hasAnyBetInMatch = (matchId: number): boolean => {
-    return userBets.some((bet) => bet.matchId === matchId);
+    return userBets.some((bet) => bet.matchId === matchId && !bet.combiId);
   };
 
   // Funciones para manejar combis
-  const toggleCombiSelection = (selection: CombiSelection) => {
+  const toggleCombiSelection = async (selection: CombiSelection) => {
     // Verificar si la liga es premium
     if (!isPremium) {
       CustomAlertManager.alert(
@@ -640,6 +688,57 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       s => s.matchId === selection.matchId && s.betType === selection.betType && s.betLabel === selection.betLabel
     );
 
+    // Si ya existe una combi guardada en el servidor
+    if (hasExistingCombi && userCombis.length > 0 && jornada != null) {
+      const currentCombi = userCombis.find(c => c.jornada === jornada);
+      if (currentCombi) {
+        if (isAlreadySelected) {
+          // Encontrar el bet que corresponde a esta selección
+          const betToRemove = currentCombi.selections.find((s: any) => 
+            s.matchId === selection.matchId && 
+            s.betType === selection.betType && 
+            s.betLabel === selection.betLabel
+          );
+          
+          if (betToRemove) {
+            try {
+              const result = await BetService.removeSelectionFromCombi(currentCombi.id, betToRemove.id);
+              
+              // Si deleted=true, significa que la combi fue eliminada completamente
+              if (result.deleted) {
+                showSuccess('Combi eliminada (menos de 2 selecciones)');
+                setCombiSelections([]);
+                setCombiAmount('');
+                setHasExistingCombi(false);
+              } else {
+                showSuccess('Selección eliminada de la combi');
+                // Actualizar selecciones locales
+                setCombiSelections(prev => 
+                  prev.filter(s => !(s.matchId === selection.matchId && s.betType === selection.betType && s.betLabel === selection.betLabel))
+                );
+              }
+              
+              await refreshBets();
+            } catch (error: any) {
+              showError(error.message || 'Error al eliminar selección');
+            }
+          }
+        } else {
+          // Añadir selección a la combi existente
+          try {
+            await BetService.addSelectionToCombi(currentCombi.id, selection);
+            showSuccess('Selección añadida a la combi');
+            setCombiSelections(prev => [...prev, selection]);
+            await refreshBets();
+          } catch (error: any) {
+            showError(error.message || 'Error al añadir selección');
+          }
+        }
+        return;
+      }
+    }
+
+    // Si NO hay combi guardada, solo modificar selecciones locales
     if (isAlreadySelected) {
       // Remover selección
       setCombiSelections(prev => 
@@ -742,6 +841,24 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       const token = await EncryptedStorage.getItem('accessToken');
       if (!token) throw new Error('No hay token de autenticación');
 
+      // Si ya existe una combi, eliminarla primero
+      if (hasExistingCombi && userCombis.length > 0) {
+        const existingCombi = userCombis[0];
+        
+        const deleteResponse = await fetch(`https://lafantasiadelgambling.onrender.com/bet-combis/${existingCombi.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!deleteResponse.ok) {
+          const deleteData = await deleteResponse.json();
+          throw new Error(deleteData.error || 'Error al eliminar la combi anterior');
+        }
+      }
+
+      // Crear nueva combi
       const response = await fetch(`https://lafantasiadelgambling.onrender.com/bet-combis/${ligaId}`, {
         method: 'POST',
         headers: {
@@ -763,19 +880,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
       showSuccess(`¡Combi creada! Ganancia potencial: ${Math.round(amount * calculateCombiOdds())}M`);
       
-      // Limpiar selecciones y cerrar modal
+      // Cerrar modal y limpiar
+      setShowCombiModal(false);
       setCombiSelections([]);
       setCombiAmount('');
-      setShowCombiModal(false);
       
-      // Marcar que ya existe una combi para esta jornada
-      setHasExistingCombi(true);
-
-      // Recargar presupuesto y apuestas
-      const budgetData = await BetService.getBettingBudget(ligaId);
-      setBudget(budgetData);
-      const userBetsData = await BetService.getUserBets(ligaId);
-      setUserBets(userBetsData);
+      // Recargar todo
+      await refreshBets();
 
     } catch (error: any) {
       console.error('Error creating combi:', error);
@@ -1896,6 +2007,45 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     </View>
                   )}
 
+                  {/* Botón Ver/Editar Combi - Visible cuando existe una combi */}
+                  {hasExistingCombi && combiSelections.length > 0 && isPremium && (
+                    <TouchableOpacity
+                      onPress={() => setShowCombiModal(true)}
+                      style={{
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 12,
+                        padding: 16,
+                        marginBottom: 16,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        borderWidth: 2,
+                        borderColor: '#a78bfa',
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800', marginBottom: 4 }}>
+                          🔗 TU COMBI ACTIVA
+                        </Text>
+                        <Text style={{ color: '#e9d5ff', fontSize: 13, fontWeight: '600' }}>
+                          {combiSelections.length} selecciones • Cuota: {calculateCombiOdds().toFixed(2)}
+                        </Text>
+                        {combiAmount && (
+                          <Text style={{ color: '#c4b5fd', fontSize: 12, marginTop: 4 }}>
+                            Apostado: {combiAmount}M • Ganancia potencial: {Math.round(parseInt(combiAmount) * calculateCombiOdds())}M
+                          </Text>
+                        )}
+                      </View>
+                      <View style={{
+                        backgroundColor: '#fff',
+                        borderRadius: 8,
+                        padding: 10,
+                      }}>
+                        <Text style={{ color: '#8b5cf6', fontSize: 12, fontWeight: '800' }}>VER/EDITAR</Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
                   {/* Banner AdMob cuando jornada está ABIERTA */}
                   {jornadaStatus === 'open' && (
                     <View style={{ marginBottom: 16 }}>
@@ -2180,29 +2330,65 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 </View>
 
                                 {/* Si el usuario ya apostÃ³ */}
-                                {userBet && ligaId && isJornadaOpen && (
-                                  <View style={{
-                                    backgroundColor: '#1e293b',
-                                    borderRadius: 8,
-                                    padding: 12,
-                                    marginBottom: 8,
-                                  }}>
-                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                                      <View>
-                                        <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Apostado</Text>
-                                        <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>
-                                          {userBet.amount}M
-                                        </Text>
+                                {userBet && ligaId && isJornadaOpen && (() => {
+                                  const combi = getCombiForBet(userBet.id);
+                                  const isPartOfCombi = !!combi;
+                                  
+                                  return (
+                                    <View style={{
+                                      backgroundColor: isPartOfCombi ? '#1e1b3a' : '#1e293b',
+                                      borderRadius: 8,
+                                      padding: 12,
+                                      marginBottom: 8,
+                                      borderWidth: isPartOfCombi ? 2 : 0,
+                                      borderColor: isPartOfCombi ? '#8b5cf6' : 'transparent',
+                                    }}>
+                                      {isPartOfCombi && (
+                                        <View style={{
+                                          backgroundColor: '#8b5cf6',
+                                          borderRadius: 6,
+                                          paddingHorizontal: 10,
+                                          paddingVertical: 4,
+                                          marginBottom: 8,
+                                          alignSelf: 'flex-start',
+                                        }}>
+                                          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>
+                                            🔗 PARTE DE UNA COMBI
+                                          </Text>
+                                        </View>
+                                      )}
+                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <View>
+                                          <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>
+                                            {isPartOfCombi ? 'Apostado en combi' : 'Apostado'}
+                                          </Text>
+                                          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>
+                                            {isPartOfCombi ? combi.amount : userBet.amount}M
+                                          </Text>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end' }}>
+                                          <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>
+                                            {isPartOfCombi ? 'Ganancia total combi' : 'Ganancia potencial'}
+                                          </Text>
+                                          <Text style={{ color: '#10b981', fontSize: 18, fontWeight: '800' }}>
+                                            +{isPartOfCombi ? combi.potentialWin : userBet.potentialWin}M
+                                          </Text>
+                                        </View>
                                       </View>
-                                      <View style={{ alignItems: 'flex-end' }}>
-                                        <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>Ganancia potencial</Text>
-                                        <Text style={{ color: '#10b981', fontSize: 18, fontWeight: '800' }}>
-                                          +{userBet.potentialWin}M
-                                        </Text>
-                                      </View>
-                                    </View>
-                                    {/* Controles de ediciÃ³n si jornada abierta */}
-                                    {isJornadaOpen ? (
+                                      {isPartOfCombi && (
+                                        <View style={{
+                                          backgroundColor: '#2d2653',
+                                          borderRadius: 6,
+                                          padding: 8,
+                                          marginTop: 4,
+                                        }}>
+                                          <Text style={{ color: '#c4b5fd', fontSize: 11, fontWeight: '600' }}>
+                                            Cuota combi: {combi.totalOdd.toFixed(2)} • {combi.selections.length} selecciones
+                                          </Text>
+                                        </View>
+                                      )}
+                                      {/* Controles de ediciÃ³n si jornada abierta */}
+                                      {isJornadaOpen ? (
                                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
                                         {/* Two simple buttons: Edit and Delete. Edit toggles an inline editable input. */}
                                         {!editingBets[betKey] ? (
@@ -2291,8 +2477,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         )}
                                       </View>
                                     ) : null}
-                                  </View>
-                                )}
+                                    </View>
+                                  );
+                                })()}
                                 {/* Si no hay apuesta del usuario en este grupo y la jornada estÃ¡ abierta, permitir apostar */}
                                 {!userBet && !isBlocked && ligaId && isJornadaOpen && (
                                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
@@ -2353,29 +2540,29 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       })}
                                       disabled={
                                         !isPremium || 
-                                        hasExistingCombi ||
-                                        (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)) ||
-                                        (combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
+                                        (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ||
+                                        (!hasExistingCombi && combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
                                       }
                                       style={{
-                                        backgroundColor: !isPremium || hasExistingCombi
-                                          ? '#374151'  // Gris si no es premium o ya tiene combi
+                                        backgroundColor: !isPremium
+                                          ? '#374151'  // Gris si no es premium
                                           : isInCombi(b.matchId, b.type, option.label) 
-                                            ? '#0892D0' // Azul cyan cuando está seleccionado
-                                            : (isMatchBlockedByCombi(b.matchId) || combiSelections.length >= 3)
-                                              ? '#374151' // Gris bloqueado
-                                              : '#0b1220', // Tono oscuro de la app
+                                            ? '#8b5cf6' // Morado cuando está en la combi
+                                            : hasExistingCombi
+                                              ? '#374151' // Gris si ya hay combi y no está en ella (bloqueado por partido)
+                                              : (isMatchBlockedByCombi(b.matchId) || combiSelections.length >= 3)
+                                                ? '#374151' // Gris bloqueado
+                                                : '#0b1220', // Tono oscuro de la app
                                         paddingHorizontal: 16,
                                         paddingVertical: 10,
                                         borderRadius: 8,
                                         marginTop: 8,
                                         borderWidth: isInCombi(b.matchId, b.type, option.label) ? 0 : 1,
-                                        borderColor: '#0892D0',
+                                        borderColor: hasExistingCombi ? '#8b5cf6' : '#0892D0',
                                         opacity: (
                                           !isPremium || 
-                                          hasExistingCombi ||
-                                          (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)) ||
-                                          (combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
+                                          (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ||
+                                          (!hasExistingCombi && combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
                                         ) ? 0.5 : 1,
                                         flexDirection: 'row',
                                         alignItems: 'center',
@@ -2389,13 +2576,15 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center', fontSize: 12 }}>
                                         {!isPremium 
                                           ? 'Combinar (Premium)' 
-                                          : hasExistingCombi
-                                            ? 'Ya existe una combi'
-                                            : isInCombi(b.matchId, b.type, option.label) 
-                                              ? '✓ En combi' 
-                                              : combiSelections.length >= 3
-                                                ? 'Máximo alcanzado'
-                                                : 'Combinar'}
+                                          : isInCombi(b.matchId, b.type, option.label) 
+                                            ? '✓ En combi' 
+                                            : hasExistingCombi && isMatchBlockedByCombi(b.matchId)
+                                              ? 'Partido en combi'
+                                              : hasExistingCombi
+                                                ? '+ Añadir a combi'
+                                                : combiSelections.length >= 3
+                                                  ? 'Máximo alcanzado'
+                                                  : 'Combinar'}
                                       </Text>
                                     </TouchableOpacity>
                                 )}

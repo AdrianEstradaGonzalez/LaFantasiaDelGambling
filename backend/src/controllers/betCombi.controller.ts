@@ -186,4 +186,63 @@ export class BetCombiController {
       return reply.status(400).send({ error: error.message });
     }
   }
+
+  /**
+   * DELETE /bet-combis/:combiId
+   * Eliminar una combi completa
+   */
+  static async deleteCombi(
+    request: FastifyRequest<{ Params: { combiId: string } }>, 
+    reply: FastifyReply
+  ) {
+    try {
+      const userId = (request.user as any)?.sub || (request.user as any)?.id;
+      if (!userId) {
+        return reply.status(401).send({ error: 'No autenticado' });
+      }
+
+      const { combiId } = request.params;
+      const result = await BetCombiService.deleteCombi(combiId, userId);
+      return reply.status(200).send(result);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      return reply.status(400).send({ error: error.message });
+    }
+  }
+
+  /**
+   * PUT /bet-combis/:combiId/amount
+   * Actualizar el monto apostado en una combi
+   */
+  static async updateAmount(
+    request: FastifyRequest<{ 
+      Params: { combiId: string };
+      Body: { amount: number } 
+    }>, 
+    reply: FastifyReply
+  ) {
+    try {
+      const userId = (request.user as any)?.sub || (request.user as any)?.id;
+      if (!userId) {
+        return reply.status(401).send({ error: 'No autenticado' });
+      }
+
+      const { combiId } = request.params;
+      const { amount } = request.body;
+
+      if (!amount || amount <= 0) {
+        return reply.status(400).send({ error: 'Monto inválido' });
+      }
+
+      const combi = await BetCombiService.updateCombiAmount(combiId, userId, amount);
+      return reply.status(200).send(combi);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      return reply.status(400).send({ error: error.message });
+    }
+  }
 }

@@ -410,5 +410,132 @@ export const BetCombiService = {
 
     console.log(`✅ Selección añadida a combi ${combiId}. Nueva cuota: ${updatedCombi.totalOdd.toFixed(2)}`);
     return updatedCombi;
+  },
+
+  /**
+   * Eliminar una combi completa
+   * - Elimina todas las apuestas asociadas
+   * - Devuelve el presupuesto al usuario
+   */
+  deleteCombi: async (combiId: string, userId: string) => {
+    const combi = await (prisma as any).betCombi.findUnique({
+      where: { id: combiId },
+      include: { selections: true }
+    });
+
+    if (!combi) {
+      throw new Error('Combi no encontrada');
+    }
+
+    // Verificar que el usuario es el propietario
+    if (combi.userId !== userId) {
+      throw new Error('No tienes permiso para eliminar esta combi');
+    }
+
+    // Verificar que la combi no esté evaluada
+    if (combi.status !== 'pending') {
+      throw new Error('No puedes eliminar una combi que ya ha sido evaluada');
+    }
+
+    await prisma.$transaction(async (tx: any) => {
+      // Eliminar todas las apuestas de la combi
+      await tx.bet.deleteMany({
+        where: { combiId }
+      });
+
+      // Eliminar la combi
+      await tx.betCombi.delete({
+        where: { id: combiId }
+      });
+
+      // Devolver presupuesto
+      await tx.leagueMember.update({
+        where: { leagueId_userId: { leagueId: combi.leagueId, userId: combi.userId } },
+        data: { bettingBudget: { increment: combi.amount } }
+      });
+    });
+
+    console.log(`🗑️ Combi ${combiId} eliminada completamente`);
+    return { success: true, refunded: combi.amount };
+  },
+
+  /**
+   * Actualizar el monto apostado en una combi
+   * - Recalcula la ganancia potencial
+   * - Ajusta el presupuesto de apuestas
+   */
+  updateCombiAmount: async (combiId: string, userId: string, newAmount: number) => {
+    const combi = await (prisma as any).betCombi.findUnique({
+      where: { id: combiId },
+      include: { selections: true }
+    });
+
+    if (!combi) {
+      throw new Error('Combi no encontrada');
+    }
+
+    // Verificar que el usuario es el propietario
+    if (combi.userId !== userId) {
+      throw new Error('No tienes permiso para modificar esta combi');
+    }
+
+    // Verificar que la combi no esté evaluada
+    if (combi.status !== 'pending') {
+      throw new Error('No puedes modificar una combi que ya ha sido evaluada');
+    }
+
+    // Validación: máximo 50M
+    if (newAmount > 50) {
+      throw new Error('El monto máximo para una combi es 50M');
+    }
+
+    // Validación: mínimo 1M
+    if (newAmount < 1) {
+      throw new Error('El monto mínimo es 1M');
+    }
+
+    // Calcular diferencia de presupuesto
+    const difference = newAmount - combi.amount;
+
+    // Verificar presupuesto disponible si aumenta el monto
+    if (difference > 0) {
+      const member = await prisma.leagueMember.findUnique({
+        where: { leagueId_userId: { leagueId: combi.leagueId, userId } },
+        select: { bettingBudget: true }
+      });
+
+      if (!member) {
+        throw new Error('Usuario no encontrado en la liga');
+      }
+
+      if (member.bettingBudget < difference) {
+        throw new Error(`Presupuesto insuficiente. Tienes ${member.bettingBudget}M disponibles`);
+      }
+    }
+
+    // Actualizar combi y presupuesto
+    const updatedCombi = await prisma.$transaction(async (tx: any) => {
+      // Actualizar presupuesto
+      await tx.leagueMember.update({
+        where: { leagueId_userId: { leagueId: combi.leagueId, userId } },
+        data: { bettingBudget: { increment: -difference } }
+      });
+
+      // Calcular nueva ganancia potencial
+      const newPotentialWin = Math.round(newAmount * combi.totalOdd);
+
+      // Actualizar combi
+      return await tx.betCombi.update({
+        where: { id: combiId },
+        data: {
+          amount: newAmount,
+          potentialWin: newPotentialWin
+        },
+        include: { selections: true }
+      });
+    });
+
+    console.log(`✅ Monto de combi ${combiId} actualizado: ${combi.amount}M → ${newAmount}M`);
+    return updatedCombi;
   }
 };
