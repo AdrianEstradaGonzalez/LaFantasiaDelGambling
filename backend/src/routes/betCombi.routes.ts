@@ -36,4 +36,38 @@ export default async function betCombiRoutes(fastify: FastifyInstance) {
   fastify.post('/evaluate-jornada', {
     preHandler: [fastify.auth],
   }, BetCombiController.evaluateJornada);
+
+  /**
+   * DELETE /bet-combis/:combiId/selections/:betId
+   * Eliminar una selección de una combi
+   */
+  fastify.delete('/:combiId/selections/:betId', {
+    preHandler: [fastify.auth],
+  }, BetCombiController.removeSelection);
+
+  /**
+   * POST /bet-combis/:combiId/selections
+   * Añadir una selección a una combi existente
+   * Body: { selection: CombiSelection }
+   */
+  fastify.post('/:combiId/selections', {
+    preHandler: [fastify.auth],
+  }, BetCombiController.addSelection);
+
+  /**
+   * DELETE /bet-combis/:combiId
+   * Eliminar una combi completa
+   */
+  fastify.delete('/:combiId', {
+    preHandler: [fastify.auth],
+  }, BetCombiController.deleteCombi);
+
+  /**
+   * PUT /bet-combis/:combiId/amount
+   * Actualizar el monto apostado en una combi
+   * Body: { amount: number }
+   */
+  fastify.put('/:combiId/amount', {
+    preHandler: [fastify.auth],
+  }, BetCombiController.updateAmount);
 }

@@ -483,3 +483,32 @@ model SquadHistory {
   @@index([userId, leagueId])
   @@map("squad_history")
 }
+
+model DailyOffer {
+  id            String   @id @default(cuid())
+  date          DateTime @default(now()) @db.Date
+  playerId      Int
+  playerName    String
+  division      String   // 'primera', 'segunda', 'premier'
+  originalPrice Int      // Precio original del jugador
+  offerPrice    Int      // Precio con descuento (20% menos)
+  discount      Int      // Porcentaje de descuento (siempre 20)
+  createdAt     DateTime @default(now())
+
+  @@unique([date, playerId])
+  @@index([date, division])
+  @@index([playerId])
+  @@map("daily_offer")
+}
+
+model OfferHistory {
+  id        String   @id @default(cuid())
+  playerId  Int
+  lastOffer DateTime @db.Date
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([playerId])
+  @@index([lastOffer])
+  @@map("offer_history")
+}

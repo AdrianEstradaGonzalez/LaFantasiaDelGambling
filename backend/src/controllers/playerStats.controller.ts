@@ -230,6 +230,43 @@ export class PlayerStatsController {
   }
 
   /**
+   * Generar ofertas diarias del mercado (cron)
+   * GET/POST /player-stats/generate-daily-offers
+   */
+  static async generateDailyOffers(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('\n🎯 Endpoint /player-stats/generate-daily-offers llamado');
+      console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`);
+
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execPromise = promisify(exec);
+      
+      const { stdout, stderr } = await execPromise('npx tsx scripts/generate-daily-offers.ts', {
+        cwd: process.cwd(),
+      });
+      
+      console.log('✅ Ofertas diarias generadas exitosamente');
+      if (stdout) console.log('STDOUT:', stdout);
+      if (stderr) console.error('STDERR:', stderr);
+
+      return reply.status(200).send({
+        success: true,
+        message: 'Ofertas diarias generadas correctamente (150 ofertas: 50 por división)',
+        output: stdout
+      });
+    } catch (error: any) {
+      console.error('❌ Error generando ofertas diarias:', error);
+
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al generar ofertas diarias',
+        output: error.stdout
+      });
+    }
+  }
+
+  /**
    * Obtener promedios por posición basados en todas las estadísticas de la BD
    * GET /api/player-stats/averages-by-position
    */

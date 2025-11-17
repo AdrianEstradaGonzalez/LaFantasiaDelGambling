@@ -18,6 +18,7 @@ import { JornadaService } from '../../services/JornadaService';
 import { SafeLayout } from '../../components/SafeLayout';
 import { AdBanner } from '../../components/AdBanner';
 import { withTimeout, safeApiCall } from '../../utils/withTimeout';
+import { DailyOffersService } from '../../services/DailyOffersService';
 
 // Función para decodificar JWT
 function decodeJwt(token: string): any {
@@ -245,6 +246,8 @@ export const PlayersMarket = ({ navigation, route }: {
   const [teams, setTeams] = useState<TeamMinimal[]>([]);
   const [posFilter, setPosFilter] = useState<PositionFilterEs>('Todos');
   const [teamFilter, setTeamFilter] = useState<number | 'all'>('all');
+  const [onlyOffers, setOnlyOffers] = useState(false);
+  const [dailyOffers, setDailyOffers] = useState<Set<number>>(new Set());
   const [query, setQuery] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [jornadaStatus, setJornadaStatus] = useState<'open' | 'closed'>('open');
@@ -348,6 +351,18 @@ export const PlayersMarket = ({ navigation, route }: {
           const playerIds: Set<number> = new Set(squad.players.map((p: any) => p.playerId));
           setSquadPlayerIds(playerIds);
         }
+      }
+
+      // 🏷️ Cargar ofertas del día
+      try {
+        const offers = await DailyOffersService.getTodayOffers(division);
+        const offerPlayerIds = new Set(offers.map(o => o.playerId));
+        setDailyOffers(offerPlayerIds);
+        console.log(`Ofertas del día cargadas: ${offerPlayerIds.size} jugadores`);
+      } catch (error) {
+        console.warn('⚠️ Error cargando ofertas del día:', error);
+        // No es crítico, continuamos sin ofertas
+        setDailyOffers(new Set());
       }
       
       // 🚀 OPTIMIZACIÓN 2: Extraer equipos y mostrar primeros 30 INMEDIATAMENTE
@@ -564,6 +579,11 @@ export const PlayersMarket = ({ navigation, route }: {
     if (teamFilter !== 'all') {
       list = list.filter(p => p.teamId === teamFilter);
     }
+
+    // Filtro por ofertas del día
+    if (onlyOffers) {
+      list = list.filter(p => dailyOffers.has(p.id));
+    }
     
     // Ordenamiento por precio o puntos
     if (sortOrder) {
@@ -579,7 +599,7 @@ export const PlayersMarket = ({ navigation, route }: {
     }
     
     return list;
-  }, [players, posFilter, teamFilter, query, selectMode, filterByRole, sortOrder, sortType]);
+  }, [players, posFilter, teamFilter, query, selectMode, filterByRole, sortOrder, sortType, onlyOffers, dailyOffers]);
 
   // Manejar compra de jugador (modo normal)
   const handleBuyPlayer = async (player: PlayerWithPrice) => {
@@ -588,11 +608,15 @@ export const PlayersMarket = ({ navigation, route }: {
     try {
       setIsSaving(true);
       
+      // Calcular precio efectivo (con descuento si está en oferta)
+      const isOnOffer = dailyOffers.has(player.id);
+      const effectivePrice = isOnOffer ? Math.round(player.price * 0.85) : player.price;
+      
       // Verificar presupuesto
-      if (budget < player.price) {
+      if (budget < effectivePrice) {
         CustomAlertManager.alert(
           'Presupuesto insuficiente',
-          `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`,
+          `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${effectivePrice}M\nTienes: ${budget}M`,
           [{ text: 'OK', onPress: () => {}, style: 'default' }],
           { icon: 'alert', iconColor: '#f59e0b' }
         );
@@ -657,7 +681,7 @@ export const PlayersMarket = ({ navigation, route }: {
         playerId: player.id,
         playerName: player.name,
         role,
-        pricePaid: player.price,
+        pricePaid: effectivePrice, // Usar precio con descuento si aplica
         currentFormation // Enviar la formación actual si está disponible
       });
 
@@ -762,6 +786,10 @@ export const PlayersMarket = ({ navigation, route }: {
     try {
       setIsSaving(true);
       
+      // Calcular precio efectivo (con descuento si está en oferta)
+      const isOnOffer = dailyOffers.has(player.id);
+      const effectivePrice = isOnOffer ? Math.round(player.price * 0.85) : player.price;
+      
       // Obtener plantilla actual para ver si hay jugador en esta posiciÃ³n
       const squad = await SquadService.getUserSquad(ligaId);
       const existingPlayerInPosition = squad?.players.find(p => p.position === targetPosition);
@@ -779,10 +807,13 @@ export const PlayersMarket = ({ navigation, route }: {
       }
       
       // Verificar presupuesto
-      if (availableBudget < player.price) {
+      if (availableBudget < effectivePrice) {
+        const priceInfo = isOnOffer 
+          ? `\n🎁 Precio con oferta (-15%): ${effectivePrice}M (${player.price}M normal)`
+          : `\nPrecio: ${effectivePrice}M`;
         const message = existingPlayerInPosition 
-          ? `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M\nValor de mercado del jugador a sustituir: ${existingPlayerMarketPrice}M\nTotal disponible: ${availableBudget}M`
-          : `No tienes suficiente dinero para fichar a ${player.name}.\n\nNecesitas: ${player.price}M\nTienes: ${budget}M`;
+          ? `No tienes suficiente dinero para fichar a ${player.name}.${priceInfo}\nTienes: ${budget}M\nValor de mercado del jugador a sustituir: ${existingPlayerMarketPrice}M\nTotal disponible: ${availableBudget}M`
+          : `No tienes suficiente dinero para fichar a ${player.name}.${priceInfo}\nTienes: ${budget}M`;
         CustomAlertManager.alert(
           'Presupuesto insuficiente',
           message,
@@ -818,7 +849,7 @@ export const PlayersMarket = ({ navigation, route }: {
         playerId: player.id,
         playerName: player.name,
         role,
-        pricePaid: player.price,
+        pricePaid: effectivePrice, // Usar precio con descuento si aplica
         currentFormation // Enviar la formación actual si está disponible
       });
 
@@ -929,13 +960,47 @@ export const PlayersMarket = ({ navigation, route }: {
           
           {/* Precio y Puntos lado a lado */}
           <View style={{ flexDirection: 'row', gap: 16, marginLeft: 8 }}>
-            <View style={{ alignItems: 'center' }}>
-              <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PRECIO</Text>
-              <Text style={{ color: '#fbbf24', fontSize: 18, fontWeight: '800', marginTop: 2 }}>{p.price}M</Text>
+            <View style={{ alignItems: 'center', position: 'relative' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4, height: 24 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PRECIO</Text>
+                {dailyOffers.has(p.id) && (
+                  <View style={{
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    borderWidth: 1,
+                    borderColor: '#10b981',
+                    paddingHorizontal: 6,
+                    paddingVertical: 2,
+                    borderRadius: 4
+                  }}>
+                    <Text style={{ color: '#10b981', fontSize: 9, fontWeight: '900', letterSpacing: 0.5 }}>-15%</Text>
+                  </View>
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+                {dailyOffers.has(p.id) && (
+                  <Text style={{ 
+                    color: '#64748b', 
+                    fontSize: 13, 
+                    textDecorationLine: 'line-through',
+                    fontWeight: '600'
+                  }}>
+                    {p.price}M
+                  </Text>
+                )}
+                <Text style={{ 
+                  color: dailyOffers.has(p.id) ? '#10b981' : '#fbbf24', 
+                  fontSize: 20, 
+                  fontWeight: '900'
+                }}>
+                  {dailyOffers.has(p.id) ? Math.round(p.price * 0.85) : p.price}M
+                </Text>
+              </View>
             </View>
             <View style={{ alignItems: 'center' }}>
-              <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PUNTOS</Text>
-              <Text style={{ color: '#10b981', fontSize: 18, fontWeight: '800', marginTop: 2 }}>{p.totalPoints ?? 0}</Text>
+              <View style={{ height: 24, justifyContent: 'center', marginBottom: 4 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600' }}>PUNTOS</Text>
+              </View>
+              <Text style={{ color: '#10b981', fontSize: 18, fontWeight: '800' }}>{p.totalPoints ?? 0}</Text>
             </View>
           </View>
         </View>
@@ -1303,6 +1368,49 @@ export const PlayersMarket = ({ navigation, route }: {
                       {sortType === 'points' && sortOrder === 'asc' && <SortAscIcon />}
                       {sortType === 'points' && sortOrder === 'desc' && <SortDescIcon />}
                       {sortType !== 'points' && <SortNeutralIcon />}
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Filtro de ofertas */}
+                  <View style={{ marginBottom: 12 }}>
+                    <TouchableOpacity
+                      onPress={() => setOnlyOffers(!onlyOffers)}
+                      style={{
+                        backgroundColor: onlyOffers ? '#10b981' : '#1e293b',
+                        borderWidth: 2,
+                        borderColor: onlyOffers ? '#10b981' : '#10b981',
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 10,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8
+                      }}
+                    >
+                      <View style={{
+                        backgroundColor: onlyOffers ? '#fff' : '#10b981',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 6,
+                        transform: [{ rotate: '-10deg' }]
+                      }}>
+                        <Text style={{ 
+                          color: onlyOffers ? '#10b981' : '#fff', 
+                          fontSize: 12, 
+                          fontWeight: '900',
+                          letterSpacing: 0.5
+                        }}>
+                          -15%
+                        </Text>
+                      </View>
+                      <Text style={{ 
+                        color: onlyOffers ? '#fff' : '#10b981', 
+                        fontSize: 13, 
+                        fontWeight: '700' 
+                      }}>
+                        {onlyOffers ? 'Mostrar todos los jugadores' : 'Ofertas Diarias'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   

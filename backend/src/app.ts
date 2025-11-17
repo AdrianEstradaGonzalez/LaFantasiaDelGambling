@@ -21,6 +21,7 @@ import { playerStatsRoutes } from "./routes/playerStats.routes.js";
 import playerStatusRoutes from "./routes/playerStatus.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import { dailyOffersRoutes } from "./routes/dailyOffers.routes.js";
 import { startRealtimeCache } from "./services/realtimeCache.service.js";
 export async function buildApp() {
   const app = Fastify({
@@ -171,6 +172,7 @@ export async function buildApp() {
   await app.register(playerStatusRoutes, { prefix: "/players" });
   await app.register(paymentRoutes, { prefix: "/payment" });
   await app.register(notificationRoutes, { prefix: "/notifications" });
+  await app.register(dailyOffersRoutes, { prefix: "/" });
   // Rutas públicas extra (app metadata)
   const appRoutes = await import('./routes/app.routes.js');
   await app.register((appRoutes as any).default);

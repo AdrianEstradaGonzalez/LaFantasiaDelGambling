@@ -76,6 +76,20 @@ export const playerStatsRoutes: FastifyPluginAsync = async (app) => {
     PlayerStatsController.updateJornadaStatsPremier
   );
 
+  // Generar ofertas diarias (POST)
+  app.post(
+    '/player-stats/generate-daily-offers',
+    { preHandler: cronAuth },
+    PlayerStatsController.generateDailyOffers
+  );
+
+  // Generar ofertas diarias (GET)
+  app.get(
+    '/player-stats/generate-daily-offers',
+    { preHandler: cronAuth },
+    PlayerStatsController.generateDailyOffers
+  );
+
   // Obtener promedios por posición (todas las estadísticas)
   app.get(
     '/player-stats/averages-by-position',

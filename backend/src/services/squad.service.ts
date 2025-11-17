@@ -634,12 +634,9 @@ export class SquadService {
         throw new Error('No hay ningún jugador en esa posición');
       }
 
-      // Obtener precio actual de mercado del jugador
-      const marketPlayer = await playerTable.findUnique({
-        where: { id: playerToRemove.playerId }
-      });
-
-      const refundAmount = marketPlayer?.price || playerToRemove.pricePaid;
+      // Usar el precio que se pagó por el jugador al ficharlo
+      // NO el precio actual del mercado (esto previene el bug de dinero infinito)
+      const refundAmount = playerToRemove.pricePaid;
 
       // Eliminar jugador
       await prisma.squadPlayer.delete({

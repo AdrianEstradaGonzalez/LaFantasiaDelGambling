@@ -125,9 +125,10 @@ export const BetCombiService = {
 
   /**
    * Obtener combinadas de un usuario en una liga
+   * Por defecto solo devuelve combis pendientes
    */
   getUserCombis: async (leagueId: string, userId: string, jornada?: number) => {
-    const where: any = { leagueId, userId };
+    const where: any = { leagueId, userId, status: 'pending' };
     if (jornada) {
       where.jornada = jornada;
     }
@@ -238,5 +239,304 @@ export const BetCombiService = {
     console.log(`📊 Resultados: ${won} ganadas, ${lost} perdidas, ${pending} pendientes`);
 
     return { won, lost, pending, total: results.length };
+  },
+
+  /**
+   * Eliminar una selección de una combi
+   * - Recalcula la cuota total y ganancia potencial
+   * - Si quedan menos de 2 selecciones, elimina toda la combi
+   */
+  removeSelectionFromCombi: async (combiId: string, betId: string, userId: string) => {
+    const combi = await (prisma as any).betCombi.findUnique({
+      where: { id: combiId },
+      include: { selections: true }
+    });
+
+    if (!combi) {
+      throw new Error('Combi no encontrada');
+    }
+
+    // Verificar que el usuario es el propietario
+    if (combi.userId !== userId) {
+      throw new Error('No tienes permiso para modificar esta combi');
+    }
+
+    // Verificar que la combi no esté evaluada
+    if (combi.status !== 'pending') {
+      throw new Error('No puedes modificar una combi que ya ha sido evaluada');
+    }
+
+    // Verificar que la selección pertenece a la combi
+    const selection = combi.selections.find((s: any) => s.id === betId);
+    if (!selection) {
+      throw new Error('La apuesta no pertenece a esta combi');
+    }
+
+    // Si solo quedan 2 selecciones, eliminar toda la combi
+    if (combi.selections.length <= 2) {
+      await prisma.$transaction(async (tx: any) => {
+        // Eliminar todas las apuestas de la combi
+        await tx.bet.deleteMany({
+          where: { combiId }
+        });
+
+        // Eliminar la combi
+        await tx.betCombi.delete({
+          where: { id: combiId }
+        });
+
+        // Devolver presupuesto
+        await tx.leagueMember.update({
+          where: { leagueId_userId: { leagueId: combi.leagueId, userId: combi.userId } },
+          data: { bettingBudget: { increment: combi.amount } }
+        });
+      });
+
+      console.log(`🗑️ Combi ${combiId} eliminada completamente (quedaban menos de 2 selecciones)`);
+      return { deleted: true };
+    }
+
+    // Eliminar solo la selección y recalcular
+    const updatedCombi = await prisma.$transaction(async (tx: any) => {
+      // Eliminar la apuesta
+      await tx.bet.delete({
+        where: { id: betId }
+      });
+
+      // Obtener selecciones restantes
+      const remainingSelections = await tx.bet.findMany({
+        where: { combiId }
+      });
+
+      // Recalcular cuota total
+      const newTotalOdd = remainingSelections.reduce((acc: number, sel: any) => acc * sel.odd, 1);
+      const newPotentialWin = Math.round(combi.amount * newTotalOdd);
+
+      // Actualizar la combi
+      return await tx.betCombi.update({
+        where: { id: combiId },
+        data: {
+          totalOdd: newTotalOdd,
+          potentialWin: newPotentialWin
+        },
+        include: { selections: true }
+      });
+    });
+
+    console.log(`✅ Selección eliminada de combi ${combiId}. Nueva cuota: ${updatedCombi.totalOdd.toFixed(2)}`);
+    return updatedCombi;
+  },
+
+  /**
+   * Añadir una selección a una combi existente
+   * - Recalcula la cuota total y ganancia potencial
+   * - Máximo 3 selecciones por combi
+   */
+  addSelectionToCombi: async (combiId: string, userId: string, selection: CombiSelection) => {
+    const combi = await (prisma as any).betCombi.findUnique({
+      where: { id: combiId },
+      include: { selections: true }
+    });
+
+    if (!combi) {
+      throw new Error('Combi no encontrada');
+    }
+
+    // Verificar que el usuario es el propietario
+    if (combi.userId !== userId) {
+      throw new Error('No tienes permiso para modificar esta combi');
+    }
+
+    // Verificar que la combi no esté evaluada
+    if (combi.status !== 'pending') {
+      throw new Error('No puedes modificar una combi que ya ha sido evaluada');
+    }
+
+    // Verificar que no se exceda el máximo de 3 selecciones
+    if (combi.selections.length >= 3) {
+      throw new Error('Una combi no puede tener más de 3 selecciones');
+    }
+
+    // Verificar que no exista una selección del mismo partido
+    const hasMatchAlready = combi.selections.some((s: any) => s.matchId === selection.matchId);
+    if (hasMatchAlready) {
+      throw new Error('Ya tienes una selección de este partido en la combi');
+    }
+
+    // Añadir la selección y recalcular
+    const updatedCombi = await prisma.$transaction(async (tx: any) => {
+      // Crear la nueva apuesta
+      await tx.bet.create({
+        data: {
+          leagueId: combi.leagueId,
+          userId: combi.userId,
+          jornada: combi.jornada,
+          matchId: selection.matchId,
+          betType: selection.betType,
+          betLabel: selection.betLabel,
+          odd: selection.odd,
+          amount: 0,
+          potentialWin: 0,
+          status: 'pending',
+          homeTeam: selection.homeTeam,
+          awayTeam: selection.awayTeam,
+          combiId: combiId,
+          apiBetId: selection.apiBetId,
+          apiEndpoint: selection.apiEndpoint,
+          apiOperator: selection.apiOperator,
+          apiStatKey: selection.apiStatKey,
+          apiValue: selection.apiValue
+        }
+      });
+
+      // Obtener todas las selecciones
+      const allSelections = await tx.bet.findMany({
+        where: { combiId }
+      });
+
+      // Recalcular cuota total
+      const newTotalOdd = allSelections.reduce((acc: number, sel: any) => acc * sel.odd, 1);
+      const newPotentialWin = Math.round(combi.amount * newTotalOdd);
+
+      // Actualizar la combi
+      return await tx.betCombi.update({
+        where: { id: combiId },
+        data: {
+          totalOdd: newTotalOdd,
+          potentialWin: newPotentialWin
+        },
+        include: { selections: true }
+      });
+    });
+
+    console.log(`✅ Selección añadida a combi ${combiId}. Nueva cuota: ${updatedCombi.totalOdd.toFixed(2)}`);
+    return updatedCombi;
+  },
+
+  /**
+   * Eliminar una combi completa
+   * - Elimina todas las apuestas asociadas
+   * - Devuelve el presupuesto al usuario
+   */
+  deleteCombi: async (combiId: string, userId: string) => {
+    const combi = await (prisma as any).betCombi.findUnique({
+      where: { id: combiId },
+      include: { selections: true }
+    });
+
+    if (!combi) {
+      throw new Error('Combi no encontrada');
+    }
+
+    // Verificar que el usuario es el propietario
+    if (combi.userId !== userId) {
+      throw new Error('No tienes permiso para eliminar esta combi');
+    }
+
+    // Verificar que la combi no esté evaluada
+    if (combi.status !== 'pending') {
+      throw new Error('No puedes eliminar una combi que ya ha sido evaluada');
+    }
+
+    await prisma.$transaction(async (tx: any) => {
+      // Eliminar todas las apuestas de la combi
+      await tx.bet.deleteMany({
+        where: { combiId }
+      });
+
+      // Eliminar la combi
+      await tx.betCombi.delete({
+        where: { id: combiId }
+      });
+
+      // Devolver presupuesto
+      await tx.leagueMember.update({
+        where: { leagueId_userId: { leagueId: combi.leagueId, userId: combi.userId } },
+        data: { bettingBudget: { increment: combi.amount } }
+      });
+    });
+
+    console.log(`🗑️ Combi ${combiId} eliminada completamente`);
+    return { success: true, refunded: combi.amount };
+  },
+
+  /**
+   * Actualizar el monto apostado en una combi
+   * - Recalcula la ganancia potencial
+   * - Ajusta el presupuesto de apuestas
+   */
+  updateCombiAmount: async (combiId: string, userId: string, newAmount: number) => {
+    const combi = await (prisma as any).betCombi.findUnique({
+      where: { id: combiId },
+      include: { selections: true }
+    });
+
+    if (!combi) {
+      throw new Error('Combi no encontrada');
+    }
+
+    // Verificar que el usuario es el propietario
+    if (combi.userId !== userId) {
+      throw new Error('No tienes permiso para modificar esta combi');
+    }
+
+    // Verificar que la combi no esté evaluada
+    if (combi.status !== 'pending') {
+      throw new Error('No puedes modificar una combi que ya ha sido evaluada');
+    }
+
+    // Validación: máximo 50M
+    if (newAmount > 50) {
+      throw new Error('El monto máximo para una combi es 50M');
+    }
+
+    // Validación: mínimo 1M
+    if (newAmount < 1) {
+      throw new Error('El monto mínimo es 1M');
+    }
+
+    // Calcular diferencia de presupuesto
+    const difference = newAmount - combi.amount;
+
+    // Verificar presupuesto disponible si aumenta el monto
+    if (difference > 0) {
+      const member = await prisma.leagueMember.findUnique({
+        where: { leagueId_userId: { leagueId: combi.leagueId, userId } },
+        select: { bettingBudget: true }
+      });
+
+      if (!member) {
+        throw new Error('Usuario no encontrado en la liga');
+      }
+
+      if (member.bettingBudget < difference) {
+        throw new Error(`Presupuesto insuficiente. Tienes ${member.bettingBudget}M disponibles`);
+      }
+    }
+
+    // Actualizar combi y presupuesto
+    const updatedCombi = await prisma.$transaction(async (tx: any) => {
+      // Actualizar presupuesto
+      await tx.leagueMember.update({
+        where: { leagueId_userId: { leagueId: combi.leagueId, userId } },
+        data: { bettingBudget: { increment: -difference } }
+      });
+
+      // Calcular nueva ganancia potencial
+      const newPotentialWin = Math.round(newAmount * combi.totalOdd);
+
+      // Actualizar combi
+      return await tx.betCombi.update({
+        where: { id: combiId },
+        data: {
+          amount: newAmount,
+          potentialWin: newPotentialWin
+        },
+        include: { selections: true }
+      });
+    });
+
+    console.log(`✅ Monto de combi ${combiId} actualizado: ${combi.amount}M → ${newAmount}M`);
+    return updatedCombi;
   }
 };
