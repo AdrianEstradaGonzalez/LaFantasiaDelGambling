@@ -317,7 +317,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
         <View style={styles.ligasList}>
             {ligas.length > 0 ? (
             ligas.map((liga, idx) => {
-              const accentColor = liga.division === 'segunda' ? '#f59e0b' : liga.division === 'premier' ? '#8b5cf6' : '#3b82f6';
+              const accentColor = liga.division === 'segunda' ? '#802a2aff' : liga.division === 'premier' ? '#8b5cf6' : '#3b82f6';
               return (
               <React.Fragment key={liga.id}>
               <TouchableOpacity
