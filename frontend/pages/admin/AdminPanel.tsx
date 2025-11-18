@@ -91,6 +91,47 @@ const AdminPanel: React.FC = () => {
     loadJornadaStatus();
   }, []);
 
+  // Helper: after a long-running server operation that may timeout client-side,
+  // poll the server for all user's leagues to verify the jornada status.
+  const verifyGlobalJornadaStatus = async (expectedStatus: 'open' | 'closed', attempts = 6, intervalMs = 2000) => {
+    try {
+      // Obtener ID del usuario autenticado
+      const currentUserId = await EncryptedStorage.getItem('userId');
+      if (!currentUserId) return false;
+
+      for (let i = 0; i < attempts; i++) {
+        try {
+          const leagues = await LigaService.obtenerLigasPorUsuario(currentUserId);
+          if (!leagues || leagues.length === 0) return false;
+
+          // Consultar estado de todas las ligas del usuario
+          const statuses = await Promise.all(leagues.map(async (l: any) => {
+            try {
+              const s = await JornadaService.getJornadaStatus(l.id);
+              return s.status as 'open' | 'closed';
+            } catch (e) {
+              return null;
+            }
+          }));
+
+          // Si todas las ligas disponibles tienen el estado esperado, devolver true
+          const valid = statuses.every(st => st === expectedStatus);
+          if (valid) return true;
+        } catch (err) {
+
+        }
+
+        // Esperar antes del siguiente intento
+        await new Promise(res => setTimeout(res, intervalMs));
+      }
+
+      return false;
+    } catch (error) {
+      console.warn('verifyGlobalJornadaStatus error', error);
+      return false;
+    }
+  };
+
   const handleCerrarJornada = async () => {
     CustomAlertManager.alert(
       '🔒 Cerrar Cambios',
@@ -141,12 +182,25 @@ const AdminPanel: React.FC = () => {
               );
             } catch (error: any) {
               console.error('❌ Error bloqueando cambios:', error);
-              CustomAlertManager.alert(
-                '❌ Error al Bloquear',
-                error.message || 'No se pudo completar el bloqueo.\n\nRevisa la consola del servidor para más detalles.',
-                [{ text: 'OK', onPress: () => {}, style: 'default' }],
-                { icon: 'alert-circle', iconColor: '#ef4444' }
-              );
+              // Es posible que la operación tardase y el cliente timeout, verificar estado real en servidor
+              const verified = await verifyGlobalJornadaStatus('closed');
+              if (verified) {
+                console.log('✅ Operación completada en servidor a pesar del error de cliente. Ocultando error.');
+                setJornadaStatus('closed');
+                CustomAlertManager.alert(
+                  '✅ Cambios Bloqueados',
+                  `Plantillas y apuestas bloqueadas.\n\nLa operación fue completada en el servidor.`,
+                  [{ text: 'OK', onPress: () => { navigation.navigate('Home'); }, style: 'default' }],
+                  { icon: 'lock-closed', iconColor: '#ef4444' }
+                );
+              } else {
+                CustomAlertManager.alert(
+                  '❌ Error al Bloquear',
+                  error.message || 'No se pudo completar el bloqueo.\n\nRevisa la consola del servidor para más detalles.',
+                  [{ text: 'OK', onPress: () => {}, style: 'default' }],
+                  { icon: 'alert-circle', iconColor: '#ef4444' }
+                );
+              }
             } finally {
               setIsClosingJornada(false);
             }

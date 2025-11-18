@@ -280,31 +280,34 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
   }
 
   return (
-    <SafeLayout backgroundColor="#0f172a">
+    // Make SafeLayout transparent so the LinearGradient fills the whole screen
+    <SafeLayout backgroundColor="transparent">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
         <LinearGradient
-          colors={['#0f172a', '#1e293b']}
+          // Usar el mismo color arriba y abajo para un fondo uniforme
+          colors={['#0f172a', '#0f172a']}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.container}
         >
+          {/* Header con menú lateral - fuera del ScrollView para permanecer visible */}
+          <View style={[styles.topBar, styles.topBarFixed]}>
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => setIsDrawerOpen(true)}
+            >
+              <MenuIcon size={26} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Scrollable content */}
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Header con menú lateral */}
-            <View style={styles.topBar}>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => setIsDrawerOpen(true)}
-              >
-                <MenuIcon size={26} color="#ffffff" />
-              </TouchableOpacity>
-            </View>
-
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.avatarLarge}>
@@ -532,7 +535,16 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
+    paddingTop: 100,
     paddingBottom: 40,
+  },
+  topBarFixed: {
+    position: 'absolute',
+    top: 10,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    zIndex: 20,
   },
   header: {
     alignItems: 'center',
