@@ -125,6 +125,17 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Estado para almacenar combis de toda la liga (jornada cerrada)
   const [leagueCombis, setLeagueCombis] = useState<any[]>([]);
 
+  // Debug: Log cuando cambien las combis de la liga
+  useEffect(() => {
+    console.log('🔍 DEBUG - leagueCombis cambió:', {
+      length: leagueCombis.length,
+      combis: leagueCombis,
+      jornadaStatus,
+      ligaId,
+      jornada
+    });
+  }, [leagueCombis, jornadaStatus, ligaId, jornada]);
+
   // Efecto para cargar selecciones de combi existente
   useEffect(() => {
     if (userCombis.length > 0) {
@@ -312,11 +323,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             : leagueBetsData;
           setLeagueBets(filteredLeagueBets);
           
-          // Cargar combis de la liga si la jornada está cerrada
-          if (ligaId && currentJornadaFromLeague != null && statusData === 'closed') {
+          // Cargar combis de la liga (siempre, para mostrarlas cuando la jornada esté cerrada)
+          if (ligaId && currentJornadaFromLeague != null) {
             try {
               const combisData = await BetService.getLeagueCombis(ligaId, currentJornadaFromLeague);
-              console.log('✅ Combis de la liga cargadas:', combisData);
+              console.log('✅ Combis de la liga cargadas (jornada ' + currentJornadaFromLeague + '):', combisData);
               setLeagueCombis(combisData);
             } catch (err) {
               console.warn('⚠️ Error loading league combis:', err);
@@ -502,6 +513,18 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         console.warn('⚠️ Error loading combis:', err);
         setUserCombis([]);
         setHasExistingCombi(false);
+      }
+
+      // Cargar combis de la liga (siempre que haya jornada)
+      if (jornada) {
+        try {
+          const leagueCombisData = await BetService.getLeagueCombis(ligaId, jornada);
+          console.log('🔄 Refresh - Combis de la liga cargadas (jornada ' + jornada + '):', leagueCombisData);
+          setLeagueCombis(leagueCombisData);
+        } catch (err) {
+          console.warn('⚠️ Error loading league combis:', err);
+          setLeagueCombis([]);
+        }
       }
     } catch (err: any) {
       console.warn('Error refreshing bets/budget:', err?.message || err);
@@ -2755,9 +2778,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         marginTop: 8,
                                       }}>
                                         {betsForOption.map((bf) => (
-                                          <Text key={bf.id} style={{ color: '#e5e7eb', paddingVertical: 4 }} numberOfLines={3}>
-                                            {(bf.userName || 'Jugador') + ' ha apostado ' + bf.amount + 'M en ' + bf.betType + ' - ' + formatLabelWithType(bf.betLabel, bf.betType)}
-                                          </Text>
+                                          <View key={bf.id} style={{ paddingVertical: 4 }}>
+                                            <Text style={{ color: '#e5e7eb' }} numberOfLines={3}>
+                                              {(bf.userName || 'Jugador') + ' ha apostado ' + bf.amount + 'M en ' + bf.betType + ' - ' + formatLabelWithType(bf.betLabel, bf.betType)}
+                                              {bf.combiId && (
+                                                <Text style={{ color: '#0892D0', fontWeight: '800' }}> 🔗 COMBI</Text>
+                                              )}
+                                            </Text>
+                                          </View>
                                         ))}
                                       </View>
                                     );
@@ -2772,7 +2800,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   )}
 
                   {/* Mostrar combis de la liga cuando la jornada está cerrada */}
-                  {!isJornadaOpen && ligaId && leagueCombis.length > 0 && (
+                  {jornadaStatus === 'closed' && ligaId && leagueCombis.length > 0 && (
                     <View style={{ marginTop: 24, marginBottom: 16 }}>
                       <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800', marginBottom: 12 }}>
                         🔗 APUESTAS COMBINADAS
