@@ -80,6 +80,7 @@ export class BetService {
     potentialWin: number;
     status: string;
     createdAt: Date;
+    combiId?: string;
   }>> {
     // Verificar que el solicitante sea miembro de la liga
     const member = await prisma.leagueMember.findUnique({
@@ -122,6 +123,7 @@ export class BetService {
       potentialWin: b.potentialWin,
       status: b.status,
       createdAt: b.createdAt,
+      combiId: b.combiId || undefined,
     }));
   }
 
