@@ -38,6 +38,14 @@ export default async function betCombiRoutes(fastify: FastifyInstance) {
   }, BetCombiController.evaluateJornada);
 
   /**
+   * GET /bet-combis/league/:leagueId/jornada/:jornada
+   * Obtener todas las combis de una liga en una jornada
+   */
+  fastify.get('/league/:leagueId/jornada/:jornada', {
+    preHandler: [fastify.auth],
+  }, BetCombiController.getLeagueCombis);
+
+  /**
    * DELETE /bet-combis/:combiId/selections/:betId
    * Eliminar una selección de una combi
    */

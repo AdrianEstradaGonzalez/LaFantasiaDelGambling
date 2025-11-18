@@ -156,6 +156,51 @@ export const BetCombiService = {
   },
 
   /**
+   * Obtener todas las combinadas de una liga en una jornada específica
+   * Incluye combis de todos los usuarios (para mostrar en jornada cerrada)
+   */
+  getLeagueCombis: async (leagueId: string, jornada: number) => {
+    const combis = await (prisma as any).betCombi.findMany({
+      where: { 
+        leagueId, 
+        jornada 
+      },
+      include: {
+        selections: {
+          select: {
+            id: true,
+            matchId: true,
+            betType: true,
+            betLabel: true,
+            odd: true,
+            status: true,
+            homeTeam: true,
+            awayTeam: true
+          }
+        },
+        leagueMember: {
+          select: {
+            user: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Transformar la respuesta para que user esté en el nivel superior
+    return combis.map((combi: any) => ({
+      ...combi,
+      user: combi.leagueMember?.user,
+      leagueMember: undefined
+    }));
+  },
+
+  /**
    * Evaluar una combinada después de evaluarse todas sus selecciones
    * - Si todas ganan -> combi gana
    * - Si alguna pierde -> combi pierde

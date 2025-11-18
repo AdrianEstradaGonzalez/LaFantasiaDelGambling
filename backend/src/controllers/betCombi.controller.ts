@@ -129,6 +129,39 @@ export class BetCombiController {
   }
 
   /**
+   * GET /bet-combis/league/:leagueId/jornada/:jornada
+   * Obtener todas las combis de una liga en una jornada (para jornada cerrada)
+   */
+  static async getLeagueCombis(
+    request: FastifyRequest<{ 
+      Params: { leagueId: string; jornada: string };
+    }>, 
+    reply: FastifyReply
+  ) {
+    try {
+      const userId = (request.user as any)?.sub || (request.user as any)?.id;
+      if (!userId) {
+        return reply.status(401).send({ error: 'No autenticado' });
+      }
+
+      const { leagueId, jornada } = request.params;
+      const jornadaNum = parseInt(jornada);
+
+      if (!jornadaNum) {
+        return reply.status(400).send({ error: 'Jornada inválida' });
+      }
+
+      const combis = await BetCombiService.getLeagueCombis(leagueId, jornadaNum);
+      return reply.status(200).send(combis);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send({ error: error.message });
+      }
+      return reply.status(400).send({ error: error.message });
+    }
+  }
+
+  /**
    * DELETE /bet-combis/:combiId/selections/:betId
    * Eliminar una selección de una combi
    */
