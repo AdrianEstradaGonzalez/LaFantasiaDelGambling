@@ -780,13 +780,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             }
           }
         } else {
-          // Verificar si ya tiene 3 selecciones
-          if (currentCombi.selections.length >= 3) {
-            showError('Ya alcanzaste el máximo de 3 selecciones en tu combi');
-            return;
-          }
-          
-          // Añadir selección a la combi existente
+          // Añadir selección a la combi existente (sin límite)
           try {
             await BetService.addSelectionToCombi(currentCombi.id, selection);
             showSuccess('Selección añadida a la combi');
@@ -807,12 +801,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         prev.filter(s => !(s.matchId === selection.matchId && s.betType === selection.betType && s.betLabel === selection.betLabel))
       );
     } else {
-      // Agregar selección si no excede el máximo
-      if (combiSelections.length >= 3) {
-        showError('Máximo 3 apuestas por combi');
-        return;
-      }
-
+      // Agregar selección (sin límite máximo)
       // Verificar que no haya otra selección del mismo partido
       const hasMatchInCombi = combiSelections.some(s => s.matchId === selection.matchId);
       if (hasMatchInCombi) {
@@ -2976,9 +2965,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       })}
                                       disabled={
                                         !isPremium || 
-                                        (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ||
-                                        (hasExistingCombi && userCombis.length > 0 && userCombis[0]?.selections?.length >= 3 && !isInCombi(b.matchId, b.type, option.label)) ||
-                                        (!hasExistingCombi && combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
+                                        (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)))
                                       }
                                       style={{
                                         backgroundColor: !isPremium
@@ -2987,7 +2974,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                             ? '#0892D0' // Azul cuando está en la combi
                                             : hasExistingCombi
                                               ? '#374151' // Gris si ya hay combi y no está en ella (bloqueado por partido)
-                                              : (isMatchBlockedByCombi(b.matchId) || combiSelections.length >= 3)
+                                              : isMatchBlockedByCombi(b.matchId)
                                                 ? '#374151' // Gris bloqueado
                                                 : '#0b1220', // Tono oscuro de la app
                                         paddingHorizontal: 16,
@@ -2998,9 +2985,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         borderColor: '#0892D0',
                                         opacity: (
                                           !isPremium || 
-                                          (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ||
-                                          (hasExistingCombi && userCombis.length > 0 && userCombis[0]?.selections?.length >= 3 && !isInCombi(b.matchId, b.type, option.label)) ||
-                                          (!hasExistingCombi && combiSelections.length >= 3 && !isInCombi(b.matchId, b.type, option.label))
+                                          (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)))
                                         ) ? 0.5 : 1,
                                         flexDirection: 'row',
                                         alignItems: 'center',
@@ -3018,13 +3003,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                             ? '✓ En combi' 
                                             : hasExistingCombi && isMatchBlockedByCombi(b.matchId)
                                               ? 'Partido en combi'
-                                              : hasExistingCombi && userCombis.length > 0 && userCombis[0]?.selections?.length >= 3
-                                                ? 'Máximo alcanzado'
                                               : hasExistingCombi
                                                 ? '+ Añadir a combi'
-                                                : combiSelections.length >= 3
-                                                  ? 'Máximo alcanzado'
-                                                  : 'Combinar'}
+                                                : 'Combinar'}
                                       </Text>
                                     </TouchableOpacity>
                                 )}
@@ -3261,13 +3242,21 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         borderWidth: 1,
                         borderColor: '#334155',
                       }}>
-                        {/* Trash icon to remove selection */}
+                        {/* Trash icon to remove selection - área táctil mejorada */}
                         <TouchableOpacity
                           onPress={() => removeSelection(sel, idx)}
-                          style={{ position: 'absolute', top: 8, right: 8, padding: 6 }}
-                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          activeOpacity={0.7}
+                          style={{ 
+                            position: 'absolute', 
+                            top: 4, 
+                            right: 4, 
+                            padding: 10,
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderRadius: 8,
+                          }}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
-                          <DeleteIcon size={18} color="#ef4444" />
+                          <DeleteIcon size={20} color="#ef4444" />
                         </TouchableOpacity>
 
                         <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '600', marginBottom: 4 }}>
