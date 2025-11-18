@@ -1743,10 +1743,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       const combiStatus = evaluateCombiStatus(selections);
                                       const isCombiExpanded = expandedUsers.has(`combi-${combiId}`);
                                       
-                                      // Calcular cuota total y ganancia potencial
-                                      const totalOdds = selections.reduce((acc, sel) => acc * sel.odd, 1);
-                                      const amount = selections[0]?.amount || 0;
-                                      const potentialWin = amount * totalOdds;
+                                      // Obtener datos de la combi desde el primer bet (todas las selecciones tienen la misma combi)
+                                      const combiData = (selections[0] as any).combi;
+                                      const totalOdds = combiData?.totalOdd || selections.reduce((acc: number, sel: any) => acc * sel.odd, 1);
+                                      const amount = combiData?.amount || 0;
+                                      const potentialWin = combiData?.potentialWin || (amount * totalOdds);
                                       
                                       const firstBet = selections[0];
                                       const userName = firstBet.userName || 'Jugador';
@@ -2060,11 +2061,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           </Text>
 
                           {(() => {
-                            // Separar apuestas individuales de combis
+                            // Agrupar SOLO apuestas individuales (sin combiId) por matchId
                             const individualBets = leagueBets.filter(bet => !bet.combiId);
-                            const combiBets = leagueBets.filter(bet => bet.combiId);
-                            
-                            // Agrupar apuestas individuales por matchId
                             const betsByMatch: Record<number, UserBet[]> = {};
                             individualBets.forEach((bet) => {
                               if (!betsByMatch[bet.matchId]) {
@@ -2073,169 +2071,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                               betsByMatch[bet.matchId].push(bet);
                             });
 
-                            // Agrupar combis por combiId
-                            const combisByCombiId: Record<string, UserBet[]> = {};
-                            combiBets.forEach((bet) => {
-                              if (bet.combiId && !combisByCombiId[bet.combiId]) {
-                                combisByCombiId[bet.combiId] = [];
-                              }
-                              if (bet.combiId) {
-                                combisByCombiId[bet.combiId].push(bet);
-                              }
-                            });
-
                             return (
                               <>
-                                {/* COMBIS AGRUPADAS */}
-                                {Object.entries(combisByCombiId).map(([combiId, selections]) => {
-                                  const combiStatus = evaluateCombiStatus(selections);
-                                  const isCombiExpanded = expandedBets.has(parseInt(combiId));
-                                  
-                                  // Calcular cuota total y ganancia potencial
-                                  const totalOdds = selections.reduce((acc, sel) => acc * sel.odd, 1);
-                                  const amount = selections[0]?.amount || 0;
-                                  const potentialWin = amount * totalOdds;
-                                  
-                                  const firstBet = selections[0];
-                                  const userName = firstBet.userName || 'Jugador';
-                                  
-                                  return (
-                                    <View key={`combi-${combiId}`}>
-                                      <TouchableOpacity
-                                        onPress={() => toggleBetExpansion(parseInt(combiId))}
-                                        activeOpacity={0.7}
-                                        style={{
-                                          backgroundColor: '#1a2332',
-                                          borderWidth: 2,
-                                          borderColor: '#0892D0',
-                                          borderRadius: 12,
-                                          padding: 14,
-                                          marginBottom: 12,
-                                        }}
-                                      >
-                                        {/* Header de la combi */}
-                                        <View style={{ marginBottom: 10 }}>
-                                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                                            <TrendingIcon size={18} color="#0892D0" />
-                                            <Text style={{ color: '#0892D0', fontSize: 14, fontWeight: '800', textTransform: 'uppercase' }}>
-                                              COMBI ({selections.length} apuestas)
-                                            </Text>
-                                          </View>
-                                          <Text style={{ color: '#93c5fd', fontSize: 13, fontWeight: '700' }}>
-                                            {userName}
-                                          </Text>
-                                        </View>
-
-                                        {/* Info de la combi */}
-                                        <View style={{ paddingTop: 8, borderTopWidth: 1, borderTopColor: '#334155' }}>
-                                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                                            <Text style={{ color: '#94a3b8', fontSize: 12 }}>Cuota total:</Text>
-                                            <Text style={{ color: '#0892D0', fontSize: 13, fontWeight: '800' }}>
-                                              {totalOdds.toFixed(2)}
-                                            </Text>
-                                          </View>
-                                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                                            <Text style={{ color: '#94a3b8', fontSize: 12 }}>Apostado:</Text>
-                                            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>
-                                              {amount}M
-                                            </Text>
-                                          </View>
-                                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                              <Text style={{ color: '#94a3b8', fontSize: 12 }}>Estado:</Text>
-                                              {combiStatus === 'won' && <CheckIcon size={16} color="#22c55e" />}
-                                              {combiStatus === 'lost' && <ErrorIcon size={16} color="#ef4444" />}
-                                              {combiStatus === 'pending' && <ClockIcon size={16} color="#f59e0b" />}
-                                              <Text style={{
-                                                color: combiStatus === 'won' ? '#22c55e' : combiStatus === 'lost' ? '#ef4444' : '#f59e0b',
-                                                fontSize: 13,
-                                                fontWeight: '700'
-                                              }}>
-                                                {combiStatus === 'won' ? 'GANADA' : combiStatus === 'lost' ? 'PERDIDA' : 'PENDIENTE'}
-                                              </Text>
-                                            </View>
-                                            {isCombiExpanded ? (
-                                              <ChevronUpIcon size={20} color="#94a3b8" />
-                                            ) : (
-                                              <ChevronDownIcon size={20} color="#94a3b8" />
-                                            )}
-                                          </View>
-                                          {combiStatus === 'won' && (
-                                            <View style={{ marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#334155' }}>
-                                              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                                                <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '700' }}>Ganancia:</Text>
-                                                <Text style={{ color: '#22c55e', fontSize: 14, fontWeight: '800' }}>
-                                                  +{Math.round(potentialWin)}M
-                                                </Text>
-                                              </View>
-                                            </View>
-                                          )}
-                                        </View>
-                                      </TouchableOpacity>
-
-                                      {/* Detalles expandidos - Selecciones individuales */}
-                                      {isCombiExpanded && (
-                                        <View style={{ paddingLeft: 16, marginBottom: 12 }}>
-                                          <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '700', marginBottom: 8, textTransform: 'uppercase' }}>
-                                            Selecciones de la combi:
-                                          </Text>
-                                          {selections.map((bet, idx) => {
-                                            const betStatus = (bet as any).status;
-                                            const isWon = betStatus === 'won';
-                                            const isLost = betStatus === 'lost';
-                                            const isPending = !betStatus || betStatus === 'pending';
-                                            
-                                            return (
-                                              <View 
-                                                key={bet.id}
-                                                style={{
-                                                  backgroundColor: '#0f172a',
-                                                  borderRadius: 6,
-                                                  padding: 10,
-                                                  marginBottom: idx < selections.length - 1 ? 8 : 0,
-                                                  borderLeftWidth: 3,
-                                                  borderLeftColor: isWon ? '#22c55e' : isLost ? '#ef4444' : '#f59e0b',
-                                                }}
-                                              >
-                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                                  <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600', flex: 1 }}>
-                                                    {bet.homeTeam} vs {bet.awayTeam}
-                                                  </Text>
-                                                  {isWon && <CheckIcon size={14} color="#22c55e" />}
-                                                  {isLost && <ErrorIcon size={14} color="#ef4444" />}
-                                                  {isPending && <ClockIcon size={14} color="#f59e0b" />}
-                                                </View>
-                                                
-                                                <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
-                                                  {bet.betType}
-                                                </Text>
-                                                
-                                                <Text style={{ color: '#cbd5e1', fontSize: 12, fontWeight: '600' }}>
-                                                  {formatLabelWithType(bet.betLabel, bet.betType)}
-                                                </Text>
-                                                
-                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                                                  <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                                    Cuota: {bet.odd.toFixed(2)}
-                                                  </Text>
-                                                  <Text style={{
-                                                    color: isWon ? '#22c55e' : isLost ? '#ef4444' : '#f59e0b',
-                                                    fontSize: 11,
-                                                    fontWeight: '700'
-                                                  }}>
-                                                    {isWon ? '✓ Acertada' : isLost ? '✗ Fallada' : '⋯ Pendiente'}
-                                                  </Text>
-                                                </View>
-                                              </View>
-                                            );
-                                          })}
-                                        </View>
-                                      )}
-                                    </View>
-                                  );
-                                })}
-
-                                {/* APUESTAS INDIVIDUALES POR PARTIDO */}
+                                {/* APUESTAS INDIVIDUALES POR PARTIDO (sin combis) */}
                                 {Object.entries(betsByMatch).map(([matchIdStr, bets]) => {
                                   const matchId = parseInt(matchIdStr);
                                   // Intentar obtener info de groupedBets primero, si no usar la primera apuesta

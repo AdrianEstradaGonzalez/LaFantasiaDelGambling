@@ -81,6 +81,13 @@ export class BetService {
     status: string;
     createdAt: Date;
     combiId?: string;
+    combi?: {
+      id: string;
+      totalOdd: number;
+      amount: number;
+      potentialWin: number;
+      status: string;
+    };
   }>> {
     // Verificar que el solicitante sea miembro de la liga
     const member = await prisma.leagueMember.findUnique({
@@ -100,7 +107,8 @@ export class BetService {
       include: {
         leagueMember: {
           include: { user: true }
-        }
+        },
+        betCombi: true
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -124,6 +132,13 @@ export class BetService {
       status: b.status,
       createdAt: b.createdAt,
       combiId: b.combiId || undefined,
+      combi: b.betCombi ? {
+        id: b.betCombi.id,
+        totalOdd: b.betCombi.totalOdd,
+        amount: b.betCombi.amount,
+        potentialWin: b.betCombi.potentialWin,
+        status: b.betCombi.status,
+      } : undefined,
     }));
   }
 
