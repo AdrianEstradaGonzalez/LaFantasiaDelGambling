@@ -9,7 +9,7 @@ import { BetService, BettingBudget, Bet as UserBet } from '../../services/BetSer
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon, CoinsIcon, LockIcon, ChevronDownIcon, ChevronUpIcon, ChartBarIcon } from '../../components/VectorIcons';
+import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon, CoinsIcon, LockIcon, ChevronDownIcon, ChevronUpIcon, ChartBarIcon, TrendingIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -1019,6 +1019,44 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     setCombiSelections([]);
     setCombiAmount('');
     setShowCombiModal(false);
+  };
+
+  // Remove a selection from the combi (handles server-side removal when combi exists)
+  const removeSelection = async (selection: CombiSelection, index: number) => {
+    // If there's an existing combi saved on server, attempt server removal
+    if (hasExistingCombi && userCombis.length > 0 && jornada != null) {
+      const currentCombi = userCombis.find(c => c.jornada === jornada) || userCombis[0];
+      if (currentCombi && currentCombi.selections) {
+        const matched = currentCombi.selections.find((s: any) =>
+          s.matchId === selection.matchId &&
+          normalizeType(s.betType) === normalizeType(selection.betType) &&
+          normalizeLabel(s.betLabel) === normalizeLabel(selection.betLabel)
+        );
+        try {
+          if (matched) {
+            const result = await BetService.removeSelectionFromCombi(currentCombi.id, matched.id);
+            if (result && result.deleted) {
+              showSuccess('Combi eliminada (menos de 2 selecciones)');
+              setCombiSelections([]);
+              setCombiAmount('');
+              setHasExistingCombi(false);
+              setUserCombis([]);
+            } else {
+              showSuccess('Selección eliminada de la combi');
+              setCombiSelections(prev => prev.filter((_, i) => i !== index));
+            }
+            await refreshBets();
+            return;
+          }
+        } catch (err: any) {
+          showError(err?.message || 'Error al eliminar selección');
+          return;
+        }
+      }
+    }
+
+    // Fallback / local combi: just remove locally
+    setCombiSelections(prev => prev.filter((_, i) => i !== index));
   };
 
   // Handlers para expansión de usuarios
@@ -2731,10 +2769,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   right: 16,
                   backgroundColor: '#1a2332',
                   borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: '#334155',
+                  borderWidth: 2,
+                  borderColor: '#0892D0',
                   paddingVertical: 12,
-                  paddingHorizontal: 20,
+                  paddingHorizontal: 16,
                   shadowColor: '#000',
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.3,
@@ -2742,9 +2780,19 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   elevation: 8,
                 }}
               >
-                <Text style={{ color: '#0892D0', fontSize: 20, fontWeight: '700', textAlign: 'center' }}>
-                  {calculateCombiOdds().toFixed(2)}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ marginRight: 8 }}>
+                    <TrendingIcon size={22} color="#0892D0" />
+                  </View>
+                  <Text style={{ color: '#0892D0', fontSize: 18, fontWeight: '700', textAlign: 'center' }}>
+                    {calculateCombiOdds().toFixed(2)}
+                  </Text>
+                </View>
+
+                {/* Badge with number of selections positioned over the top-right border of the container */}
+                <View style={{ position: 'absolute', top: -10, right: -10, minWidth: 20, height: 20, borderRadius: 10, backgroundColor: '#ef4444', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5, borderWidth: 1, borderColor: '#fff' }}>
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>{combiSelections.length}</Text>
+                </View>
               </TouchableOpacity>
             )}
 
@@ -2765,7 +2813,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   maxHeight: '85%',
                 }}>
                   <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 16 }}>
-                    {hasExistingCombi ? 'Tu Combi Activa' : 'Crear Apuesta Combinada'}
+                    {hasExistingCombi ? 'Combi' : 'Crear Apuesta Combinada'}
                   </Text>
 
                   <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={true}>
@@ -2773,6 +2821,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     <View style={{ marginBottom: 16 }}>
                     {combiSelections.map((sel, idx) => (
                       <View key={idx} style={{
+                        position: 'relative',
                         backgroundColor: '#0f172a',
                         borderRadius: 8,
                         padding: 12,
@@ -2780,6 +2829,15 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         borderWidth: 1,
                         borderColor: '#334155',
                       }}>
+                        {/* Trash icon to remove selection */}
+                        <TouchableOpacity
+                          onPress={() => removeSelection(sel, idx)}
+                          style={{ position: 'absolute', top: 8, right: 8, padding: 6 }}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                        >
+                          <DeleteIcon size={18} color="#ef4444" />
+                        </TouchableOpacity>
+
                         <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '600', marginBottom: 4 }}>
                           {sel.homeTeam} vs {sel.awayTeam}
                         </Text>
