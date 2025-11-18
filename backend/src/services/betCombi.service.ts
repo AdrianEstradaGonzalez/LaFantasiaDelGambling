@@ -178,17 +178,26 @@ export const BetCombiService = {
             awayTeam: true
           }
         },
-        user: {
+        leagueMember: {
           select: {
-            id: true,
-            name: true
+            user: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         }
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    return combis;
+    // Transformar la respuesta para que user esté en el nivel superior
+    return combis.map((combi: any) => ({
+      ...combi,
+      user: combi.leagueMember?.user,
+      leagueMember: undefined
+    }));
   },
 
   /**

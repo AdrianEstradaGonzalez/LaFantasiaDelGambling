@@ -2884,7 +2884,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             </ScrollView>
 
             {/* Indicador flotante de combi en construcción */}
-            {combiSelections.length > 0 && (
+            {combiSelections.length > 0 && jornadaStatus === 'open' && (
               <TouchableOpacity
                 onPress={handleOpenCombiModal}
                 style={{

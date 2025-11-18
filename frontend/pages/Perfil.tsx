@@ -17,7 +17,7 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 import { SafeLayout } from '../components/SafeLayout';
 import { ApiConfig } from '../utils/apiConfig';
 import { CustomAlertManager } from '../components/CustomAlert';
-import { UsersIcon, EmailIcon, LockIcon, SaveIcon, CheckCircleIcon, MenuIcon } from '../components/VectorIcons';
+import { UsersIcon, EmailIcon, LockIcon, SaveIcon, CheckCircleIcon, MenuIcon, EyeIcon, EyeOffIcon } from '../components/VectorIcons';
 import { DrawerMenu } from '../components/DrawerMenu';
 
 interface PerfilProps {
@@ -39,6 +39,9 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Estados para el drawer
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -228,7 +231,7 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
       }
 
       const response = await fetch(`${ApiConfig.BASE_URL}/auth/change-password`, {
-        method: 'PATCH',
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -400,8 +403,15 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
                         onChangeText={setCurrentPassword}
                         placeholder="••••••••"
                         placeholderTextColor="#64748b"
-                        secureTextEntry
+                        secureTextEntry={!showCurrentPassword}
                       />
+                      <TouchableOpacity onPress={() => setShowCurrentPassword(!showCurrentPassword)}>
+                        {showCurrentPassword ? (
+                          <EyeOffIcon size={20} color="#64748b" />
+                        ) : (
+                          <EyeIcon size={20} color="#64748b" />
+                        )}
+                      </TouchableOpacity>
                     </View>
                   </View>
 
@@ -416,8 +426,15 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
                         onChangeText={setNewPassword}
                         placeholder="••••••••"
                         placeholderTextColor="#64748b"
-                        secureTextEntry
+                        secureTextEntry={!showNewPassword}
                       />
+                      <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                        {showNewPassword ? (
+                          <EyeOffIcon size={20} color="#64748b" />
+                        ) : (
+                          <EyeIcon size={20} color="#64748b" />
+                        )}
+                      </TouchableOpacity>
                     </View>
                   </View>
 
@@ -432,8 +449,15 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
                         onChangeText={setConfirmPassword}
                         placeholder="••••••••"
                         placeholderTextColor="#64748b"
-                        secureTextEntry
+                        secureTextEntry={!showConfirmPassword}
                       />
+                      <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        {showConfirmPassword ? (
+                          <EyeOffIcon size={20} color="#64748b" />
+                        ) : (
+                          <EyeIcon size={20} color="#64748b" />
+                        )}
+                      </TouchableOpacity>
                     </View>
                   </View>
 
