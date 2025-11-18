@@ -121,6 +121,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
   // Estado para almacenar combis del usuario
   const [userCombis, setUserCombis] = useState<any[]>([]);
+  
+  // Estado para almacenar combis de toda la liga (jornada cerrada)
+  const [leagueCombis, setLeagueCombis] = useState<any[]>([]);
 
   // Efecto para cargar selecciones de combi existente
   useEffect(() => {
@@ -308,6 +311,18 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             ? leagueBetsData.filter(bet => bet.jornada === currentJornadaFromLeague)
             : leagueBetsData;
           setLeagueBets(filteredLeagueBets);
+          
+          // Cargar combis de la liga si la jornada está cerrada
+          if (ligaId && currentJornadaFromLeague != null && statusData === 'closed') {
+            try {
+              const combisData = await BetService.getLeagueCombis(ligaId, currentJornadaFromLeague);
+              console.log('✅ Combis de la liga cargadas:', combisData);
+              setLeagueCombis(combisData);
+            } catch (err) {
+              console.warn('⚠️ Error loading league combis:', err);
+              setLeagueCombis([]);
+            }
+          }
           
           setBudget(budgetData);
           if (statusData) setJornadaStatus(statusData);
@@ -2716,6 +2731,115 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           })()}
                         </View>
                       ))
+                  )}
+
+                  {/* Mostrar combis de la liga cuando la jornada está cerrada */}
+                  {!isJornadaOpen && ligaId && leagueCombis.length > 0 && (
+                    <View style={{ marginTop: 24, marginBottom: 16 }}>
+                      <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800', marginBottom: 12 }}>
+                        🔗 APUESTAS COMBINADAS
+                      </Text>
+                      {leagueCombis.map((combi) => {
+                        const combiStatus = combi.status === 'won' ? '✅ GANADA' : combi.status === 'lost' ? '❌ PERDIDA' : '⏳ PENDIENTE';
+                        const statusColor = combi.status === 'won' ? '#22c55e' : combi.status === 'lost' ? '#ef4444' : '#f59e0b';
+                        
+                        return (
+                          <View key={combi.id} style={{
+                            backgroundColor: '#0f172a',
+                            borderRadius: 12,
+                            padding: 16,
+                            marginBottom: 12,
+                            borderWidth: 2,
+                            borderColor: combi.status === 'won' ? '#22c55e' : combi.status === 'lost' ? '#ef4444' : '#0892D0',
+                          }}>
+                            {/* Header de la combi */}
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                              <View>
+                                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
+                                  {combi.user?.name || 'Jugador'}
+                                </Text>
+                                <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
+                                  {combi.selections?.length || 0} selecciones
+                                </Text>
+                              </View>
+                              <View style={{
+                                backgroundColor: statusColor,
+                                paddingHorizontal: 12,
+                                paddingVertical: 6,
+                                borderRadius: 6,
+                              }}>
+                                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>
+                                  {combiStatus}
+                                </Text>
+                              </View>
+                            </View>
+
+                            {/* Listado de selecciones */}
+                            {combi.selections?.map((selection: any, idx: number) => {
+                              const selStatus = selection.status === 'won' ? '✅' : selection.status === 'lost' ? '❌' : '⏳';
+                              return (
+                                <View key={selection.id} style={{
+                                  backgroundColor: '#1e293b',
+                                  borderRadius: 8,
+                                  padding: 10,
+                                  marginBottom: idx < combi.selections.length - 1 ? 8 : 0,
+                                  borderLeftWidth: 4,
+                                  borderLeftColor: selection.status === 'won' ? '#22c55e' : selection.status === 'lost' ? '#ef4444' : '#f59e0b',
+                                }}>
+                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <View style={{ flex: 1 }}>
+                                      <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '600' }}>
+                                        {selection.homeTeam} vs {selection.awayTeam}
+                                      </Text>
+                                      <Text style={{ color: '#94a3b8', fontSize: 11, marginTop: 2 }}>
+                                        {selection.betType} - {selection.betLabel}
+                                      </Text>
+                                    </View>
+                                    <View style={{ alignItems: 'flex-end' }}>
+                                      <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800' }}>
+                                        {selection.odd.toFixed(2)}
+                                      </Text>
+                                      <Text style={{ color: '#94a3b8', fontSize: 11 }}>
+                                        {selStatus}
+                                      </Text>
+                                    </View>
+                                  </View>
+                                </View>
+                              );
+                            })}
+
+                            {/* Footer con cuota total y apuesta */}
+                            <View style={{ 
+                              marginTop: 12, 
+                              paddingTop: 12, 
+                              borderTopWidth: 1, 
+                              borderTopColor: '#334155',
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                            }}>
+                              <View>
+                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Cuota Total</Text>
+                                <Text style={{ color: '#0892D0', fontSize: 20, fontWeight: '800' }}>
+                                  {combi.totalOdd?.toFixed(2) || '0.00'}
+                                </Text>
+                              </View>
+                              <View style={{ alignItems: 'flex-end' }}>
+                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Apostado</Text>
+                                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
+                                  {combi.amount}M
+                                </Text>
+                              </View>
+                              <View style={{ alignItems: 'flex-end' }}>
+                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Ganancia Pot.</Text>
+                                <Text style={{ color: statusColor, fontSize: 16, fontWeight: '800' }}>
+                                  {combi.potentialWin}M
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
                   )}
                 </>
               )}
