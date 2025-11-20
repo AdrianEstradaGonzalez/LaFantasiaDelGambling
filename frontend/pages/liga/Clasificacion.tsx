@@ -584,6 +584,9 @@ export const Clasificacion = () => {
                     },
                   }}
                   ligaId={ligaId}
+                  ligaName={ligaName}
+                  division={division}
+                  isPremium={isPremium}
                 />
               </Animated.View>
               <TouchableOpacity

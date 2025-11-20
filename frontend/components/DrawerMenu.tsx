@@ -24,9 +24,12 @@ import { CustomAlertManager } from './CustomAlert';
 interface DrawerMenuProps {
   navigation: any;
   ligaId?: string; // ID de la liga actual (opcional)
+  ligaName?: string; // Nombre de la liga
+  division?: 'primera' | 'segunda' | 'premier'; // División de la liga
+  isPremium?: boolean; // Si la liga es premium
 }
 
-export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
+export const DrawerMenu = ({ navigation, ligaId, ligaName, division, isPremium }: DrawerMenuProps) => {
   const [userName, setUserName] = useState<string>('Usuario');
   const [userEmail, setUserEmail] = useState<string>('');
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -375,6 +378,25 @@ export const DrawerMenu = ({ navigation, ligaId }: DrawerMenuProps) => {
 
         {/* Divisor */}
         <View style={styles.divider} />
+
+        {/* Mejorar Liga (solo si estamos en una liga no premium) */}
+        {ligaId && !isPremium && (
+          <MenuItem
+            icon={<ShieldIcon size={24} color="#fbbf24" />}
+            label="Mejorar Liga"
+            onPress={() => {
+              navigation.closeDrawer?.();
+              navigation.navigate('Apuestas', {
+                ligaId,
+                ligaName,
+                division,
+                isPremium: false,
+                triggerUpgrade: true
+              });
+            }}
+            iconColor="#fbbf24"
+          />
+        )}
 
         {/* Abandonar Liga (solo si estamos en una liga) */}
         {ligaId && (

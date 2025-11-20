@@ -370,9 +370,24 @@ const FormationDropdown = ({
                       if (isLocked) {
                         CustomAlertManager.alert(
                           'Formación Premium',
-                          'Debes crear una liga premium para elegir esta formación',
-                          [{ text: 'OK', onPress: () => {}, style: 'default' }],
-                          { icon: 'lock', iconColor: '#f59e0b' }
+                          'Esta formación es exclusiva de las ligas premium. ¿Deseas actualizar tu liga?',
+                          [
+                            { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
+                            { 
+                              text: 'Mejorar', 
+                              onPress: () => {
+                                navigation.navigate('Apuestas', {
+                                  ligaId,
+                                  ligaName,
+                                  division,
+                                  isPremium: false,
+                                  triggerUpgrade: true
+                                });
+                              },
+                              style: 'default' 
+                            }
+                          ],
+                          { icon: 'trophy', iconColor: '#fbbf24' }
                         );
                       } else {
                         onValueChange(formation.id);
@@ -2233,6 +2248,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                     },
                   }}
                   ligaId={ligaId}
+                  ligaName={ligaName}
+                  division={division}
+                  isPremium={isPremium}
                 />
               </Animated.View>
               {/* Overlay to close drawer */}

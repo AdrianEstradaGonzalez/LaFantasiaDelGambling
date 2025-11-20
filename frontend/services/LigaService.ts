@@ -377,4 +377,34 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
       return false;
     }
   }
+
+  // 💎 Actualizar liga a premium después de pago exitoso
+  static async upgradeLeagueToPremium(leagueId: string): Promise<any> {
+    try {
+      const token = await this.getAccessToken();
+      if (!token) throw new Error('Usuario no autenticado');
+
+      console.log(`💎 LigaService.upgradeLeagueToPremium - Actualizando liga ${leagueId} a premium...`);
+
+      const res = await fetch(`${ApiConfig.BASE_URL}/leagues/${leagueId}/upgrade-to-premium`, {
+        method: 'POST',
+        headers: { 
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errorMsg = this.mapErrorToFriendlyMessage(json, res.status);
+        throw new Error(errorMsg);
+      }
+
+      console.log('✅ LigaService.upgradeLeagueToPremium - Liga actualizada a premium');
+      return json;
+    } catch (error: any) {
+      console.error('❌ LigaService.upgradeLeagueToPremium error:', error);
+      throw error;
+    }
+  }
 }

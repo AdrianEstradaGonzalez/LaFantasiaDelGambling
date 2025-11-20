@@ -2329,12 +2329,14 @@ export const PlayerDetailAdvanced: React.FC<PlayerDetailProps> = ({ navigation, 
                       gap: 8,
                     }}
                     onPress={() => {
-                      CustomAlertManager.alert(
-                        '¡Mejora a Premium!',
-                        'Crea o únete a una liga Premium para desbloquear todas las estadísticas avanzadas y mejorar tu estrategia.',
-                        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
-                        { icon: 'information', iconColor: '#f59e0b' }
-                      );
+                      // Navegar a la pantalla de apuestas con el trigger de upgrade
+                      navigation.navigate('Apuestas', {
+                        ligaId,
+                        ligaName,
+                        division,
+                        isPremium: false,
+                        triggerUpgrade: true
+                      });
                     }}
                   >
                     <TrophyStarIcon size={20} color="#000000" />

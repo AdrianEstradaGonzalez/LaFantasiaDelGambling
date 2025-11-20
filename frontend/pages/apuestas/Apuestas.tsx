@@ -1,11 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, ScrollView, Image, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, Animated, Platform, Keyboard, findNodeHandle, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LinearGradient from 'react-native-linear-gradient';
+import { WebView } from 'react-native-webview';
 import FootballService from '../../services/FutbolService';
 import { JornadaService } from '../../services/JornadaService';
 import { BetService, BettingBudget, Bet as UserBet } from '../../services/BetService';
+import { PaymentService } from '../../services/PaymentService';
+import { LigaService } from '../../services/LigaService';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
@@ -47,7 +50,7 @@ type GroupedBet = {
   options: Array<{ label: string; odd: number }>;
 };
 
-type ApuestasRouteProps = RouteProp<{ params: { ligaId?: string; ligaName?: string; isPremium?: boolean; division?: string } }, 'params'>;
+type ApuestasRouteProps = RouteProp<{ params: { ligaId?: string; ligaName?: string; isPremium?: boolean; division?: string; triggerUpgrade?: boolean } }, 'params'>;
 
 type ApuestasProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -125,6 +128,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Estado para almacenar combis de toda la liga (jornada cerrada)
   const [leagueCombis, setLeagueCombis] = useState<any[]>([]);
 
+  // Estados para upgrade a premium
+  const [showUpgradeWebView, setShowUpgradeWebView] = useState(false);
+  const [upgradeCheckoutUrl, setUpgradeCheckoutUrl] = useState<string | null>(null);
+  const [processingUpgrade, setProcessingUpgrade] = useState(false);
+
   // Debug: Log cuando cambien las combis de la liga
   useEffect(() => {
     console.log('🔍 DEBUG - leagueCombis cambió:', {
@@ -135,6 +143,16 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       jornada
     });
   }, [leagueCombis, jornadaStatus, ligaId, jornada]);
+
+  // Efecto para detectar si se debe abrir automáticamente el upgrade
+  useEffect(() => {
+    if (route.params?.triggerUpgrade && !isPremium) {
+      // Pequeño delay para que se cargue bien la pantalla
+      setTimeout(() => {
+        handleUpgradeToPremium();
+      }, 500);
+    }
+  }, [route.params?.triggerUpgrade]);
 
   // Efecto para cargar selecciones de combi existente
   useEffect(() => {
@@ -733,9 +751,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (!isPremium) {
       CustomAlertManager.alert(
         'Funcionalidad Premium',
-        'Las apuestas combinadas solo están disponibles en ligas premium. Mejora tu liga para desbloquear esta función.',
-        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
-        { icon: 'alert', iconColor: '#f59e0b' }
+        'Las apuestas combinadas son exclusivas de las ligas premium. ¿Deseas actualizar tu liga?',
+        [
+          { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
+          { text: 'Mejorar', onPress: handleUpgradeToPremium, style: 'default' }
+        ],
+        { icon: 'trophy', iconColor: '#fbbf24' }
       );
       return;
     }
@@ -850,6 +871,20 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
   const handleCreateCombi = async () => {
     if (!ligaId || !jornada) return;
+
+    // Verificar si la liga es premium
+    if (!isPremium) {
+      CustomAlertManager.alert(
+        'Funcionalidad Premium',
+        'Las apuestas combinadas son exclusivas de las ligas premium. ¿Deseas actualizar tu liga?',
+        [
+          { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
+          { text: 'Mejorar', onPress: handleUpgradeToPremium, style: 'default' }
+        ],
+        { icon: 'trophy', iconColor: '#fbbf24' }
+      );
+      return;
+    }
 
     if (combiSelections.length < 2) {
       CustomAlertManager.alert(
@@ -1049,6 +1084,92 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     setCombiSelections([]);
     setCombiAmount('');
     setShowCombiModal(false);
+  };
+
+  // Función para iniciar el proceso de upgrade a premium
+  const handleUpgradeToPremium = async () => {
+    if (!ligaId || !ligaName) {
+      showError('No se pudo obtener la información de la liga');
+      return;
+    }
+
+    try {
+      setProcessingUpgrade(true);
+      
+      // Crear sesión de pago para upgrade
+      const checkoutUrl = await PaymentService.createUpgradeCheckout(ligaId, ligaName);
+      
+      if (!checkoutUrl) {
+        throw new Error('No se pudo generar la URL de pago');
+      }
+
+      setUpgradeCheckoutUrl(checkoutUrl);
+      setShowUpgradeWebView(true);
+    } catch (error: any) {
+      console.error('Error al iniciar upgrade:', error);
+      showError(error.message || 'Error al iniciar el proceso de upgrade');
+    } finally {
+      setProcessingUpgrade(false);
+    }
+  };
+
+  // Función para procesar el resultado del pago de upgrade
+  const handleUpgradePaymentResult = async (url: string) => {
+    // Detectar success o cancel en la URL
+    if (url.includes('/payment/success')) {
+      const sessionId = url.split('session_id=')[1]?.split('&')[0];
+      
+      if (sessionId) {
+        try {
+          setShowUpgradeWebView(false);
+          setProcessingUpgrade(true);
+
+          // Verificar el pago
+          const paymentInfo = await PaymentService.verifyPayment(sessionId);
+
+          if (paymentInfo.paid && paymentInfo.leagueId) {
+            // Actualizar la liga a premium
+            await LigaService.upgradeLeagueToPremium(paymentInfo.leagueId);
+
+            CustomAlertManager.alert(
+              '🎉 ¡Liga Premium Activada!',
+              'Tu liga ha sido actualizada a Premium. Ahora puedes disfrutar de todas las funcionalidades exclusivas.',
+              [
+                {
+                  text: 'Entendido',
+                  onPress: () => {
+                    // Recargar la página para reflejar cambios
+                    navigation.replace('Apuestas', {
+                      ligaId,
+                      ligaName,
+                      isPremium: true,
+                      division
+                    });
+                  },
+                  style: 'default'
+                }
+              ],
+              { icon: 'checkmark-circle', iconColor: '#22c55e' }
+            );
+          } else {
+            throw new Error('El pago no se completó correctamente');
+          }
+        } catch (error: any) {
+          console.error('Error verificando pago de upgrade:', error);
+          showError(error.message || 'Error al verificar el pago');
+        } finally {
+          setProcessingUpgrade(false);
+        }
+      }
+    } else if (url.includes('/payment/cancel')) {
+      setShowUpgradeWebView(false);
+      CustomAlertManager.alert(
+        'Pago cancelado',
+        'El proceso de upgrade fue cancelado',
+        [{ text: 'OK', onPress: () => {}, style: 'default' }],
+        { icon: 'information-circle', iconColor: '#3b82f6' }
+      );
+    }
   };
 
   // Remove a selection from the combi (handles server-side removal when combi exists)
@@ -2964,7 +3085,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         awayTeam: b.visitante,
                                       })}
                                       disabled={
-                                        !isPremium || 
                                         (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)))
                                       }
                                       style={{
@@ -2983,10 +3103,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         marginTop: 8,
                                         borderWidth: isInCombi(b.matchId, b.type, option.label) ? 0 : 1,
                                         borderColor: '#0892D0',
-                                        opacity: (
-                                          !isPremium || 
-                                          (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)))
-                                        ) ? 0.5 : 1,
+                                        opacity: (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ? 0.5 : 1,
                                         flexDirection: 'row',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -3249,7 +3366,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           style={{ 
                             position: 'absolute', 
                             top: 4, 
-                            right: 4, 
+                            right: 8, 
                             padding: 10,
                             backgroundColor: 'rgba(239, 68, 68, 0.1)',
                             borderRadius: 8,
@@ -3427,6 +3544,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       },
                     }}
                     ligaId={ligaId}
+                    ligaName={ligaName}
+                    division={division}
+                    isPremium={isPremium}
                   />
                 </Animated.View>
                 {/* Overlay to close drawer */}
@@ -3435,6 +3555,113 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   activeOpacity={1}
                   onPress={() => setIsDrawerOpen(false)}
                 />
+              </View>
+            </Modal>
+
+            {/* Modal WebView de Upgrade a Premium */}
+            <Modal
+              visible={showUpgradeWebView}
+              animationType="slide"
+              onRequestClose={() => {
+                CustomAlertManager.alert(
+                  'Cancelar upgrade',
+                  '¿Estás seguro de que quieres cancelar el upgrade?',
+                  [
+                    { text: 'No', onPress: () => {}, style: 'cancel' },
+                    { 
+                      text: 'Sí, cancelar', 
+                      onPress: () => setShowUpgradeWebView(false),
+                      style: 'destructive'
+                    }
+                  ],
+                  { icon: 'alert', iconColor: '#f59e0b' }
+                );
+              }}
+            >
+              <View style={{ flex: 1, backgroundColor: '#000' }}>
+                {/* Header */}
+                <View style={{
+                  paddingTop: Platform.OS === 'ios' ? 50 : 20,
+                  paddingHorizontal: 16,
+                  paddingBottom: 12,
+                  backgroundColor: '#1f2937',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
+                    Actualizar a Premium
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      CustomAlertManager.alert(
+                        'Cancelar upgrade',
+                        '¿Estás seguro de que quieres cancelar el upgrade?',
+                        [
+                          { text: 'No', onPress: () => {}, style: 'cancel' },
+                          { 
+                            text: 'Sí, cancelar', 
+                            onPress: () => setShowUpgradeWebView(false),
+                            style: 'destructive'
+                          }
+                        ],
+                        { icon: 'alert', iconColor: '#f59e0b' }
+                      );
+                    }}
+                    style={{ padding: 8 }}
+                  >
+                    <Text style={{ color: '#ef4444', fontSize: 16, fontWeight: '600' }}>
+                      Cerrar
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* WebView */}
+                {upgradeCheckoutUrl && (
+                  <WebView
+                    source={{ uri: upgradeCheckoutUrl }}
+                    style={{ flex: 1 }}
+                    onNavigationStateChange={(navState) => {
+                      handleUpgradePaymentResult(navState.url);
+                    }}
+                    startInLoadingState={true}
+                    renderLoading={() => (
+                      <View style={{ 
+                        position: 'absolute', 
+                        top: 0, 
+                        left: 0, 
+                        right: 0, 
+                        bottom: 0,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: '#000'
+                      }}>
+                        <ActivityIndicator size="large" color="#0892D0" />
+                        <Text style={{ color: '#fff', marginTop: 16 }}>
+                          Cargando pasarela de pago...
+                        </Text>
+                      </View>
+                    )}
+                  />
+                )}
+
+                {processingUpgrade && (
+                  <View style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    justifyContent: 'center',
+                    alignItems: 'center'
+                  }}>
+                    <ActivityIndicator size="large" color="#0892D0" />
+                    <Text style={{ color: '#fff', marginTop: 16, fontSize: 16 }}>
+                      Procesando upgrade...
+                    </Text>
+                  </View>
+                )}
               </View>
             </Modal>
           </LinearGradient>

@@ -315,15 +315,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           </Text>
 
           <TouchableOpacity
-            style={[styles.premiumButton, { opacity: 0.5 }]}
-            onPress={() => {
-              CustomAlertManager.alert(
-                'Próximamente',
-                'Las ligas premium estarán disponibles muy pronto.',
-                [{ text: 'OK', onPress: () => {}, style: 'default' }],
-                { icon: 'information-circle', iconColor: '#3b82f6' }
-              );
-            }}
+            style={styles.premiumButton}
+            onPress={() => setShowPremiumModal(true)}
             activeOpacity={0.8}
           >
             <TrophyStarIcon size={20} color="#1f2937" />
@@ -406,7 +399,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                     <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
                       <Text style={styles.featureTitle}>Elige tu Liga</Text>
                       <Text style={styles.featureDescription}>
-                        La Liga, La Liga 2 o Premier League - Compite con jugadores de tu competición favorita
+                        LaLiga, LaLiga Hypermotion o Premier League - Compite con jugadores de tu competición favorita
                       </Text>
                     </View>
                   </View>
@@ -436,6 +429,25 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                       <Text style={styles.featureTitle}>Apuestas Combinadas</Text>
                       <Text style={styles.featureDescription}>
                         Combina hasta 3 apuestas en una sola para multiplicar tus ganancias - Mayor riesgo, mayor recompensa
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.featureItem}>
+                    <View style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 14,
+                      backgroundColor: '#fbbf24',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}>
+                      <Text style={{ fontSize: 16, fontWeight: '800', color: '#1f2937' }}>📊</Text>
+                    </View>
+                    <View style={[styles.featureTextContainer, { marginLeft: 12 }]}>
+                      <Text style={styles.featureTitle}>Estadísticas Avanzadas</Text>
+                      <Text style={styles.featureDescription}>
+                        Accede a estadísticas detalladas de los jugadores para tomar mejores decisiones en tu plantilla
                       </Text>
                     </View>
                   </View>
@@ -498,7 +510,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
               {/* Selector de división */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>División</Text>
-                <View style={{ flexDirection: 'row', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
+                <View style={{ flexDirection: 'column', gap: 10, marginTop: 8 }}>
                   <TouchableOpacity
                     style={[
                       styles.divisionButton,
@@ -540,7 +552,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                         divisionPremium === 'segunda' && styles.divisionButtonTextActive,
                         { marginLeft: 6 }
                       ]}>
-                        La Liga 2
+                        LaLiga Hypermotion
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -577,7 +589,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.modalPrimaryButtonText, loadingCrearPremium && styles.primaryButtonTextDisabled]}>
-                  {loadingCrearPremium ? 'Procesando...' : 'Continuar al Pago (0,50€)'}
+                  {loadingCrearPremium ? 'Procesando...' : 'Continuar al Pago (9,90€)'}
                 </Text>
               </TouchableOpacity>
 

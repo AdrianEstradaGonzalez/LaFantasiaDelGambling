@@ -11,6 +11,14 @@ export default async function paymentRoutes(fastify: FastifyInstance) {
   }, PaymentController.createCheckout);
 
   /**
+   * POST /payment/upgrade-league
+   * Crear sesión de pago para upgrade de liga a premium
+   */
+  fastify.post('/upgrade-league', {
+    preHandler: [fastify.auth],
+  }, PaymentController.upgradeLeague);
+
+  /**
    * GET /payment/verify
    * Verificar el estado de un pago completado
    */

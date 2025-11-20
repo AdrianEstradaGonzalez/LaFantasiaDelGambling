@@ -1412,6 +1412,9 @@ export const PlayersMarket = ({ navigation, route }: {
                     },
                   }}
                   ligaId={ligaId}
+                  ligaName={ligaName}
+                  division={division}
+                  isPremium={isPremium}
                 />
               </Animated.View>
               {/* Overlay to close drawer */}

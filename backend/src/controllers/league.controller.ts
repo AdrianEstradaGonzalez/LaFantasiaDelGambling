@@ -147,4 +147,22 @@ reply.send(leagues);
     }
   },
 
+  // Actualizar liga a premium después de pago
+  upgradeLeagueToPremium: async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const userId = (req.user as any)?.sub || (req.user as any)?.id;
+      if (!userId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
+      
+      const { leagueId } = (req as any).params;
+      const updatedLeague = await LeagueService.upgradeLeagueToPremium(leagueId, userId);
+      reply.send(updatedLeague);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      req.log.error('Error upgrading league to premium:', error);
+      throw new AppError(500, "INTERNAL_ERROR", error.message || "Error al actualizar la liga a premium");
+    }
+  },
+
 };

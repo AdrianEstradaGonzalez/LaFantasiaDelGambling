@@ -1027,6 +1027,9 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                     },
                   }}
                   ligaId={ligaId}
+                  ligaName={ligaName}
+                  division={division}
+                  isPremium={isPremium}
                 />
               </Animated.View>
               {/* Overlay to close drawer */}

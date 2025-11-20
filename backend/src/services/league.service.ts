@@ -674,4 +674,40 @@ getLeaguesByUser: (userId: string) =>
     }
   },
 
+  /**
+   * Actualizar una liga a premium
+   */
+  upgradeLeagueToPremium: async (leagueId: string, userId: string) => {
+    try {
+      // Verificar que la liga existe
+      const league = await LeagueRepo.getById(leagueId);
+      if (!league) {
+        throw new Error('Liga no encontrada');
+      }
+
+      // Verificar que el usuario es el líder de la liga
+      if (league.leaderId !== userId) {
+        throw new Error('Solo el líder de la liga puede actualizarla a premium');
+      }
+
+      // Verificar que la liga no es ya premium
+      if (league.isPremium) {
+        throw new Error('Esta liga ya es premium');
+      }
+
+      // Actualizar la liga a premium
+      const updatedLeague = await prisma.league.update({
+        where: { id: leagueId },
+        data: { isPremium: true }
+      });
+
+      console.log(`[LeagueService] Liga ${leagueId} actualizada a premium por usuario ${userId}`);
+
+      return updatedLeague;
+    } catch (error: any) {
+      console.error('[upgradeLeagueToPremium] ❌ Error:', error);
+      throw new Error(error?.message || 'Error al actualizar la liga a premium');
+    }
+  },
+
 };

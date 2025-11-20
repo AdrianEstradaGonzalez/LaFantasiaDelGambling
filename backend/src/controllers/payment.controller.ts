@@ -6,6 +6,11 @@ interface CreateCheckoutBody {
   division: 'primera' | 'segunda';
 }
 
+interface UpgradeLeagueBody {
+  leagueId: string;
+  leagueName: string;
+}
+
 interface VerifyPaymentQuery {
   session_id: string;
 }
@@ -43,6 +48,42 @@ export const PaymentController = {
       console.error('❌ Error en createCheckout:', error);
       return reply.status(500).send({ 
         error: error.message || 'Error al crear sesión de pago' 
+      });
+    }
+  },
+
+  /**
+   * POST /payment/upgrade-league
+   * Crear sesión de pago para upgrade de liga a premium
+   */
+  upgradeLeague: async (
+    request: FastifyRequest<{ Body: UpgradeLeagueBody }>,
+    reply: FastifyReply
+  ) => {
+    try {
+      const userId = request.user?.sub;
+      if (!userId) {
+        return reply.status(401).send({ error: 'Usuario no autenticado' });
+      }
+
+      const { leagueId, leagueName } = request.body;
+
+      if (!leagueId || !leagueName) {
+        return reply.status(400).send({ 
+          error: 'leagueId y leagueName son requeridos' 
+        });
+      }
+
+      const checkoutUrl = await PaymentService.createUpgradeLeagueCheckout(userId, leagueId, leagueName);
+
+      return reply.status(200).send({ 
+        checkoutUrl,
+        message: 'Sesión de upgrade creada exitosamente' 
+      });
+    } catch (error: any) {
+      console.error('❌ Error en upgradeLeague:', error);
+      return reply.status(500).send({ 
+        error: error.message || 'Error al crear sesión de upgrade' 
       });
     }
   },

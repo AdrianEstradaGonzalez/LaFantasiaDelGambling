@@ -17,6 +17,7 @@ const leagueRoutes: FastifyPluginAsync = async (app) => {
   app.post("/:leagueId/calculate-realtime", LeagueController.calculateRealTimePoints); // calcular puntos en tiempo real (lee datos ya calculados)
   app.get("/:leagueId/realtime", getRealtimePoints); // obtener puntos en tiempo real desde caché
   app.post("/trigger-points-calculation", LeagueController.triggerPointsCalculation); // disparar cálculo de puntos para todas las ligas
+  app.post("/:leagueId/upgrade-to-premium", LeagueController.upgradeLeagueToPremium); // actualizar liga a premium
   app.get("/user/:userId", LeagueController.getByUser);
 
 };
