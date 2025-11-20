@@ -17,18 +17,8 @@ import Svg, { Path } from 'react-native-svg';
 import { JornadaService } from '../../services/JornadaService';
 import { SafeLayout } from '../../components/SafeLayout';
 import { AdBanner } from '../../components/AdBanner';
-import { withTimeout, safeApiCall } from '../../utils/withTimeout';
+import { safeApiCall } from '../../utils/withTimeout';
 import { DailyOffersService } from '../../services/DailyOffersService';
-
-// Función para decodificar JWT
-function decodeJwt(token: string): any {
-  try {
-    const payload = token.split('.')[1];
-    return JSON.parse(Buffer.from(payload, 'base64').toString('utf8'));
-  } catch {
-    return {};
-  }
-}
 
 // FunciÃ³n para normalizar texto (eliminar acentos y convertir a minÃºsculas)
 function normalizeText(text: string): string {
@@ -278,29 +268,18 @@ export const PlayersMarket = ({ navigation, route }: {
     try {
       console.log('🔍 Iniciando carga de mercado de jugadores...');
       console.log('📊 Parámetros:', { ligaId, division, selectMode });
-      console.time('⏱️ Carga total del mercado');
       setLoading(true);
       
-      console.time('⏱️ Llamada API jugadores');
       console.log(`📡 Solicitando jugadores de división: ${division}`);
       
-      // 🚀 Cargar jugadores PRIMERO con timeout y mejor manejo de errores
+      // 🚀 Cargar jugadores PRIMERO con mejor manejo de errores
       let playersData: PlayerWithPrice[] = [];
       try {
         console.log('📡 [PlayersMarket] Iniciando getAllPlayers...');
-        playersData = await withTimeout(
-          PlayerService.getAllPlayers({ division }), 
-          35000, // 35 segundos de timeout (más que el fetch interno de 30s)
-          `Timeout al cargar jugadores de ${division}. El servidor está tardando demasiado.`
-        );
+        playersData = await PlayerService.getAllPlayers({ division });
         console.log(`✅ [PlayersMarket] Jugadores recibidos: ${playersData.length}`);
       } catch (playerError: any) {
-        console.error('❌ [PlayerService] Error cargando jugadores:', playerError);
-        console.error('❌ [PlayerService] Error details:', {
-          message: playerError?.message,
-          name: playerError?.name,
-          stack: playerError?.stack
-        });
+        console.error('❌ [PlayersMarket] Error cargando jugadores:', playerError?.message || playerError);
         
         // Si falla la carga de jugadores, mostrar error y salir
         let errorMessage = 'No se pudieron cargar los jugadores.';
@@ -332,11 +311,9 @@ export const PlayersMarket = ({ navigation, route }: {
       }
       
       const results = ligaId ? await Promise.all(loadPromises) : [];
-      console.timeEnd('⏱️ Llamada API jugadores');
       
-      console.time('⏱️ Procesamiento de datos');
       // Extraer resultados de datos de liga
-      console.log(`📊 Jugadores totales: ${playersData.length}`);
+      console.log(`📊 Jugadores totales recibidos: ${playersData.length}`);
       
       if (ligaId && results.length > 0) {
         const status = results[0];
@@ -365,79 +342,20 @@ export const PlayersMarket = ({ navigation, route }: {
         setDailyOffers(new Set());
       }
       
-      // 🚀 OPTIMIZACIÓN 2: Extraer equipos y mostrar primeros 30 INMEDIATAMENTE
+      // 🚀 Extraer equipos únicos
       const uniqueTeams = Array.from(
         new Set(playersData.map(p => JSON.stringify({ id: p.teamId, name: p.teamName })))
       ).map(str => JSON.parse(str));
       setTeams(uniqueTeams);
       
-      // ✅ Mostrar primeros 30 jugadores AHORA
-      const initialBatch = playersData.slice(0, 30);
-      setPlayers(initialBatch);
-      // Si estamos en Segunda y algunos jugadores no tienen totalPoints, actualizarlos en background
-      const needsPoints = division === 'segunda' ? initialBatch.filter(p => p.totalPoints == null || p.totalPoints === 0) : [];
-      if (needsPoints.length > 0) {
-        // Actualizar puntos solo para los visibles (limitar para evitar demasiadas llamadas)
-        const limit = Math.min(needsPoints.length, 80); // to avoid hammering API
-        (async () => {
-          try {
-            const updated: Record<number, number> = {};
-            for (let i = 0; i < limit; i++) {
-              const pl = needsPoints[i];
-              try {
-                const fresh = await PlayerService.getPlayerById(pl.id);
-                if (fresh && typeof fresh.totalPoints === 'number') {
-                  updated[pl.id] = fresh.totalPoints;
-                }
-              } catch (e) {
-                // ignore per-player errors
-              }
-            }
-            if (Object.keys(updated).length > 0) {
-              setPlayers(prev => prev.map(p => ({ ...p, totalPoints: updated[p.id] ?? p.totalPoints })));
-            }
-          } catch (e) {
-            console.warn('Error updating totalPoints for visible players', e);
-          }
-        })();
-      }
-      console.timeEnd('⏱️ Procesamiento de datos');
+      // ✅ Mostrar TODOS los jugadores de una vez (más confiable en producción)
+      setPlayers(playersData);
+      console.log('✅ Jugadores cargados y mostrados:', playersData.length);
       
-      console.timeEnd('⏱️ Carga total del mercado');
-      setLoading(false); // UI visible rápido
-      
-      // 🔄 Cargar resto en segundo plano de forma más agresiva
-      setIsLoadingMore(true);
-      
-      // Usar requestAnimationFrame para no bloquear el render
-      let currentIndex = 30;
-      const batchSize = 100; // Lotes más grandes
-      
-      const loadNextBatch = () => {
-        if (currentIndex >= playersData.length) {
-          setIsLoadingMore(false);
-          return;
-        }
-        
-        const nextBatch = playersData.slice(0, currentIndex + batchSize);
-        setPlayers(nextBatch);
-        currentIndex += batchSize;
-        
-        // Continuar con el siguiente lote
-        if (currentIndex < playersData.length) {
-          setTimeout(() => requestAnimationFrame(loadNextBatch), 30);
-        } else {
-          // Asegurar que tenemos todos al final
-          setPlayers(playersData);
-          setIsLoadingMore(false);
-        }
-      };
-      
-      // Iniciar carga progresiva después de un pequeño delay
-      setTimeout(() => requestAnimationFrame(loadNextBatch), 100);
+      setLoading(false); // UI visible
+      setIsLoadingMore(false);
 
     } catch (error: any) {
-      console.timeEnd('⏱️ Carga total del mercado');
       console.error('❌ Error cargando mercado:', error);
       console.error('❌ Error details:', {
         message: error?.message,

@@ -42,9 +42,8 @@ export class PlayerService {
     division?: string;
   }): Promise<PlayerWithPrice[]> {
     try {
-      console.log('📡 [PlayerService.getAllPlayers] Iniciando solicitud');
-      console.log('📡 [PlayerService.getAllPlayers] Filtros:', JSON.stringify(filters));
-      console.log('📡 [PlayerService.getAllPlayers] BASE_URL:', this.BASE_URL);
+      console.log('📡 [PlayerService] Iniciando getAllPlayers');
+      console.log('📡 [PlayerService] Filtros:', filters ? JSON.stringify(filters) : 'ninguno');
       
       const params = new URLSearchParams();
       
@@ -56,37 +55,50 @@ export class PlayerService {
       if (filters?.division) params.append('division', filters.division);
 
       const url = `${this.BASE_URL}${params.toString() ? '?' + params.toString() : ''}`;
-      console.log('📡 [PlayerService.getAllPlayers] URL completa:', url);
-      console.log('📡 [PlayerService.getAllPlayers] Iniciando fetch con timeout de 30s...');
+      console.log('📡 [PlayerService] Haciendo fetch a:', url);
       
-      const startTime = Date.now();
-      const response = await fetchWithTimeout(url, {}, 30000); // 30 segundos para cold-start
-      const fetchTime = Date.now() - startTime;
-      console.log(`📡 [PlayerService.getAllPlayers] Response recibida en ${fetchTime}ms`);
-      console.log('📡 [PlayerService.getAllPlayers] Response status:', response.status, response.statusText);
+      const response = await fetchWithTimeout(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      }, 40000); // 40 segundos para cold-start en producción
+      
+      console.log('📡 [PlayerService] Response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ [PlayerService.getAllPlayers] Error response:', errorText);
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        let errorMessage = `Error ${response.status}`;
+        try {
+          const errorText = await response.text();
+          console.error('❌ [PlayerService] Error response:', errorText);
+          errorMessage = errorText || errorMessage;
+        } catch (e) {
+          console.error('❌ [PlayerService] No se pudo leer error response');
+        }
+        throw new Error(errorMessage);
       }
 
-      console.log('📡 [PlayerService.getAllPlayers] Parseando JSON...');
+      console.log('📡 [PlayerService] Parseando JSON...');
       const json = await response.json();
-      console.log(`✅ [PlayerService.getAllPlayers] Jugadores recibidos: ${json.data?.length || 0}`);
+      
+      if (!json || typeof json !== 'object') {
+        console.error('❌ [PlayerService] JSON inválido:', typeof json);
+        throw new Error('Respuesta del servidor no es JSON válido');
+      }
       
       if (!json.data || !Array.isArray(json.data)) {
-        console.error('❌ [PlayerService.getAllPlayers] Respuesta inválida:', json);
+        console.error('❌ [PlayerService] Estructura de respuesta inválida');
         throw new Error('Respuesta del servidor no contiene datos de jugadores');
       }
       
-      return json.data || [];
+      console.log(`✅ [PlayerService] ${json.data.length} jugadores recibidos correctamente`);
+      return json.data;
     } catch (error: any) {
-      console.error('❌ [PlayerService.getAllPlayers] Error:', {
-        message: error?.message,
-        name: error?.name,
-        stack: error?.stack?.substring(0, 200),
-      });
+      console.error('❌ [PlayerService] Error en getAllPlayers:', error?.message || 'Unknown error');
+      if (error?.name === 'AbortError' || error?.message?.includes('timeout')) {
+        throw new Error('Timeout al cargar jugadores. Por favor, verifica tu conexión e intenta nuevamente.');
+      }
       throw error;
     }
   }
