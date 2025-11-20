@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 
 // Inicializar Stripe con la clave secreta
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-10-29.clover',
+  apiVersion: '2024-11-20.acacia',
 });
 
 export const PaymentService = {
@@ -10,9 +10,10 @@ export const PaymentService = {
    * Crear una sesión de pago de Stripe para liga premium
    * @param userId - ID del usuario
    * @param leagueName - Nombre de la liga premium
+   * @param division - División de la liga (primera, segunda, premier)
    * @returns URL de pago de Stripe
    */
-  createPremiumLeagueCheckout: async (userId: string, leagueName: string): Promise<string> => {
+  createPremiumLeagueCheckout: async (userId: string, leagueName: string, division?: 'primera' | 'segunda' | 'premier'): Promise<string> => {
     try {
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -35,6 +36,7 @@ export const PaymentService = {
         metadata: {
           userId,
           leagueName,
+          division: division || 'primera',
           type: 'premium_league',
         },
       });

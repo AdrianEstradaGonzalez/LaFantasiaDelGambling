@@ -3,7 +3,7 @@ import { PaymentService } from '../services/payment.service.js';
 
 interface CreateCheckoutBody {
   leagueName: string;
-  division: 'primera' | 'segunda';
+  division: 'primera' | 'segunda' | 'premier';
 }
 
 interface UpgradeLeagueBody {
@@ -30,7 +30,7 @@ export const PaymentController = {
         return reply.status(401).send({ error: 'Usuario no autenticado' });
       }
 
-      const { leagueName } = request.body;
+      const { leagueName, division } = request.body;
 
       if (!leagueName || leagueName.trim().length < 3) {
         return reply.status(400).send({ 
@@ -38,7 +38,7 @@ export const PaymentController = {
         });
       }
 
-      const checkoutUrl = await PaymentService.createPremiumLeagueCheckout(userId, leagueName);
+      const checkoutUrl = await PaymentService.createPremiumLeagueCheckout(userId, leagueName, division);
 
       return reply.status(200).send({ 
         checkoutUrl,
