@@ -17,7 +17,7 @@ end
 target 'frontend' do
   config = use_native_modules!
 
-  # Habilitar module maps solo para pods de Firebase y Google
+  # Forzar versiones específicas de Firebase que funcionaban sin modular_headers
   pod 'GoogleUtilities', :modular_headers => true
   pod 'FirebaseCoreInternal', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
@@ -30,38 +30,12 @@ target 'frontend' do
   )
 
   post_install do |installer|
-    # === SOLUCIÓN PARA INVALID SIGNATURE (CRÍTICO) ===
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        # Desactivar firma en Pods para que la App los firme al final
-        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
-        config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'
-        config.build_settings['EXPANDED_CODE_SIGN_IDENTITY'] = ''
-        config.build_settings['CODE_SIGN_IDENTITY'] = ''
-        
-        # Deployment target mínimo
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
-        
-        # Fix para Swift pods con dependencias no modulares
-        if target.name == 'FirebaseCoreInternal' || target.name.start_with?('Firebase') || target.name.start_with?('Google')
-          config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-        end
-      end
-    end
-    # ==================================================
-
-    installer.aggregate_targets.each do |aggregate_target|
-      aggregate_target.user_project.native_targets.each do |target|
-        target.build_configurations.each do |config|
-          config.build_settings['LIBRARY_SEARCH_PATHS'] = ['$(SDKROOT)/usr/lib/swift', '$(inherited)']
-        end
-      end
-    end
-
+    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
       installer,
       config[:reactNativePath],
-      :mac_catalyst_enabled => false
+      :mac_catalyst_enabled => false,
+      # :ccache_enabled => true
     )
   end
 end
