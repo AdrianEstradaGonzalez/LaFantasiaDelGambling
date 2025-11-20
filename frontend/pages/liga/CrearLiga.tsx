@@ -641,7 +641,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
               justifyContent: 'space-between',
             }}>
               <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>
-                Pago Seguro - 0,50€
+                Pago Seguro - 9,90€
               </Text>
               <TouchableOpacity
                 onPress={() => {
