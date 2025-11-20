@@ -31,8 +31,8 @@ export const PaymentService = {
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.APP_URL || 'https://lafantasiadelgambling-production.up.railway.app'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.APP_URL || 'https://lafantasiadelgambling-production.up.railway.app'}/payment/cancel`,
+        success_url: `https://lafantasiadelgambling-production.up.railway.app/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `https://lafantasiadelgambling-production.up.railway.app/payment/cancel`,
         metadata: {
           userId,
           leagueName,
@@ -73,8 +73,8 @@ export const PaymentService = {
           },
         ],
         mode: 'payment',
-        success_url: `${process.env.APP_URL || 'https://lafantasiadelgambling-production.up.railway.app'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.APP_URL || 'https://lafantasiadelgambling-production.up.railway.app'}/payment/cancel`,
+        success_url: `https://lafantasiadelgambling-production.up.railway.app/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `https://lafantasiadelgambling-production.up.railway.app/payment/cancel`,
         metadata: {
           userId,
           leagueId,
