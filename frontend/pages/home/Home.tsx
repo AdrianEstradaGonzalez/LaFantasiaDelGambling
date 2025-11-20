@@ -317,7 +317,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
         <View style={styles.ligasList}>
             {ligas.length > 0 ? (
             ligas.map((liga, idx) => {
-              const accentColor = liga.division === 'segunda' ? '#802a2aff' : liga.division === 'premier' ? '#8b5cf6' : '#3b82f6';
+              const accentColor = liga.division === 'segunda' ? '#10b981' : liga.division === 'premier' ? '#8b5cf6' : '#3b82f6';
               return (
               <React.Fragment key={liga.id}>
               <TouchableOpacity
@@ -400,35 +400,35 @@ export const Home = ({ navigation, route }: HomeProps) => {
                     >
                       {liga.nombre}
                     </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Text
-                        style={{
-                          color: '#94a3b8',
-                          fontSize: 12,
-                          fontWeight: '600',
-                          letterSpacing: 0.2,
-                        }}
-                      >
-                        {liga.division === 'segunda' ? 'Segunda División Española' : liga.division === 'premier' ? 'Premier League' : 'Primera División Española'}
-                      </Text>
-                      {liga.isPremium && (
-                        <View style={{
-                          backgroundColor: '#fbbf24',
-                          paddingHorizontal: 6,
-                          paddingVertical: 2,
-                          borderRadius: 4,
+                    <Text
+                      style={{
+                        color: '#94a3b8',
+                        fontSize: 12,
+                        fontWeight: '600',
+                        letterSpacing: 0.2,
+                      }}
+                    >
+                      {liga.division === 'segunda' ? 'Segunda División Española' : liga.division === 'premier' ? 'Premier League' : 'Primera División Española'}
+                    </Text>
+                    {liga.isPremium && (
+                      <View style={{
+                        backgroundColor: '#fbbf24',
+                        paddingHorizontal: 6,
+                        paddingVertical: 2,
+                        borderRadius: 4,
+                        marginTop: 4,
+                        alignSelf: 'flex-start',
+                      }}>
+                        <Text style={{
+                          color: '#000',
+                          fontSize: 9,
+                          fontWeight: '900',
+                          letterSpacing: 0.5,
                         }}>
-                          <Text style={{
-                            color: '#000',
-                            fontSize: 9,
-                            fontWeight: '900',
-                            letterSpacing: 0.5,
-                          }}>
-                            PREMIUM
-                          </Text>
-                        </View>
-                      )}
-                    </View>
+                          PREMIUM
+                        </Text>
+                      </View>
+                    )}
                   </View>
                   
                   {/* Flecha indicadora */}
