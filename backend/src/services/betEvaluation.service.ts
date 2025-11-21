@@ -207,6 +207,64 @@ function evaluateBet(bet: any, stats: MatchStatistics): { won: boolean; actualRe
     }
   }
 
+  // GANA LOCAL O VISITANTE (SIN EMPATE) - Home/Away
+  if (betType.toLowerCase().includes('gana local o visitante') || 
+      betType.toLowerCase().includes('sin empate') ||
+      betType.toLowerCase().includes('home/away')) {
+    const result = stats.homeGoals > stats.awayGoals ? 'local' : 
+                   stats.awayGoals > stats.homeGoals ? 'visitante' : 'empate';
+    
+    let prediction = '';
+    const labelLower = betLabel.toLowerCase();
+    if (labelLower.includes('local') || labelLower.includes('home')) {
+      prediction = 'local';
+    } else if (labelLower.includes('visitante') || labelLower.includes('away')) {
+      prediction = 'visitante';
+    }
+
+    // Si hay empate, todas las apuestas pierden
+    if (result === 'empate') {
+      console.log(`   ❌ Apuesta PERDIDA por empate: ${betLabel}`);
+      return {
+        won: false,
+        actualResult: `${stats.homeTeam} ${stats.homeGoals}-${stats.awayGoals} ${stats.awayTeam} - Empate (apuesta perdida)`
+      };
+    }
+
+    // Si no hay empate, se evalúa normalmente
+    return {
+      won: result === prediction,
+      actualResult: `${stats.homeTeam} ${stats.homeGoals}-${stats.awayGoals} ${stats.awayTeam}`
+    };
+  }
+
+  // GANA CON REEMBOLSO SI EMPATE (DRAW NO BET)
+  if (betType.toLowerCase().includes('gana con reembolso') || betType.toLowerCase().includes('draw no bet')) {
+    const result = stats.homeGoals > stats.awayGoals ? 'local' : 
+                   stats.awayGoals > stats.homeGoals ? 'visitante' : 'empate';
+    
+    let prediction = '';
+    if (betLabel.toLowerCase().includes('local') || betLabel.toLowerCase().includes('home')) {
+      prediction = 'local';
+    } else if (betLabel.toLowerCase().includes('visitante') || betLabel.toLowerCase().includes('away')) {
+      prediction = 'visitante';
+    }
+
+    // Si hay empate, la apuesta se pierde
+    if (result === 'empate') {
+      console.log(`   ❌ Apuesta PERDIDA por empate: ${betLabel}`);
+      return {
+        won: false,
+        actualResult: `${stats.homeTeam} ${stats.homeGoals}-${stats.awayGoals} ${stats.awayTeam} - Empate (apuesta perdida)`
+      };
+    }
+
+    return {
+      won: result === prediction,
+      actualResult: `${stats.homeTeam} ${stats.homeGoals}-${stats.awayGoals} ${stats.awayTeam}`
+    };
+  }
+
   // RESULTADO (1X2)
   if (betType.includes('resultado') || betType.includes('match result') || betType.includes('1x2')) {
     const result = stats.homeGoals > stats.awayGoals ? 'local' : 
