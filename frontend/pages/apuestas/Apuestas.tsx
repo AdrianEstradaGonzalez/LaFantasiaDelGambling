@@ -929,11 +929,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
 
-    // Validar máximo 30M
+    // Validar máximo 50M
     if (amount > 30) {
       CustomAlertManager.alert(
         'Cantidad no válida',
-        'El máximo a apostar son 30 millones',
+        'El máximo a apostar son 50 millones',
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -1094,6 +1094,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     setCombiAmount('');
     setShowCombiModal(false);
   };
+
+  // Derived flag: whether there is an already placed combi for the current jornada
+  const currentCombi = (userCombis && userCombis.find((c: any) => c.jornada === jornada)) || (userCombis && userCombis.length > 0 ? userCombis[0] : null);
+  const isCombiPlaced = Boolean(hasExistingCombi && currentCombi);
 
   // Función para iniciar el proceso de upgrade a premium
   const handleUpgradeToPremium = async () => {
@@ -1633,7 +1637,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   BALANCES
                                 </Text>
                                 <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
-                                  {evaluatingRealtime ? 'Evaluando...' : `${leagueBets.length} apuesta${leagueBets.length !== 1 ? 's' : ''} realizadas`}
+                                  {evaluatingRealtime ? 'Evaluando...' : `${leagueBets.length} apuesta${leagueBets.length !== 1 ? 's' : ''} realizada`}
                                 </Text>
                               </View>
                             </View>
@@ -2348,7 +2352,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           alignItems: 'center'
                                         }}>
                                           <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '600' }}>
-                                            {bets.length} apuesta{bets.length !== 1 ? 's' : ''} realizadas{bets.length !== 1 ? 's' : ''}
+                                            {bets.length} apuesta{bets.length !== 1 ? 's' : ''} realizada{bets.length !== 1 ? 's' : ''}
                                           </Text>
                                           {isExpanded ? (
                                             <ChevronUpIcon size={20} color="#94a3b8" />
@@ -3085,16 +3089,20 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 {/* Botón Combinar - Siempre visible si no hay apuesta del usuario */}
                                 {!userBet && ligaId && isJornadaOpen && (
                                   <TouchableOpacity
-                                      onPress={() => toggleCombiSelection({
-                                        matchId: b.matchId,
-                                        betType: b.type,
-                                        betLabel: option.label,
-                                        odd: option.odd,
-                                        homeTeam: b.local,
-                                        awayTeam: b.visitante,
-                                      })}
+                                      onPress={() => {
+                                        if (!isCombiPlaced) {
+                                          toggleCombiSelection({
+                                            matchId: b.matchId,
+                                            betType: b.type,
+                                            betLabel: option.label,
+                                            odd: option.odd,
+                                            homeTeam: b.local,
+                                            awayTeam: b.visitante,
+                                          });
+                                        }
+                                      }}
                                       disabled={
-                                        isOptionBlockedByCombi(b.matchId, b.type, option.label)
+                                        isCombiPlaced || isOptionBlockedByCombi(b.matchId, b.type, option.label)
                                       }
                                       style={{
                                         backgroundColor: isInCombi(b.matchId, b.type, option.label) 
@@ -3110,7 +3118,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         marginTop: 8,
                                         borderWidth: isInCombi(b.matchId, b.type, option.label) ? 0 : 1,
                                         borderColor: '#0892D0',
-                                        opacity: isOptionBlockedByCombi(b.matchId, b.type, option.label) ? 0.5 : 1,
+                                        opacity: (isOptionBlockedByCombi(b.matchId, b.type, option.label) || isCombiPlaced) ? 0.5 : 1,
                                         flexDirection: 'row',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -3121,15 +3129,17 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         <LockIcon size={14} color="#fff" />
                                       )}
                                       <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center', fontSize: 12 }}>
-                                        {!isPremium 
-                                          ? 'Combinar (Premium)' 
-                                          : isInCombi(b.matchId, b.type, option.label) 
-                                            ? '✓ En combi' 
-                                            : isOptionBlockedByCombi(b.matchId, b.type, option.label)
-                                              ? 'Ya hay una opcion en combi'
-                                              : combiSelections.length > 0
-                                                ? '+ Añadir a combi'
-                                                : 'Combinar'}
+                                        {isCombiPlaced
+                                          ? 'Combi creada'
+                                          : !isPremium 
+                                            ? 'Combinar (Premium)' 
+                                            : isInCombi(b.matchId, b.type, option.label) 
+                                              ? '✓ En combi' 
+                                              : isOptionBlockedByCombi(b.matchId, b.type, option.label)
+                                                ? 'Ya hay una opcion en combi'
+                                                : combiSelections.length > 0
+                                                  ? '+ Añadir a combi'
+                                                  : 'Combinar'}
                                       </Text>
                                     </TouchableOpacity>
                                 )}
@@ -3370,6 +3380,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         <TouchableOpacity
                           onPress={() => removeSelection(sel, idx)}
                           activeOpacity={0.7}
+                          disabled={isCombiPlaced}
                           style={{ 
                             position: 'absolute', 
                             top: 4, 
@@ -3377,6 +3388,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             padding: 10,
                             backgroundColor: 'rgba(239, 68, 68, 0.1)',
                             borderRadius: 8,
+                            opacity: isCombiPlaced ? 0.5 : 1,
                           }}
                           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                         >
@@ -3420,11 +3432,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
                     {/* Input de cantidad */}
                     <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>
-                      Cantidad a apostar (máx. 30M)
+                        Cantidad a apostar (máx. 50M)
                     </Text>
                   <TextInput
                     value={combiAmount}
-                    onChangeText={setCombiAmount}
+                      onChangeText={setCombiAmount}
+                      editable={!isCombiPlaced}
                     keyboardType="number-pad"
                     placeholder=""
                     placeholderTextColor="#64748b"
@@ -3437,7 +3450,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       paddingVertical: 10,
                       borderRadius: 8,
                       fontSize: 16,
-                      marginBottom: 12,
+                        marginBottom: 12,
+                        opacity: isCombiPlaced ? 0.6 : 1,
                     }}
                   />
 
