@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Dimensions, Modal, FlatList } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Dimensions, Modal, FlatList, Platform } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { RouteProp, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,7 +16,7 @@ import { AdBanner } from '../../components/AdBanner';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import EncryptedStorage from 'react-native-encrypted-storage';
 
-type VerPlantillaRoute = RouteProp<{ params: { ligaId: string; ligaName: string; userId: string; userName: string; jornada?: number } }, 'params'>;
+type VerPlantillaRoute = RouteProp<{ params: { ligaId: string; ligaName: string; division?: string; userId: string; userName: string; jornada?: number } }, 'params'>;
 
 const roleColor = (role: string) => {
   switch (role) {
@@ -148,6 +148,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [userLeagues, setUserLeagues] = useState<Array<{ id: string; name: string }>>([]);
   const [copying, setCopying] = useState(false);
+  const [userBudget, setUserBudget] = useState<number | null>(null);
   
   // Calcular ancho del campo a pantalla completa
   const windowWidth = Dimensions.get('window').width;
@@ -217,6 +218,16 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         }
         
         setSquad(s);
+        
+        // Cargar presupuesto del usuario si no es histórico
+        if (!viewingHistorical) {
+          try {
+            const budget = await SquadService.getUserBudget(ligaId);
+            setUserBudget(budget);
+          } catch (err) {
+            console.warn('[VerPlantillaUsuario] Error cargando presupuesto:', err);
+          }
+        }
         
         // Cargar fotos y puntos si hay plantilla
         if (s && s.players && s.players.length) {
@@ -391,6 +402,11 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
 
   if (loading || copying) return <LoadingScreen />;
 
+  // Detectar si debe mostrar warning centrado
+  const isIncomplete = squad && squad.players && squad.players.length < 11;
+  const isNegativeBudget = !isHistorical && userBudget !== null && userBudget < 0 && (jornadaStatus === 'in_progress' || jornadaStatus === 'closed');
+  const showCenteredWarning = isIncomplete || isNegativeBudget;
+
   return (
     <SafeLayout backgroundColor="#181818ff">
       <LinearGradient colors={["#181818ff", "#181818ff"]} style={{ flex: 1 }}>
@@ -417,63 +433,90 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         {(!squad || !squad.players || squad.players.length === 0) && <View style={{ width: 28 }} />}
       </View>
 
-      {/* Mostrar valor de la plantilla */}
-      {squad && squad.players && squad.players.length > 0 && (
-        <View
-          style={{
-            marginTop: 60,
-            marginHorizontal: 16,
-            marginBottom: 8,
-            backgroundColor: '#1a2332',
-            borderRadius: 12,
-            padding: 12,
-            borderLeftWidth: 4,
-            borderLeftColor: '#10b981',
-          }}
-        >
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text style={{ color: '#94a3b8', fontSize: 14 }}>
-              {isHistorical ? `Valor J${selectedJornada}` : 'Valor Plantilla'}
-            </Text>
-            <Text style={{ color: '#10b981', fontSize: 20, fontWeight: '700' }}>
-              {squadValue}M
-            </Text>
+      {/* Warnings centrados (plantilla incompleta o presupuesto negativo) */}
+      {showCenteredWarning ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
+          <View
+            style={{
+              backgroundColor: '#451a03',
+              borderRadius: 20,
+              padding: 32,
+              borderWidth: 3,
+              borderColor: '#f59e0b',
+              maxWidth: 500,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 8 },
+              shadowOpacity: 0.5,
+              shadowRadius: 16,
+              elevation: 10,
+            }}
+          >
+            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+              <AlertIcon size={80} color="#fbbf24" />
+            </View>
+            
+            {isIncomplete && (
+              <>
+                <Text style={{ color: '#fbbf24', fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 16 }}>
+                  Plantilla Incompleta
+                </Text>
+                <Text style={{ color: '#fcd34d', fontSize: 16, lineHeight: 24, textAlign: 'center' }}>
+                  Se requiere una plantilla completa (11 jugadores) para poder puntuar en esta jornada.
+                </Text>
+              </>
+            )}
+            
+            {isNegativeBudget && (
+              <>
+                <Text style={{ color: '#fbbf24', fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: 16 }}>
+                  Presupuesto Negativo
+                </Text>
+                <Text style={{ color: '#fcd34d', fontSize: 16, lineHeight: 24, textAlign: 'center', marginBottom: 12 }}>
+                  Esta plantilla tenía presupuesto negativo cuando comenzó la jornada.
+                </Text>
+                <Text style={{ color: '#fcd34d', fontSize: 16, lineHeight: 24, textAlign: 'center' }}>
+                  Presupuesto: <Text style={{ fontWeight: '800' }}>{userBudget}M</Text>
+                </Text>
+                <Text style={{ color: '#fcd34d', fontSize: 14, lineHeight: 20, textAlign: 'center', marginTop: 12, opacity: 0.8 }}>
+                  No se obtendrán puntos en esta jornada.
+                </Text>
+              </>
+            )}
           </View>
         </View>
-      )}
+      ) : (
+        <>
+          {/* Mostrar valor de la plantilla */}
+          {squad && squad.players && squad.players.length > 0 && (
+            <View
+              style={{
+                marginTop: Platform.OS === 'ios' ? 90 : 76,
+                marginHorizontal: 16,
+                marginBottom: 12,
+                backgroundColor: '#1a2332',
+                borderRadius: 12,
+                padding: 12,
+                borderLeftWidth: 4,
+                borderLeftColor: '#10b981',
+              }}
+            >
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: '#94a3b8', fontSize: 14 }}>
+                  {isHistorical ? `Valor J${selectedJornada}` : 'Valor Plantilla'}
+                </Text>
+                <Text style={{ color: '#10b981', fontSize: 20, fontWeight: '700' }}>
+                  {squadValue}M
+                </Text>
+              </View>
+            </View>
+          )}
 
-      {/* Warning de plantilla incompleta */}
-      {squad && squad.players && squad.players.length < 11 && (
-        <View
-          style={{
-            marginHorizontal: 16,
-            marginTop: 60,
-            marginBottom: 8,
-            backgroundColor: '#451a03',
-            borderRadius: 12,
-            padding: 16,
-            borderLeftWidth: 4,
-            borderLeftColor: '#f59e0b',
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-            <AlertIcon size={24} color="#fbbf24" />
-            <Text style={{ color: '#fbbf24', fontSize: 16, fontWeight: '700', marginLeft: 12 }}>
-              Plantilla Incompleta
-            </Text>
+          {/* Banner publicitario */}
+          <View style={{ marginHorizontal: 16, marginTop: squad && squad.players && squad.players.length > 0 ? 8 : 60, marginBottom: 16 }}>
+            <AdBanner />
           </View>
-          <Text style={{ color: '#fcd34d', fontSize: 14, lineHeight: 20 }}>
-              Se requiere plantilla completa para puntuar.
-          </Text>
-        </View>
-      )}
 
-      {/* Banner publicitario */}
-      <View style={{ marginHorizontal: 16, marginTop: squad && squad.players && squad.players.length < 11 ? 8 : 60, marginBottom: 8 }}>
-        <AdBanner />
-      </View>
-
-      <View style={{ flex: 1, paddingTop: 0, paddingHorizontal: 0 }}>
+          <View style={{ flex: 1, paddingTop: 0, paddingHorizontal: 0, paddingBottom: 20 }}>
         {/* Campo de fútbol a pantalla completa */}
         <View style={{ flex: 1 }}>
           <View style={{
@@ -508,8 +551,8 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                   <View
                     style={{
                       position: 'absolute',
-                      top: -12,
-                      right: -12,
+                      top: -3,
+                      right: -3,
                       backgroundColor: '#10b981',
                       borderRadius: 20,
                       paddingHorizontal: 16,
@@ -728,7 +771,9 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
               })}
           </View>
         </View>
-      </View>
+          </View>
+        </>
+      )}
 
       {/* Modal para seleccionar liga destino */}
       <Modal
