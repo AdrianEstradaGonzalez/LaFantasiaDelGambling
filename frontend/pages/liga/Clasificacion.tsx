@@ -54,6 +54,15 @@ export const Clasificacion = () => {
   
   // Cache de clasificaciones: { Total: [...], 1: [...], 2: [...], ... }
   const [classificationsCache, setClassificationsCache] = useState<any>(null);
+  
+  // Estados de paginación (para ligas grandes como DreamLeague)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [userPosition, setUserPosition] = useState<number | null>(null);
+  const [isLargeLeague, setIsLargeLeague] = useState(false);
+  const [loadingPage, setLoadingPage] = useState(false);
+  const ITEMS_PER_PAGE = 10;
 
   // Resetear y forzar recarga cuando la pantalla recibe focus (al navegar desde Home u otra pantalla)
   useFocusEffect(
@@ -116,7 +125,39 @@ export const Clasificacion = () => {
         const matchdays = await FootballService.getAvailableMatchdays(division as 'primera' | 'segunda' | 'premier');
         setAvailableJornadas(matchdays);
         
-        // Cargar TODAS las clasificaciones de una vez
+        // Determinar si es una liga grande (DreamLeague o más de 50 miembros)
+        const isDreamLeague = ligaName === 'DreamLeague';
+        
+        // Si es liga grande, usar paginación
+        if (isDreamLeague) {
+          console.log('[Clasificacion] Liga grande detectada, usando paginación');
+          setIsLargeLeague(true);
+          
+          // Determinar jornada inicial
+          let initialJornada: number | 'Total' = 'Total';
+          if (leagueStatus === 'closed' && leagueJornada && matchdays.includes(leagueJornada)) {
+            initialJornada = leagueJornada;
+          }
+          setSelectedJornada(initialJornada);
+          
+          // Cargar primera página con paginación
+          await loadPaginatedPage(1, initialJornada);
+          
+          // Cargar posición del usuario
+          try {
+            const positionData = await LigaService.getUserPosition(ligaId, initialJornada);
+            setUserPosition(positionData.position);
+          } catch (err) {
+            console.warn('No se pudo obtener posición del usuario:', err);
+          }
+          
+          setCodigoLiga('DREAMLEAGUE');
+          setLigaNombre(ligaName);
+          setLoading(false);
+          return;
+        }
+        
+        // Cargar TODAS las clasificaciones de una vez (ligas pequeñas)
         console.log('[Clasificacion] Cargando TODAS las clasificaciones en caché...');
         const response = await LigaService.getAllClassifications(ligaId);
         
@@ -170,13 +211,66 @@ export const Clasificacion = () => {
     fetchClasificacion();
   }, [ligaId, refreshKey]); // Solo depende de ligaId y refreshKey
 
+  // Función para cargar una página específica (ligas grandes)
+  const loadPaginatedPage = async (page: number, jornada: number | 'Total' = selectedJornada) => {
+    try {
+      setLoadingPage(true);
+      const response = await LigaService.getPaginatedClassification(ligaId, jornada, page, ITEMS_PER_PAGE);
+      
+      const dataOrdenada = response.data.map((u: any) => ({
+        id: u.userId || `jugador-${u.position}`,
+        nombre: u.userName || 'Jugador desconocido',
+        puntos: u.points ?? 0,
+        posicion: u.position,
+        presupuesto: u.initialBudget ?? 500,
+      }));
+      
+      setJugadores(dataOrdenada);
+      setCurrentPage(response.currentPage);
+      setTotalPages(response.totalPages);
+      setTotalMembers(response.totalMembers);
+      setLoadingPage(false);
+    } catch (err) {
+      console.error('Error al cargar página:', err);
+      setLoadingPage(false);
+    }
+  };
+
+  // Navegar a página específica
+  const goToPage = (page: number) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    loadPaginatedPage(page, selectedJornada);
+  };
+
+  // Ir al top de la clasificación
+  const goToTop = () => {
+    loadPaginatedPage(1, selectedJornada);
+  };
+
+  // Ir a la página donde está el usuario
+  const goToUserPosition = async () => {
+    if (!userPosition) return;
+    const userPage = Math.ceil(userPosition / ITEMS_PER_PAGE);
+    loadPaginatedPage(userPage, selectedJornada);
+  };
+
   // Cambiar entre jornadas usando el cache (sin recargar todo)
   useEffect(() => {
-    if (!classificationsCache) return; // Esperar a que haya cache
+    if (!classificationsCache && !isLargeLeague) return; // Esperar a que haya cache
     
     console.log('[Clasificacion] 🔄 Cambiando a jornada:', selectedJornada);
     
-    // Usar InteractionManager para mejorar la respuesta de UI
+    // Si es liga grande, usar paginación
+    if (isLargeLeague) {
+      loadPaginatedPage(1, selectedJornada);
+      // Actualizar posición del usuario para nueva jornada
+      LigaService.getUserPosition(ligaId, selectedJornada)
+        .then(data => setUserPosition(data.position))
+        .catch(err => console.warn('No se pudo actualizar posición:', err));
+      return;
+    }
+    
+    // Usar InteractionManager para mejorar la respuesta de UI (ligas pequeñas)
     const task = InteractionManager.runAfterInteractions(() => {
       const jornadaKey = selectedJornada === 'Total' ? 'Total' : selectedJornada.toString();
       const dataForJornada = classificationsCache[jornadaKey] || [];
@@ -193,7 +287,7 @@ export const Clasificacion = () => {
     });
     
     return () => task.cancel();
-  }, [selectedJornada, classificationsCache]); // Solo cuando cambia la jornada seleccionada manualmente
+  }, [selectedJornada, classificationsCache, isLargeLeague]); // Solo cuando cambia la jornada seleccionada manualmente
   
   // Memoizar callback para abrir plantilla de usuario
   const handleOpenUserLineup = useCallback((jugador: UsuarioClasificacion, isCurrentUser: boolean) => {
@@ -519,6 +613,124 @@ export const Clasificacion = () => {
             )}
           </View>
 
+          {/* Controles de Paginaci\u00f3n (solo para ligas grandes) */}
+          {isLargeLeague && (
+            <View style={{
+              backgroundColor: '#1e293b',
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: '#334155',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8
+            }}>
+              {/* Info de posici\u00f3n del usuario */}
+              {userPosition && (
+                <TouchableOpacity
+                  onPress={goToUserPosition}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#0891b2',
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: 8,
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: 6,
+                    shadowColor: '#0891b2',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 4,
+                    elevation: 3
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                    Tu posici\u00f3n: #{userPosition}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              
+              {/* Bot\u00f3n ir al Top */}
+              <TouchableOpacity
+                onPress={goToTop}
+                disabled={currentPage === 1}
+                style={{
+                  backgroundColor: currentPage === 1 ? '#334155' : '#10b981',
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 8,
+                  opacity: currentPage === 1 ? 0.5 : 1,
+                  shadowColor: '#10b981',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 4,
+                  elevation: 3
+                }}
+              >
+                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
+                  \ud83c\udfc6 TOP
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Info de paginaci\u00f3n y controles (solo para ligas grandes) */}
+          {isLargeLeague && (
+            <View style={{
+              backgroundColor: '#0f172a',
+              paddingVertical: 10,
+              paddingHorizontal: 16,
+              borderBottomWidth: 1,
+              borderBottomColor: '#1e293b',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              {/* Info de p\u00e1gina */}
+              <Text style={{ color: '#94a3b8', fontSize: 13, fontWeight: '600' }}>
+                P\u00e1gina {currentPage} de {totalPages} \u2022 {totalMembers} jugadores
+              </Text>
+              
+              {/* Navegaci\u00f3n de p\u00e1ginas */}
+              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1 || loadingPage}
+                  style={{
+                    backgroundColor: currentPage === 1 ? '#1e293b' : '#334155',
+                    paddingVertical: 6,
+                    paddingHorizontal: 10,
+                    borderRadius: 6,
+                    opacity: currentPage === 1 ? 0.5 : 1
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{'<'}</Text>
+                </TouchableOpacity>
+                
+                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700', minWidth: 40, textAlign: 'center' }}>
+                  {loadingPage ? '...' : currentPage}
+                </Text>
+                
+                <TouchableOpacity
+                  onPress={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages || loadingPage}
+                  style={{
+                    backgroundColor: currentPage === totalPages ? '#1e293b' : '#334155',
+                    paddingVertical: 6,
+                    paddingHorizontal: 10,
+                    borderRadius: 6,
+                    opacity: currentPage === totalPages ? 0.5 : 1
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{'>'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           {/* Contenido */}
           {jugadores.length > 0 ? (
             <FlatList
@@ -585,7 +797,7 @@ export const Clasificacion = () => {
                   }}
                   ligaId={ligaId}
                   ligaName={ligaName}
-                  division={division}
+                  division={division as 'primera' | 'segunda' | 'premier'}
                   isPremium={isPremium}
                 />
               </Animated.View>

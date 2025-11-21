@@ -710,4 +710,145 @@ getLeaguesByUser: (userId: string) =>
     }
   },
 
+  /**
+   * Obtener clasificación paginada (para ligas grandes como DreamLeague)
+   */
+  getPaginatedClassification: async (
+    leagueId: string,
+    jornada: number | 'Total',
+    page: number = 1,
+    limit: number = 10
+  ) => {
+    try {
+      const skip = (page - 1) * limit;
+
+      // Obtener total de miembros
+      const totalMembers = await prisma.leagueMember.count({
+        where: { leagueId }
+      });
+
+      const totalPages = Math.ceil(totalMembers / limit);
+
+      // Obtener miembros de esta página
+      let members;
+      if (jornada === 'Total') {
+        // Clasificación total ordenada por puntos totales
+        members = await prisma.leagueMember.findMany({
+          where: { leagueId },
+          include: {
+            user: {
+              select: { name: true }
+            }
+          },
+          orderBy: { points: 'desc' },
+          skip,
+          take: limit
+        });
+      } else {
+        // Clasificación por jornada específica
+        const jornadaNum = typeof jornada === 'number' ? jornada : parseInt(jornada);
+        const allMembers = await prisma.leagueMember.findMany({
+          where: { leagueId },
+          include: {
+            user: {
+              select: { name: true }
+            }
+          }
+        });
+
+        // Calcular puntos de la jornada y ordenar
+        const membersWithJornadaPoints = allMembers.map((m: any) => {
+          const pointsPerJornada = m.pointsPerJornada as any || {};
+          const jornadaPoints = pointsPerJornada[`J${jornadaNum}`] || 0;
+          return {
+            ...m,
+            jornadaPoints
+          };
+        });
+
+        membersWithJornadaPoints.sort((a, b) => b.jornadaPoints - a.jornadaPoints);
+        members = membersWithJornadaPoints.slice(skip, skip + limit);
+      }
+
+      // Calcular posiciones globales (incluyendo usuarios antes de esta página)
+      const startPosition = skip + 1;
+
+      const data = members.map((member: any, index: number) => ({
+        userId: member.userId,
+        userName: member.user?.name || 'Usuario',
+        points: jornada === 'Total' ? member.points : member.jornadaPoints,
+        initialBudget: member.initialBudget,
+        position: startPosition + index
+      }));
+
+      return {
+        data,
+        currentPage: page,
+        totalPages,
+        totalMembers,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      };
+    } catch (error: any) {
+      console.error('[getPaginatedClassification] ❌ Error:', error);
+      throw new Error(error?.message || 'Error al obtener clasificación paginada');
+    }
+  },
+
+  /**
+   * Obtener posición del usuario en la clasificación
+   */
+  getUserPosition: async (leagueId: string, userId: string, jornada: number | 'Total' = 'Total') => {
+    try {
+      if (jornada === 'Total') {
+        // Obtener todos los miembros ordenados por puntos totales
+        const allMembers = await prisma.leagueMember.findMany({
+          where: { leagueId },
+          select: { userId: true, points: true },
+          orderBy: { points: 'desc' }
+        });
+
+        const position = allMembers.findIndex(m => m.userId === userId) + 1;
+        const userMember = allMembers.find(m => m.userId === userId);
+
+        return {
+          position: position > 0 ? position : null,
+          points: userMember?.points || 0,
+          totalMembers: allMembers.length
+        };
+      } else {
+        // Clasificación por jornada
+        const jornadaNum = typeof jornada === 'number' ? jornada : parseInt(jornada);
+        const allMembers = await prisma.leagueMember.findMany({
+          where: { leagueId },
+          select: { userId: true, pointsPerJornada: true }
+        });
+
+        // Calcular puntos de la jornada y ordenar
+        const membersWithPoints = allMembers.map((m: any) => {
+          const pointsPerJornada = m.pointsPerJornada as any || {};
+          const jornadaPoints = pointsPerJornada[`J${jornadaNum}`] || 0;
+          return {
+            userId: m.userId,
+            points: jornadaPoints
+          };
+        });
+
+        membersWithPoints.sort((a, b) => b.points - a.points);
+
+        const position = membersWithPoints.findIndex(m => m.userId === userId) + 1;
+        const userMember = membersWithPoints.find(m => m.userId === userId);
+
+        return {
+          position: position > 0 ? position : null,
+          points: userMember?.points || 0,
+          totalMembers: membersWithPoints.length
+        };
+      }
+    } catch (error: any) {
+      console.error('[getUserPosition] ❌ Error:', error);
+      throw new Error(error?.message || 'Error al obtener posición del usuario');
+    }
+  }
+
 };
