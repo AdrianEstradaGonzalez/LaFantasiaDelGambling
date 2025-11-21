@@ -636,9 +636,13 @@ export const PlayersList = ({ navigation, route }: {
                         </View>
                         {p.teamCrest ? (
                           <Image
+                            key={`${p.id}-${p.teamId}-crest`}
                             source={{ uri: p.teamCrest }}
                             style={{ width: 22, height: 22, marginLeft: 8, backgroundColor: 'transparent' }}
                             resizeMode="contain"
+                            onError={(error) => {
+                              console.warn(`Error cargando escudo de ${p.teamName}:`, error.nativeEvent.error);
+                            }}
                           />
                         ) : null}
                       </View>

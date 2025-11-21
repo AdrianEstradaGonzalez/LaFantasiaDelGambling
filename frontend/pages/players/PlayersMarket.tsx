@@ -342,10 +342,16 @@ export const PlayersMarket = ({ navigation, route }: {
         setDailyOffers(new Set());
       }
       
-      // 🚀 Extraer equipos únicos
-      const uniqueTeams = Array.from(
-        new Set(playersData.map(p => JSON.stringify({ id: p.teamId, name: p.teamName })))
-      ).map(str => JSON.parse(str));
+      // 🚀 Extraer equipos únicos SOLO por teamId (ignora teamName obsoleto)
+      const teamsMap = new Map<number, { id: number; name: string }>();
+      playersData.forEach(p => {
+        if (!teamsMap.has(p.teamId)) {
+          teamsMap.set(p.teamId, { id: p.teamId, name: p.teamName });
+        }
+      });
+      const uniqueTeams = Array.from(teamsMap.values()).sort((a, b) => 
+        a.name.localeCompare(b.name, 'es', { sensitivity: 'base' })
+      );
       setTeams(uniqueTeams);
       
       // ✅ Mostrar TODOS los jugadores de una vez (más confiable en producción)
@@ -871,9 +877,13 @@ export const PlayersMarket = ({ navigation, route }: {
                 </View>
                 {p.teamCrest && (
                   <Image
+                    key={`${p.id}-${p.teamId}-crest`}
                     source={{ uri: p.teamCrest }}
                     style={{ width: 22, height: 22, backgroundColor: 'transparent' }}
                     resizeMode="contain"
+                    onError={(error) => {
+                      console.warn(`Error cargando escudo de ${p.teamName}:`, error.nativeEvent.error);
+                    }}
                   />
                 )}
               </View>

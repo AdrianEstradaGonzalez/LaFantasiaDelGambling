@@ -415,22 +415,78 @@ export class PlayerRepository {
    */
   static async updatePlayerTeam(id: number, teamId: number) {
     try {
+      // Buscar otro jugador del mismo equipo para obtener teamName y teamCrest actualizados
+      const referencePlayer = await prisma.player.findFirst({
+        where: { teamId },
+        select: { teamName: true, teamCrest: true },
+      });
+
+      if (!referencePlayer) {
+        // Si no hay jugadores de referencia, solo actualizar teamId
+        console.warn(`⚠️ No se encontró jugador de referencia para teamId ${teamId}, actualizando solo teamId`);
+        return await prisma.player.update({
+          where: { id },
+          data: { teamId },
+        });
+      }
+
+      // Actualizar jugador con teamId, teamName y teamCrest
       return await prisma.player.update({
         where: { id },
-        data: { teamId },
+        data: { 
+          teamId,
+          teamName: referencePlayer.teamName,
+          teamCrest: referencePlayer.teamCrest,
+        },
       });
     } catch (e: any) {
       if (e?.code === 'P2025') {
         try {
+          // Intentar en Segunda División
+          const referencePlayer = await (prisma as any).playerSegunda.findFirst({
+            where: { teamId },
+            select: { teamName: true, teamCrest: true },
+          });
+
+          if (!referencePlayer) {
+            console.warn(`⚠️ No se encontró jugador de referencia en Segunda para teamId ${teamId}`);
+            return await (prisma as any).playerSegunda.update({
+              where: { id },
+              data: { teamId },
+            });
+          }
+
           return await (prisma as any).playerSegunda.update({
             where: { id },
-            data: { teamId },
+            data: { 
+              teamId,
+              teamName: referencePlayer.teamName,
+              teamCrest: referencePlayer.teamCrest,
+            },
           });
         } catch (e2: any) {
           if (e2?.code === 'P2025') {
+            // Intentar en Premier League
+            const referencePlayer = await (prisma as any).playerPremier.findFirst({
+              where: { teamId },
+              select: { teamName: true, teamCrest: true },
+            });
+
+            if (!referencePlayer) {
+              console.warn(`⚠️ No se encontró jugador de referencia en Premier para teamId ${teamId}`);
+              return await (prisma as any).playerPremier.update({
+                where: { id },
+                data: { teamId },
+              });
+            }
+
             return await (prisma as any).playerPremier.update({
               where: { id },
-              data: { teamId },
+              data: { 
+                teamId,
+                teamName: referencePlayer.teamName,
+                teamCrest: referencePlayer.teamCrest,
+              },
             });
           }
           throw e2;

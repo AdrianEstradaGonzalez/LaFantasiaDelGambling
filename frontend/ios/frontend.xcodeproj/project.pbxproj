@@ -301,10 +301,11 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development";
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 9NR65386VQ;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = frontend/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DreamLeague;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -314,7 +315,7 @@
 					"$(SDKROOT)/usr/lib/swift",
 					"$(inherited)",
 				);
-				MARKETING_VERSION = 2.0.0;
+				MARKETING_VERSION = 2.0.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -341,9 +342,10 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 9NR65386VQ;
 				INFOPLIST_FILE = frontend/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DreamLeague;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -353,7 +355,7 @@
 					"$(SDKROOT)/usr/lib/swift",
 					"$(inherited)",
 				);
-				MARKETING_VERSION = 2.0.0;
+				MARKETING_VERSION = 2.0.1;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
