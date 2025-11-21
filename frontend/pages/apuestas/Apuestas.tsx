@@ -1637,7 +1637,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   BALANCES
                                 </Text>
                                 <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
-                                  {evaluatingRealtime ? 'Evaluando...' : `${leagueBets.length} apuesta${leagueBets.length !== 1 ? 's' : ''} realizadas`}
+                                  {evaluatingRealtime ? 'Evaluando...' : `${leagueBets.length} apuesta${leagueBets.length !== 1 ? 's' : ''} realizada`}
                                 </Text>
                               </View>
                             </View>
@@ -2352,7 +2352,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           alignItems: 'center'
                                         }}>
                                           <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '600' }}>
-                                            {bets.length} apuesta{bets.length !== 1 ? 's' : ''} realizadas{bets.length !== 1 ? 's' : ''}
+                                            {bets.length} apuesta{bets.length !== 1 ? 's' : ''} realizada{bets.length !== 1 ? 's' : ''}
                                           </Text>
                                           {isExpanded ? (
                                             <ChevronUpIcon size={20} color="#94a3b8" />

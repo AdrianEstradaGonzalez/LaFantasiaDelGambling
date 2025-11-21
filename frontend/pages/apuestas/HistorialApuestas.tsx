@@ -1028,7 +1028,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                   }}
                   ligaId={ligaId}
                   ligaName={ligaName}
-                  division={division}
+                  division={division as 'primera' | 'segunda' | 'premier'}
                   isPremium={isPremium}
                 />
               </Animated.View>
