@@ -845,6 +845,15 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return combiSelections.some(s => s.matchId === matchId);
   };
 
+  const isOptionBlockedByCombi = (matchId: number, betType: string, betLabel: string): boolean => {
+    // Si esta opción específica está en la combi, no está bloqueada
+    if (isInCombi(matchId, betType, betLabel)) {
+      return false;
+    }
+    // Si hay otra opción del mismo partido y mismo tipo de apuesta en la combi, bloquear esta
+    return combiSelections.some(s => s.matchId === matchId && s.betType === betType);
+  };
+
   const calculateCombiOdds = (): number => {
     return combiSelections.reduce((acc, sel) => acc * sel.odd, 1);
   };
@@ -2858,7 +2867,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 {/* Label y Cuota */}
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                   <Text style={{ color: isBlocked ? '#64748b' : '#e5e7eb', fontWeight: '600', fontSize: 15, flex: 1 }}>
-                                    {formatLabelWithType(option.label, b.type)}
+                                    {option.label}
                                   </Text>
                                   <View style={{
                                     backgroundColor: 'transparent',
@@ -3085,13 +3094,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         awayTeam: b.visitante,
                                       })}
                                       disabled={
-                                        (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)))
+                                        isOptionBlockedByCombi(b.matchId, b.type, option.label)
                                       }
                                       style={{
                                         backgroundColor: isInCombi(b.matchId, b.type, option.label) 
                                           ? '#0892D0' // Azul cuando está en la combi
-                                          : hasExistingCombi && isMatchBlockedByCombi(b.matchId)
-                                            ? '#374151' // Gris si ya hay combi y no está en ella (bloqueado por partido)
+                                          : isOptionBlockedByCombi(b.matchId, b.type, option.label)
+                                            ? '#374151' // Gris si está bloqueada por otra opción en la combi
                                             : !isPremium
                                               ? '#374151'  // Gris si no es premium
                                               : '#0b1220', // Tono oscuro de la app si es premium
@@ -3101,7 +3110,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         marginTop: 8,
                                         borderWidth: isInCombi(b.matchId, b.type, option.label) ? 0 : 1,
                                         borderColor: '#0892D0',
-                                        opacity: (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label))) ? 0.5 : 1,
+                                        opacity: isOptionBlockedByCombi(b.matchId, b.type, option.label) ? 0.5 : 1,
                                         flexDirection: 'row',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -3116,9 +3125,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           ? 'Combinar (Premium)' 
                                           : isInCombi(b.matchId, b.type, option.label) 
                                             ? '✓ En combi' 
-                                            : hasExistingCombi && isMatchBlockedByCombi(b.matchId)
-                                              ? 'Partido en combi'
-                                              : hasExistingCombi
+                                            : isOptionBlockedByCombi(b.matchId, b.type, option.label)
+                                              ? 'Ya hay una opcion en combi'
+                                              : combiSelections.length > 0
                                                 ? '+ Añadir a combi'
                                                 : 'Combinar'}
                                       </Text>
@@ -3133,7 +3142,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       normalizeType(betItem.betType) === normalizeType(b.type) &&
                                       normalizeLabel(betItem.betLabel) === normalizeLabel(option.label)
                                     );
-                                    console.log('ðŸ” Filtering bets for option:', {
+                                    console.log('Filtering bets for option:', {
                                       matchId: b.matchId,
                                       type: b.type,
                                       label: option.label,
