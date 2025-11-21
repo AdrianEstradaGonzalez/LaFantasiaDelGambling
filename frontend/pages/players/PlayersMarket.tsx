@@ -625,6 +625,8 @@ export const PlayersMarket = ({ navigation, route }: {
         navigation.navigate(returnTo, {
           ligaId,
           ligaName,
+          division,
+          isPremium,
           selectedPlayer: player,
           targetPosition
         });
@@ -793,6 +795,8 @@ export const PlayersMarket = ({ navigation, route }: {
         navigation.navigate(returnTo, {
           ligaId,
           ligaName,
+          division,
+          isPremium,
           selectedPlayer: player,
           targetPosition
         });
