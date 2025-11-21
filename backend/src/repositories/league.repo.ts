@@ -72,7 +72,7 @@ export const LeagueRepo = {
         
         // Todas las divisiones usan la misma jornada (Segunda división ya no va por delante)
         const currentJornada = division === 'segunda' 
-            ? primeraJornada + 1  // Segunda División va 1 jornada adelante
+            ? primeraJornada + 2  // Segunda División va 2 jornadas adelante
             : primeraJornada;      // Primera y Premier usan la misma jornada
         
         // isPremium viene del parámetro (pago) o si es segunda división/premier (backward compatibility)
