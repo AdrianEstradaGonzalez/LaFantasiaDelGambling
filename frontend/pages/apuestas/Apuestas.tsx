@@ -575,10 +575,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       showError('Introduce una cantidad válida');
       return;
     }
-    if (amount > 30) {
+    if (amount > 50) {
       CustomAlertManager.alert(
         'Límite de apuesta',
-        'El máximo por apuesta es 30M',
+        'El máximo por apuesta es 50M',
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -3088,15 +3088,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         (hasExistingCombi && (isMatchBlockedByCombi(b.matchId) && !isInCombi(b.matchId, b.type, option.label)))
                                       }
                                       style={{
-                                        backgroundColor: !isPremium
-                                          ? '#374151'  // Gris si no es premium
-                                          : isInCombi(b.matchId, b.type, option.label) 
-                                            ? '#0892D0' // Azul cuando está en la combi
-                                            : hasExistingCombi
-                                              ? '#374151' // Gris si ya hay combi y no está en ella (bloqueado por partido)
-                                              : isMatchBlockedByCombi(b.matchId)
-                                                ? '#374151' // Gris bloqueado
-                                                : '#0b1220', // Tono oscuro de la app
+                                        backgroundColor: isInCombi(b.matchId, b.type, option.label) 
+                                          ? '#0892D0' // Azul cuando está en la combi
+                                          : hasExistingCombi && isMatchBlockedByCombi(b.matchId)
+                                            ? '#374151' // Gris si ya hay combi y no está en ella (bloqueado por partido)
+                                            : !isPremium
+                                              ? '#374151'  // Gris si no es premium
+                                              : '#0b1220', // Tono oscuro de la app si es premium
                                         paddingHorizontal: 16,
                                         paddingVertical: 10,
                                         borderRadius: 8,
