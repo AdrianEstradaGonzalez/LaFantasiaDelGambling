@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import EncryptedStorage from 'react-native-encrypted-storage';
@@ -292,129 +293,130 @@ export const DrawerMenu = ({ navigation, ligaId, ligaName, division, isPremium }
         {/* Divisor */}
         <View style={styles.divider} />
 
-        {/* Menú Items */}
-        <View style={styles.menuContainer}>
-          <MenuItem
-            icon={<HomeIcon size={24} color="#60a5fa" />}
-            label="Inicio"
-            onPress={() => {
-              navigation.closeDrawer();
-              navigation.navigate('Home');
-            }}
-            iconColor="#60a5fa"
-          />
+        {/* Scrollable menu: envuelve todas las opciones y el logout dentro de un ScrollView */}
+        <View style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={{ paddingTop: 16, paddingBottom: 24 }}>
+            <View style={styles.menuContainer}>
+              <MenuItem
+                icon={<HomeIcon size={24} color="#60a5fa" />}
+                label="Inicio"
+                onPress={() => {
+                  navigation.closeDrawer();
+                  navigation.navigate('Home');
+                }}
+                iconColor="#60a5fa"
+              />
 
-          <MenuItem
-            icon={<UsersIcon size={24} color="#10b981" />}
-            label="Mi Perfil"
-            onPress={() => {
-              navigation.closeDrawer();
-              navigation.navigate('Perfil');
-            }}
-            iconColor="#10b981"
-          />
+              <MenuItem
+                icon={<UsersIcon size={24} color="#10b981" />}
+                label="Mi Perfil"
+                onPress={() => {
+                  navigation.closeDrawer();
+                  navigation.navigate('Perfil');
+                }}
+                iconColor="#10b981"
+              />
 
-          {isAdmin && (
-            <MenuItem
-              icon={<ShieldCheckIcon size={24} color="#ef4444" />}
-              label="Panel Admin"
-              onPress={() => {
-                navigation.closeDrawer();
-                navigation.navigate('AdminPanel');
-              }}
-              iconColor="#ef4444"
-              badge="ADMIN"
-            />
-          )}
+              {isAdmin && (
+                <MenuItem
+                  icon={<ShieldCheckIcon size={24} color="#ef4444" />}
+                  label="Panel Admin"
+                  onPress={() => {
+                    navigation.closeDrawer();
+                    navigation.navigate('AdminPanel');
+                  }}
+                  iconColor="#ef4444"
+                  badge="ADMIN"
+                />
+              )}
 
-          <MenuItem
-            icon={<FileTextIcon size={24} color="#a78bfa" />}
-            label="Reglas del Juego"
-            onPress={() => {
-              navigation.closeDrawer();
-              navigation.navigate('Reglas');
-            }}
-            iconColor="#a78bfa"
-          />
+              <MenuItem
+                icon={<FileTextIcon size={24} color="#a78bfa" />}
+                label="Reglas del Juego"
+                onPress={() => {
+                  navigation.closeDrawer();
+                  navigation.navigate('Reglas');
+                }}
+                iconColor="#a78bfa"
+              />
 
-          <MenuItem
-            icon={<ShieldIcon size={24} color="#64748b" />}
-            label="Política de Privacidad"
-            onPress={() => {
-              navigation.closeDrawer();
-              navigation.navigate('PoliticaPrivacidad');
-            }}
-            iconColor="#64748b"
-          />
+              <MenuItem
+                icon={<ShieldIcon size={24} color="#64748b" />}
+                label="Política de Privacidad"
+                onPress={() => {
+                  navigation.closeDrawer();
+                  navigation.navigate('PoliticaPrivacidad');
+                }}
+                iconColor="#64748b"
+              />
 
-          {/* Divisor */}
-          <View style={styles.divider} />
+              {/* Divisor */}
+              <View style={styles.divider} />
 
-          <MenuItem
-            icon={<ShieldIcon size={24} color="#10b981" />}
-            label="Crear Liga"
-            onPress={() => {
-              navigation.closeDrawer();
-              // Abrir CrearLiga en modo 'create' para mostrar solo la sección de crear
-              navigation.navigate('CrearLiga', { mode: 'create' });
-            }}
-            iconColor="#10b981"
-          />
+              <MenuItem
+                icon={<ShieldIcon size={24} color="#10b981" />}
+                label="Crear Liga"
+                onPress={() => {
+                  navigation.closeDrawer();
+                  // Abrir CrearLiga en modo 'create' para mostrar solo la sección de crear
+                  navigation.navigate('CrearLiga', { mode: 'create' });
+                }}
+                iconColor="#10b981"
+              />
 
-          <MenuItem
-            icon={<UsersIcon size={24} color="#3b82f6" />}
-            label="Unirse a Liga"
-            onPress={() => {
-              navigation.closeDrawer();
-              // Abrir CrearLiga en modo 'join' para mostrar solo la sección de unirse
-              navigation.navigate('CrearLiga', { mode: 'join' });
-            }}
-            iconColor="#3b82f6"
-          />
+              <MenuItem
+                icon={<UsersIcon size={24} color="#3b82f6" />}
+                label="Unirse a Liga"
+                onPress={() => {
+                  navigation.closeDrawer();
+                  // Abrir CrearLiga en modo 'join' para mostrar solo la sección de unirse
+                  navigation.navigate('CrearLiga', { mode: 'join' });
+                }}
+                iconColor="#3b82f6"
+              />
+
+              {/* Divisor */}
+              <View style={styles.divider} />
+
+              {/* Mejorar Liga (solo si estamos en una liga no premium) */}
+              {ligaId && !isPremium && (
+                <MenuItem
+                  icon={<ShieldIcon size={24} color="#fbbf24" />}
+                  label="Mejorar Liga"
+                  onPress={() => {
+                    navigation.closeDrawer?.();
+                    navigation.navigate('Apuestas', {
+                      ligaId,
+                      ligaName,
+                      division,
+                      isPremium: false,
+                      triggerUpgrade: true
+                    });
+                  }}
+                  iconColor="#fbbf24"
+                />
+              )}
+
+              {/* Abandonar Liga (solo si estamos en una liga) */}
+              {ligaId && (
+                <MenuItem
+                  icon={<DeleteIcon size={24} color="#f59e0b" />}
+                  label="Abandonar Liga"
+                  onPress={handleLeaveLeague}
+                  iconColor="#f59e0b"
+                />
+              )}
+
+              {/* Logout button al final */}
+              <MenuItem
+                icon={<LogoutIcon size={24} color="#f87171" />}
+                label="Cerrar Sesión"
+                onPress={handleLogout}
+                iconColor="#f87171"
+              />
+            </View>
+          </ScrollView>
         </View>
-
-        {/* Spacer */}
-        <View style={{ flex: 1 }} />
-
-        {/* Divisor */}
-        <View style={styles.divider} />
-
-        {/* Mejorar Liga (solo si estamos en una liga no premium) */}
-        {ligaId && !isPremium && (
-          <MenuItem
-            icon={<ShieldIcon size={24} color="#fbbf24" />}
-            label="Mejorar Liga"
-            onPress={() => {
-              navigation.closeDrawer?.();
-              navigation.navigate('Apuestas', {
-                ligaId,
-                ligaName,
-                division,
-                isPremium: false,
-                triggerUpgrade: true
-              });
-            }}
-            iconColor="#fbbf24"
-          />
-        )}
-
-        {/* Abandonar Liga (solo si estamos en una liga) */}
-        {ligaId && (
-          <MenuItem
-            icon={<DeleteIcon size={24} color="#f59e0b" />}
-            label="Abandonar Liga"
-            onPress={handleLeaveLeague}
-            iconColor="#f59e0b"
-          />
-        )}
-
-        {/* Logout button al final */}
-        <MenuItem
-          icon={<LogoutIcon size={24} color="#f87171" />}
-          label="Cerrar Sesión"
-          onPress={handleLogout}
-          iconColor="#f87171"
-        />
 
         {/* Footer */}
         <View style={styles.footer}>
