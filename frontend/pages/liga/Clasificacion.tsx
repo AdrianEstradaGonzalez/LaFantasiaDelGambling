@@ -9,6 +9,7 @@ import { LigaService } from '../../services/LigaService';
 import { JornadaService } from '../../services/JornadaService';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LigaTopNavBar from '../navBar/LigaTopNavBar';
+import { TrophyIcon, TargetIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, ChevronDownIcon } from '../../components/VectorIcons';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import LoadingScreen from '../../components/LoadingScreen';
 import FootballService from '../../services/FutbolService';
@@ -35,7 +36,8 @@ export const Clasificacion = () => {
   const { ligaId } = route.params;
   const { ligaName } = route.params;
   const division = route.params?.division || 'primera';
-  const isPremium = route.params?.isPremium || false;
+  const isDreamLeague = ligaName === 'DreamLeague';
+  const isPremium = isDreamLeague ? true : (route.params?.isPremium || false); // DreamLeague siempre premium
   const safePadding = useSafePadding();
 
   const [jugadores, setJugadores] = useState<UsuarioClasificacion[]>([]);
@@ -60,8 +62,10 @@ export const Clasificacion = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalMembers, setTotalMembers] = useState(0);
   const [userPosition, setUserPosition] = useState<number | null>(null);
+  const [userPoints, setUserPoints] = useState<number>(0);
   const [isLargeLeague, setIsLargeLeague] = useState(false);
   const [loadingPage, setLoadingPage] = useState(false);
+  const [showingUserPosition, setShowingUserPosition] = useState(false);
   const ITEMS_PER_PAGE = 10;
 
   // Resetear y forzar recarga cuando la pantalla recibe focus (al navegar desde Home u otra pantalla)
@@ -147,6 +151,7 @@ export const Clasificacion = () => {
           try {
             const positionData = await LigaService.getUserPosition(ligaId, initialJornada);
             setUserPosition(positionData.position);
+            setUserPoints(positionData.points || 0);
           } catch (err) {
             console.warn('No se pudo obtener posición del usuario:', err);
           }
@@ -229,6 +234,7 @@ export const Clasificacion = () => {
       setCurrentPage(response.currentPage);
       setTotalPages(response.totalPages);
       setTotalMembers(response.totalMembers);
+      setShowingUserPosition(false);
       setLoadingPage(false);
     } catch (err) {
       console.error('Error al cargar página:', err);
@@ -246,12 +252,54 @@ export const Clasificacion = () => {
   const goToTop = () => {
     loadPaginatedPage(1, selectedJornada);
   };
+  
+  // Mostrar vista: Top 10 + usuario
+  const showTopWithUser = async () => {
+    if (!userPosition || !currentUserId) return;
+    
+    try {
+      setLoadingPage(true);
+      
+      // Cargar Top 10
+      const topResponse = await LigaService.getPaginatedClassification(ligaId, selectedJornada, 1, 10);
+      const top10 = topResponse.data.map((u: any) => ({
+        id: u.userId || `jugador-${u.position}`,
+        nombre: u.userName || 'Jugador desconocido',
+        puntos: u.points ?? 0,
+        posicion: u.position,
+        presupuesto: u.initialBudget ?? 500,
+      }));
+      
+      // Si el usuario está en el top 10, solo mostrar top 10
+      if (userPosition <= 10) {
+        setJugadores(top10);
+        setShowingUserPosition(false);
+      } else {
+        // Añadir entrada del usuario
+        const userEntry = {
+          id: currentUserId,
+          nombre: top10.find((u: any) => u.id === currentUserId)?.nombre || 'Tú',
+          puntos: userPoints,
+          posicion: userPosition,
+          presupuesto: 500,
+        };
+        setJugadores([...top10, userEntry]);
+        setShowingUserPosition(true);
+      }
+      
+      setCurrentPage(1);
+      setLoadingPage(false);
+    } catch (err) {
+      console.error('Error al cargar top + usuario:', err);
+      setLoadingPage(false);
+    }
+  };
 
   // Ir a la página donde está el usuario
   const goToUserPosition = async () => {
     if (!userPosition) return;
     const userPage = Math.ceil(userPosition / ITEMS_PER_PAGE);
-    loadPaginatedPage(userPage, selectedJornada);
+    await loadPaginatedPage(userPage, selectedJornada);
   };
 
   // Cambiar entre jornadas usando el cache (sin recargar todo)
@@ -263,9 +311,13 @@ export const Clasificacion = () => {
     // Si es liga grande, usar paginación
     if (isLargeLeague) {
       loadPaginatedPage(1, selectedJornada);
+      setShowingUserPosition(false);
       // Actualizar posición del usuario para nueva jornada
       LigaService.getUserPosition(ligaId, selectedJornada)
-        .then(data => setUserPosition(data.position))
+        .then(data => {
+          setUserPosition(data.position);
+          setUserPoints(data.points || 0);
+        })
         .catch(err => console.warn('No se pudo actualizar posición:', err));
       return;
     }
@@ -541,9 +593,13 @@ export const Clasificacion = () => {
               <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>
                 {selectedJornada === 'Total' ? 'TOTAL' : `JORNADA ${selectedJornada}`}
               </Text>
-              <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '900' }}>
-                {showJornadaPicker ? '▲' : '▼'}
-              </Text>
+              <View>
+                {showJornadaPicker ? (
+                  <ChevronUpIcon size={18} color="#cbd5e1" />
+                ) : (
+                  <ChevronDownIcon size={18} color="#cbd5e1" />
+                )}
+              </View>
             </TouchableOpacity>
 
             {showJornadaPicker && (
@@ -613,121 +669,156 @@ export const Clasificacion = () => {
             )}
           </View>
 
-          {/* Controles de Paginaci\u00f3n (solo para ligas grandes) */}
-          {isLargeLeague && (
+          {/* Info de paginación y controles (solo para ligas grandes) */}
+          {isLargeLeague && !showingUserPosition && (
             <View style={{
-              backgroundColor: '#1e293b',
-              paddingVertical: 12,
-              paddingHorizontal: 16,
+              backgroundColor: '#0f172a',
+              paddingVertical: 10,
+              paddingHorizontal: 12,
               borderBottomWidth: 1,
-              borderBottomColor: '#334155',
+              borderBottomColor: '#1e293b',
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: 8
+              gap: 6
             }}>
-              {/* Info de posici\u00f3n del usuario */}
-              {userPosition && (
+              {/* Info de página */}
+              <View style={{ flex: 1, maxWidth: 90 }}>
+                <Text style={{ color: '#94a3b8', fontSize: 12, fontWeight: '600' }}>
+                  Pág {currentPage}/{totalPages}
+                </Text>
+                <Text style={{ color: '#64748b', fontSize: 10, fontWeight: '500', marginTop: 2 }}>
+                  {totalMembers} jugadores
+                </Text>
+              </View>
+              
+              {/* Navegación de páginas */}
+              <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+                {/* Ir al principio (doble flecha izquierda) */}
+                <TouchableOpacity
+                  onPress={() => goToPage(1)}
+                  disabled={currentPage === 1 || loadingPage}
+                  style={{
+                    backgroundColor: currentPage === 1 ? '#1e293b' : '#334155',
+                    paddingVertical: 5,
+                    paddingHorizontal: 6,
+                    borderRadius: 6,
+                    opacity: currentPage === 1 ? 0.4 : 1
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: -2 }}>
+                    <ChevronLeftIcon size={12} color="#fff" />
+                    <ChevronLeftIcon size={12} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Página anterior */}
+                <TouchableOpacity
+                  onPress={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1 || loadingPage}
+                  style={{
+                    backgroundColor: currentPage === 1 ? '#1e293b' : '#334155',
+                    paddingVertical: 5,
+                    paddingHorizontal: 7,
+                    borderRadius: 6,
+                    opacity: currentPage === 1 ? 0.4 : 1
+                  }}
+                >
+                  <ChevronLeftIcon size={16} color="#fff" />
+                </TouchableOpacity>
+
+                {/* Número de página */}
+                <View style={{
+                  backgroundColor: '#0892D0',
+                  paddingVertical: 5,
+                  paddingHorizontal: 12,
+                  borderRadius: 6,
+                  minWidth: 36,
+                  alignItems: 'center'
+                }}>
+                  <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>
+                    {loadingPage ? '...' : currentPage}
+                  </Text>
+                </View>
+
+                {/* Página siguiente */}
+                <TouchableOpacity
+                  onPress={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages || loadingPage}
+                  style={{
+                    backgroundColor: currentPage === totalPages ? '#1e293b' : '#334155',
+                    paddingVertical: 5,
+                    paddingHorizontal: 7,
+                    borderRadius: 6,
+                    opacity: currentPage === totalPages ? 0.4 : 1
+                  }}
+                >
+                  <ChevronRightIcon size={16} color="#fff" />
+                </TouchableOpacity>
+
+                {/* Ir al final (doble flecha derecha) */}
+                <TouchableOpacity
+                  onPress={() => goToPage(totalPages)}
+                  disabled={currentPage === totalPages || loadingPage}
+                  style={{
+                    backgroundColor: currentPage === totalPages ? '#1e293b' : '#334155',
+                    paddingVertical: 5,
+                    paddingHorizontal: 6,
+                    borderRadius: 6,
+                    opacity: currentPage === totalPages ? 0.4 : 1
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: -2 }}>
+                    <ChevronRightIcon size={12} color="#fff" />
+                    <ChevronRightIcon size={12} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {/* Botón ir a tu página exacta */}
+              {userPosition && userPosition > 10 && (
                 <TouchableOpacity
                   onPress={goToUserPosition}
                   style={{
-                    flex: 1,
                     backgroundColor: '#0891b2',
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    borderRadius: 8,
-                    alignItems: 'center',
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    gap: 6,
+                    paddingVertical: 5,
+                    paddingHorizontal: 8,
+                    borderRadius: 6,
                     shadowColor: '#0891b2',
-                    shadowOffset: { width: 0, height: 2 },
+                    shadowOffset: { width: 0, height: 1 },
                     shadowOpacity: 0.3,
-                    shadowRadius: 4,
-                    elevation: 3
+                    shadowRadius: 2,
+                    elevation: 2
                   }}
                 >
-                  <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
-                    Tu posici\u00f3n: #{userPosition}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <TargetIcon size={14} color="#fff" />
+                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '700' }}>Ir</Text>
+                  </View>
                 </TouchableOpacity>
               )}
-              
-              {/* Bot\u00f3n ir al Top */}
-              <TouchableOpacity
-                onPress={goToTop}
-                disabled={currentPage === 1}
-                style={{
-                  backgroundColor: currentPage === 1 ? '#334155' : '#10b981',
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  borderRadius: 8,
-                  opacity: currentPage === 1 ? 0.5 : 1,
-                  shadowColor: '#10b981',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 4,
-                  elevation: 3
-                }}
-              >
-                <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>
-                  \ud83c\udfc6 TOP
-                </Text>
-              </TouchableOpacity>
             </View>
           )}
-
-          {/* Info de paginaci\u00f3n y controles (solo para ligas grandes) */}
-          {isLargeLeague && (
+          
+          {/* Vista especial: Top 10 + Tu posición */}
+          {isLargeLeague && showingUserPosition && userPosition && userPosition > 10 && (
             <View style={{
               backgroundColor: '#0f172a',
               paddingVertical: 10,
               paddingHorizontal: 16,
               borderBottomWidth: 1,
               borderBottomColor: '#1e293b',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between'
+              alignItems: 'center'
             }}>
-              {/* Info de p\u00e1gina */}
-              <Text style={{ color: '#94a3b8', fontSize: 13, fontWeight: '600' }}>
-                P\u00e1gina {currentPage} de {totalPages} \u2022 {totalMembers} jugadores
-              </Text>
-              
-              {/* Navegaci\u00f3n de p\u00e1ginas */}
-              <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-                <TouchableOpacity
-                  onPress={() => goToPage(currentPage - 1)}
-                  disabled={currentPage === 1 || loadingPage}
-                  style={{
-                    backgroundColor: currentPage === 1 ? '#1e293b' : '#334155',
-                    paddingVertical: 6,
-                    paddingHorizontal: 10,
-                    borderRadius: 6,
-                    opacity: currentPage === 1 ? 0.5 : 1
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{'<'}</Text>
-                </TouchableOpacity>
-                
-                <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700', minWidth: 40, textAlign: 'center' }}>
-                  {loadingPage ? '...' : currentPage}
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TrophyIcon size={16} color="#3b82f6" />
+                <Text style={{ color: '#3b82f6', fontSize: 13, fontWeight: '700', marginLeft: 8 }}>
+                  Top 10 • Tu posición: #{userPosition} ({userPoints} pts)
                 </Text>
-                
-                <TouchableOpacity
-                  onPress={() => goToPage(currentPage + 1)}
-                  disabled={currentPage === totalPages || loadingPage}
-                  style={{
-                    backgroundColor: currentPage === totalPages ? '#1e293b' : '#334155',
-                    paddingVertical: 6,
-                    paddingHorizontal: 10,
-                    borderRadius: 6,
-                    opacity: currentPage === totalPages ? 0.5 : 1
-                  }}
-                >
-                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{'>'}</Text>
-                </TouchableOpacity>
               </View>
+              <Text style={{ color: '#94a3b8', fontSize: 11, fontWeight: '600', marginTop: 4 }}>
+                Pulsa "Ir" para ver tu página completa
+              </Text>
             </View>
           )}
 
@@ -735,18 +826,31 @@ export const Clasificacion = () => {
           {jugadores.length > 0 ? (
             <FlatList
               data={jugadores}
-              renderItem={renderJugadorItem}
+              renderItem={({ item, index }) => {
+                // Mostrar separador visual entre top 10 y posición del usuario
+                if (isLargeLeague && showingUserPosition && index === 10) {
+                  return (
+                    <View key={`separator-${item.id}`}>
+                      <View style={{
+                        height: 40,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        marginVertical: 8
+                      }}>
+                        <Text style={{ color: '#64748b', fontSize: 24, fontWeight: '700' }}>⋯</Text>
+                      </View>
+                      {renderJugadorItem({ item })}
+                    </View>
+                  );
+                }
+                return renderJugadorItem({ item });
+              }}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ paddingBottom: 200, paddingTop: 8, paddingHorizontal: 16, }}
-              initialNumToRender={10}
+              initialNumToRender={11}
               maxToRenderPerBatch={5}
               windowSize={10}
               removeClippedSubviews={true}
-              getItemLayout={(data, index) => ({
-                length: 80, // altura aproximada de cada item
-                offset: 80 * index,
-                index,
-              })}
             />
           ) : (
             <View style={styles.loadingContainer}>

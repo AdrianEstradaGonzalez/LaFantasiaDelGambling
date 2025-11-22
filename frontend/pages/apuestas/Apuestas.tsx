@@ -61,7 +61,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
   const division: 'primera' | 'segunda' | 'premier' = (route.params?.division as 'primera' | 'segunda' | 'premier') || 'primera';
-  const isPremium = route.params?.isPremium || false;
+  const isDreamLeague = ligaName === 'DreamLeague';
+  const isPremium = isDreamLeague ? true : (route.params?.isPremium || false); // DreamLeague siempre premium
   const [loading, setLoading] = useState(true);
   const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
   const [userBets, setUserBets] = useState<UserBet[]>([]);
@@ -1976,24 +1977,35 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                             <Text style={{ color: '#93c5fd', fontWeight: '700', fontSize: 15, marginBottom: 4 }}>
                                               {data.userName}
                                             </Text>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                                            <View style={{ flexDirection: 'column' }}>
                                               <Text style={{ color: '#94a3b8', fontSize: 13 }}>
-                                                {data.bets.length} apuesta{data.bets.length !== 1 ? 's' : ''} - {userCombis.length} combi{userCombis.length !== 1 ? 's' : ''}
+                                                {data.bets.length} apuesta{data.bets.length !== 1 ? 's' : ''}{isPremium ? ` - ${userCombis.length} combi${userCombis.length !== 1 ? 's' : ''}` : ''}
                                               </Text>
-                                              {/* combi count already shown in summary; badge removed to avoid duplication */}
-                                              {data.wonBets > 0 && (
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                                                  <Text style={{ color: '#94a3b8', fontSize: 13 }}>({data.wonBets}</Text>
+
+                                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                                                <Text style={{ color: '#94a3b8', fontSize: 13 }}>(</Text>
+
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                  <Text style={{ color: '#94a3b8', fontSize: 13 }}>{data.wonBets}</Text>
                                                   <CheckIcon size={12} color="#22c55e" />
                                                 </View>
-                                              )}
-                                              {data.lostBets > 0 && (
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+
+                                                <Text style={{ color: '#94a3b8', fontSize: 13 }}>/</Text>
+
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                  <Text style={{ color: '#94a3b8', fontSize: 13 }}>{Math.max(0, data.bets.length - data.wonBets - data.lostBets)}</Text>
+                                                  <ClockIcon size={12} color="#f59e0b" />
+                                                </View>
+
+                                                <Text style={{ color: '#94a3b8', fontSize: 13 }}>/</Text>
+
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                                                   <Text style={{ color: '#94a3b8', fontSize: 13 }}>{data.lostBets}</Text>
                                                   <ErrorIcon size={12} color="#ef4444" />
-                                                  <Text style={{ color: '#94a3b8', fontSize: 13 }}>)</Text>
                                                 </View>
-                                              )}
+
+                                                <Text style={{ color: '#94a3b8', fontSize: 13 }}>)</Text>
+                                              </View>
                                             </View>
                                           </View>
                                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

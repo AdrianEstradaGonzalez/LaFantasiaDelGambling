@@ -53,7 +53,8 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
   const division = route.params?.division || 'primera';
-  const isPremium = route.params?.isPremium || false;
+  const isDreamLeague = ligaName === 'DreamLeague';
+  const isPremium = isDreamLeague ? true : (route.params?.isPremium || false); // DreamLeague siempre premium
   const [loading, setLoading] = useState(true);
   const [leagueBets, setLeagueBets] = useState<UserBet[]>([]);
   const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);

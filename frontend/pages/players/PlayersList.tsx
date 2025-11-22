@@ -214,7 +214,8 @@ export const PlayersList = ({ navigation, route }: {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
   const division = route.params?.division || 'primera';
-  const isPremium = route.params?.isPremium || false;
+  const isDreamLeague = ligaName === 'DreamLeague';
+  const isPremium = isDreamLeague ? true : (route.params?.isPremium || false); // DreamLeague siempre premium
 
   // Función para añadir jugador a plantilla
   const addPlayerToSquad = async (player: Player) => {

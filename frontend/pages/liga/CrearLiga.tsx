@@ -37,6 +37,12 @@ type CrearLigaRouteWithMode = RouteProp<{ params: { codigo?: string; mode?: 'cre
 
 export const CrearLiga = ({ navigation }: CrearLigaProps) => {
   const route = useRoute<CrearLigaRouteWithMode>();
+  // `modeParam` puede ser 'create', 'join' o undefined (navegación desde Home).
+  // Cuando es undefined queremos mostrar ambas secciones (crear + unirse)
+  // pero renderizar DreamLeague una sola vez.
+  const modeParam = route.params?.mode as 'create' | 'join' | undefined;
+  const showCreate = modeParam !== 'join';
+  const showJoin = modeParam !== 'create';
   const [nombreLiga, setNombreLiga] = useState('');
   const [codigoLiga, setCodigoLiga] = useState('');
   const [loadingCrear, setLoadingCrear] = useState(false);
@@ -281,8 +287,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         <TopNavBar backTo="Home" />
         <ScrollView contentContainerStyle={styles.container}>
 
-        {/* Liga Pública DreamLeague - Destacada */}
-        {route.params?.mode !== 'join' && (
+        {/* Liga Pública DreamLeague - Destacada (única copia) */}
+        {(showCreate || showJoin) && (
           <View style={[styles.section, { 
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
             borderWidth: 2,
@@ -293,7 +299,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
             shadowRadius: 8,
             elevation: 8,
             marginBottom: 20
-          }]}>            <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
+          }]}>
+            <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
               <TrophyIcon size={28} color="#3b82f6" />
               <Text style={[styles.sectionTitle, { color: '#3b82f6', fontSize: 22 }]}>DreamLeague</Text>
             </View>
@@ -323,7 +330,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
             <View style={[styles.tipsContainer, { borderColor: '#3b82f6' }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                 <InformationIcon size={16} color="#3b82f6" />
-                <Text style={[styles.tipsTitle, { color: '#3b82f6' }]}>Liga Global</Text>
+                <Text style={[styles.tipsTitle, { color: '#3b82f6' }]}>  Liga Global</Text>
               </View>
               <Text style={styles.tipsText}>
                 Liga oficial sin límite de jugadores. Compite en Primera División y escala posiciones en el ranking mundial.
@@ -333,7 +340,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         )}
        
         {/* Crear liga privada */}
-        {route.params?.mode !== 'join' && (
+        {showCreate && (
           <>
           <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -405,58 +412,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
         )}
 
         {/* Unirse a liga */}
-        {route.params?.mode !== 'create' && (
+        {showJoin && (
           <>
-          {/* Liga Pública DreamLeague - Destacada */}
-          <View style={[styles.section, { 
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 2,
-            borderColor: '#3b82f6',
-            shadowColor: '#3b82f6',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            elevation: 8,
-            marginBottom: 20
-          }]}>
-            <View style={[styles.sectionHeader, { marginBottom: 8 }]}>
-              <TrophyIcon size={28} color="#3b82f6" />
-              <Text style={[styles.sectionTitle, { color: '#3b82f6', fontSize: 22 }]}>DreamLeague</Text>
-            </View>
-            <Text style={[styles.sectionDescription, { marginBottom: 16 }]}>
-              Liga pública para todos. ¡Compite contra miles de jugadores!
-            </Text>
-            
-            <TouchableOpacity
-              style={[styles.primaryButton, {
-                backgroundColor: '#3b82f6',
-                shadowColor: '#3b82f6',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.4,
-                shadowRadius: 8,
-                elevation: 6,
-              }, loadingDreamLeague && styles.primaryButtonDisabled]}
-              onPress={handleJoinDreamLeague}
-              disabled={loadingDreamLeague}
-              activeOpacity={0.8}
-            >
-              <UsersGroupIcon size={20} color="#fff" />
-              <Text style={[styles.primaryButtonText, { marginLeft: 8 }]}>
-                {loadingDreamLeague ? 'Uniéndote...' : 'Unirse a DreamLeague'}
-              </Text>
-            </TouchableOpacity>
-
-            <View style={[styles.tipsContainer, { borderColor: '#3b82f6' }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                <InformationIcon size={16} color="#3b82f6" />
-                <Text style={[styles.tipsTitle, { color: '#3b82f6' }]}>Liga Global</Text>
-              </View>
-              <Text style={styles.tipsText}>
-                Liga oficial sin límite de jugadores. Compite en Primera División y escala posiciones en el ranking mundial.
-              </Text>
-            </View>
-          </View>
-
           <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Unirse a Liga</Text>

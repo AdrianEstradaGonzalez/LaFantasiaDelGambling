@@ -342,7 +342,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                   transform: [{ scale: 1.02 }]
                 }]}
                 activeOpacity={0.85}
-                onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre, division: liga.division, isPremium: liga.isPremium })}
+                onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre, division: liga.division, isPremium: isDreamLeague ? true : liga.isPremium })}
               >
                 {/* Fondo con gradiente sutil */}
                 <LinearGradient
@@ -363,8 +363,8 @@ export const Home = ({ navigation, route }: HomeProps) => {
                 {isDreamLeague && (
                   <View style={{
                     position: 'absolute',
-                    top: -8,
-                    right: 12,
+                    top: 4,
+                    right: 4,
                     backgroundColor: '#fbbf24',
                     paddingHorizontal: 10,
                     paddingVertical: 4,
@@ -462,7 +462,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                     >
                       {liga.division === 'segunda' ? 'Segunda División Española' : liga.division === 'premier' ? 'Premier League' : 'Primera División Española'}
                     </Text>
-                    {liga.isPremium && (
+                    {liga.isPremium && !isDreamLeague && (
                       <View style={{
                         backgroundColor: '#fbbf24',
                         paddingHorizontal: 6,
