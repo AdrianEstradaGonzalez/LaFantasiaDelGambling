@@ -1668,8 +1668,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                     >
                       <View style={{ overflow: 'hidden', borderRadius: (playerSize - (isCaptain ? 6 : 4)) / 2, width: playerSize - (isCaptain ? 6 : 4), height: playerSize - (isCaptain ? 6 : 4) }}>
                         <Image
-                          key={`player-photo-${player.id}-${position.id}`}
-                          source={{ uri: photoUri }}
+                          key={`player-photo-${player.id}-${position.id}-${player.name}`}
+                          source={{ 
+                            uri: photoUri,
+                            cache: 'reload'
+                          }}
                           style={{
                             width: playerSize - (isCaptain ? 6 : 4),
                             height: playerSize - (isCaptain ? 6 : 4),
@@ -1726,8 +1729,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                             }}
                           >
                             <Image
-                              key={`team-crest-${player.id}-${position.id}`}
-                              source={{ uri: player.teamCrest }}
+                              key={`team-crest-${player.id}-${position.id}-${player.teamId}`}
+                              source={{ 
+                                uri: player.teamCrest,
+                                cache: 'reload'
+                              }}
                               style={{
                                 width: 20,
                                 height: 20,
@@ -1833,8 +1839,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                     >
                       <View style={{ overflow: 'hidden', borderRadius: (playerSize - 4) / 2, width: playerSize - 4, height: playerSize - 4 }}>
                         <Image
-                          key={`player-photo-closed-${player.id}-${position.id}`}
-                          source={{ uri: photoUri }}
+                          key={`player-photo-closed-${player.id}-${position.id}-${player.name}`}
+                          source={{ 
+                            uri: photoUri,
+                            cache: 'reload'
+                          }}
                           style={{
                             width: playerSize - 4,
                             height: playerSize - 4,
@@ -1872,8 +1881,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                         player.teamCrest && (
                           <View style={{ position: 'absolute', top: -4, left: -4, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
                             <Image
-                              key={`team-crest-closed-${player.id}-${position.id}`}
-                              source={{ uri: player.teamCrest }}
+                              key={`team-crest-closed-${player.id}-${position.id}-${player.teamId}`}
+                              source={{ 
+                                uri: player.teamCrest,
+                                cache: 'reload'
+                              }}
                               style={{ width: 20, height: 20, borderRadius: 10 }}
                               resizeMode="contain"
                             />
@@ -2090,8 +2102,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   {/* Foto del jugador */}
                   <View style={{ position: 'relative', marginRight: 8 }}>
                     <Image
-                      key={`stats-modal-player-${player.id}-${positionId}`}
-                      source={{ uri: photoUri }}
+                      key={`stats-modal-player-${player.id}-${positionId}-${player.name}`}
+                      source={{ 
+                        uri: photoUri,
+                        cache: 'reload'
+                      }}
                       style={{
                         width: 32,
                         height: 32,
@@ -2149,7 +2164,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
                   {/* Logo del equipo si existe */}
                   {player.teamCrest && (
                     <Image
-                      source={{ uri: player.teamCrest }}
+                      key={`stats-modal-team-${player.id}-${player.teamId}`}
+                      source={{ 
+                        uri: player.teamCrest,
+                        cache: 'reload'
+                      }}
                       style={{
                         width: 20,
                         height: 20,

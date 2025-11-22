@@ -563,7 +563,11 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
           }}>
             <View style={{ flexDirection: 'row', gap: 16, marginBottom: 16 }}>
               <Image
-                source={{ uri: player.photo }}
+                key={`player-detail-${player.id}-${player.name}`}
+                source={{ 
+                  uri: player.photo,
+                  cache: 'reload'
+                }}
                 style={{
                   width: 100,
                   height: 100,

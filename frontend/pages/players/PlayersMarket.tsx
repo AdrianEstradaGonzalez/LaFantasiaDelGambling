@@ -860,7 +860,11 @@ export const PlayersMarket = ({ navigation, route }: {
           {/* Ficha del jugador */}
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
             <Image
-              source={{ uri: photo }}
+              key={`player-market-${p.id}-${p.name}`}
+              source={{ 
+                uri: photo,
+                cache: 'reload'
+              }}
               style={{ width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: '#334155', marginRight: 12, backgroundColor: '#0b1220' }}
               resizeMode="cover"
             />
@@ -878,7 +882,10 @@ export const PlayersMarket = ({ navigation, route }: {
                 {p.teamCrest && (
                   <Image
                     key={`${p.id}-${p.teamId}-crest`}
-                    source={{ uri: p.teamCrest }}
+                    source={{ 
+                      uri: p.teamCrest,
+                      cache: 'reload'
+                    }}
                     style={{ width: 22, height: 22, backgroundColor: 'transparent' }}
                     resizeMode="contain"
                     onError={(error) => {

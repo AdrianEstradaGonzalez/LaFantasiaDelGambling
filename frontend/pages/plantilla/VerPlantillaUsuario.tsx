@@ -664,8 +664,11 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                               }}
                             >
                               <Image
-                                key={`player-photo-ver-${pid}-${position.id}`}
-                                source={{ uri: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2` }} 
+                                key={`player-photo-ver-${pid}-${position.id}-${player.playerName}`}
+                                source={{ 
+                                  uri: photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(player.playerName)}&background=334155&color=fff&size=128&length=2`,
+                                  cache: 'reload'
+                                }} 
                                 style={{ width: playerSize - 4, height: playerSize - 4, borderRadius: (playerSize - 4) / 2 }} 
                                 resizeMode="cover" 
                               />
@@ -681,8 +684,11 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                             crest && (
                               <View style={{ position: 'absolute', top: -4, left: -4, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3, elevation: 4 }}>
                                 <Image
-                                  key={`team-crest-ver-${pid}-${position.id}`}
-                                  source={{ uri: crest }}
+                                  key={`team-crest-ver-${pid}-${position.id}-${player.teamId}`}
+                                  source={{ 
+                                    uri: crest,
+                                    cache: 'reload'
+                                  }}
                                   style={{ width: 20, height: 20, borderRadius: 10 }}
                                   resizeMode="contain"
                                 />
