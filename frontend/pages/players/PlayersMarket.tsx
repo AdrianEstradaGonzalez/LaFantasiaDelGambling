@@ -254,7 +254,8 @@ export const PlayersMarket = ({ navigation, route }: {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
   const division = route.params?.division || 'primera'; // Recibir división directamente
-  const isPremium = route.params?.isPremium || false; // Recibir isPremium directamente
+  const isDreamLeague = ligaName === 'DreamLeague';
+  const isPremium = isDreamLeague ? true : (route.params?.isPremium || false); // DreamLeague siempre premium
   
   // Modo selección (cuando viene desde MiPlantilla)
   const selectMode = route.params?.selectMode || false;

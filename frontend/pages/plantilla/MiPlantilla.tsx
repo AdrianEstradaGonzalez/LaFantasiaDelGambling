@@ -429,7 +429,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
   const division = route.params?.division || 'primera'; // Por defecto primera
-  const isPremium = route.params?.isPremium || false; // Por defecto false
+  const isDreamLeague = ligaName === 'DreamLeague';
+  const isPremium = isDreamLeague ? true : (route.params?.isPremium || false); // DreamLeague siempre premium
   const insets = useSafeAreaInsets();
   
   // Ajustes de ancho del campo para ocupar todo el ancho del dispositivo

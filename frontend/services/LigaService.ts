@@ -407,4 +407,79 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
       throw error;
     }
   }
+
+  // 🌍 Unirse a la liga pública DreamLeague
+  static async joinDreamLeague(): Promise<any> {
+    try {
+      const token = await this.getAccessToken();
+      if (!token) throw new Error('Usuario no autenticado');
+
+      // Unirse usando el código fijo DREAMLEAGUE
+      return await this.unirsePorCodigo('DREAMLEAGUE');
+    } catch (error: any) {
+      console.warn('LigaService.joinDreamLeague:', error);
+      throw error;
+    }
+  }
+
+  // 📄 Obtener clasificación paginada (especialmente para ligas grandes)
+  static async getPaginatedClassification(
+    leagueId: string, 
+    jornada: number | 'Total' = 'Total',
+    page: number = 1,
+    limit: number = 10
+  ) {
+    try {
+      const token = await this.getAccessToken();
+      if (!token) throw new Error('Usuario no autenticado');
+
+      const jornadaParam = jornada === 'Total' ? 'Total' : jornada.toString();
+      const url = `${ApiConfig.BASE_URL}/leagues/${leagueId}/classification/paginated?jornada=${jornadaParam}&page=${page}&limit=${limit}`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const friendlyMessage = this.mapErrorToFriendlyMessage(json, res.status);
+        throw new Error(friendlyMessage);
+      }
+
+      return json;
+    } catch (error: any) {
+      console.warn('LigaService.getPaginatedClassification:', error);
+      throw new Error(error?.message || 'No se pudo cargar la clasificación paginada');
+    }
+  }
+
+  // 🔍 Obtener posición del usuario en la clasificación
+  static async getUserPosition(leagueId: string, jornada: number | 'Total' = 'Total') {
+    try {
+      const token = await this.getAccessToken();
+      if (!token) throw new Error('Usuario no autenticado');
+
+      const jornadaParam = jornada === 'Total' ? 'Total' : jornada.toString();
+      const url = `${ApiConfig.BASE_URL}/leagues/${leagueId}/user-position?jornada=${jornadaParam}`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const friendlyMessage = this.mapErrorToFriendlyMessage(json, res.status);
+        throw new Error(friendlyMessage);
+      }
+
+      return json;
+    } catch (error: any) {
+      console.warn('LigaService.getUserPosition:', error);
+      throw new Error(error?.message || 'No se pudo obtener la posición del usuario');
+    }
+  }
 }

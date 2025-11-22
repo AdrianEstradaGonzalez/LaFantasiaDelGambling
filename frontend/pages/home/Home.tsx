@@ -20,7 +20,7 @@ import LoadingScreen from '../../components/LoadingScreen';
 import { LigaService } from '../../services/LigaService';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { LoginService } from '../../services/LoginService';
-import { MenuIcon, ShieldIcon } from '../../components/VectorIcons';
+import { MenuIcon, ShieldIcon, TrophyIcon } from '../../components/VectorIcons';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
 import { AdBanner } from '../../components/AdBanner';
@@ -125,7 +125,14 @@ export const Home = ({ navigation, route }: HomeProps) => {
         isPremium: liga.isPremium || false,
       }));
 
-      setLigas(ligasFormateadas);
+      // Ordenar para que DreamLeague aparezca primero
+      const ligasOrdenadas = ligasFormateadas.sort((a, b) => {
+        if (a.nombre === 'DreamLeague') return -1;
+        if (b.nombre === 'DreamLeague') return 1;
+        return 0;
+      });
+
+      setLigas(ligasOrdenadas);
       setLoading(false); // ✅ Solo aquí se desactiva el loading después de cargar las ligas
     } catch (error) {
       if (__DEV__) {
@@ -317,17 +324,29 @@ export const Home = ({ navigation, route }: HomeProps) => {
         <View style={styles.ligasList}>
             {ligas.length > 0 ? (
             ligas.map((liga, idx) => {
-              const accentColor = liga.division === 'segunda' ? '#10b981' : liga.division === 'premier' ? '#8b5cf6' : '#3b82f6';
+              const isDreamLeague = liga.nombre === 'DreamLeague';
+              const accentColor = isDreamLeague ? '#3b82f6' : (liga.division === 'segunda' ? '#10b981' : liga.division === 'premier' ? '#8b5cf6' : '#3b82f6');
+              
               return (
               <React.Fragment key={liga.id}>
               <TouchableOpacity
-                style={styles.ligaCard}
+                style={[styles.ligaCard, isDreamLeague && {
+                  borderWidth: 2,
+                  borderColor: '#3b82f6',
+                  shadowColor: '#3b82f6',
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 12,
+                  elevation: 10,
+                  marginBottom: 16,
+                  transform: [{ scale: 1.02 }]
+                }]}
                 activeOpacity={0.85}
-                                onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre, division: liga.division, isPremium: liga.isPremium })}
+                onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre, division: liga.division, isPremium: isDreamLeague ? true : liga.isPremium })}
               >
                 {/* Fondo con gradiente sutil */}
                 <LinearGradient
-                  colors={['#1c2635ff', '#1d2841ff']}
+                  colors={isDreamLeague ? ['#1e3a8a', '#1e40af'] : ['#1c2635ff', '#1d2841ff']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={{
@@ -340,13 +359,46 @@ export const Home = ({ navigation, route }: HomeProps) => {
                   }}
                 />
                 
+                {/* Badge DreamLeague */}
+                {isDreamLeague && (
+                  <View style={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    backgroundColor: '#fbbf24',
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 12,
+                    shadowColor: '#fbbf24',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.6,
+                    shadowRadius: 4,
+                    elevation: 5,
+                    borderWidth: 2,
+                    borderColor: '#fcd34d',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}>
+                    <TrophyIcon size={14} color="#1f2937" />
+                    <Text style={{ 
+                      color: '#1f2937', 
+                      fontSize: 10, 
+                      fontWeight: '900',
+                      letterSpacing: 0.5
+                    }}>
+                      LIGA GLOBAL
+                    </Text>
+                  </View>
+                )}
+                
                 {/* Barra lateral de color */}
                 <View style={{
                   position: 'absolute',
                   left: 0,
                   top: 0,
                   bottom: 0,
-                  width: 6,
+                  width: isDreamLeague ? 8 : 6,
                   backgroundColor: accentColor,
                   borderTopLeftRadius: 16,
                   borderBottomLeftRadius: 16,
@@ -410,7 +462,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                     >
                       {liga.division === 'segunda' ? 'Segunda División Española' : liga.division === 'premier' ? 'Premier League' : 'Primera División Española'}
                     </Text>
-                    {liga.isPremium && (
+                    {liga.isPremium && !isDreamLeague && (
                       <View style={{
                         backgroundColor: '#fbbf24',
                         paddingHorizontal: 6,

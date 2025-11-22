@@ -99,6 +99,40 @@ export const LeagueController = {
     reply.send(result);
   },
 
+  // Obtener clasificación paginada (para ligas grandes)
+  getPaginatedClassification: async (req: FastifyRequest, reply: FastifyReply) => {
+    const { leagueId } = deleteLeagueParams.parse((req as any).params);
+    const { jornada = 'Total', page = '1', limit = '10' } = (req as any).query;
+    
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+    const jornadaValue = jornada === 'Total' ? 'Total' : parseInt(jornada, 10);
+
+    if (isNaN(pageNum) || pageNum < 1) {
+      throw new AppError(400, "INVALID_PAGE", "Número de página inválido");
+    }
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 50) {
+      throw new AppError(400, "INVALID_LIMIT", "Límite inválido (debe ser entre 1 y 50)");
+    }
+
+    const result = await LeagueService.getPaginatedClassification(leagueId, jornadaValue, pageNum, limitNum);
+    reply.send(result);
+  },
+
+  // Obtener posición del usuario en la clasificación
+  getUserPosition: async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req.user as any)?.sub || (req.user as any)?.id;
+    if (!userId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
+    
+    const { leagueId } = deleteLeagueParams.parse((req as any).params);
+    const { jornada = 'Total' } = (req as any).query;
+    
+    const jornadaValue = jornada === 'Total' ? 'Total' : parseInt(jornada, 10);
+    
+    const result = await LeagueService.getUserPosition(leagueId, userId, jornadaValue);
+    reply.send(result);
+  },
+
 getByUser: async (req: any, reply: any) => {
 const { userId } = req.params as { userId: string };
 const leagues = await LeagueService.getLeaguesByUser(userId);
