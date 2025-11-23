@@ -134,9 +134,39 @@ export const LeagueController = {
   },
 
 getByUser: async (req: any, reply: any) => {
-const { userId } = req.params as { userId: string };
-const leagues = await LeagueService.getLeaguesByUser(userId);
-reply.send(leagues);
+try {
+  const { userId } = req.params as { userId: string };
+  
+  req.log.info(`📥 Request to get leagues for user: ${userId}`);
+  
+  // Validar que userId sea válido
+  if (!userId || userId.trim() === '') {
+    req.log.warn(`⚠️  Invalid userId received: "${userId}"`);
+    throw new AppError(400, "INVALID_USER_ID", "ID de usuario inválido");
+  }
+  
+  const leagues = await LeagueService.getLeaguesByUser(userId);
+  
+  // Asegurar que siempre se devuelva un array
+  const safeLeagues = Array.isArray(leagues) ? leagues : [];
+  
+  req.log.info(`✅ User ${userId} has ${safeLeagues.length} leagues`);
+  
+  // Log de las ligas encontradas para debugging
+  if (safeLeagues.length > 0 && __DEV__) {
+    req.log.debug(`Leagues: ${safeLeagues.map(l => l.name).join(', ')}`);
+  }
+  
+  // Asegurar que la respuesta sea JSON válido
+  reply.header('Content-Type', 'application/json');
+  reply.send(safeLeagues);
+} catch (error: any) {
+  if (error instanceof AppError) {
+    throw error;
+  }
+  req.log.error('❌ Error getting leagues by user:', error);
+  throw new AppError(500, "INTERNAL_ERROR", error.message || "Error al obtener las ligas del usuario");
+}
 },
 
   // Calcular puntos en tiempo real consultando API-Football

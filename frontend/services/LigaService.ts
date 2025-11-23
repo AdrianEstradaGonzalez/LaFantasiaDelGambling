@@ -39,7 +39,7 @@ export class LigaService {
         if (error?.message?.includes('Liga completa')) return error.message;
         return 'Los datos proporcionados no son válidos';
       case 401:
-        return 'Tu sesión ha expirado. Inicia sesión de nuevo';
+        return 'Error de autenticación. Inicia sesión de nuevo';
       case 403:
         return 'No tienes permisos para realizar esta acción';
       case 404:
@@ -274,40 +274,123 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
   static async obtenerLigasPorUsuario(userId: string) {
     try {
       const token = await this.getAccessToken();
-      if (!token) throw new Error('Usuario no autenticado');
+      if (!token) {
+        throw new Error('No se encontró sesión activa. Por favor, inicia sesión.');
+      }
+
+      // Validar que userId sea válido
+      if (!userId || userId.trim() === '') {
+        throw new Error('ID de usuario inválido');
+      }
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout (aumentado desde 10s)
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 seconds timeout (reducido de 30s)
+
+      if (__DEV__) {
+        console.log(`📡 Obteniendo ligas para userId: ${userId}`);
+      }
 
       const res = await fetch(`${ApiConfig.BASE_URL}/leagues/user/${userId}`, {
         method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
 
-      const json = await res.json().catch(() => ({}));
+      if (__DEV__) {
+        console.log(`📡 Respuesta del servidor: ${res.status} ${res.statusText}`);
+      }
 
+      // Primero verificar el status code
       if (!res.ok) {
+        let json: any = {};
+        try {
+          json = await res.json();
+        } catch (parseError) {
+          if (__DEV__) {
+            console.error('Error parseando respuesta de error:', parseError);
+          }
+        }
+        
+        // Si es 401, hay un problema con la autenticación
+        if (res.status === 401) {
+          throw new Error('Error de autenticación. Por favor, cierra sesión e inicia sesión de nuevo.');
+        }
+        
         const friendlyMessage = this.mapErrorToFriendlyMessage(json, res.status);
         throw new Error(friendlyMessage);
+      }
+
+      // Parsear respuesta exitosa
+      let json: any;
+      const responseText = await res.text();
+      
+      if (__DEV__) {
+        console.log('📥 Respuesta del servidor (raw):', responseText.substring(0, 200));
+      }
+      
+      try {
+        // Si la respuesta está vacía, devolver array vacío
+        if (!responseText || responseText.trim() === '') {
+          if (__DEV__) {
+            console.warn('⚠️  Respuesta vacía del servidor, devolviendo array vacío');
+          }
+          return [];
+        }
+        
+        json = JSON.parse(responseText);
+      } catch (parseError) {
+        if (__DEV__) {
+          console.error('❌ Error parseando respuesta JSON exitosa:', parseError);
+          console.error('Respuesta recibida:', responseText.substring(0, 500));
+        }
+        throw new Error('Respuesta inválida del servidor');
+      }
+
+      // Verificar que la respuesta sea un array
+      if (!Array.isArray(json)) {
+        if (__DEV__) {
+          console.error('❌ Respuesta no es un array:', json);
+        }
+        // Si no es un array pero es un objeto vacío, devolver array vacío
+        if (json && typeof json === 'object' && Object.keys(json).length === 0) {
+          if (__DEV__) {
+            console.warn('⚠️  Objeto vacío recibido, devolviendo array vacío');
+          }
+          return [];
+        }
+        throw new Error('Formato de respuesta inválido');
+      }
+
+      if (__DEV__) {
+        console.log(`✅ ${json.length} ligas obtenidas del servidor`);
       }
 
       return json as Liga[];
     } catch (error: any) {
       if (__DEV__) {
-        console.warn('LigaService.obtenerLigasPorUsuario:', error);
+        console.error('❌ LigaService.obtenerLigasPorUsuario error:', {
+          message: error?.message,
+          name: error?.name,
+          stack: error?.stack
+        });
       }
       
       // Handle network-specific errors
       if (error.name === 'AbortError') {
         throw new Error('La conexión tardó demasiado. Verifica tu conexión a internet.');
       }
-      if (error.message.includes('Network request failed') || error.message.includes('fetch')) {
-        throw new Error('No se pudo conectar al servidor. Verifica que el backend esté ejecutándose.');
+      if (error.message?.includes('Network request failed') || 
+          error.message?.includes('fetch') ||
+          error.message?.includes('Failed to fetch')) {
+        throw new Error('No se pudo conectar al servidor. Verifica tu conexión a internet.');
       }
       
+      // Re-lanzar el error con el mensaje apropiado
       throw new Error(error?.message || 'No se pudieron obtener las ligas');
     }
   }

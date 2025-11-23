@@ -42,10 +42,14 @@ export const Home = ({ navigation, route }: HomeProps) => {
   const [loadingPartidos, setLoadingPartidos] = useState<boolean>(true);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [ligasLoadError, setLigasLoadError] = useState<boolean>(false);
+  const [isRetrying, setIsRetrying] = useState<boolean>(false);
 
   const scrollRef = useRef<ScrollView>(null);
   const jornadasScrollRef = useRef<ScrollView>(null);
   const slideAnim = useRef(new Animated.Value(-300)).current; // Empieza fuera de la pantalla a la izquierda
+  const isMountedRef = useRef(true);
+  const isLoadingLigasRef = useRef(false);
 
   // Animar apertura/cierre del drawer
   useEffect(() => {
@@ -65,9 +69,29 @@ export const Home = ({ navigation, route }: HomeProps) => {
   }, [isDrawerOpen, slideAnim]);
 
   // Función para cargar ligas (separada para reutilizar)
-  const fetchLigasUsuario = useCallback(async () => {
+  const fetchLigasUsuario = useCallback(async (retryCount = 0) => {
+    const MAX_RETRIES = 2;
+    
+    // Prevenir llamadas simultáneas
+    if (isLoadingLigasRef.current) {
+      if (__DEV__) {
+        console.log('⚠️  Ya hay una carga de ligas en proceso, ignorando llamada duplicada');
+      }
+      return;
+    }
+    
+    isLoadingLigasRef.current = true;
+    
     try {
       setLoading(true);
+      setLigasLoadError(false);
+      if (retryCount > 0) {
+        setIsRetrying(true);
+      }
+      
+      if (__DEV__) {
+        console.log(`🔄 Iniciando carga de ligas (intento ${retryCount + 1})`);
+      }
 
       // 🔍 DEBUG: Ver todos los datos almacenados (solo en desarrollo)
       if (__DEV__) {
@@ -79,6 +103,19 @@ export const Home = ({ navigation, route }: HomeProps) => {
           token: await EncryptedStorage.getItem('token'), // por si quedó del registro anterior
         };
         console.log('🔍 Home.tsx - Datos almacenados:', allStoredData);
+      }
+
+      // Verificar primero que hay un token válido
+      const accessToken = await EncryptedStorage.getItem('accessToken');
+      if (!accessToken) {
+        if (__DEV__) {
+          console.warn('❌ No hay accessToken - usuario no autenticado');
+        }
+        setLigas([]);
+        setLoading(false);
+        // Opcional: redirigir a login si es necesario
+        // navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        return;
       }
 
       // 1) intenta leer userId directo
@@ -94,10 +131,18 @@ export const Home = ({ navigation, route }: HomeProps) => {
           console.log('🔍 session encontrada:', session);
         }
         if (session) {
-          const { user } = JSON.parse(session);
-          userId = user?.id ?? null;
-          if (__DEV__) {
-            console.log('🔍 userId desde session:', userId);
+          try {
+            const { user } = JSON.parse(session);
+            userId = user?.id ?? null;
+            if (userId && __DEV__) {
+              console.log('🔍 userId desde session:', userId);
+              // Guardar para próximas veces
+              await EncryptedStorage.setItem('userId', userId);
+            }
+          } catch (parseError) {
+            if (__DEV__) {
+              console.error('❌ Error parseando session:', parseError);
+            }
           }
         }
       }
@@ -118,6 +163,11 @@ export const Home = ({ navigation, route }: HomeProps) => {
       // 🔹 endpoint público por userId
       const ligasUsuario = await LigaService.obtenerLigasPorUsuario(userId);
 
+      // Verificar que la respuesta sea un array
+      if (!Array.isArray(ligasUsuario)) {
+        throw new Error('Respuesta inválida del servidor: no es un array');
+      }
+
       const ligasFormateadas: Liga[] = ligasUsuario.map((liga: any) => ({
         id: liga.id,
         nombre: liga.name,
@@ -132,24 +182,94 @@ export const Home = ({ navigation, route }: HomeProps) => {
         return 0;
       });
 
+      // Solo actualizar estado si el componente sigue montado
+      if (!isMountedRef.current) {
+        if (__DEV__) {
+          console.log('⚠️  Componente desmontado, cancelando actualización de estado');
+        }
+        return;
+      }
+      
       setLigas(ligasOrdenadas);
       setLoading(false); // ✅ Solo aquí se desactiva el loading después de cargar las ligas
-    } catch (error) {
+      setLigasLoadError(false); // Limpiar error si hubo éxito
+      setIsRetrying(false);
+      isLoadingLigasRef.current = false;
+      
       if (__DEV__) {
-        console.warn('Error al obtener ligas del usuario:', error);
+        console.log(`✅ ${ligasOrdenadas.length} ligas cargadas correctamente`);
       }
-      // Si hay error, mostrar array vacío pero quitar loading
-      setLigas([]);
-      setLoading(false);
+    } catch (error: any) {
+      if (__DEV__) {
+        console.error('❌ Error al obtener ligas del usuario:', error);
+        console.error('Error details:', {
+          message: error?.message,
+          name: error?.name,
+          stack: error?.stack
+        });
+      }
+      
+      // Reintentar en caso de error de red
+      if (retryCount < MAX_RETRIES && 
+          (error?.message?.includes('Network') || 
+           error?.message?.includes('timeout') ||
+           error?.message?.includes('fetch') ||
+           error?.message?.includes('conexión'))) {
+        if (__DEV__) {
+          console.log(`🔄 Reintentando carga de ligas (${retryCount + 1}/${MAX_RETRIES})...`);
+        }
+        // Esperar 1.5 segundos antes de reintentar
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return fetchLigasUsuario(retryCount + 1);
+      }
+      
+      // Si falló después de reintentos, marcar error silenciosamente
+      if (isMountedRef.current) {
+        setLigasLoadError(true);
+        setLigas([]);
+        setLoading(false);
+        setIsRetrying(false);
+      }
+    } finally {
+      // Asegurar que el flag se libera SIEMPRE
+      isLoadingLigasRef.current = false;
+      
+      // Timeout de seguridad: si después de 500ms loading sigue en true, forzar a false
+      if (isMountedRef.current) {
+        setTimeout(() => {
+          if (isMountedRef.current && loading) {
+            if (__DEV__) {
+              console.warn('⚠️  Timeout de seguridad: forzando loading = false');
+            }
+            setLoading(false);
+            setIsRetrying(false);
+          }
+        }, 500);
+      }
     }
-  }, []);
+  }, [loading]);
 
   // useEffect inicial para cargar datos
   useEffect(() => {
+    isMountedRef.current = true;
+    
     // Verificar si el usuario es admin
     LoginService.isAdmin().then(setIsAdmin);
     
-    fetchLigasUsuario();
+    // Timeout de seguridad: si después de 5 segundos aún está loading, algo falló
+    const safetyTimeout = setTimeout(() => {
+      if (isMountedRef.current && loading && ligas.length === 0) {
+        if (__DEV__) {
+          console.warn('⚠️  Timeout de seguridad alcanzado: loading aún en true después de 5s');
+        }
+        setLoading(false);
+        setLigasLoadError(true);
+      }
+    }, 5000);
+    
+    fetchLigasUsuario().finally(() => {
+      clearTimeout(safetyTimeout);
+    });
 
     const fetchMatches = async () => {
       try {
@@ -197,6 +317,10 @@ export const Home = ({ navigation, route }: HomeProps) => {
     };
 
     fetchMatches();
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, [fetchLigasUsuario]);
 
 
@@ -504,9 +628,40 @@ export const Home = ({ navigation, route }: HomeProps) => {
             })
           ) : (
             <View style={{ padding: 20, alignItems: 'center' }}>
-              <Text style={{ color: '#cbd5e1', textAlign: 'center', marginBottom: 8 }}>
-                No participas en ninguna liga. Crea una nueva liga o únete a una existente para empezar a competir con amigos.
-              </Text>
+              {ligasLoadError ? (
+                <>
+                  <Text style={{ color: '#f87171', textAlign: 'center', marginBottom: 12, fontSize: 15, fontWeight: '600' }}>
+                    No se pudieron cargar tus ligas
+                  </Text>
+                  <Text style={{ color: '#94a3b8', textAlign: 'center', marginBottom: 16, fontSize: 13 }}>
+                    Verifica tu conexión a internet
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => fetchLigasUsuario()}
+                    disabled={isRetrying}
+                    style={{
+                      backgroundColor: '#3b82f6',
+                      paddingHorizontal: 24,
+                      paddingVertical: 12,
+                      borderRadius: 8,
+                      opacity: isRetrying ? 0.6 : 1,
+                    }}
+                  >
+                    {isRetrying ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <ActivityIndicator size="small" color="#ffffff" />
+                        <Text style={{ color: '#ffffff', fontWeight: '600' }}>Reintentando...</Text>
+                      </View>
+                    ) : (
+                      <Text style={{ color: '#ffffff', fontWeight: '600' }}>Reintentar</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <Text style={{ color: '#cbd5e1', textAlign: 'center', marginBottom: 8 }}>
+                  No participas en ninguna liga. Crea una nueva liga o únete a una existente para empezar a competir con amigos.
+                </Text>
+              )}
             </View>
           )}
         </View>

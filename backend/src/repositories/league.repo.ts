@@ -103,22 +103,38 @@ export const LeagueRepo = {
             include: { members: { include: { user: true } }, leader: true },
         }),
 
-    getByUserId: (userId: string) =>
-        prisma.league.findMany({
-            where: { members: { some: { userId } } },
-            select: {
-                id: true,
-                name: true,
-                code: true,
-                division: true,
-                isPremium: true,
-                currentJornada: true,
-                createdAt: true,
-                leader: { select: { id: true, name: true, email: true } },
-                members: { select: { userId: true, points: true } },
-            },
-            orderBy: { createdAt: "desc" },
-        }),
+    getByUserId: async (userId: string) => {
+        try {
+            // Validar userId
+            if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+                console.warn('⚠️  getByUserId called with invalid userId:', userId);
+                return [];
+            }
+            
+            const leagues = await prisma.league.findMany({
+                where: { members: { some: { userId } } },
+                select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    division: true,
+                    isPremium: true,
+                    currentJornada: true,
+                    createdAt: true,
+                    leader: { select: { id: true, name: true, email: true } },
+                    members: { select: { userId: true, points: true } },
+                },
+                orderBy: { createdAt: "desc" },
+            });
+            
+            console.log(`✅ Found ${leagues.length} leagues for user ${userId}`);
+            return leagues || [];
+        } catch (error: any) {
+            console.error('❌ Error in getByUserId:', error);
+            // En caso de error, devolver array vacío en lugar de fallar
+            return [];
+        }
+    },
 
     getByCode: (code: string) =>
         prisma.league.findFirst({
