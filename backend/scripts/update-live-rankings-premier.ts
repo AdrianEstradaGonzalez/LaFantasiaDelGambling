@@ -334,7 +334,8 @@ export async function updateLiveLeagueRankingsPremier() {
 
         if (!squad) continue;
 
-        let totalPoints = 0;
+        // Puntos de la jornada ACTUAL en vivo
+        let currentJornadaPoints = 0;
 
         // Sumar puntos de los jugadores de esta jornada (x2 si es capitán)
         for (const squadPlayer of squad.players) {
@@ -343,11 +344,27 @@ export async function updateLiveLeagueRankingsPremier() {
             const points = squadPlayer.isCaptain 
               ? playerStats.points * 2  // Capitán: puntos x2
               : playerStats.points;      // Jugador normal
-            totalPoints += points;
+            currentJornadaPoints += points;
           }
         }
 
-        // Actualizar con el total de puntos de la jornada (no sumar a puntos anteriores)
+        // Obtener pointsPerJornada existente (jornadas CERRADAS)
+        const currentPointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
+        
+        // Calcular total de jornadas CERRADAS (todas excepto la actual)
+        let closedJornadasTotal = 0;
+        for (const [jornadaKey, points] of Object.entries(currentPointsPerJornada)) {
+          if (Number(jornadaKey) !== jornada) {
+            closedJornadasTotal += points || 0;
+          }
+        }
+
+        // TOTAL ACUMULADO = jornadas cerradas + jornada actual en vivo
+        const totalAccumulatedPoints = closedJornadasTotal + currentJornadaPoints;
+
+        // Actualizar pointsPerJornada con los puntos de la jornada actual en vivo
+        currentPointsPerJornada[jornada.toString()] = currentJornadaPoints;
+
         await prisma.leagueMember.update({
           where: {
             leagueId_userId: {
@@ -355,7 +372,10 @@ export async function updateLiveLeagueRankingsPremier() {
               userId: member.userId,
             },
           },
-          data: { points: totalPoints }, // Reemplazar, no sumar
+          data: { 
+            points: totalAccumulatedPoints,
+            pointsPerJornada: currentPointsPerJornada
+          },
         });
         
         // Obtener el nombre del usuario
@@ -365,7 +385,7 @@ export async function updateLiveLeagueRankingsPremier() {
         });
         
         const userName = user?.name || user?.email || 'Usuario';
-        console.log(`  ✅ ${userName}: ${totalPoints} puntos EN VIVO`);
+        console.log(`  ✅ ${userName}: ${totalAccumulatedPoints} pts TOTAL (${closedJornadasTotal} cerradas + ${currentJornadaPoints} J${jornada} en vivo)`);
         updatedMembers++;
       }
     }
