@@ -103,4 +103,18 @@ export const playerStatsRoutes: FastifyPluginAsync = async (app) => {
     { preHandler: jwtAuth },
     PlayerStatsController.getNextOpponentAnalysis
   );
+
+  // Reevaluar todas las apuestas pendientes (POST) - Para cronjob
+  app.post(
+    '/player-stats/reevaluate-all-bets',
+    { preHandler: cronAuth },
+    PlayerStatsController.reevaluateAllBets
+  );
+
+  // Reevaluar todas las apuestas pendientes (GET) - Para cronjobs que solo soportan GET
+  app.get(
+    '/player-stats/reevaluate-all-bets',
+    { preHandler: cronAuth },
+    PlayerStatsController.reevaluateAllBets
+  );
 };

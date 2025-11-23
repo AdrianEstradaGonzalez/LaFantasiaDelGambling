@@ -28,6 +28,7 @@
     "sync-j12-points": "tsx scripts/sync-j12-points-from-realtime.ts",
     "test-sync-points": "tsx scripts/test-sync-jornada-points.ts",
     "fix-j13-budgets": "tsx scripts/fix-j13-initial-budgets.ts",
+    "reevaluate-bets": "tsx scripts/reevaluate-all-bets.ts",
     "test-next-closure": "tsx scripts/test-next-closure-simulation.ts",
     "clean-all-data": "tsx scripts/clean-all-data.ts",
     "restore-backup": "tsx scripts/restore-from-backup.ts",

@@ -4,6 +4,7 @@ import { AppError } from '../utils/errors.js';
 import axios from 'axios';
 import { updateLiveLeagueRankings } from '../workers/update-live-rankings-in-progress.js';
 import { PrismaClient } from '@prisma/client';
+import { reevaluateCurrentJornadaBets } from '../services/betEvaluation.service.js';
 
 const prisma = new PrismaClient();
 
@@ -468,6 +469,153 @@ export class PlayerStatsController {
       return reply.status(500).send({
         success: false,
         message: error?.message || 'Error al analizar próximo rival',
+      });
+    }
+  }
+
+  /**
+   * Endpoint para cronjob: Reevaluar TODAS las apuestas de la jornada actual de TODAS las ligas
+   * POST /api/player-stats/reevaluate-all-bets
+   * 
+   * Este endpoint está diseñado para ser llamado por un cronjob programado.
+   * Reevalúa todas las apuestas (ganadas, perdidas y pendientes) de la jornada actual
+   * para verificar que se han evaluado correctamente y corrige cualquier discrepancia.
+   */
+  static async reevaluateAllBets(req: FastifyRequest, reply: FastifyReply) {
+    try {
+      console.log('\n' + '═'.repeat(70));
+      console.log('🔄 CRONJOB: Reevaluación de apuestas de jornada actual');
+      console.log('═'.repeat(70));
+      console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}\n`);
+
+      // Obtener todas las ligas activas
+      const leagues = await prisma.league.findMany({
+        select: {
+          id: true,
+          name: true,
+          division: true,
+          currentJornada: true,
+          _count: {
+            select: {
+              members: true
+            }
+          }
+        },
+        orderBy: {
+          division: 'asc'
+        }
+      });
+
+      if (leagues.length === 0) {
+        console.log('✨ No hay ligas registradas\n');
+        return reply.status(200).send({
+          success: true,
+          message: 'No hay ligas para evaluar',
+          data: {
+            leagues: 0,
+            evaluated: 0,
+            corrected: 0,
+            confirmed: 0,
+            pending: 0,
+            errors: []
+          }
+        });
+      }
+
+      console.log(`📊 Total de ligas: ${leagues.length}`);
+      
+      // Agrupar por división
+      const leaguesByDivision = {
+        primera: leagues.filter(l => l.division === 'primera'),
+        segunda: leagues.filter(l => l.division === 'segunda'),
+        premier: leagues.filter(l => l.division === 'premier')
+      };
+
+      console.log('📋 Por división:');
+      console.log(`   - Primera: ${leaguesByDivision.primera.length}`);
+      console.log(`   - Segunda: ${leaguesByDivision.segunda.length}`);
+      console.log(`   - Premier: ${leaguesByDivision.premier.length}\n`);
+
+      let totalEvaluated = 0;
+      let totalCorrected = 0;
+      let totalConfirmed = 0;
+      let totalPending = 0;
+      const allErrors: string[] = [];
+      const allCorrections: any[] = [];
+
+      // Reevaluar cada liga
+      for (const league of leagues) {
+        try {
+          console.log(`🏆 ${league.name} (${league.division}) - Jornada ${league.currentJornada}`);
+          
+          const result = await reevaluateCurrentJornadaBets(league.id);
+          
+          totalEvaluated += result.evaluated;
+          totalCorrected += result.corrected;
+          totalConfirmed += result.confirmed;
+          totalPending += result.stillPending;
+          allErrors.push(...result.errors);
+
+          // Guardar correcciones
+          const corrections = result.details.filter(d => d.corrected);
+          if (corrections.length > 0) {
+            allCorrections.push({
+              leagueName: league.name,
+              division: league.division,
+              jornada: league.currentJornada,
+              corrections
+            });
+          }
+
+          console.log(`   📊 ${result.evaluated} evaluadas | 🔧 ${result.corrected} corregidas | ✅ ${result.confirmed} confirmadas`);
+
+          // Delay entre ligas
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error: any) {
+          const errorMsg = `Error en liga ${league.name}: ${error.message}`;
+          console.error(`   💥 ${errorMsg}`);
+          allErrors.push(errorMsg);
+        }
+      }
+
+      console.log('\n' + '═'.repeat(70));
+      console.log('📊 RESUMEN FINAL');
+      console.log('═'.repeat(70));
+      console.log(`Ligas procesadas: ${leagues.length}`);
+      console.log(`📊 Total evaluadas: ${totalEvaluated}`);
+      console.log(`🔧 Corregidas: ${totalCorrected}`);
+      console.log(`✅ Confirmadas: ${totalConfirmed}`);
+      console.log(`⏳ Pendientes: ${totalPending}`);
+      if (allErrors.length > 0) {
+        console.log(`💥 Errores: ${allErrors.length}`);
+      }
+      if (totalCorrected > 0) {
+        console.log(`\n⚠️  SE DETECTARON ${totalCorrected} APUESTAS MAL EVALUADAS Y SE CORRIGIERON`);
+      }
+      console.log('═'.repeat(70) + '\n');
+
+      return reply.status(200).send({
+        success: true,
+        message: totalCorrected > 0 
+          ? `Reevaluación completada: ${totalCorrected} apuestas corregidas de ${totalEvaluated} evaluadas`
+          : `Reevaluación completada: todas las apuestas están correctas (${totalEvaluated} verificadas)`,
+        data: {
+          leagues: leagues.length,
+          evaluated: totalEvaluated,
+          corrected: totalCorrected,
+          confirmed: totalConfirmed,
+          pending: totalPending,
+          corrections: allCorrections,
+          errors: allErrors
+        }
+      });
+    } catch (error: any) {
+      console.error('\n❌ Error fatal en reevaluación:', error);
+
+      return reply.status(500).send({
+        success: false,
+        message: error?.message || 'Error al reevaluar apuestas',
+        error: error.toString()
       });
     }
   }

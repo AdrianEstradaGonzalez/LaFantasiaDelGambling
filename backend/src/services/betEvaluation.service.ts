@@ -705,8 +705,221 @@ async function evaluateBetsRealTime(leagueId: string, jornada: number) {
   return { bets: evaluatedBets, userBalances: userBalancesArray, matchesEvaluated: 0 };
 }
 
+/**
+ * Reevalúa TODAS las apuestas de la jornada actual de una liga
+ * Incluye: ganadas, perdidas y pendientes
+ * Compara con los resultados reales de la API y corrige discrepancias
+ */
+export async function reevaluateCurrentJornadaBets(leagueId: string): Promise<{
+  evaluated: number;
+  corrected: number;
+  confirmed: number;
+  stillPending: number;
+  errors: string[];
+  details: Array<{
+    betId: string;
+    oldStatus: string;
+    newStatus: string;
+    corrected: boolean;
+    reason: string;
+  }>;
+}> {
+  console.log(`\n🔍 Reevaluando apuestas de jornada actual - Liga ${leagueId}`);
+
+  // Obtener la liga y su jornada actual
+  const league = await prisma.league.findUnique({
+    where: { id: leagueId },
+    select: { id: true, name: true, currentJornada: true, division: true }
+  });
+
+  if (!league) {
+    throw new AppError(404, 'LEAGUE_NOT_FOUND', 'Liga no encontrada');
+  }
+
+  const currentJornada = league.currentJornada;
+  console.log(`   Liga: ${league.name} (${league.division})`);
+  console.log(`   Jornada actual: ${currentJornada}`);
+
+  // Obtener TODAS las apuestas de la jornada actual (ganadas, perdidas, pendientes)
+  const allBets = await prisma.bet.findMany({
+    where: {
+      leagueId,
+      jornada: currentJornada
+    },
+    orderBy: {
+      matchId: 'asc'
+    }
+  });
+
+  console.log(`   📊 Total apuestas a reevaluar: ${allBets.length}`);
+  console.log(`      - Ganadas: ${allBets.filter(b => b.status === 'won').length}`);
+  console.log(`      - Perdidas: ${allBets.filter(b => b.status === 'lost').length}`);
+  console.log(`      - Pendientes: ${allBets.filter(b => b.status === 'pending').length}`);
+
+  if (allBets.length === 0) {
+    console.log('   ✨ No hay apuestas en esta jornada');
+    return { evaluated: 0, corrected: 0, confirmed: 0, stillPending: 0, errors: [], details: [] };
+  }
+
+  // Agrupar por matchId para minimizar llamadas a la API
+  const betsByMatch = new Map<number, any[]>();
+  for (const bet of allBets) {
+    if (!betsByMatch.has(bet.matchId)) {
+      betsByMatch.set(bet.matchId, []);
+    }
+    betsByMatch.get(bet.matchId)!.push(bet);
+  }
+
+  let evaluated = 0;
+  let corrected = 0;
+  let confirmed = 0;
+  let stillPending = 0;
+  const errors: string[] = [];
+  const details: Array<{
+    betId: string;
+    oldStatus: string;
+    newStatus: string;
+    corrected: boolean;
+    reason: string;
+  }> = [];
+
+  // Procesar cada partido
+  for (const [matchId, bets] of betsByMatch.entries()) {
+    try {
+      console.log(`\n   🏟️  Partido ${matchId} (${bets.length} apuestas)`);
+      
+      // Obtener estadísticas del partido
+      let stats: MatchStatistics;
+      try {
+        stats = await getMatchStatistics(matchId);
+        console.log(`      Resultado: ${stats.homeTeam} ${stats.homeGoals}-${stats.awayGoals} ${stats.awayTeam}`);
+      } catch (error: any) {
+        // Si el partido no ha terminado, mantener como pending
+        if (error.code === 'MATCH_NOT_FINISHED') {
+          console.log(`      ⏳ Partido aún no finalizado`);
+          for (const bet of bets) {
+            evaluated++;
+            if (bet.status !== 'pending') {
+              // Corregir: debería ser pending
+              await prisma.bet.update({
+                where: { id: bet.id },
+                data: { status: 'pending' }
+              });
+              corrected++;
+              details.push({
+                betId: bet.id,
+                oldStatus: bet.status,
+                newStatus: 'pending',
+                corrected: true,
+                reason: 'Partido no finalizado, marcado como pending'
+              });
+              console.log(`      🔧 Apuesta ${bet.id}: ${bet.status} → pending (partido no finalizado)`);
+            } else {
+              stillPending++;
+              details.push({
+                betId: bet.id,
+                oldStatus: bet.status,
+                newStatus: bet.status,
+                corrected: false,
+                reason: 'Partido no finalizado'
+              });
+            }
+          }
+          continue;
+        }
+        throw error;
+      }
+
+      // Evaluar cada apuesta de este partido
+      for (const bet of bets) {
+        try {
+          const oldStatus = bet.status;
+          const evaluation = evaluateBet(bet, stats);
+          const newStatus = evaluation.won ? 'won' : 'lost';
+          
+          evaluated++;
+
+          // Comparar con el estado actual
+          if (oldStatus !== newStatus) {
+            // DISCREPANCIA DETECTADA - Corregir
+            await prisma.bet.update({
+              where: { id: bet.id },
+              data: {
+                status: newStatus,
+                evaluatedAt: new Date(),
+                apiValue: evaluation.actualResult
+              }
+            });
+
+            corrected++;
+            const emoji = newStatus === 'won' ? '✅' : '❌';
+            console.log(`      🔧 CORREGIDA - Apuesta ${bet.id}:`);
+            console.log(`         ${oldStatus} → ${newStatus} ${emoji}`);
+            console.log(`         Tipo: ${bet.betLabel}`);
+            console.log(`         Resultado: ${evaluation.actualResult}`);
+
+            details.push({
+              betId: bet.id,
+              oldStatus,
+              newStatus,
+              corrected: true,
+              reason: `Evaluación incorrecta: era "${oldStatus}" pero debería ser "${newStatus}". ${evaluation.actualResult}`
+            });
+          } else {
+            // Estado correcto - solo actualizar evaluatedAt y apiValue si faltaban
+            if (!bet.evaluatedAt || !bet.apiValue) {
+              await prisma.bet.update({
+                where: { id: bet.id },
+                data: {
+                  evaluatedAt: new Date(),
+                  apiValue: evaluation.actualResult
+                }
+              });
+            }
+
+            confirmed++;
+            const emoji = newStatus === 'won' ? '✅' : '❌';
+            console.log(`      ✔️  Confirmada - Apuesta ${bet.id}: ${newStatus} ${emoji}`);
+
+            details.push({
+              betId: bet.id,
+              oldStatus,
+              newStatus,
+              corrected: false,
+              reason: `Evaluación confirmada como correcta: ${newStatus}`
+            });
+          }
+        } catch (error: any) {
+          const errorMsg = `Error reevaluando apuesta ${bet.id}: ${error.message}`;
+          console.error(`      ⚠️  ${errorMsg}`);
+          errors.push(errorMsg);
+        }
+      }
+
+      // Pequeño delay para no saturar la API
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } catch (error: any) {
+      const errorMsg = `Error obteniendo estadísticas del partido ${matchId}: ${error.message}`;
+      console.error(`   ⚠️  ${errorMsg}`);
+      errors.push(errorMsg);
+    }
+  }
+
+  console.log(`\n   📊 Resumen de reevaluación:`);
+  console.log(`      Total evaluadas: ${evaluated}`);
+  console.log(`      🔧 Corregidas: ${corrected}`);
+  console.log(`      ✅ Confirmadas: ${confirmed}`);
+  console.log(`      ⏳ Aún pendientes: ${stillPending}`);
+  if (errors.length > 0) {
+    console.log(`      ⚠️  Errores: ${errors.length}`);
+  }
+
+  return { evaluated, corrected, confirmed, stillPending, errors, details };
+}
+
 export const BetEvaluationService = {
   evaluatePendingBets,
   evaluateAllPendingBets,
   evaluateBetsRealTime,
+  reevaluateCurrentJornadaBets,
 };
