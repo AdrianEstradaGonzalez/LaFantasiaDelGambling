@@ -247,19 +247,102 @@ export class PlayerStatsController {
         }
       }
 
-      console.log('\n✅ Actualización Segunda División completada');
+      console.log('\n✅ Estadísticas Segunda División cargadas');
       console.log(`   - Cargados: ${loaded}`);
       console.log(`   - Ya existían: ${alreadyExists}`);
       console.log(`   - Errores: ${failed}`);
 
+      // PASO 2: Actualizar puntos de los usuarios en pointsPerJornada
+      console.log('\n📊 Actualizando puntos de usuarios en Segunda División...');
+      
+      const segundaLeagues = await prisma.league.findMany({
+        where: { division: 'segunda' },
+        include: { members: true },
+      });
+
+      console.log(`🏆 Ligas de Segunda División encontradas: ${segundaLeagues.length}`);
+
+      let updatedMembers = 0;
+
+      for (const league of segundaLeagues) {
+        console.log(`\n📋 Procesando liga: ${league.name}`);
+        
+        for (const member of league.members) {
+          const squad = await prisma.squad.findUnique({
+            where: { userId_leagueId: { userId: member.userId, leagueId: member.leagueId } },
+            include: { players: { select: { playerId: true, isCaptain: true } } },
+          });
+
+          if (!squad) continue;
+
+          // Calcular puntos de la jornada actual
+          let currentJornadaPoints = 0;
+          
+          for (const squadPlayer of squad.players) {
+            const playerStats = await (prisma as any).playerSegundaStats.findUnique({
+              where: {
+                playerId_jornada_season: {
+                  playerId: squadPlayer.playerId,
+                  jornada: currentJornada,
+                  season: 2025
+                }
+              }
+            });
+
+            if (playerStats) {
+              const points = squadPlayer.isCaptain 
+                ? playerStats.totalPoints * 2 
+                : playerStats.totalPoints;
+              currentJornadaPoints += points;
+            }
+          }
+
+          // Obtener pointsPerJornada existente
+          const currentPointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
+          
+          // Calcular total de jornadas cerradas (todas excepto la actual)
+          let closedJornadasTotal = 0;
+          for (const [jornadaKey, points] of Object.entries(currentPointsPerJornada)) {
+            if (Number(jornadaKey) !== currentJornada) {
+              closedJornadasTotal += points || 0;
+            }
+          }
+
+          // Total acumulado
+          const totalAccumulatedPoints = closedJornadasTotal + currentJornadaPoints;
+
+          // Actualizar pointsPerJornada
+          currentPointsPerJornada[currentJornada.toString()] = currentJornadaPoints;
+
+          await prisma.leagueMember.update({
+            where: { leagueId_userId: { leagueId: member.leagueId, userId: member.userId } },
+            data: { 
+              points: totalAccumulatedPoints,
+              pointsPerJornada: currentPointsPerJornada
+            },
+          });
+
+          const user = await prisma.user.findUnique({ 
+            where: { id: member.userId }, 
+            select: { name: true, email: true } 
+          });
+          const userName = user?.name || user?.email || 'Usuario';
+          console.log(`  ✅ ${userName}: ${totalAccumulatedPoints} pts (${closedJornadasTotal} + ${currentJornadaPoints} J${currentJornada})`);
+          updatedMembers++;
+        }
+      }
+
+      console.log(`\n🎉 Actualización completa Segunda División: ${updatedMembers} miembros actualizados`);
+
       return reply.status(200).send({
         success: true,
-        message: `Actualización de estadísticas Segunda División completada`,
+        message: `Actualización Segunda División completada: ${loaded} estadísticas cargadas, ${updatedMembers} usuarios actualizados`,
         stats: {
           loaded,
           alreadyExists,
           failed,
-          total: allPlayers.length
+          total: allPlayers.length,
+          usersUpdated: updatedMembers
         }
       });
     } catch (error: any) {
@@ -360,19 +443,102 @@ export class PlayerStatsController {
         }
       }
 
-      console.log('\n✅ Actualización Premier League completada');
+      console.log('\n✅ Estadísticas Premier League cargadas');
       console.log(`   - Cargados: ${loaded}`);
       console.log(`   - Ya existían: ${alreadyExists}`);
       console.log(`   - Errores: ${failed}`);
 
+      // PASO 2: Actualizar puntos de los usuarios en pointsPerJornada
+      console.log('\n📊 Actualizando puntos de usuarios en Premier League...');
+      
+      const premierLeagues = await prisma.league.findMany({
+        where: { division: 'premier' },
+        include: { members: true },
+      });
+
+      console.log(`🏆 Ligas de Premier League encontradas: ${premierLeagues.length}`);
+
+      let updatedMembers = 0;
+
+      for (const league of premierLeagues) {
+        console.log(`\n📋 Procesando liga: ${league.name}`);
+        
+        for (const member of league.members) {
+          const squad = await prisma.squad.findUnique({
+            where: { userId_leagueId: { userId: member.userId, leagueId: member.leagueId } },
+            include: { players: { select: { playerId: true, isCaptain: true } } },
+          });
+
+          if (!squad) continue;
+
+          // Calcular puntos de la jornada actual
+          let currentJornadaPoints = 0;
+          
+          for (const squadPlayer of squad.players) {
+            const playerStats = await (prisma as any).playerPremierStats.findUnique({
+              where: {
+                playerId_jornada_season: {
+                  playerId: squadPlayer.playerId,
+                  jornada: currentJornada,
+                  season: 2025
+                }
+              }
+            });
+
+            if (playerStats) {
+              const points = squadPlayer.isCaptain 
+                ? playerStats.totalPoints * 2 
+                : playerStats.totalPoints;
+              currentJornadaPoints += points;
+            }
+          }
+
+          // Obtener pointsPerJornada existente
+          const currentPointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
+          
+          // Calcular total de jornadas cerradas (todas excepto la actual)
+          let closedJornadasTotal = 0;
+          for (const [jornadaKey, points] of Object.entries(currentPointsPerJornada)) {
+            if (Number(jornadaKey) !== currentJornada) {
+              closedJornadasTotal += points || 0;
+            }
+          }
+
+          // Total acumulado
+          const totalAccumulatedPoints = closedJornadasTotal + currentJornadaPoints;
+
+          // Actualizar pointsPerJornada
+          currentPointsPerJornada[currentJornada.toString()] = currentJornadaPoints;
+
+          await prisma.leagueMember.update({
+            where: { leagueId_userId: { leagueId: member.leagueId, userId: member.userId } },
+            data: { 
+              points: totalAccumulatedPoints,
+              pointsPerJornada: currentPointsPerJornada
+            },
+          });
+
+          const user = await prisma.user.findUnique({ 
+            where: { id: member.userId }, 
+            select: { name: true, email: true } 
+          });
+          const userName = user?.name || user?.email || 'Usuario';
+          console.log(`  ✅ ${userName}: ${totalAccumulatedPoints} pts (${closedJornadasTotal} + ${currentJornadaPoints} J${currentJornada})`);
+          updatedMembers++;
+        }
+      }
+
+      console.log(`\n🎉 Actualización completa Premier League: ${updatedMembers} miembros actualizados`);
+
       return reply.status(200).send({
         success: true,
-        message: `Actualización de estadísticas Premier League completada`,
+        message: `Actualización Premier League completada: ${loaded} estadísticas cargadas, ${updatedMembers} usuarios actualizados`,
         stats: {
           loaded,
           alreadyExists,
           failed,
-          total: allPlayers.length
+          total: allPlayers.length,
+          usersUpdated: updatedMembers
         }
       });
     } catch (error: any) {
