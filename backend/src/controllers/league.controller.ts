@@ -153,7 +153,7 @@ try {
   req.log.info(`✅ User ${userId} has ${safeLeagues.length} leagues`);
   
   // Log de las ligas encontradas para debugging
-  if (safeLeagues.length > 0 && __DEV__) {
+  if (safeLeagues.length > 0 && process.env.NODE_ENV === 'development') {
     req.log.debug(`Leagues: ${safeLeagues.map(l => l.name).join(', ')}`);
   }
   
