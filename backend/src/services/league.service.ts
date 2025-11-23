@@ -279,7 +279,15 @@ export const LeagueService = {
 
             // Obtener las estadísticas de todos los jugadores de la plantilla para esta jornada
             const playerIds = squad.players.map((p: any) => p.playerId);
-            const playerStats = await prisma.playerStats.findMany({
+            
+            // Determinar qué tabla de estadísticas usar según la división de la liga
+            const statsTable = league.division === 'segunda' 
+              ? (prisma as any).playerSegundaStats
+              : league.division === 'premier'
+              ? (prisma as any).playerPremierStats
+              : prisma.playerStats;
+            
+            const playerStats = await statsTable.findMany({
               where: {
                 playerId: { in: playerIds },
                 jornada: currentJornada,
@@ -418,7 +426,15 @@ export const LeagueService = {
 
             // Obtener las estadísticas de todos los jugadores de la plantilla para esta jornada
             const playerIds = squad.players.map((p: any) => p.playerId);
-            const playerStats = await prisma.playerStats.findMany({
+            
+            // Determinar qué tabla de estadísticas usar según la división de la liga
+            const statsTable = league.division === 'segunda' 
+              ? (prisma as any).playerSegundaStats
+              : league.division === 'premier'
+              ? (prisma as any).playerPremierStats
+              : prisma.playerStats;
+            
+            const playerStats = await statsTable.findMany({
               where: {
                 playerId: { in: playerIds },
                 jornada: jornada,
@@ -608,7 +624,21 @@ getLeaguesByUser: (userId: string) =>
         }
 
         const playerIds = squad.players.map((p: any) => p.playerId);
-        const playerStats = await prisma.playerStats.findMany({
+        
+        // Determinar qué tabla de estadísticas usar según la división de la liga
+        const statsTable = league.division === 'segunda' 
+          ? (prisma as any).playerSegundaStats
+          : league.division === 'premier'
+          ? (prisma as any).playerPremierStats
+          : prisma.playerStats;
+        
+        const playerTable = league.division === 'segunda'
+          ? (prisma as any).playerSegunda
+          : league.division === 'premier'
+          ? (prisma as any).playerPremier
+          : prisma.player;
+        
+        const playerStats = await statsTable.findMany({
           where: {
             playerId: { in: playerIds },
             jornada: currentJornada,

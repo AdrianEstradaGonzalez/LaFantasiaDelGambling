@@ -161,36 +161,112 @@ export class PlayerStatsController {
   /**
    * Actualizar estadísticas de Segunda División para una jornada (cron)
    * GET/POST /player-stats/update-jornada-segunda
+   * 
+   * Este endpoint debe cargar las estadísticas bajo demanda usando el mismo sistema
+   * que Primera División: PlayerStatsService.getPlayerStatsForJornada
    */
   static async updateJornadaStatsSegunda(req: FastifyRequest, reply: FastifyReply) {
     try {
       console.log('\n🟡 Endpoint /player-stats/update-jornada-segunda llamado');
       console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`);
 
-      const { exec } = await import('child_process');
-      const { promisify } = await import('util');
-      const execPromise = promisify(exec);
-      
-      const { stdout, stderr } = await execPromise('npx tsx scripts/update-live-rankings-segunda.ts', {
-        cwd: process.cwd(),
+      // Obtener la jornada actual de las ligas de Segunda División
+      const segundaLeague = await (prisma as any).league.findFirst({
+        where: { division: 'segunda' },
+        select: { currentJornada: true, name: true }
       });
-      
-      console.log('✅ Actualización Segunda División completada');
-      if (stdout) console.log('STDOUT:', stdout);
-      if (stderr) console.error('STDERR:', stderr);
+
+      if (!segundaLeague) {
+        console.warn('⚠️  No se encontraron ligas de Segunda División');
+        return reply.status(404).send({
+          success: false,
+          message: 'No se encontraron ligas de Segunda División'
+        });
+      }
+
+      const currentJornada = segundaLeague.currentJornada;
+      console.log(`📅 Jornada actual Segunda División: ${currentJornada}`);
+
+      // Obtener todos los jugadores de Segunda División
+      const allPlayers = await (prisma as any).playerSegunda.findMany({
+        select: { id: true, name: true, teamName: true }
+      });
+
+      console.log(`👥 Total de jugadores Segunda División: ${allPlayers.length}`);
+      console.log(`📊 Cargando estadísticas de la jornada ${currentJornada}...\n`);
+
+      let loaded = 0;
+      let failed = 0;
+      let alreadyExists = 0;
+
+      // Cargar estadísticas para cada jugador en la jornada actual
+      for (const player of allPlayers) {
+        try {
+          // Verificar si ya existen estadísticas
+          const existing = await (prisma as any).playerSegundaStats.findUnique({
+            where: {
+              playerId_jornada_season: {
+                playerId: player.id,
+                jornada: currentJornada,
+                season: 2025
+              }
+            }
+          });
+
+          if (existing) {
+            alreadyExists++;
+            continue;
+          }
+
+          // Cargar estadísticas usando el servicio (con división='segunda')
+          await PlayerStatsService.getPlayerStatsForJornada(
+            player.id,
+            currentJornada,
+            { 
+              season: 2025, 
+              forceRefresh: true,
+              division: 'segunda'
+            }
+          );
+
+          loaded++;
+          
+          if (loaded % 10 === 0) {
+            console.log(`   Progreso: ${loaded}/${allPlayers.length - alreadyExists} jugadores procesados`);
+          }
+
+          // Pequeño delay para no saturar la API
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+        } catch (error: any) {
+          failed++;
+          if (failed <= 5) { // Solo mostrar los primeros 5 errores
+            console.error(`   ❌ Error con ${player.name}: ${error.message}`);
+          }
+        }
+      }
+
+      console.log('\n✅ Actualización Segunda División completada');
+      console.log(`   - Cargados: ${loaded}`);
+      console.log(`   - Ya existían: ${alreadyExists}`);
+      console.log(`   - Errores: ${failed}`);
 
       return reply.status(200).send({
         success: true,
-        message: 'Actualización de rankings Segunda División completada',
-        output: stdout
+        message: `Actualización de estadísticas Segunda División completada`,
+        stats: {
+          loaded,
+          alreadyExists,
+          failed,
+          total: allPlayers.length
+        }
       });
     } catch (error: any) {
       console.error('❌ Error ejecutando actualización Segunda División:', error);
 
       return reply.status(500).send({
         success: false,
-        message: error?.message || 'Error al actualizar rankings Segunda División',
-        output: error.stdout
+        message: error?.message || 'Error al actualizar estadísticas Segunda División'
       });
     }
   }
