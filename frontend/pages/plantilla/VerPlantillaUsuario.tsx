@@ -259,16 +259,51 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
               // Forzar refresh si la jornada está en progreso para obtener puntos actualizados
               const shouldRefresh = statusActual === 'in_progress' && !viewingHistorical;
               
+              // 🔍 Obtener la división de cada jugador para ajustar la jornada correctamente
+              // Los jugadores de Segunda División van 2 jornadas adelante de Primera División
+              const playerDivisions: Record<number, string> = {};
+              try {
+                const divisionPromises = ids.map(async (pid) => {
+                  try {
+                    const player = await PlayerService.getPlayerById(pid);
+                    return { pid, division: player.division || 'primera' };
+                  } catch {
+                    return { pid, division: 'primera' };
+                  }
+                });
+                const divisionResults = await Promise.all(divisionPromises);
+                for (const result of divisionResults) {
+                  playerDivisions[result.pid] = result.division;
+                }
+              } catch (err) {
+                console.warn('[VerPlantillaUsuario] Error obteniendo divisiones de jugadores:', err);
+              }
+              
               const chunkSize = 8;
               const batches: number[][] = [];
               for (let i = 0; i < ids.length; i += chunkSize) batches.push(ids.slice(i, i + chunkSize));
 
               for (const batch of batches) {
-                const promises = batch.map(pid => 
-                  PlayerStatsService.getPlayerJornadaStats(pid, jornadaToLoad!, { refresh: shouldRefresh })
+                const promises = batch.map(pid => {
+                  // ✨ CLAVE: Ajustar la jornada según la división del JUGADOR
+                  // Si el jugador es de segunda y la liga es de primera, el jugador va 2 jornadas adelante
+                  const playerDiv = playerDivisions[pid] || 'primera';
+                  let jornadaAjustada = jornadaToLoad!;
+                  
+                  // Si la liga es de primera pero el jugador es de segunda, sumar 2
+                  if (division === 'primera' && playerDiv === 'segunda') {
+                    jornadaAjustada = jornadaToLoad! + 2;
+                  }
+                  // Si la liga es de segunda pero el jugador es de primera, restar 2
+                  else if (division === 'segunda' && playerDiv === 'primera') {
+                    jornadaAjustada = Math.max(1, jornadaToLoad! - 2);
+                  }
+                  
+                  return PlayerStatsService.getPlayerJornadaStats(pid, jornadaAjustada, { refresh: shouldRefresh })
                     .then(s => ({ pid, s }))
-                    .catch(() => ({ pid, s: null }))
-                );
+                    .catch(() => ({ pid, s: null }));
+                });
+                
                 const results = await Promise.all(promises);
                 for (const r of results) {
                   if (r.s) {

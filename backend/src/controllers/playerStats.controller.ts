@@ -3,6 +3,9 @@ import { PlayerStatsService } from '../services/playerStats.service.js';
 import { AppError } from '../utils/errors.js';
 import axios from 'axios';
 import { updateLiveLeagueRankings } from '../workers/update-live-rankings-in-progress.js';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 // Helper para obtener jornada actual de la API
 async function getCurrentJornadaFromAPI(): Promise<number> {
@@ -195,36 +198,112 @@ export class PlayerStatsController {
   /**
    * Actualizar estadísticas de Premier League para una jornada (cron)
    * GET/POST /player-stats/update-jornada-premier
+   * 
+   * Este endpoint debe cargar las estadísticas bajo demanda usando el mismo sistema
+   * que Primera y Segunda División: PlayerStatsService.getPlayerStatsForJornada
    */
   static async updateJornadaStatsPremier(req: FastifyRequest, reply: FastifyReply) {
     try {
       console.log('\n🟣 Endpoint /player-stats/update-jornada-premier llamado');
       console.log(`⏰ ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`);
 
-      const { exec } = await import('child_process');
-      const { promisify } = await import('util');
-      const execPromise = promisify(exec);
-      
-      const { stdout, stderr } = await execPromise('npx tsx scripts/update-live-rankings-premier.ts', {
-        cwd: process.cwd(),
+      // Obtener la jornada actual de las ligas Premier
+      const premierLeague = await (prisma as any).league.findFirst({
+        where: { division: 'premier' },
+        select: { currentJornada: true, name: true }
       });
-      
-      console.log('✅ Actualización Premier League completada');
-      if (stdout) console.log('STDOUT:', stdout);
-      if (stderr) console.error('STDERR:', stderr);
+
+      if (!premierLeague) {
+        console.warn('⚠️  No se encontraron ligas de Premier League');
+        return reply.status(404).send({
+          success: false,
+          message: 'No se encontraron ligas de Premier League'
+        });
+      }
+
+      const currentJornada = premierLeague.currentJornada;
+      console.log(`📅 Jornada actual Premier League: ${currentJornada}`);
+
+      // Obtener todos los jugadores de Premier League
+      const allPlayers = await (prisma as any).playerPremier.findMany({
+        select: { id: true, name: true, teamName: true }
+      });
+
+      console.log(`👥 Total de jugadores Premier: ${allPlayers.length}`);
+      console.log(`📊 Cargando estadísticas de la jornada ${currentJornada}...\n`);
+
+      let loaded = 0;
+      let failed = 0;
+      let alreadyExists = 0;
+
+      // Cargar estadísticas para cada jugador en la jornada actual
+      for (const player of allPlayers) {
+        try {
+          // Verificar si ya existen estadísticas
+          const existing = await (prisma as any).playerPremierStats.findUnique({
+            where: {
+              playerId_jornada_season: {
+                playerId: player.id,
+                jornada: currentJornada,
+                season: 2025
+              }
+            }
+          });
+
+          if (existing) {
+            alreadyExists++;
+            continue;
+          }
+
+          // Cargar estadísticas usando el servicio (con división='premier')
+          await PlayerStatsService.getPlayerStatsForJornada(
+            player.id,
+            currentJornada,
+            { 
+              season: 2025, 
+              forceRefresh: true,
+              division: 'premier'
+            }
+          );
+
+          loaded++;
+          
+          if (loaded % 10 === 0) {
+            console.log(`   Progreso: ${loaded}/${allPlayers.length - alreadyExists} jugadores procesados`);
+          }
+
+          // Pequeño delay para no saturar la API
+          await new Promise(resolve => setTimeout(resolve, 300));
+
+        } catch (error: any) {
+          failed++;
+          if (failed <= 5) { // Solo mostrar los primeros 5 errores
+            console.error(`   ❌ Error con ${player.name}: ${error.message}`);
+          }
+        }
+      }
+
+      console.log('\n✅ Actualización Premier League completada');
+      console.log(`   - Cargados: ${loaded}`);
+      console.log(`   - Ya existían: ${alreadyExists}`);
+      console.log(`   - Errores: ${failed}`);
 
       return reply.status(200).send({
         success: true,
-        message: 'Actualización de rankings Premier League completada',
-        output: stdout
+        message: `Actualización de estadísticas Premier League completada`,
+        stats: {
+          loaded,
+          alreadyExists,
+          failed,
+          total: allPlayers.length
+        }
       });
     } catch (error: any) {
       console.error('❌ Error ejecutando actualización Premier League:', error);
 
       return reply.status(500).send({
         success: false,
-        message: error?.message || 'Error al actualizar rankings Premier League',
-        output: error.stdout
+        message: error?.message || 'Error al actualizar estadísticas Premier League'
       });
     }
   }

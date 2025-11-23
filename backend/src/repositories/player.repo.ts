@@ -147,7 +147,7 @@ export class PlayerRepository {
     });
     
     if (playerPrimera) {
-      return playerPrimera;
+      return { ...playerPrimera, division: 'primera' };
     }
     
     // Si no está, buscar en Segunda División
@@ -156,7 +156,7 @@ export class PlayerRepository {
     });
     
     if (playerSegunda) {
-      return playerSegunda;
+      return { ...playerSegunda, division: 'segunda' };
     }
     
     // Si no está, buscar en Premier League
@@ -164,7 +164,11 @@ export class PlayerRepository {
       where: { id },
     });
     
-    return playerPremier;
+    if (playerPremier) {
+      return { ...playerPremier, division: 'premier' };
+    }
+    
+    return null;
   }
 
   /**

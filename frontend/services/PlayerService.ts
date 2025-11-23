@@ -16,6 +16,7 @@ export interface PlayerWithPrice {
   totalPoints?: number; // ✨ Puntuación total de todas las jornadas
   availabilityStatus?: string; // 'AVAILABLE', 'INJURED', 'SUSPENDED'
   availabilityInfo?: string | null; // Información adicional
+  division?: string; // 'primera', 'segunda', 'premier'
   createdAt: string;
   updatedAt: string;
 }

@@ -153,6 +153,12 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
         // ✨ Usar PlayerStatsService para obtener estadísticas del backend
         try {
           console.log('[PlayerDetail] Solicitando estadísticas al backend...');
+          console.log('[PlayerDetail] Jugador:', {
+            id: player.id,
+            name: player.name,
+            division: player.division,
+            teamName: player.teamName
+          });
           
           // Cargar estadísticas individualmente para cada jornada
           const statsArray: (PlayerStats | null)[] = [];
@@ -163,15 +169,22 @@ export const PlayerDetail: React.FC<PlayerDetailProps> = ({ navigation, route })
               const isLastMatchday = matchday === matchdays[matchdays.length - 1];
               const shouldRefresh = isLastMatchday && shouldRefreshLastJornada;
               
+              console.log(`[PlayerDetail] Cargando stats jornada ${matchday} (refresh: ${shouldRefresh})`);
+              
               const stats = await PlayerStatsService.getPlayerJornadaStats(
                 player.id,
                 matchday,
                 { refresh: shouldRefresh }
               );
               
+              console.log(`[PlayerDetail] ✅ Stats jornada ${matchday} cargadas:`, stats?.totalPoints, 'pts');
               statsArray.push(stats);
-            } catch (error) {
-              console.warn(`[PlayerDetail] No se pudieron cargar stats para jornada ${matchday}, usando null`);
+            } catch (error: any) {
+              console.error(`[PlayerDetail] ❌ Error cargando stats jornada ${matchday}:`, {
+                message: error?.message,
+                status: error?.status,
+                response: error?.response
+              });
               statsArray.push(null);
             }
           }
