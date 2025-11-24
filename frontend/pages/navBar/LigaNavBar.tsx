@@ -25,8 +25,13 @@ const showInterstitialWithProbability = async () => {
     } else {
       console.log('🎲 Sin intersticial esta vez (probabilidad 85%)');
     }
-  } catch (error) {
-    console.error('❌ Error al intentar mostrar intersticial:', error);
+  } catch (error: any) {
+    // Silenciar errores de anuncio no disponible (normal en las primeras horas después de crear la unidad)
+    if (error?.message?.includes('not loaded') || error?.message?.includes('could not be shown')) {
+      console.log('⏳ Intersticial aún no disponible (puede tardar unas horas)');
+    } else {
+      console.error('❌ Error al intentar mostrar intersticial:', error);
+    }
     // No bloquear la navegación si falla el anuncio
   }
 };
