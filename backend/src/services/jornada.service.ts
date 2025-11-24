@@ -982,7 +982,7 @@ export class JornadaService {
       // Generar apuestas automáticamente para esta jornada
       try {
         console.log(`🎲 Generando apuestas automáticamente para jornada ${jornada}...`);
-        const { BetOptionService } = await import('./betOption.service');
+        const { BetOptionService } = await import('./betOption.service.js');
         const hasOptions = await BetOptionService.hasOptions(leagueId, jornada);
         
         if (!hasOptions) {
@@ -1507,7 +1507,7 @@ export class JornadaService {
         // Generar apuestas automáticamente para esta jornada
         try {
           console.log(`    🎲 Generando apuestas automáticamente para jornada ${jornada}...`);
-          const { BetOptionService } = await import('./betOption.service');
+          const { BetOptionService } = await import('./betOption.service.js');
           const hasOptions = await BetOptionService.hasOptions(league.id, jornada);
           
           if (!hasOptions) {
