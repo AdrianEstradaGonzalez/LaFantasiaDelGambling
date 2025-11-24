@@ -384,12 +384,23 @@ export class PlayerStatsController {
       const currentJornada = premierLeague.currentJornada;
       console.log(`📅 Jornada actual Premier League: ${currentJornada}`);
 
-      // Obtener todos los jugadores de Premier League
-      const allPlayers = await (prisma as any).playerPremier.findMany({
-        select: { id: true, name: true, teamName: true }
+      // ✅ Obtener solo jugadores que están en alguna plantilla de ligas Premier
+      const playersInSquads = await (prisma as any).squadPlayer.findMany({
+        where: {
+          squad: {
+            league: {
+              division: 'premier'
+            }
+          }
+        },
+        select: {
+          playerId: true,
+          playerName: true
+        },
+        distinct: ['playerId']
       });
 
-      console.log(`👥 Total de jugadores Premier: ${allPlayers.length}`);
+      console.log(`👥 Jugadores en plantillas Premier: ${playersInSquads.length}`);
       console.log(`📊 Cargando estadísticas de la jornada ${currentJornada}...\n`);
 
       let loaded = 0;
@@ -397,13 +408,13 @@ export class PlayerStatsController {
       let alreadyExists = 0;
 
       // Cargar estadísticas para cada jugador en la jornada actual
-      for (const player of allPlayers) {
+      for (const player of playersInSquads) {
         try {
           // Verificar si ya existen estadísticas
           const existing = await (prisma as any).playerPremierStats.findUnique({
             where: {
               playerId_jornada_season: {
-                playerId: player.id,
+                playerId: player.playerId,
                 jornada: currentJornada,
                 season: 2025
               }
@@ -417,7 +428,7 @@ export class PlayerStatsController {
 
           // Cargar estadísticas usando el servicio (con división='premier')
           await PlayerStatsService.getPlayerStatsForJornada(
-            player.id,
+            player.playerId,
             currentJornada,
             { 
               season: 2025, 
@@ -429,7 +440,7 @@ export class PlayerStatsController {
           loaded++;
           
           if (loaded % 10 === 0) {
-            console.log(`   Progreso: ${loaded}/${allPlayers.length - alreadyExists} jugadores procesados`);
+            console.log(`   Progreso: ${loaded}/${playersInSquads.length - alreadyExists} jugadores procesados`);
           }
 
           // Pequeño delay para no saturar la API
@@ -438,7 +449,7 @@ export class PlayerStatsController {
         } catch (error: any) {
           failed++;
           if (failed <= 5) { // Solo mostrar los primeros 5 errores
-            console.error(`   ❌ Error con ${player.name}: ${error.message}`);
+            console.error(`   ❌ Error con ${player.playerName}: ${error.message}`);
           }
         }
       }
@@ -537,7 +548,7 @@ export class PlayerStatsController {
           loaded,
           alreadyExists,
           failed,
-          total: allPlayers.length,
+          total: playersInSquads.length,
           usersUpdated: updatedMembers
         }
       });
