@@ -81,6 +81,16 @@ export const LeagueRepo = {
         console.log(`   Jornada Primera: ${primeraJornada}`);
         console.log(`   Jornada asignada: ${currentJornada} (Premium: ${isPremium})`);
         
+        // Verificar si hay alguna liga con estado 'closed' (jornada en curso)
+        // Si es así, crear esta liga también cerrada para que no puedan hacer cambios hasta la próxima jornada
+        const anyClosedLeague = await prisma.league.findFirst({
+            where: { jornadaStatus: 'closed' },
+            select: { id: true, jornadaStatus: true }
+        });
+        
+        const initialStatus = anyClosedLeague ? 'closed' : 'open';
+        console.log(`   Estado inicial: ${initialStatus} (${anyClosedLeague ? 'Jornada en curso' : 'Jornada abierta'})`);
+        
         return prisma.league.create({
             data: {
                 name,
@@ -89,6 +99,7 @@ export const LeagueRepo = {
                 currentJornada,
                 division,
                 isPremium,
+                jornadaStatus: initialStatus, // ✅ Crear cerrada si hay jornada en curso
                 members: { create: { userId: leaderId, points: 0 } },
             } as any,
         });

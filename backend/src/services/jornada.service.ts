@@ -979,6 +979,24 @@ export class JornadaService {
 
       console.log(`✅ Jornada ${jornada} abierta (bloqueada) para liga "${league.name}"`);
 
+      // Generar apuestas automáticamente para esta jornada
+      try {
+        console.log(`🎲 Generando apuestas automáticamente para jornada ${jornada}...`);
+        const { BetOptionService } = await import('./betOption.service');
+        const hasOptions = await BetOptionService.hasOptions(leagueId, jornada);
+        
+        if (!hasOptions) {
+          await BetOptionService.generateBetOptions(leagueId, jornada);
+          console.log(`✅ Apuestas generadas automáticamente para jornada ${jornada}`);
+        } else {
+          console.log(`ℹ️ Las apuestas ya existían para jornada ${jornada}`);
+        }
+      } catch (betError) {
+        console.error(`⚠️ Error generando apuestas para jornada ${jornada}:`, betError);
+        // No lanzamos el error para que la apertura de jornada no falle
+        // Las apuestas se generarán cuando el primer usuario entre
+      }
+
       return {
         success: true,
         message: `Jornada ${jornada} abierta (bloqueada) exitosamente`,
@@ -1485,6 +1503,23 @@ export class JornadaService {
           name: league.name,
           jornada
         });
+
+        // Generar apuestas automáticamente para esta jornada
+        try {
+          console.log(`    🎲 Generando apuestas automáticamente para jornada ${jornada}...`);
+          const { BetOptionService } = await import('./betOption.service');
+          const hasOptions = await BetOptionService.hasOptions(league.id, jornada);
+          
+          if (!hasOptions) {
+            await BetOptionService.generateBetOptions(league.id, jornada);
+            console.log(`    ✅ Apuestas generadas automáticamente`);
+          } else {
+            console.log(`    ℹ️ Las apuestas ya existían`);
+          }
+        } catch (betError) {
+          console.error(`    ⚠️ Error generando apuestas:`, betError);
+          // No lanzamos el error para que la apertura de jornada no falle
+        }
 
         console.log(`  ✅ Jornada ${jornada} abierta (bloqueada) para liga "${league.name}"`);
       }
