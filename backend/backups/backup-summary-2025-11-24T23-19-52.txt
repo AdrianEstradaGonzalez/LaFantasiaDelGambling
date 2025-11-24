@@ -1,0 +1,12 @@
+
+BACKUP DE BASE DE DATOS
+========================
+Fecha: 25/11/2025, 0:20:45
+Archivo: C:\Projects\LaFantasiaDelGambling\backend\backups\prisma-backup-2025-11-24T23-19-52.json
+Total de registros: 0
+
+TABLAS:
+
+
+Para restaurar este backup:
+  npm run restore-backup -- prisma-backup-2025-11-24T23-19-52.json

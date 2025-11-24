@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "timestamp": "2025-11-24T23:18:36.490Z",
+    "version": "1.0",
+    "tables": []
+  },
+  "data": {
+    "user": [],
+    "session": [],
+    "player": [],
+    "playerStats": [],
+    "playerSegunda": [],
+    "playerSegundaStats": [],
+    "playerPremier": [],
+    "playerPremierStats": [],
+    "squad": [],
+    "squadPlayer": [],
+    "league": [],
+    "leagueMember": [],
+    "bet": [],
+    "bet_option": [],
+    "betRestriction": []
+  }
+}
