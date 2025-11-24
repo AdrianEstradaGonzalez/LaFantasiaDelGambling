@@ -467,6 +467,15 @@ class PlayerStatsServiceClass {
       throw error;
     }
   }
+
+  /**
+   * Limpia el caché de estadísticas de jugadores
+   * Útil para forzar una recarga de datos frescos desde el backend
+   */
+  clearCache() {
+    PlayerStatsServiceClassCache.clear();
+    console.log('[PlayerStatsService] 🗑️ Caché limpiado');
+  }
 }
 
 export const PlayerStatsService = new PlayerStatsServiceClass();

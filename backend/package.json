@@ -33,7 +33,8 @@
     "clean-all-data": "tsx scripts/clean-all-data.ts",
     "restore-backup": "tsx scripts/restore-from-backup.ts",
     "calculate-all-points": "tsx scripts/calculate-all-player-points.ts",
-    "fix-all-budgets": "tsx scripts/fix-all-budgets.ts"
+    "fix-all-budgets": "tsx scripts/fix-all-budgets.ts",
+    "calculate-premier-squad-points": "tsx scripts/calculate-premier-squad-points.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.0",

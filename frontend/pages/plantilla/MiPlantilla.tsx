@@ -912,6 +912,9 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
       const reloadSquadAndBudget = async () => {
         if (!ligaId) return;
         
+        // 🔄 Limpiar caché de estadísticas para obtener datos frescos
+        PlayerStatsService.clearCache();
+        
         try {
           const [existingSquad, budgetData] = await Promise.all([
             SquadService.getUserSquad(ligaId),
