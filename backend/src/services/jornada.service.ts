@@ -1254,12 +1254,57 @@ export class JornadaService {
       const balances = await this.calculateUserBalances(leagueId, evaluations);
       console.log(`✅ Balances calculados para ${balances.size} usuarios\n`);
 
-      // 4. Leer puntos de plantilla YA CALCULADOS y actualizar presupuestos finales
-      console.log(`⚽ 4. Leyendo puntos de plantilla ya calculados y actualizando presupuestos finales...`);
+      // 4. REGISTRAR EQUIPOS INVÁLIDOS (antes de actualizar presupuestos)
+      console.log(`⚠️  4. Registrando equipos inválidos...`);
       const allMembers = await prisma.leagueMember.findMany({
         where: { leagueId },
         include: { user: true },
       });
+
+      // Obtener todas las plantillas para verificar cantidad de jugadores
+      const allSquadsCheck = await prisma.squad.findMany({
+        where: { leagueId },
+        include: { players: true }
+      });
+
+      let invalidTeamsCount = 0;
+      for (const member of allMembers) {
+        const squad = allSquadsCheck.find(s => s.userId === member.userId);
+        const hasNegativeBudget = member.budget < 0;
+        const hasInsufficientPlayers = !squad || squad.players.length < 11;
+
+        if (hasNegativeBudget || hasInsufficientPlayers) {
+          let reason = 'both';
+          if (hasNegativeBudget && !hasInsufficientPlayers) reason = 'negative_budget';
+          if (!hasNegativeBudget && hasInsufficientPlayers) reason = 'insufficient_players';
+
+          await prisma.invalidTeam.upsert({
+            where: {
+              userId_leagueId_jornada: {
+                userId: member.userId,
+                leagueId: leagueId,
+                jornada: jornada
+              }
+            },
+            create: {
+              userId: member.userId,
+              leagueId: leagueId,
+              jornada: jornada,
+              reason: reason
+            },
+            update: {
+              reason: reason
+            }
+          });
+
+          invalidTeamsCount++;
+          console.log(`  ⚠️  Usuario ${member.user.name}: equipo inválido (${reason})`);
+        }
+      }
+      console.log(`✅ ${invalidTeamsCount} equipos inválidos registrados\n`);
+
+      // 5. Leer puntos de plantilla YA CALCULADOS y actualizar presupuestos finales
+      console.log(`⚽ 5. Leyendo puntos de plantilla ya calculados y actualizando presupuestos finales...`);
 
       let updatedMembers = 0;
 
@@ -1331,13 +1376,13 @@ export class JornadaService {
       }
       console.log(`✅ ${updatedMembers} miembros actualizados\n`);
 
-      // 5. Guardar snapshot de todas las plantillas ANTES de vaciarlas
-      console.log(`💾 5. Guardando historial de plantillas para jornada ${jornada}...`);
+      // 6. Guardar snapshot de todas las plantillas ANTES de vaciarlas
+      console.log(`💾 6. Guardando historial de plantillas para jornada ${jornada}...`);
       const savedSquadsCount = await SquadHistoryService.saveAllSquadsInLeague(leagueId, jornada);
       console.log(`✅ ${savedSquadsCount} plantillas guardadas en historial\n`);
 
-      // 6. Vaciar TODAS las plantillas de la liga
-      console.log(`🗑️  6. Vaciando plantillas...`);
+      // 7. Vaciar TODAS las plantillas de la liga
+      console.log(`🗑️  7. Vaciando plantillas...`);
       const allSquads = await prisma.squad.findMany({
         where: { leagueId },
       });
@@ -1354,8 +1399,8 @@ export class JornadaService {
       }
       console.log(`✅ ${clearedSquads} plantillas vaciadas\n`);
 
-      // 7. Eliminar opciones de apuestas de la jornada actual
-      console.log(`🗑️  7. Eliminando opciones de apuestas antiguas...`);
+      // 8. Eliminar opciones de apuestas de la jornada actual
+      console.log(`🗑️  8. Eliminando opciones de apuestas antiguas...`);
       const deletedBetOptions = await prisma.bet_option.deleteMany({
         where: {
           leagueId,
@@ -1364,12 +1409,12 @@ export class JornadaService {
       });
       console.log(`✅ ${deletedBetOptions.count} opciones de apuestas eliminadas\n`);
 
-      // 7. NO eliminamos apuestas - solo las mantenemos evaluadas para historial
+      // 9. NO eliminamos apuestas - solo las mantenemos evaluadas para historial
       // Las apuestas permanecen en la BBDD con su estado (won/lost/pending)
       console.log(`📊 Apuestas mantenidas en BBDD para historial\n`);
 
-      // 8. Avanzar jornada y cambiar estado
-      console.log(`⏭️  8. Avanzando jornada...`);
+      // 10. Avanzar jornada y cambiar estado
+      console.log(`⏭️  10. Avanzando jornada...`);
       const nextJornada = jornada + 1;
       await prisma.league.update({
         where: { id: leagueId },
@@ -1380,8 +1425,8 @@ export class JornadaService {
       });
       console.log(`✅ Liga avanzada a jornada ${nextJornada} con estado "open"\n`);
 
-      // 9. Generar opciones de apuesta para la nueva jornada
-      console.log(`🎲 9. Generando opciones de apuesta para jornada ${nextJornada}...`);
+      // 11. Generar opciones de apuesta para la nueva jornada
+      console.log(`🎲 11. Generando opciones de apuesta para jornada ${nextJornada}...`);
       try {
         const betResult = await generateBetOptionsForAllLeagues(nextJornada);
         console.log(`✅ Apuestas generadas: ${betResult.totalOptions} opciones para ${betResult.leaguesUpdated} ligas\n`);

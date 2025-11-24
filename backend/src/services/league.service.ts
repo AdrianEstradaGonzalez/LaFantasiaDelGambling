@@ -317,8 +317,19 @@ export const LeagueService = {
               }
             });
 
-            // ⚠️ Si tiene menos de 11 jugadores o presupuesto negativo, el total es 0
-            const totalPoints = (squad.players.length < 11 || member.budget < 0) ? 0 : sumPoints;
+            // ⚠️ Verificar si este usuario tuvo equipo inválido al cerrar la jornada
+            const wasInvalid = await prisma.invalidTeam.findUnique({
+              where: {
+                userId_leagueId_jornada: {
+                  userId: member.userId,
+                  leagueId: leagueId,
+                  jornada: currentJornada
+                }
+              }
+            });
+
+            // Si fue inválido al cerrar O actualmente tiene < 11 jugadores, puntos = 0
+            const totalPoints = (wasInvalid || squad.players.length < 11) ? 0 : sumPoints;
 
             return { userId: member.userId, points: totalPoints };
           } catch (error) {
@@ -464,8 +475,19 @@ export const LeagueService = {
               }
             });
 
-            // ⚠️ Si tiene menos de 11 jugadores o presupuesto negativo, el total es 0
-            const totalPoints = (squad.players.length < 11 || member.budget < 0) ? 0 : sumPoints;
+            // ⚠️ Verificar si este usuario tuvo equipo inválido al cerrar la jornada
+            const wasInvalid = await prisma.invalidTeam.findUnique({
+              where: {
+                userId_leagueId_jornada: {
+                  userId: member.userId,
+                  leagueId: leagueId,
+                  jornada: jornada
+                }
+              }
+            });
+
+            // Si fue inválido al cerrar O actualmente tiene < 11 jugadores, puntos = 0
+            const totalPoints = (wasInvalid || squad.players.length < 11) ? 0 : sumPoints;
 
             return {
               ...member,
@@ -674,8 +696,19 @@ getLeaguesByUser: (userId: string) =>
           };
         });
 
-        // ⚠️ Si tiene menos de 11 jugadores o presupuesto negativo, mostrar los jugadores con puntos pero el total es 0
-        const totalPoints = (squad.players.length < 11 || member.budget < 0) ? 0 : sumPoints;
+        // ⚠️ Verificar si este usuario tuvo equipo inválido al cerrar la jornada
+        const wasInvalid = await prisma.invalidTeam.findUnique({
+          where: {
+            userId_leagueId_jornada: {
+              userId: member.userId,
+              leagueId: leagueId,
+              jornada: currentJornada
+            }
+          }
+        });
+
+        // Si fue inválido al cerrar O actualmente tiene < 11 jugadores, mostrar jugadores pero total es 0
+        const totalPoints = (wasInvalid || squad.players.length < 11) ? 0 : sumPoints;
 
         return {
           userId: member.userId,

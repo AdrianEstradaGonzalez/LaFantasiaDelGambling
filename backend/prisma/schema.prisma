@@ -512,3 +512,17 @@ model OfferHistory {
   @@index([lastOffer])
   @@map("offer_history")
 }
+
+model InvalidTeam {
+  id        String   @id @default(cuid())
+  userId    String
+  leagueId  String
+  jornada   Int
+  reason    String   // 'negative_budget' | 'insufficient_players' | 'both'
+  createdAt DateTime @default(now())
+
+  @@unique([userId, leagueId, jornada])
+  @@index([leagueId, jornada])
+  @@index([userId])
+  @@map("invalid_team")
+}
