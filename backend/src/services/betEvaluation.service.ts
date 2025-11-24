@@ -53,6 +53,8 @@ interface MatchStatistics {
   status: string;
   homeGoals: number;
   awayGoals: number;
+  homeGoalsHalftime: number;
+  awayGoalsHalftime: number;
   homeCorners: number;
   awayCorners: number;
   homeYellowCards: number;
@@ -109,6 +111,8 @@ async function getMatchStatistics(matchId: number): Promise<MatchStatistics> {
       status,
       homeGoals: fixture.goals.home || 0,
       awayGoals: fixture.goals.away || 0,
+      homeGoalsHalftime: fixture.score?.halftime?.home || 0,
+      awayGoalsHalftime: fixture.score?.halftime?.away || 0,
       homeCorners: getStat(homeStats, 'Corner Kicks'),
       awayCorners: getStat(awayStats, 'Corner Kicks'),
       homeYellowCards: getStat(homeStats, 'Yellow Cards'),
@@ -136,29 +140,80 @@ function evaluateBet(bet: any, stats: MatchStatistics): { won: boolean; actualRe
 
   // GOLES TOTALES
   if (betType.includes('goles') || betType.includes('goals')) {
-    const totalGoals = stats.homeGoals + stats.awayGoals;
+    // Verificar si es específico de primera o segunda parte
+    const betTypeLower = betType.toLowerCase();
+    const betLabelLower = betLabel.toLowerCase();
+    const isPrimeraParte = betTypeLower.includes('primera parte') || betTypeLower.includes('first half') || betTypeLower.includes('1st half');
+    const isSegundaParte = betTypeLower.includes('segunda parte') || betTypeLower.includes('second half') || betTypeLower.includes('2nd half');
     
-    if (betLabel.includes('más de') || betLabel.includes('over')) {
-      const threshold = parseFloat(betLabel.match(/\d+\.?\d*/)?.[0] || '0');
+    let totalGoals: number;
+    let goalsLabel: string;
+    
+    if (isPrimeraParte) {
+      // Goles de primera parte
+      totalGoals = stats.homeGoalsHalftime + stats.awayGoalsHalftime;
+      goalsLabel = 'goles en primera parte';
+      
+      console.log(`   🔍 Evaluando goles PRIMERA PARTE:`);
+      console.log(`      - Goles al descanso: ${stats.homeTeam} ${stats.homeGoalsHalftime} - ${stats.awayGoalsHalftime} ${stats.awayTeam}`);
+      console.log(`      - Total primera parte: ${totalGoals}`);
+    } else if (isSegundaParte) {
+      // Goles de segunda parte = goles finales - goles primera parte
+      const homeGoalsSecondHalf = stats.homeGoals - stats.homeGoalsHalftime;
+      const awayGoalsSecondHalf = stats.awayGoals - stats.awayGoalsHalftime;
+      totalGoals = homeGoalsSecondHalf + awayGoalsSecondHalf;
+      goalsLabel = 'goles en segunda parte';
+      
+      console.log(`   🔍 Evaluando goles SEGUNDA PARTE:`);
+      console.log(`      - Resultado final: ${stats.homeTeam} ${stats.homeGoals} - ${stats.awayGoals} ${stats.awayTeam}`);
+      console.log(`      - Goles al descanso: ${stats.homeGoalsHalftime} - ${stats.awayGoalsHalftime}`);
+      console.log(`      - Goles segunda parte: ${homeGoalsSecondHalf} - ${awayGoalsSecondHalf}`);
+      console.log(`      - Total segunda parte: ${totalGoals}`);
+    } else {
+      // Goles totales del partido
+      totalGoals = stats.homeGoals + stats.awayGoals;
+      goalsLabel = 'goles totales';
+    }
+    
+    if (betLabelLower.includes('más de') || betLabelLower.includes('over')) {
+      const threshold = parseFloat(betLabelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      const won = totalGoals > threshold;
+      
+      if (isPrimeraParte || isSegundaParte) {
+        console.log(`      - Umbral: ${threshold}, Resultado: ${won ? 'GANADA ✅' : 'PERDIDA ❌'}`);
+      }
+      
       return {
-        won: totalGoals > threshold,
-        actualResult: `${totalGoals} goles totales`
+        won,
+        actualResult: `${totalGoals} ${goalsLabel}`
       };
     }
     
-    if (betLabel.includes('menos de') || betLabel.includes('under')) {
-      const threshold = parseFloat(betLabel.match(/\d+\.?\d*/)?.[0] || '0');
+    if (betLabelLower.includes('menos de') || betLabelLower.includes('under')) {
+      const threshold = parseFloat(betLabelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      const won = totalGoals < threshold;
+      
+      if (isPrimeraParte || isSegundaParte) {
+        console.log(`      - Umbral: ${threshold}, Resultado: ${won ? 'GANADA ✅' : 'PERDIDA ❌'}`);
+      }
+      
       return {
-        won: totalGoals < threshold,
-        actualResult: `${totalGoals} goles totales`
+        won,
+        actualResult: `${totalGoals} ${goalsLabel}`
       };
     }
 
-    if (betLabel.includes('exactamente')) {
-      const exact = parseInt(betLabel.match(/\d+/)?.[0] || '0');
+    if (betLabelLower.includes('exactamente')) {
+      const exact = parseInt(betLabelLower.match(/\d+/)?.[0] || '0');
+      const won = totalGoals === exact;
+      
+      if (isPrimeraParte || isSegundaParte) {
+        console.log(`      - Exacto: ${exact}, Resultado: ${won ? 'GANADA ✅' : 'PERDIDA ❌'}`);
+      }
+      
       return {
-        won: totalGoals === exact,
-        actualResult: `${totalGoals} goles totales`
+        won,
+        actualResult: `${totalGoals} ${goalsLabel}`
       };
     }
   }
@@ -363,6 +418,291 @@ function evaluateBet(bet: any, stats: MatchStatistics): { won: boolean; actualRe
       return {
         won: isSi ? cleanSheet : !cleanSheet,
         actualResult: `${stats.awayTeam} encajó ${stats.homeGoals} goles`
+      };
+    }
+  }
+
+  // GANA SIN ENCAJAR (WIN TO NIL)
+  // Combina victoria + portería a cero
+  if (betType.toLowerCase().includes('sin encajar') || betType.toLowerCase().includes('win to nil')) {
+    const betTypeLower = betType.toLowerCase();
+    const isLocal = betTypeLower.includes('local') || betTypeLower.includes('home');
+    const isVisitante = betTypeLower.includes('visitante') || betTypeLower.includes('away');
+    
+    if (isLocal) {
+      // Local Gana sin Encajar = Local gana Y visitante no marca
+      const homeWins = stats.homeGoals > stats.awayGoals;
+      const cleanSheet = stats.awayGoals === 0;
+      const won = homeWins && cleanSheet;
+      
+      console.log(`   🔍 Evaluando "Local Gana sin Encajar":`);
+      console.log(`      - ${stats.homeTeam} ${stats.homeGoals} - ${stats.awayGoals} ${stats.awayTeam}`);
+      console.log(`      - Local gana: ${homeWins}, No encaja: ${cleanSheet}`);
+      console.log(`      - Resultado: ${won ? 'GANADA ✅' : 'PERDIDA ❌'}`);
+      
+      return {
+        won,
+        actualResult: `${stats.homeTeam} ${stats.homeGoals}-${stats.awayGoals} ${stats.awayTeam} - ${won ? 'Local gana sin encajar' : homeWins ? 'Local gana pero encaja' : cleanSheet ? 'Local no encaja pero no gana' : 'Local no gana y encaja'}`
+      };
+    }
+    
+    if (isVisitante) {
+      // Visitante Gana sin Encajar = Visitante gana Y local no marca
+      const awayWins = stats.awayGoals > stats.homeGoals;
+      const cleanSheet = stats.homeGoals === 0;
+      const won = awayWins && cleanSheet;
+      
+      console.log(`   🔍 Evaluando "Visitante Gana sin Encajar":`);
+      console.log(`      - ${stats.homeTeam} ${stats.homeGoals} - ${stats.awayGoals} ${stats.awayTeam}`);
+      console.log(`      - Visitante gana: ${awayWins}, No encaja: ${cleanSheet}`);
+      console.log(`      - Resultado: ${won ? 'GANADA ✅' : 'PERDIDA ❌'}`);
+      
+      return {
+        won,
+        actualResult: `${stats.homeTeam} ${stats.homeGoals}-${stats.awayGoals} ${stats.awayTeam} - ${won ? 'Visitante gana sin encajar' : awayWins ? 'Visitante gana pero encaja' : cleanSheet ? 'Visitante no encaja pero no gana' : 'Visitante no gana y encaja'}`
+      };
+    }
+  }
+
+  // GANADOR PRIMERA/SEGUNDA PARTE
+  if (betType.toLowerCase().includes('ganador primera parte') || betType.toLowerCase().includes('first half winner') ||
+      betType.toLowerCase().includes('ganador segunda parte') || betType.toLowerCase().includes('second half winner') ||
+      betType.toLowerCase().includes('resultado al descanso') || betType.toLowerCase().includes('halftime result')) {
+    
+    const isPrimeraParte = betType.toLowerCase().includes('primera') || betType.toLowerCase().includes('first') || 
+                          betType.toLowerCase().includes('descanso') || betType.toLowerCase().includes('halftime');
+    
+    let homeScore: number, awayScore: number, periodLabel: string;
+    
+    if (isPrimeraParte) {
+      homeScore = stats.homeGoalsHalftime;
+      awayScore = stats.awayGoalsHalftime;
+      periodLabel = 'al descanso';
+    } else {
+      // Segunda parte = goles finales - goles primera parte
+      homeScore = stats.homeGoals - stats.homeGoalsHalftime;
+      awayScore = stats.awayGoals - stats.awayGoalsHalftime;
+      periodLabel = 'en segunda parte';
+    }
+    
+    const result = homeScore > awayScore ? 'local' : awayScore > homeScore ? 'visitante' : 'empate';
+    
+    let prediction = '';
+    const labelLower = betLabel.toLowerCase();
+    if (labelLower.includes('local') || labelLower.includes('home') || labelLower === '1') {
+      prediction = 'local';
+    } else if (labelLower.includes('visitante') || labelLower.includes('away') || labelLower === '2') {
+      prediction = 'visitante';
+    } else if (labelLower.includes('empate') || labelLower.includes('draw') || labelLower === 'x') {
+      prediction = 'empate';
+    }
+
+    return {
+      won: result === prediction,
+      actualResult: `${stats.homeTeam} ${homeScore}-${awayScore} ${stats.awayTeam} ${periodLabel}`
+    };
+  }
+
+  // DOBLE OPORTUNIDAD (1X, 12, X2)
+  if (betType.toLowerCase().includes('doble') || betType.toLowerCase().includes('double chance')) {
+    const result = stats.homeGoals > stats.awayGoals ? 'local' : 
+                   stats.awayGoals > stats.homeGoals ? 'visitante' : 'empate';
+    
+    const labelLower = betLabel.toLowerCase();
+    let won = false;
+    
+    // 1X = Local o Empate
+    if (labelLower.includes('1x') || (labelLower.includes('local') && labelLower.includes('empate'))) {
+      won = result === 'local' || result === 'empate';
+    }
+    // 12 = Local o Visitante
+    else if (labelLower.includes('12') || (labelLower.includes('local') && labelLower.includes('visitante'))) {
+      won = result === 'local' || result === 'visitante';
+    }
+    // X2 = Empate o Visitante
+    else if (labelLower.includes('x2') || (labelLower.includes('empate') && labelLower.includes('visitante'))) {
+      won = result === 'empate' || result === 'visitante';
+    }
+
+    return {
+      won,
+      actualResult: `${stats.homeTeam} ${stats.homeGoals}-${stats.awayGoals} ${stats.awayTeam}`
+    };
+  }
+
+  // GOLES PAR/IMPAR
+  if (betType.toLowerCase().includes('par/impar') || betType.toLowerCase().includes('odd/even')) {
+    const betTypeLower = betType.toLowerCase();
+    const labelLower = betLabel.toLowerCase();
+    
+    let totalGoals: number;
+    
+    // Determinar qué goles contar
+    if (betTypeLower.includes('local') || betTypeLower.includes('home')) {
+      totalGoals = stats.homeGoals;
+    } else if (betTypeLower.includes('visitante') || betTypeLower.includes('away')) {
+      totalGoals = stats.awayGoals;
+    } else {
+      totalGoals = stats.homeGoals + stats.awayGoals;
+    }
+    
+    const isEven = totalGoals % 2 === 0;
+    const predictedEven = labelLower.includes('par') || labelLower.includes('even');
+    
+    return {
+      won: isEven === predictedEven,
+      actualResult: `${totalGoals} goles (${isEven ? 'Par' : 'Impar'})`
+    };
+  }
+
+  // TOTAL GOLES LOCAL/VISITANTE
+  if ((betType.toLowerCase().includes('total') && betType.toLowerCase().includes('local')) ||
+      (betType.toLowerCase().includes('total') && betType.toLowerCase().includes('home')) ||
+      (betType.toLowerCase().includes('home team total'))) {
+    const totalGoals = stats.homeGoals;
+    const labelLower = betLabel.toLowerCase();
+    
+    if (labelLower.includes('más de') || labelLower.includes('over')) {
+      const threshold = parseFloat(labelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      return {
+        won: totalGoals > threshold,
+        actualResult: `${stats.homeTeam} marcó ${totalGoals} goles`
+      };
+    }
+    
+    if (labelLower.includes('menos de') || labelLower.includes('under')) {
+      const threshold = parseFloat(labelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      return {
+        won: totalGoals < threshold,
+        actualResult: `${stats.homeTeam} marcó ${totalGoals} goles`
+      };
+    }
+    
+    if (labelLower.includes('exactamente')) {
+      const exact = parseInt(labelLower.match(/\d+/)?.[0] || '0');
+      return {
+        won: totalGoals === exact,
+        actualResult: `${stats.homeTeam} marcó ${totalGoals} goles`
+      };
+    }
+  }
+
+  if ((betType.toLowerCase().includes('total') && betType.toLowerCase().includes('visitante')) ||
+      (betType.toLowerCase().includes('total') && betType.toLowerCase().includes('away')) ||
+      (betType.toLowerCase().includes('away team total'))) {
+    const totalGoals = stats.awayGoals;
+    const labelLower = betLabel.toLowerCase();
+    
+    if (labelLower.includes('más de') || labelLower.includes('over')) {
+      const threshold = parseFloat(labelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      return {
+        won: totalGoals > threshold,
+        actualResult: `${stats.awayTeam} marcó ${totalGoals} goles`
+      };
+    }
+    
+    if (labelLower.includes('menos de') || labelLower.includes('under')) {
+      const threshold = parseFloat(labelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      return {
+        won: totalGoals < threshold,
+        actualResult: `${stats.awayTeam} marcó ${totalGoals} goles`
+      };
+    }
+    
+    if (labelLower.includes('exactamente')) {
+      const exact = parseInt(labelLower.match(/\d+/)?.[0] || '0');
+      return {
+        won: totalGoals === exact,
+        actualResult: `${stats.awayTeam} marcó ${totalGoals} goles`
+      };
+    }
+  }
+
+  // PARTE CON MÁS GOLES
+  if (betType.toLowerCase().includes('parte con más goles') || betType.toLowerCase().includes('highest scoring half')) {
+    const firstHalfGoals = stats.homeGoalsHalftime + stats.awayGoalsHalftime;
+    const secondHalfGoals = (stats.homeGoals - stats.homeGoalsHalftime) + (stats.awayGoals - stats.awayGoalsHalftime);
+    
+    const labelLower = betLabel.toLowerCase();
+    let prediction = '';
+    
+    if (labelLower.includes('primera') || labelLower.includes('first') || labelLower.includes('1')) {
+      prediction = 'primera';
+    } else if (labelLower.includes('segunda') || labelLower.includes('second') || labelLower.includes('2')) {
+      prediction = 'segunda';
+    } else if (labelLower.includes('empate') || labelLower.includes('igual') || labelLower.includes('equal')) {
+      prediction = 'empate';
+    }
+    
+    const result = firstHalfGoals > secondHalfGoals ? 'primera' :
+                   secondHalfGoals > firstHalfGoals ? 'segunda' : 'empate';
+    
+    return {
+      won: result === prediction,
+      actualResult: `Primera parte: ${firstHalfGoals} goles, Segunda parte: ${secondHalfGoals} goles`
+    };
+  }
+
+  // CORNERS ESPECÍFICOS (Local/Visitante)
+  if (betType.toLowerCase().includes('corners') && 
+      (betType.toLowerCase().includes('local') || betType.toLowerCase().includes('home') || 
+       betType.toLowerCase().includes('visitante') || betType.toLowerCase().includes('away'))) {
+    
+    const isHome = betType.toLowerCase().includes('local') || betType.toLowerCase().includes('home');
+    const corners = isHome ? stats.homeCorners : stats.awayCorners;
+    const team = isHome ? stats.homeTeam : stats.awayTeam;
+    const labelLower = betLabel.toLowerCase();
+    
+    if (labelLower.includes('más de') || labelLower.includes('over')) {
+      const threshold = parseFloat(labelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      return {
+        won: corners > threshold,
+        actualResult: `${team} tuvo ${corners} corners`
+      };
+    }
+    
+    if (labelLower.includes('menos de') || labelLower.includes('under')) {
+      const threshold = parseFloat(labelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      return {
+        won: corners < threshold,
+        actualResult: `${team} tuvo ${corners} corners`
+      };
+    }
+    
+    if (labelLower.includes('exactamente')) {
+      const exact = parseInt(labelLower.match(/\d+/)?.[0] || '0');
+      return {
+        won: corners === exact,
+        actualResult: `${team} tuvo ${corners} corners`
+      };
+    }
+  }
+
+  // TARJETAS ESPECÍFICAS (Local/Visitante)
+  if (betType.toLowerCase().includes('tarjeta') && 
+      (betType.toLowerCase().includes('local') || betType.toLowerCase().includes('home') || 
+       betType.toLowerCase().includes('visitante') || betType.toLowerCase().includes('away'))) {
+    
+    const isHome = betType.toLowerCase().includes('local') || betType.toLowerCase().includes('home');
+    const yellowCards = isHome ? stats.homeYellowCards : stats.awayYellowCards;
+    const redCards = isHome ? stats.homeRedCards : stats.awayRedCards;
+    const totalCards = yellowCards + redCards;
+    const team = isHome ? stats.homeTeam : stats.awayTeam;
+    const labelLower = betLabel.toLowerCase();
+    
+    if (labelLower.includes('más de') || labelLower.includes('over')) {
+      const threshold = parseFloat(labelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      return {
+        won: totalCards > threshold,
+        actualResult: `${team} recibió ${totalCards} tarjetas`
+      };
+    }
+    
+    if (labelLower.includes('menos de') || labelLower.includes('under')) {
+      const threshold = parseFloat(labelLower.match(/\d+\.?\d*/)?.[0] || '0');
+      return {
+        won: totalCards < threshold,
+        actualResult: `${team} recibió ${totalCards} tarjetas`
       };
     }
   }
