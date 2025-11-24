@@ -466,7 +466,7 @@ export const Home = ({ navigation, route }: HomeProps) => {
                   transform: [{ scale: 1.02 }]
                 }]}
                 activeOpacity={0.85}
-                onPress={() => navigation.navigate('MiPlantilla', { ligaId: liga.id, ligaName: liga.nombre, division: liga.division, isPremium: isDreamLeague ? true : liga.isPremium })}
+                onPress={() => navigation.navigate('Clasificacion', { ligaId: liga.id, ligaName: liga.nombre, division: liga.division, isPremium: isDreamLeague ? true : liga.isPremium })}
               >
                 {/* Fondo con gradiente sutil */}
                 <LinearGradient
