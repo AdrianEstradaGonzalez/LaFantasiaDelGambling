@@ -20,8 +20,8 @@ export const ADMOB_CONFIG = {
   
   // Interstitial Ads (pantalla completa al cambiar de navegación)
   INTERSTITIAL_NAVIGATION: Platform.select({
-    ios: __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-9629575422824270/1234567890',
-    android: __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-9629575422824270/1234567890',
+    ios: __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-9629575422824270/9389047652',
+    android: __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-9629575422824270/9389047652',
   }),
   
   // Rewarded Ads (desbloquear apuestas bloqueadas)
