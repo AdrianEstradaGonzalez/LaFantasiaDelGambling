@@ -1312,8 +1312,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       const result = await AdMobService.showRewarded();
       
       if (result.error) {
-        // Hubo un error al cargar/mostrar el anuncio
-        showError(result.error);
+        // Hubo un error al cargar/mostrar el anuncio - desbloquear automáticamente
+        console.warn('⚠️ No se pudo cargar el anuncio, desbloqueando automáticamente:', result.error);
+        setUnlockedBets(prev => new Set([...prev, betIndex]));
+        showSuccess('Apuesta desbloqueada (anuncio no disponible).');
       } else if (result.watched) {
         // Usuario completó el anuncio, desbloquear la apuesta por índice
         setUnlockedBets(prev => new Set([...prev, betIndex]));
@@ -1323,7 +1325,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       }
     } catch (error) {
       console.error('Error mostrando anuncio:', error);
-      showError('No se pudo cargar el anuncio. Por favor, verifica tu conexión e inténtalo de nuevo.');
+      // Si hay un error (anuncio no disponible), desbloquear automáticamente
+      setUnlockedBets(prev => new Set([...prev, betIndex]));
+      showSuccess('Apuesta desbloqueada (anuncio no disponible).');
     } finally {
       setLoadingAd(false);
     }
