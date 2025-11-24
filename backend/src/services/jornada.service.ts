@@ -1316,7 +1316,7 @@ export class JornadaService {
         for (const bet of userBets) {
           if (bet.status === 'won') {
             // Ganancia neta = potentialWin - amount (lo que recupera menos lo que apostó)
-            betsResult += (bet.potentialWin - bet.amount);
+            betsResult += bet.potentialWin;
           } else if (bet.status === 'lost') {
             // Pérdida = -amount (lo que apostó)
             betsResult -= bet.amount;
