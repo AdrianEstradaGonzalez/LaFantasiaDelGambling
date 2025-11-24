@@ -133,6 +133,25 @@ export const LeagueController = {
     reply.send(result);
   },
 
+  // Verificar si el equipo de un usuario es inválido en una jornada
+  checkInvalidTeam: async (req: FastifyRequest, reply: FastifyReply) => {
+    const userId = (req.user as any)?.sub || (req.user as any)?.id;
+    if (!userId) throw new AppError(401, "UNAUTHORIZED", "Token inválido");
+    
+    const { leagueId } = deleteLeagueParams.parse((req as any).params);
+    const { jornada } = (req as any).query;
+    
+    if (!jornada) throw new AppError(400, "INVALID_JORNADA", "Jornada es requerida");
+    
+    const jornadaNum = parseInt(jornada, 10);
+    if (isNaN(jornadaNum) || jornadaNum < 1 || jornadaNum > 38) {
+      throw new AppError(400, "INVALID_JORNADA", "Jornada inválida");
+    }
+    
+    const result = await LeagueService.checkInvalidTeam(leagueId, userId, jornadaNum);
+    reply.send(result);
+  },
+
 getByUser: async (req: any, reply: any) => {
 try {
   const { userId } = req.params as { userId: string };

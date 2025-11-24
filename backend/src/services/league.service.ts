@@ -912,6 +912,48 @@ getLeaguesByUser: (userId: string) =>
       console.error('[getUserPosition] ❌ Error:', error);
       throw new Error(error?.message || 'Error al obtener posición del usuario');
     }
+  },
+
+  /**
+   * Verifica si el equipo de un usuario es inválido en una jornada específica
+   */
+  async checkInvalidTeam(leagueId: string, userId: string, jornada: number) {
+    try {
+      console.log(`[checkInvalidTeam] 🔍 Verificando estado para usuario ${userId} en liga ${leagueId}, jornada ${jornada}`);
+      
+      const invalidTeam = await prisma.invalidTeam.findUnique({
+        where: {
+          userId_leagueId_jornada: {
+            userId,
+            leagueId,
+            jornada
+          }
+        }
+      });
+
+      if (invalidTeam) {
+        console.log(`[checkInvalidTeam] ⚠️ Equipo inválido encontrado - Razón: ${invalidTeam.reason}`);
+        return {
+          isInvalid: true,
+          reason: invalidTeam.reason,
+          message: invalidTeam.reason === 'negative_budget' 
+            ? 'Tu equipo empezó la jornada con presupuesto negativo'
+            : invalidTeam.reason === 'insufficient_players'
+            ? 'Tu equipo empezó la jornada con menos de 11 jugadores'
+            : 'Tu equipo empezó la jornada en estado inválido'
+        };
+      }
+
+      console.log(`[checkInvalidTeam] ✅ Equipo válido`);
+      return {
+        isInvalid: false,
+        reason: null,
+        message: null
+      };
+    } catch (error: any) {
+      console.error('[checkInvalidTeam] ❌ Error:', error);
+      throw new Error(error?.message || 'Error al verificar estado del equipo');
+    }
   }
 
 };

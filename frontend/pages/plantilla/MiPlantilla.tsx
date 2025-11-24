@@ -472,6 +472,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const [userLeagues, setUserLeagues] = useState<Array<{ id: string; name: string; division?: string; isPremium?: boolean }>>([]);
   const [copying, setCopying] = useState(false);
   
+  // Estado para verificar si el equipo es inválido (presupuesto negativo o jugadores insuficientes)
+  const [isInvalidTeam, setIsInvalidTeam] = useState(false);
+  const [invalidTeamReason, setInvalidTeamReason] = useState<string | null>(null);
+  const [invalidTeamMessage, setInvalidTeamMessage] = useState<string | null>(null);
+  
   // PanResponder para gestos de swipe (vacío por ahora, puede extenderse)
   const panResponder = useRef(
     PanResponder.create({
@@ -561,6 +566,38 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     }
   };
   
+  // ✨ NUEVO: Función para verificar si el equipo es inválido en la jornada actual
+  const checkInvalidTeamStatus = async () => {
+    if (!ligaId || !currentMatchday || jornadaStatus !== 'closed') {
+      console.log('[MiPlantilla] No se verificará invalid team (condiciones no cumplidas)');
+      setIsInvalidTeam(false);
+      setInvalidTeamReason(null);
+      setInvalidTeamMessage(null);
+      return;
+    }
+
+    try {
+      console.log(`[MiPlantilla] 🔍 Verificando invalid team status para jornada ${currentMatchday}`);
+      const response = await LigaService.checkInvalidTeam(ligaId, currentMatchday);
+      
+      setIsInvalidTeam(response.isInvalid);
+      setInvalidTeamReason(response.reason);
+      setInvalidTeamMessage(response.message);
+      
+      if (response.isInvalid) {
+        console.log(`[MiPlantilla] ⚠️ Equipo INVÁLIDO - Razón: ${response.reason}`);
+      } else {
+        console.log('[MiPlantilla] ✅ Equipo válido');
+      }
+    } catch (error) {
+      console.error('[MiPlantilla] Error al verificar invalid team:', error);
+      // En caso de error, asumir que es válido
+      setIsInvalidTeam(false);
+      setInvalidTeamReason(null);
+      setInvalidTeamMessage(null);
+    }
+  };
+  
   // ✨ MODIFICADO: Obtener jornada y estado de la liga (no de la API)
   useEffect(() => {
     let mounted = true;
@@ -584,6 +621,8 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             
             if (s === 'closed') {
               setActiveTab('puntuacion');
+              // Verificar si el equipo es inválido cuando la jornada está cerrada
+              await checkInvalidTeamStatus();
             }
           }
         }
@@ -593,6 +632,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
     })();
     return () => { mounted = false; };
   }, [ligaId]);
+  
+  // Verificar invalid team cuando cambie la jornada o el estado
+  useEffect(() => {
+    checkInvalidTeamStatus();
+  }, [currentMatchday, jornadaStatus]);
   
   // Cargar puntos cuando se cambia a la pestaña de puntuación
   useEffect(() => {
@@ -1420,6 +1464,11 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
             }}>
               <Text style={{ color: '#10b981', fontSize: 28, fontWeight: '800', letterSpacing: -1 }}>
                 {(() => {
+                  // ⚠️ Si el equipo es inválido (presupuesto negativo o < 11 jugadores), mostrar 0
+                  if (isInvalidTeam) {
+                    return 0;
+                  }
+                  
                   // Calcular suma de puntos individuales
                   const sumPoints = Object.keys(selectedPlayers).reduce((total, positionId) => {
                     const player = selectedPlayers[positionId];
@@ -1437,6 +1486,31 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               </Text>
               <Text style={{ color: '#64748b', fontSize: 14, fontWeight: '600' }}>
                 pts
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* ⚠️ ALERTA: Equipo inválido - No puntuará */}
+        {jornadaStatus === 'closed' && isInvalidTeam && invalidTeamMessage && (
+          <View style={{
+            backgroundColor: '#7f1d1d',
+            borderRadius: 10,
+            padding: 14,
+            marginBottom: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            borderWidth: 2,
+            borderColor: '#dc2626'
+          }}>
+            <AlertIcon color="#fca5a5" size={24} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#fecaca', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
+                ⚠️ EQUIPO NO VÁLIDO
+              </Text>
+              <Text style={{ color: '#fecaca', fontSize: 12, lineHeight: 17 }}>
+                {invalidTeamMessage}. No puntuarás esta jornada.
               </Text>
             </View>
           </View>

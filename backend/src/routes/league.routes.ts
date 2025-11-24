@@ -16,6 +16,7 @@ const leagueRoutes: FastifyPluginAsync = async (app) => {
   app.get("/:leagueId/classifications", LeagueController.getAllClassifications); // obtener todas las clasificaciones
   app.get("/:leagueId/classification/paginated", LeagueController.getPaginatedClassification); // obtener clasificación paginada
   app.get("/:leagueId/user-position", LeagueController.getUserPosition); // obtener posición del usuario
+  app.get("/:leagueId/invalid-team-status", LeagueController.checkInvalidTeam); // verificar si el equipo es inválido
   app.post("/:leagueId/calculate-realtime", LeagueController.calculateRealTimePoints); // calcular puntos en tiempo real (lee datos ya calculados)
   app.get("/:leagueId/realtime", getRealtimePoints); // obtener puntos en tiempo real desde caché
   app.post("/trigger-points-calculation", LeagueController.triggerPointsCalculation); // disparar cálculo de puntos para todas las ligas

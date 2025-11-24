@@ -565,4 +565,35 @@ static async crearLiga(data: CreateLeagueData): Promise<Liga & { code: string }>
       throw new Error(error?.message || 'No se pudo obtener la posición del usuario');
     }
   }
+
+  // ⚠️ Verificar si el equipo es inválido en una jornada específica
+  static async checkInvalidTeam(leagueId: string, jornada: number): Promise<{
+    isInvalid: boolean;
+    reason: string | null;
+    message: string | null;
+  }> {
+    try {
+      const token = await this.getAccessToken();
+      if (!token) throw new Error('Usuario no autenticado');
+
+      const url = `${ApiConfig.BASE_URL}/leagues/${leagueId}/invalid-team-status?jornada=${jornada}`;
+
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const friendlyMessage = this.mapErrorToFriendlyMessage(json, res.status);
+        throw new Error(friendlyMessage);
+      }
+
+      return json;
+    } catch (error: any) {
+      console.warn('LigaService.checkInvalidTeam:', error);
+      throw new Error(error?.message || 'No se pudo verificar el estado del equipo');
+    }
+  }
 }
