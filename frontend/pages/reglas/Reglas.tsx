@@ -468,12 +468,14 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
                 Puedes ver <Text style={styles.highlight}>puntuación en tiempo real</Text>
               </Text>
             </View>
-
-            <Text style={styles.subSectionTitle}>⚪ CIERRE DE JORNADA (Tras el último partido)</Text>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Se evalúan las apuestas (ganadas o perdidas)</Text>
+              <Text style={styles.bulletText}>
+                Puedes consultar <Text style={styles.highlight}>apuestas evaluadas en tiempo real</Text>
+              </Text>
             </View>
+
+            <Text style={styles.subSectionTitle}>⚪ CIERRE DE JORNADA (Tras el último partido)</Text>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>Se actualizan clasificaciones finales</Text>
