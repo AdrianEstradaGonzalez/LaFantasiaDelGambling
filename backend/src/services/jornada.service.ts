@@ -1180,8 +1180,8 @@ export class JornadaService {
       const syncResult = await this.syncCurrentJornadaPoints(leagueId, jornada);
       console.log(`✅ ${syncResult.updated} usuarios actualizados, ${syncResult.skipped} sin cambios\n`);
 
-      // 1. Procesar apuestas ya evaluadas (won/lost) y actualizar presupuestos
-      console.log(`💰 1. Procesando apuestas ya evaluadas (won/lost)...`);
+      // 1. Listar apuestas ya evaluadas (won/lost) - SOLO PARA LOGGING
+      console.log(`💰 1. Listando apuestas ya evaluadas (won/lost)...`);
       const evaluatedBets = await prisma.bet.findMany({
         where: {
           leagueId,
@@ -1193,61 +1193,35 @@ export class JornadaService {
         }
       });
 
-      // Actualizar presupuesto por cada apuesta evaluada
+      // Solo mostrar log, NO actualizar presupuestos aquí
       for (const bet of evaluatedBets) {
-        const member = bet.leagueMember;
-        if (!member) continue;
-
-        const adjustment = bet.status === 'won' ? bet.potentialWin : -bet.amount;
-        
-        await prisma.leagueMember.update({
-          where: {
-            leagueId_userId: { leagueId, userId: bet.userId }
-          },
-          data: {
-            budget: { increment: adjustment },
-            bettingBudget: { increment: adjustment }
-          }
-        });
-
+        const adjustment = bet.status === 'won' ? (bet.potentialWin - bet.amount) : -bet.amount;
         console.log(
           `  ${bet.status === 'won' ? '✅' : '❌'} Usuario ${bet.userId}: ${bet.betType} - ${bet.betLabel} ` +
-          `= ${adjustment >= 0 ? '+' : ''}${adjustment}M`
+          `= ${adjustment >= 0 ? '+' : ''}${adjustment}M (ganancia neta)`
         );
       }
-      console.log(`✅ ${evaluatedBets.length} apuestas ya evaluadas procesadas\n`);
+      console.log(`✅ ${evaluatedBets.length} apuestas ya evaluadas registradas\n`);
 
-      // 2. Evaluar apuestas pendientes y actualizar presupuestos
+      // 2. Evaluar apuestas pendientes - SOLO EVALUAR, NO ACTUALIZAR PRESUPUESTOS
       console.log(`📊 2. Evaluando apuestas pendientes de jornada ${jornada}...`);
       const evaluations = await this.evaluateJornadaBets(jornada, leagueId);
       
-      // Actualizar presupuesto por cada apuesta recién evaluada
+      // Solo mostrar log, NO actualizar presupuestos aquí
       for (const evaluation of evaluations) {
         const bet = await prisma.bet.findUnique({
-          where: { id: evaluation.betId },
-          include: { leagueMember: true }
+          where: { id: evaluation.betId }
         });
 
-        if (!bet || !bet.leagueMember) continue;
+        if (!bet) continue;
 
-        const adjustment = evaluation.won ? bet.potentialWin : -bet.amount;
-        
-        await prisma.leagueMember.update({
-          where: {
-            leagueId_userId: { leagueId, userId: bet.userId }
-          },
-          data: {
-            budget: { increment: adjustment },
-            bettingBudget: { increment: adjustment }
-          }
-        });
-
+        const adjustment = evaluation.won ? (bet.potentialWin - bet.amount) : -bet.amount;
         console.log(
           `  ${evaluation.won ? '✅' : '❌'} Usuario ${bet.userId}: ${bet.betType} - ${bet.betLabel} ` +
-          `= ${adjustment >= 0 ? '+' : ''}${adjustment}M`
+          `= ${adjustment >= 0 ? '+' : ''}${adjustment}M (ganancia neta)`
         );
       }
-      console.log(`✅ ${evaluations.length} apuestas pendientes evaluadas y procesadas\n`);
+      console.log(`✅ ${evaluations.length} apuestas pendientes evaluadas\n`);
 
       // 3. Calcular balances por usuario (para logging)
       console.log(`� 3. Calculando resumen de balances...`);
@@ -1303,8 +1277,8 @@ export class JornadaService {
       }
       console.log(`✅ ${invalidTeamsCount} equipos inválidos registrados\n`);
 
-      // 5. Leer puntos de plantilla YA CALCULADOS y actualizar presupuestos finales
-      console.log(`⚽ 5. Leyendo puntos de plantilla ya calculados y actualizando presupuestos finales...`);
+      // 5. Calcular resultados de apuestas y actualizar presupuestos finales
+      console.log(`⚽ 5. Calculando resultados de apuestas y actualizando presupuestos finales...`);
 
       let updatedMembers = 0;
 
@@ -1329,25 +1303,35 @@ export class JornadaService {
         const userBalance = balances.get(member.userId)!;
         userBalance.squadPoints = squadPoints;
 
-        // Obtener el presupuesto actual (ya incluye ajustes de apuestas)
-        const currentMember = await prisma.leagueMember.findUnique({
-          where: { leagueId_userId: { leagueId, userId: member.userId } }
+        // ✅ CALCULAR RESULTADO NETO DE APUESTAS DE ESTA JORNADA
+        const userBets = await prisma.bet.findMany({
+          where: {
+            leagueId,
+            userId: member.userId,
+            jornada
+          }
         });
 
-        if (!currentMember) continue;
-
+        let betsResult = 0;
+        for (const bet of userBets) {
+          if (bet.status === 'won') {
+            // Ganancia neta = potentialWin - amount (lo que recupera menos lo que apostó)
+            betsResult += (bet.potentialWin - bet.amount);
+          } else if (bet.status === 'lost') {
+            // Pérdida = -amount (lo que apostó)
+            betsResult -= bet.amount;
+          }
+          // Si está 'pending', no afecta (no debería haber pending si evaluamos todo)
+        }
+        
         // FÓRMULA CORRECTA PARA NUEVA JORNADA:
-        // initialBudget = 500M (base) + resultado apuestas + 1M × puntos jornada anterior
+        // initialBudget = 500M (base) + resultado neto apuestas + 1M × puntos jornada anterior
         
-        // 1. Calcular resultado de apuestas de esta jornada
-        // member.initialBudget es el presupuesto base de la jornada (debería ser 500M)
-        // currentMember.budget es lo que tiene ahora después de apuestas
-        const betsResult = currentMember.budget - member.initialBudget; // Diferencia por apuestas
-        
+        // 1. Resultado neto de apuestas (ya calculado arriba)
         // 2. Puntos de la jornada que se está cerrando = 1M por punto
         const budgetFromSquad = squadPoints;
         
-        // 3. Nuevo presupuesto total = SIEMPRE 500M base + apuestas + puntos
+        // 3. Nuevo presupuesto total = SIEMPRE 500M base + resultado neto apuestas + puntos
         const newInitialBudget = 500 + betsResult + budgetFromSquad;
         const newBudget = newInitialBudget;
         
@@ -1366,10 +1350,10 @@ export class JornadaService {
 
         console.log(
           `     InitialBudget jornada ${jornada}: ${member.initialBudget}M\n` +
-          `     Budget tras apuestas: ${currentMember.budget}M (${betsResult >= 0 ? '+' : ''}${betsResult}M)\n` +
+          `     Resultado apuestas J${jornada}: ${betsResult >= 0 ? '+' : ''}${betsResult}M\n` +
           `     Plantilla J${jornada}: ${squadPoints} puntos = +${budgetFromSquad}M\n` +
           `     Nuevo initialBudget: 500 + ${betsResult} + ${budgetFromSquad} = ${newInitialBudget}M\n` +
-          `     Puntos totales: ${currentMember.points}`
+          `     Puntos totales: ${member.points}`
         );
 
         updatedMembers++;
