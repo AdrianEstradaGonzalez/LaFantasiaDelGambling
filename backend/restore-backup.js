@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 async function restoreBackup() {
   try {
     console.log('🔄 Leyendo backup...');
-    const backupPath = path.join(__dirname, 'backups', 'prisma-backup-2025-11-10T00-54-06.json');
+    const backupPath = path.join(__dirname, 'backups', 'railway-backup-2025-11-24T23-23-36.json');
     const backupData = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
     const backup = backupData;
 
@@ -20,6 +20,8 @@ async function restoreBackup() {
     await prisma.bet_option.deleteMany({});
     await prisma.bet.deleteMany({});
     await prisma.betCombi.deleteMany({});
+    await prisma.invalidTeam.deleteMany({});
+    await prisma.squadHistory.deleteMany({});
     await prisma.squadPlayer.deleteMany({});
     await prisma.squad.deleteMany({});
     await prisma.leagueMember.deleteMany({});
@@ -126,13 +128,31 @@ async function restoreBackup() {
       console.log(`  ✓ ${backup.data.squadPlayer.length} jugadores en plantillas`);
     }
 
+    console.log('🎰 Restaurando combis...');
+    if (backup.data.betCombi && backup.data.betCombi.length > 0) {
+      for (const combi of backup.data.betCombi) {
+        await prisma.betCombi.create({ data: combi });
+      }
+      console.log(`  ✓ ${backup.data.betCombi.length} combis`);
+    } else {
+      console.log(`  ℹ️ No hay combis para restaurar`);
+    }
+
     console.log('🎲 Restaurando apuestas...');
     if (backup.data.bet && backup.data.bet.length > 0) {
       let betCount = 0;
       let betErrors = 0;
+      let skippedCombiBets = 0;
       for (const bet of backup.data.bet) {
         try {
-          await prisma.bet.create({ data: bet });
+          // Si la apuesta tiene combiId pero no hay combis, omitir el combiId
+          if (bet.combiId && (!backup.data.betCombi || backup.data.betCombi.length === 0)) {
+            const { combiId, ...betWithoutCombi } = bet;
+            await prisma.bet.create({ data: betWithoutCombi });
+            skippedCombiBets++;
+          } else {
+            await prisma.bet.create({ data: bet });
+          }
           betCount++;
         } catch (err) {
           betErrors++;
@@ -140,6 +160,9 @@ async function restoreBackup() {
         }
       }
       console.log(`  ✓ ${betCount} apuestas restauradas, ${betErrors} errores`);
+      if (skippedCombiBets > 0) {
+        console.log(`  ℹ️ ${skippedCombiBets} apuestas con combiId fueron restauradas sin el combiId (tabla betCombi no existe)`);
+      }
     }
 
     if (backup.data.bet_option && backup.data.bet_option.length > 0) {
@@ -157,7 +180,67 @@ async function restoreBackup() {
       console.log(`  ✓ ${optionCount} opciones restauradas, ${optionErrors} errores`);
     }
 
-    console.log('✅ ¡Backup restaurado exitosamente!');
+    console.log('📋 Restaurando equipos inválidos...');
+    if (backup.data.invalidTeam && backup.data.invalidTeam.length > 0) {
+      for (const invalid of backup.data.invalidTeam) {
+        await prisma.invalidTeam.create({ data: invalid });
+      }
+      console.log(`  ✓ ${backup.data.invalidTeam.length} equipos inválidos`);
+    } else {
+      console.log(`  ℹ️ No hay equipos inválidos para restaurar`);
+    }
+
+    console.log('📚 Restaurando historial de plantillas...');
+    if (backup.data.squadHistory && backup.data.squadHistory.length > 0) {
+      for (const history of backup.data.squadHistory) {
+        await prisma.squadHistory.create({ data: history });
+      }
+      console.log(`  ✓ ${backup.data.squadHistory.length} registros de historial`);
+    } else {
+      console.log(`  ℹ️ No hay historial de plantillas para restaurar`);
+    }
+
+    console.log('🎁 Restaurando ofertas diarias...');
+    if (backup.data.dailyOffer && backup.data.dailyOffer.length > 0) {
+      for (const offer of backup.data.dailyOffer) {
+        await prisma.dailyOffer.create({ data: offer });
+      }
+      console.log(`  ✓ ${backup.data.dailyOffer.length} ofertas diarias`);
+    } else {
+      console.log(`  ℹ️ No hay ofertas diarias para restaurar`);
+    }
+
+    console.log('📜 Restaurando historial de ofertas...');
+    if (backup.data.offerHistory && backup.data.offerHistory.length > 0) {
+      for (const history of backup.data.offerHistory) {
+        await prisma.offerHistory.create({ data: history });
+      }
+      console.log(`  ✓ ${backup.data.offerHistory.length} registros de historial de ofertas`);
+    } else {
+      console.log(`  ℹ️ No hay historial de ofertas para restaurar`);
+    }
+
+    console.log('📱 Restaurando tokens de dispositivos...');
+    if (backup.data.deviceToken && backup.data.deviceToken.length > 0) {
+      for (const token of backup.data.deviceToken) {
+        await prisma.deviceToken.create({ data: token });
+      }
+      console.log(`  ✓ ${backup.data.deviceToken.length} tokens de dispositivos`);
+    } else {
+      console.log(`  ℹ️ No hay tokens de dispositivos para restaurar`);
+    }
+
+    console.log('🔑 Restaurando códigos de reset de contraseña...');
+    if (backup.data.passwordResetCode && backup.data.passwordResetCode.length > 0) {
+      for (const code of backup.data.passwordResetCode) {
+        await prisma.passwordResetCode.create({ data: code });
+      }
+      console.log(`  ✓ ${backup.data.passwordResetCode.length} códigos de reset`);
+    } else {
+      console.log(`  ℹ️ No hay códigos de reset para restaurar`);
+    }
+
+    console.log('\n✅ ¡Backup restaurado exitosamente!');
   } catch (error) {
     console.error('❌ Error restaurando backup:', error);
     throw error;
