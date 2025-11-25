@@ -421,20 +421,35 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
         captainPosition
       );
 
+      // Encontrar los datos completos de la liga destino
+      const targetLeague = userLeagues.find((l: any) => l.id === targetLigaId);
+
+      // Función para navegar a la liga destino
+      const navigateToTargetLeague = () => {
+        if (targetLeague) {
+          navigation.replace('MiPlantilla', {
+            ligaId: targetLigaId,
+            ligaName: targetLigaName,
+            division: targetLeague.division || division,
+            isPremium: targetLeague.isPremium || false
+          });
+        }
+      };
+
       if (result.isNegativeBudget) {
         CustomAlertManager.alert(
           '⚠️ Presupuesto Negativo',
-          `Plantilla copiada a ${targetLigaName}.\n\nPresupuesto actual: ${result.budget}M (en negativo).\n\nDebes ajustar tu plantilla antes del inicio de la jornada o no puntuarás.`,
-          [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+          `Plantilla copiada a ${targetLigaName}.\n\nPresupuesto actual: ${result.budget}M.\n\nDebes ajustar tu plantilla antes del inicio de la jornada o no puntuarás.`,
+          [{ 
+            text: 'Ver Plantilla', 
+            onPress: navigateToTargetLeague, 
+            style: 'default' 
+          }],
           { icon: 'alert', iconColor: '#f59e0b' }
         );
       } else {
-        CustomAlertManager.alert(
-          '✅ Plantilla Copiada',
-          `La plantilla se ha copiado exitosamente a ${targetLigaName}.\n\nCosto total: ${result.totalCost}M\nPresupuesto restante: ${result.budget}M`,
-          [{ text: 'OK', onPress: () => {}, style: 'default' }],
-          { icon: 'check-circle', iconColor: '#10b981' }
-        );
+        // Navegar directamente a la liga destino
+        navigateToTargetLeague();
       }
     } catch (error: any) {
       console.error('Error al copiar plantilla:', error);
