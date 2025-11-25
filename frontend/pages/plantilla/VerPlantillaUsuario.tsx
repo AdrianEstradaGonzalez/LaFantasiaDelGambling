@@ -345,22 +345,36 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
       // Cargar todas las ligas del usuario
       const leagues = await LigaService.obtenerLigasPorUsuario(currentUserId);
       
-      // Filtrar para excluir la liga actual Y solo mostrar ligas de la misma división
-      const otherLeagues = leagues.filter((l: any) => 
-        l.id !== ligaId && l.division === division
-      );
+      // Filtrar para mostrar ligas de la misma división
+      // ✅ AHORA: Incluir liga actual SI está en estado 'open' (jornada abierta)
+      // ✅ ANTES: Excluía siempre la liga actual
+      const availableLeagues = leagues.filter((l: any) => {
+        // Debe ser misma división
+        if (l.division !== division) return false;
+        
+        // Si es otra liga, incluir siempre
+        if (l.id !== ligaId) return true;
+        
+        // Si es la liga actual, solo incluir si está en estado 'open'
+        return jornadaStatus === 'open';
+      });
       
-      if (otherLeagues.length === 0) {
+      if (availableLeagues.length === 0) {
+        const divisionName = division === 'primera' ? 'Primera División' : division === 'segunda' ? 'Segunda División' : 'Premier League';
+        const message = jornadaStatus === 'open' 
+          ? `No tienes otras ligas de ${divisionName} donde copiar esta plantilla`
+          : `No tienes otras ligas de ${divisionName} donde copiar esta plantilla. La liga actual no está disponible porque la jornada ya ha comenzado`;
+        
         CustomAlertManager.alert(
           'Sin ligas disponibles',
-          `No tienes otras ligas de ${division === 'primera' ? 'Primera División' : division === 'segunda' ? 'Segunda División' : 'Premier League'} donde copiar esta plantilla`,
+          message,
           [{ text: 'OK', onPress: () => {}, style: 'default' }],
           { icon: 'information', iconColor: '#0892D0' }
         );
         return;
       }
       
-      setUserLeagues(otherLeagues);
+      setUserLeagues(availableLeagues);
       setShowCopyModal(true);
     } catch (error) {
       console.error('Error al cargar ligas:', error);

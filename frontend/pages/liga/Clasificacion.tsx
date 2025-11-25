@@ -343,8 +343,15 @@ export const Clasificacion = () => {
   
   // Memoizar callback para abrir plantilla de usuario
   const handleOpenUserLineup = useCallback((jugador: UsuarioClasificacion, isCurrentUser: boolean) => {
-    // Si es el usuario actual, ir a "Mi Plantilla"
-    if (isCurrentUser) {
+    // Determinar si se está viendo una jornada pasada (histórica)
+    const isViewingPastJornada = typeof selectedJornada === 'number' && 
+                                  currentLeagueJornada !== null && 
+                                  selectedJornada < currentLeagueJornada;
+    
+    // ✅ NUEVO: Si es el usuario actual pero está viendo una jornada HISTÓRICA,
+    // mostrar su plantilla histórica (no redirigir a edición de plantilla actual)
+    if (isCurrentUser && !isViewingPastJornada) {
+      // Solo para jornada actual/Total: ir a "Mi Plantilla" para editar
       navigation.navigate('Equipo', {
         ligaId,
         ligaName,
@@ -352,13 +359,7 @@ export const Clasificacion = () => {
       return;
     }
     
-    // Determinar si se puede ver la plantilla:
-    // - Si es una jornada pasada (menor que la actual), siempre se puede ver
-    // - Si es la jornada actual o Total, depende del estado de la jornada
-    const isViewingPastJornada = typeof selectedJornada === 'number' && 
-                                  currentLeagueJornada !== null && 
-                                  selectedJornada < currentLeagueJornada;
-    
+    // Para jornadas históricas (incluso si es el propio usuario), verificar permisos de visualización
     const canViewLineup = isViewingPastJornada || jornadaStatus === 'closed';
     
     if (!canViewLineup) {
@@ -371,7 +372,7 @@ export const Clasificacion = () => {
       return;
     }
     
-    // Navegar a ver la plantilla de este usuario
+    // Navegar a ver la plantilla de este usuario (incluyendo usuario actual en jornadas históricas)
     navigation.navigate('VerPlantillaUsuario', {
       ligaId,
       ligaName,
@@ -380,7 +381,7 @@ export const Clasificacion = () => {
       userName: jugador.nombre,
       jornada: selectedJornada === 'Total' ? undefined : selectedJornada,
     } as any);
-  }, [navigation, ligaId, ligaName, jornadaStatus, selectedJornada, currentLeagueJornada]);
+  }, [navigation, ligaId, ligaName, division, jornadaStatus, selectedJornada, currentLeagueJornada]);
   
   // Memoizar componente de jugador
   const renderJugadorItem = useCallback(({ item: jugador }: { item: UsuarioClasificacion }) => {
