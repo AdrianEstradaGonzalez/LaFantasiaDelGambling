@@ -1446,15 +1446,6 @@ export class JornadaService {
       });
       console.log(`✅ Liga avanzada a jornada ${nextJornada} con estado "open"\n`);
 
-      // 8. Generar opciones de apuesta para la nueva jornada
-      console.log(`🎲 8. Generando opciones de apuesta para jornada ${nextJornada}...`);
-      try {
-        const betResult = await generateBetOptionsForAllLeagues(nextJornada);
-        console.log(`✅ Apuestas generadas: ${betResult.totalOptions} opciones para ${betResult.leaguesUpdated} ligas\n`);
-      } catch (error: any) {
-        console.error(`⚠️  Error generando apuestas (continuando): ${error.message}\n`);
-      }
-
       console.log(`\n🎉 JORNADA ${jornada} CERRADA EXITOSAMENTE\n`);
       console.log(`📊 Resumen:`);
       console.log(`   - ${updatedMembers} miembros actualizados (presupuestos)`);
@@ -1696,6 +1687,24 @@ export class JornadaService {
           console.log(`   - ${league.name} (${league.id}): ${league.error}`);
         });
         console.log();
+      }
+
+      // 🎲 GENERAR APUESTAS PARA TODAS LAS LIGAS (una sola vez al final)
+      if (processedLeagues.length > 0) {
+        const newJornada = processedLeagues[0].newJornada; // Todas tienen la misma jornada nueva
+        console.log(`\n${'='.repeat(60)}`);
+        console.log(`🎲 GENERANDO APUESTAS PARA JORNADA ${newJornada}`);
+        console.log(`${'='.repeat(60)}\n`);
+        
+        try {
+          const betResult = await generateBetOptionsForAllLeagues(newJornada);
+          console.log(`✅ Apuestas generadas exitosamente:`);
+          console.log(`   - ${betResult.totalOptions} opciones de apuesta`);
+          console.log(`   - ${betResult.leaguesUpdated} ligas actualizadas\n`);
+        } catch (error: any) {
+          console.error(`⚠️  Error generando apuestas:`, error.message);
+          console.error(`   Las apuestas se pueden generar manualmente más tarde\n`);
+        }
       }
 
       return {
