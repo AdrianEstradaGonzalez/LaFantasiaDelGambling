@@ -128,10 +128,22 @@ export const BetCombiService = {
    * Por defecto solo devuelve combis pendientes
    */
   getUserCombis: async (leagueId: string, userId: string, jornada?: number) => {
-    const where: any = { leagueId, userId, status: 'pending' };
-    if (jornada) {
-      where.jornada = jornada;
+    // Si no se especifica jornada, obtener la jornada actual de la liga
+    let targetJornada = jornada;
+    if (!targetJornada) {
+      const league = await prisma.league.findUnique({
+        where: { id: leagueId },
+        select: { currentJornada: true }
+      });
+      targetJornada = league?.currentJornada || 1;
     }
+
+    const where: any = { 
+      leagueId, 
+      userId, 
+      jornada: targetJornada,
+      status: 'pending' 
+    };
 
     const combis = await (prisma as any).betCombi.findMany({
       where,
