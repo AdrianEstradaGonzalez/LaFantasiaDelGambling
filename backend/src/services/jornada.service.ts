@@ -1175,72 +1175,8 @@ export class JornadaService {
       const jornada = league.currentJornada;
       console.log(`\n🔒 CERRANDO JORNADA ${jornada} para liga "${league.name}" (${leagueId})...\n`);
 
-      // 0. SINCRONIZAR puntos de la jornada actual desde tiempo real
-      console.log(`🔄 0. Sincronizando puntos de J${jornada} desde tiempo real a BD...`);
-      const syncResult = await this.syncCurrentJornadaPoints(leagueId, jornada);
-      console.log(`✅ ${syncResult.updated} usuarios actualizados, ${syncResult.skipped} sin cambios\n`);
-
-      // 1. Listar apuestas ya evaluadas (won/lost) - SOLO PARA LOGGING
-      console.log(`💰 1. Listando apuestas ya evaluadas (won/lost)...`);
-      const evaluatedBets = await prisma.bet.findMany({
-        where: {
-          leagueId,
-          jornada,
-          status: { in: ['won', 'lost'] }
-        },
-        include: {
-          leagueMember: true
-        }
-      });
-
-      // Solo mostrar log, NO actualizar presupuestos aquí
-      for (const bet of evaluatedBets) {
-        const adjustment = bet.status === 'won' ? (bet.potentialWin - bet.amount) : -bet.amount;
-        console.log(
-          `  ${bet.status === 'won' ? '✅' : '❌'} Usuario ${bet.userId}: ${bet.betType} - ${bet.betLabel} ` +
-          `= ${adjustment >= 0 ? '+' : ''}${adjustment}M (ganancia neta)`
-        );
-      }
-      console.log(`✅ ${evaluatedBets.length} apuestas ya evaluadas registradas\n`);
-
-      // 2. Evaluar apuestas pendientes - SOLO EVALUAR, NO ACTUALIZAR PRESUPUESTOS
-      console.log(`📊 2. Evaluando apuestas pendientes de jornada ${jornada}...`);
-      const evaluations = await this.evaluateJornadaBets(jornada, leagueId);
-      
-      // Solo mostrar log, NO actualizar presupuestos aquí
-      for (const evaluation of evaluations) {
-        const bet = await prisma.bet.findUnique({
-          where: { id: evaluation.betId }
-        });
-
-        if (!bet) continue;
-
-        const adjustment = evaluation.won ? (bet.potentialWin - bet.amount) : -bet.amount;
-        console.log(
-          `  ${evaluation.won ? '✅' : '❌'} Usuario ${bet.userId}: ${bet.betType} - ${bet.betLabel} ` +
-          `= ${adjustment >= 0 ? '+' : ''}${adjustment}M (ganancia neta)`
-        );
-      }
-      console.log(`✅ ${evaluations.length} apuestas pendientes evaluadas\n`);
-
-      // 2.1. Evaluar combis de la jornada - SOLO EVALUAR
-      console.log(`🎰 2.1. Evaluando combis de jornada ${jornada}...`);
-      let combiResults = { won: 0, lost: 0, pending: 0, total: 0 };
-      try {
-        combiResults = await BetCombiService.evaluateJornadaCombis(leagueId, jornada);
-        console.log(`✅ Combis evaluadas: ${combiResults.total} (${combiResults.won} ganadas, ${combiResults.lost} perdidas, ${combiResults.pending} pendientes)\n`);
-      } catch (error) {
-        console.error('⚠️  Error evaluando combis:', error);
-        console.log('Continuando con el resto del proceso...\n');
-      }
-
-      // 3. Calcular balances por usuario (para logging)
-      console.log(`📊 3. Calculando resumen de balances...`);
-      const balances = await this.calculateUserBalances(leagueId, evaluations);
-      console.log(`✅ Balances calculados para ${balances.size} usuarios\n`);
-
-      // 4. REGISTRAR EQUIPOS INVÁLIDOS (antes de actualizar presupuestos)
-      console.log(`⚠️  4. Registrando equipos inválidos...`);
+      // 1. REGISTRAR EQUIPOS INVÁLIDOS
+      console.log(`⚠️  1. Registrando equipos inválidos...`);
       const allMembers = await prisma.leagueMember.findMany({
         where: { leagueId },
         include: { user: true },
@@ -1288,33 +1224,19 @@ export class JornadaService {
       }
       console.log(`✅ ${invalidTeamsCount} equipos inválidos registrados\n`);
 
-      // 5. Calcular resultados de apuestas y actualizar presupuestos finales
-      console.log(`⚽ 5. Calculando resultados de apuestas y actualizando presupuestos finales...`);
+      // 2. Calcular resultados de apuestas y actualizar presupuestos finales
+      console.log(`⚽ 2. Calculando presupuestos para nueva jornada...`);
 
       let updatedMembers = 0;
 
       for (const member of allMembers) {
-        // ✅ LEER los puntos ya calculados de pointsPerJornada (actualizados por el worker en tiempo real)
+        // Leer puntos de la jornada que se está cerrando (ya están en BD)
         const pointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
         const squadPoints = pointsPerJornada[jornada.toString()] ?? 0;
         
-        console.log(`  👤 Usuario ${member.user.name} - Puntos J${jornada}: ${squadPoints} (leídos de BD)`);
-        
-        // Actualizar o crear balance del usuario
-        if (!balances.has(member.userId)) {
-          balances.set(member.userId, {
-            userId: member.userId,
-            totalProfit: 0,
-            wonBets: 0,
-            lostBets: 0,
-            squadPoints: 0,
-          });
-        }
-        
-        const userBalance = balances.get(member.userId)!;
-        userBalance.squadPoints = squadPoints;
+        console.log(`  👤 Usuario ${member.user.name} - Puntos J${jornada}: ${squadPoints}`);
 
-        // ✅ CALCULAR RESULTADO NETO DE APUESTAS (individuales) DE ESTA JORNADA
+        // Calcular resultado neto de apuestas individuales
         const userBets = await prisma.bet.findMany({
           where: {
             leagueId,
@@ -1326,16 +1248,13 @@ export class JornadaService {
         let betsResult = 0;
         for (const bet of userBets) {
           if (bet.status === 'won') {
-            // Ganancia neta = potentialWin - amount (lo que recupera menos lo que apostó)
             betsResult += bet.potentialWin;
           } else if (bet.status === 'lost') {
-            // Pérdida = -amount (lo que apostó)
             betsResult -= bet.amount;
           }
-          // Si está 'pending', no afecta (no debería haber pending si evaluamos todo)
         }
 
-        // ✅ CALCULAR RESULTADO NETO DE COMBIS DE ESTA JORNADA
+        // Calcular resultado neto de combis
         const userCombis = await (prisma as any).betCombi.findMany({
           where: {
             leagueId,
@@ -1348,62 +1267,44 @@ export class JornadaService {
         let combisResult = 0;
         for (const combi of userCombis) {
           if (combi.status === 'won') {
-            // Ganó la combi: suma potentialWin COMPLETO
             combisResult += combi.potentialWin;
           } else if (combi.status === 'lost') {
-            // Perdió la combi: resta lo apostado
             combisResult -= combi.amount;
           }
         }
 
-        // ✅ RESULTADO TOTAL DE APUESTAS = apuestas individuales + combis
         const totalBetsResult = betsResult + combisResult;
         
-        // FÓRMULA CORRECTA PARA NUEVA JORNADA:
-        // initialBudget = 500M (base) + resultado neto apuestas (individuales + combis) + 1M × puntos jornada anterior
-        
-        // 1. Resultado neto de apuestas (ya calculado arriba: totalBetsResult = betsResult + combisResult)
-        // 2. Puntos de la jornada que se está cerrando = 1M por punto
-        const budgetFromSquad = squadPoints;
-        
-        // 3. Nuevo presupuesto total = SIEMPRE 500M base + resultado neto apuestas + puntos
-        const newInitialBudget = 500 + totalBetsResult + budgetFromSquad;
+        // FÓRMULA: initialBudget = 500 + resultado apuestas + puntos plantilla
+        const newInitialBudget = 500 + totalBetsResult + squadPoints;
         const newBudget = newInitialBudget;
-        
-        // Los puntos totales ya están actualizados por el worker, NO los recalculamos aquí
-        // Solo actualizamos presupuestos
         
         await prisma.leagueMember.update({
           where: { leagueId_userId: { leagueId, userId: member.userId } },
           data: {
             budget: newBudget,
-            initialBudget: newInitialBudget, // ✅ FÓRMULA: 500 + resultado apuestas + puntos J anterior
-            bettingBudget: 250, // Siempre resetear a 250
-            // NO actualizamos points ni pointsPerJornada - ya están actualizados por el worker
+            initialBudget: newInitialBudget,
+            bettingBudget: 250,
           },
         });
 
         console.log(
-          `     InitialBudget jornada ${jornada}: ${member.initialBudget}M\n` +
-          `     Apuestas individuales J${jornada}: ${betsResult >= 0 ? '+' : ''}${betsResult}M\n` +
-          `     Combis J${jornada}: ${combisResult >= 0 ? '+' : ''}${combisResult}M\n` +
-          `     Total apuestas: ${totalBetsResult >= 0 ? '+' : ''}${totalBetsResult}M\n` +
-          `     Plantilla J${jornada}: ${squadPoints} puntos = +${budgetFromSquad}M\n` +
-          `     Nuevo initialBudget: 500 + ${totalBetsResult} + ${budgetFromSquad} = ${newInitialBudget}M\n` +
-          `     Puntos totales: ${member.points}`
+          `     Apuestas: ${totalBetsResult >= 0 ? '+' : ''}${totalBetsResult}M | ` +
+          `Plantilla: +${squadPoints}M | ` +
+          `Nuevo budget: 500 + ${totalBetsResult} + ${squadPoints} = ${newInitialBudget}M`
         );
 
         updatedMembers++;
       }
       console.log(`✅ ${updatedMembers} miembros actualizados\n`);
 
-      // 6. Guardar snapshot de todas las plantillas ANTES de vaciarlas
-      console.log(`💾 6. Guardando historial de plantillas para jornada ${jornada}...`);
+      // 3. Guardar snapshot de todas las plantillas ANTES de vaciarlas
+      console.log(`💾 3. Guardando historial de plantillas para jornada ${jornada}...`);
       const savedSquadsCount = await SquadHistoryService.saveAllSquadsInLeague(leagueId, jornada);
       console.log(`✅ ${savedSquadsCount} plantillas guardadas en historial\n`);
 
-      // 7. Vaciar TODAS las plantillas de la liga
-      console.log(`🗑️  7. Vaciando plantillas...`);
+      // 4. Vaciar TODAS las plantillas de la liga
+      console.log(`🗑️  4. Vaciando plantillas...`);
       const allSquads = await prisma.squad.findMany({
         where: { leagueId },
       });
@@ -1420,8 +1321,8 @@ export class JornadaService {
       }
       console.log(`✅ ${clearedSquads} plantillas vaciadas\n`);
 
-      // 8. Eliminar opciones de apuestas de la jornada actual
-      console.log(`🗑️  8. Eliminando opciones de apuestas antiguas...`);
+      // 5. Eliminar opciones de apuestas de la jornada actual
+      console.log(`🗑️  5. Eliminando opciones de apuestas antiguas...`);
       const deletedBetOptions = await prisma.bet_option.deleteMany({
         where: {
           leagueId,
@@ -1430,12 +1331,8 @@ export class JornadaService {
       });
       console.log(`✅ ${deletedBetOptions.count} opciones de apuestas eliminadas\n`);
 
-      // 9. NO eliminamos apuestas - solo las mantenemos evaluadas para historial
-      // Las apuestas permanecen en la BBDD con su estado (won/lost/pending)
-      console.log(`📊 Apuestas mantenidas en BBDD para historial\n`);
-
-      // 10. Avanzar jornada y cambiar estado
-      console.log(`⏭️  10. Avanzando jornada...`);
+      // 6. Avanzar jornada y cambiar estado
+      console.log(`⏭️  6. Avanzando jornada...`);
       const nextJornada = jornada + 1;
       await prisma.league.update({
         where: { id: leagueId },
@@ -1446,8 +1343,8 @@ export class JornadaService {
       });
       console.log(`✅ Liga avanzada a jornada ${nextJornada} con estado "open"\n`);
 
-      // 11. Generar opciones de apuesta para la nueva jornada
-      console.log(`🎲 11. Generando opciones de apuesta para jornada ${nextJornada}...`);
+      // 7. Generar opciones de apuesta para la nueva jornada
+      console.log(`🎲 7. Generando opciones de apuesta para jornada ${nextJornada}...`);
       try {
         const betResult = await generateBetOptionsForAllLeagues(nextJornada);
         console.log(`✅ Apuestas generadas: ${betResult.totalOptions} opciones para ${betResult.leaguesUpdated} ligas\n`);
@@ -1457,19 +1354,17 @@ export class JornadaService {
 
       console.log(`\n🎉 JORNADA ${jornada} CERRADA EXITOSAMENTE\n`);
       console.log(`📊 Resumen:`);
-      console.log(`   - ${evaluations.length} apuestas evaluadas`);
       console.log(`   - ${updatedMembers} miembros actualizados (presupuestos)`);
       console.log(`   - ${clearedSquads} plantillas vaciadas`);
       console.log(`   - ${deletedBetOptions.count} opciones de apuestas eliminadas`);
-      console.log(`   - Jornada actual: ${nextJornada}`);
-      console.log(`   ℹ️  Los puntos ya estaban calculados por el worker en tiempo real\n`);
+      console.log(`   - Jornada actual: ${nextJornada}\n`);
 
       return {
         success: true,
         message: `Jornada ${jornada} cerrada exitosamente. Nueva jornada: ${nextJornada}`,
         leagueName: league.name,
         jornada: nextJornada,
-        evaluations,
+        evaluations: [],
         updatedMembers,
         clearedSquads,
         deletedBetOptions: deletedBetOptions.count,
