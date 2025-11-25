@@ -309,21 +309,25 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
             </Text>
             
             <TouchableOpacity
-              style={[styles.primaryButton, {
-                backgroundColor: '#3b82f6',
-                shadowColor: '#3b82f6',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.4,
-                shadowRadius: 8,
-                elevation: 6,
-              }, loadingDreamLeague && styles.primaryButtonDisabled]}
+              style={[
+                styles.primaryButton,
+                {
+                  backgroundColor: '#3b82f6',
+                  shadowColor: '#3b82f6',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 8,
+                  elevation: 6,
+                },
+                styles.primaryButtonDisabled,
+              ]}
               onPress={handleJoinDreamLeague}
-              disabled={loadingDreamLeague}
+              disabled={true}
               activeOpacity={0.8}
             >
               <UsersGroupIcon size={20} color="#fff" />
-              <Text style={[styles.primaryButtonText, { marginLeft: 8 }]}>
-                {loadingDreamLeague ? 'Uniéndote...' : 'Unirse a DreamLeague'}
+              <Text style={[styles.primaryButtonText, styles.primaryButtonTextDisabled, { marginLeft: 8 }]}>
+                {loadingDreamLeague ? 'Uniéndote...' : 'Unirse a DreamLeague (Próximamente)'}
               </Text>
             </TouchableOpacity>
 

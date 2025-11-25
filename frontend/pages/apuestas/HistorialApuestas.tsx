@@ -75,6 +75,42 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
   // Estados para expansión de apuestas en Apuestas
   const [expandedBets, setExpandedBets] = useState<Set<number>>(new Set());
 
+  // Helper: parse fecha/hora de apuesta a Date. Soporta formatos como '1/12', '28/11' y hora '20:30'
+  const parseBetDateTime = (bet: { fecha?: string; hora?: string }) => {
+    try {
+      const nowYear = new Date().getFullYear();
+      let day = 1;
+      let month = 1;
+      let year = nowYear;
+
+      if (bet.fecha) {
+        const m = bet.fecha.toString().match(/(\d{1,2})\D+(\d{1,2})(?:\D+(\d{2,4}))?/);
+        if (m) {
+          day = parseInt(m[1], 10);
+          month = parseInt(m[2], 10);
+          if (m[3]) {
+            year = parseInt(m[3], 10);
+            if (year < 100) year += 2000;
+          }
+        }
+      }
+
+      let hour = 0;
+      let minute = 0;
+      if (bet.hora) {
+        const hm = bet.hora.toString().match(/(\d{1,2}):(\d{2})/);
+        if (hm) {
+          hour = parseInt(hm[1], 10);
+          minute = parseInt(hm[2], 10);
+        }
+      }
+
+      return new Date(year, month - 1, day, hour, minute);
+    } catch (e) {
+      return new Date();
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -90,7 +126,14 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
         console.log('📊 HistorialApuestas - Total bets:', leagueBetsData.length);
         
         // Obtener información de apuestas disponibles para obtener info de partidos
-        const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName });
+        let apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName });
+
+        // Ordenar apuestas por fecha/hora (más reciente primero). Primero tener en cuenta mes, luego día y hora.
+        try {
+          apuestas = apuestas.sort((a: any, b: any) => parseBetDateTime(b).getTime() - parseBetDateTime(a).getTime());
+        } catch (err) {
+          console.warn('Error ordenando apuestas por fecha:', err);
+        }
         
         if (mounted) {
           // Agrupar apuestas por matchId + type
