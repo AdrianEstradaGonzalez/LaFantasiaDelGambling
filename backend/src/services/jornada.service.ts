@@ -1224,13 +1224,116 @@ export class JornadaService {
       }
       console.log(`✅ ${invalidTeamsCount} equipos inválidos registrados\n`);
 
-      // 2. Calcular resultados de apuestas y actualizar presupuestos finales
-      console.log(`⚽ 2. Calculando presupuestos para nueva jornada...`);
+      // 2. Calcular y guardar puntos de plantilla en pointsPerJornada
+      console.log(`📊 2. Calculando puntos de plantillas para jornada ${jornada}...`);
+
+      // Determinar qué tabla de stats usar según división
+      const statsTable = league.division === 'segunda' 
+        ? (prisma as any).playerSegundaStats
+        : league.division === 'premier'
+        ? (prisma as any).playerPremierStats
+        : prisma.playerStats;
+
+      for (const member of allMembers) {
+        const squad = allSquadsCheck.find(s => s.userId === member.userId);
+        
+        // Si no tiene plantilla o tiene < 11 jugadores → 0 puntos
+        if (!squad || squad.players.length < 11) {
+          const pointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
+          pointsPerJornada[jornada.toString()] = 0;
+          
+          // Recalcular total
+          let totalPoints = 0;
+          for (let j = 1; j <= 38; j++) {
+            totalPoints += pointsPerJornada[j.toString()] || 0;
+          }
+          
+          await prisma.leagueMember.update({
+            where: { leagueId_userId: { leagueId, userId: member.userId } },
+            data: { 
+              pointsPerJornada,
+              points: totalPoints
+            }
+          });
+          
+          console.log(`  ⚠️  ${member.user.name}: 0 puntos (plantilla inválida)`);
+          continue;
+        }
+
+        // Obtener stats de todos los jugadores de la plantilla para esta jornada
+        const playerIds = squad.players.map((p: any) => p.playerId);
+        const playerStats = await statsTable.findMany({
+          where: {
+            playerId: { in: playerIds },
+            jornada: jornada,
+            season: 2025
+          }
+        });
+
+        // Calcular puntos totales (capitán × 2)
+        let squadPoints = 0;
+        let captainId: number | null = null;
+
+        const captainPlayer = squad.players.find((p: any) => p.isCaptain);
+        if (captainPlayer) {
+          captainId = captainPlayer.playerId;
+        }
+
+        playerStats.forEach((stats: any) => {
+          const points = stats.totalPoints || 0;
+          
+          if (captainId && stats.playerId === captainId) {
+            squadPoints += points * 2;
+          } else {
+            squadPoints += points;
+          }
+        });
+
+        // Verificar si fue inválido (aunque ya se registró arriba)
+        const wasInvalid = await prisma.invalidTeam.findUnique({
+          where: {
+            userId_leagueId_jornada: {
+              userId: member.userId,
+              leagueId: leagueId,
+              jornada: jornada
+            }
+          }
+        });
+
+        // Si fue inválido, puntos = 0
+        if (wasInvalid) {
+          squadPoints = 0;
+        }
+
+        // Actualizar pointsPerJornada[jornada]
+        const pointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
+        pointsPerJornada[jornada.toString()] = squadPoints;
+        
+        // Recalcular total sumando todas las jornadas
+        let totalPoints = 0;
+        for (let j = 1; j <= 38; j++) {
+          totalPoints += pointsPerJornada[j.toString()] || 0;
+        }
+
+        await prisma.leagueMember.update({
+          where: { leagueId_userId: { leagueId, userId: member.userId } },
+          data: { 
+            pointsPerJornada,
+            points: totalPoints
+          }
+        });
+
+        console.log(`  ✅ ${member.user.name}: J${jornada}=${squadPoints} pts → Total=${totalPoints} pts`);
+      }
+      console.log(`✅ Puntos de plantilla calculados y guardados\n`);
+
+      // 3. Calcular presupuestos para nueva jornada
+      console.log(`⚽ 3. Calculando presupuestos para nueva jornada...`);
 
       let updatedMembers = 0;
 
       for (const member of allMembers) {
-        // Leer puntos de la jornada que se está cerrando (ya están en BD)
+        // Leer puntos de la jornada (ya calculados en paso 2)
         const pointsPerJornada = (member.pointsPerJornada as Record<string, number>) || {};
         const squadPoints = pointsPerJornada[jornada.toString()] ?? 0;
         
@@ -1298,13 +1401,13 @@ export class JornadaService {
       }
       console.log(`✅ ${updatedMembers} miembros actualizados\n`);
 
-      // 3. Guardar snapshot de todas las plantillas ANTES de vaciarlas
-      console.log(`💾 3. Guardando historial de plantillas para jornada ${jornada}...`);
+      // 4. Guardar snapshot de todas las plantillas ANTES de vaciarlas
+      console.log(`💾 4. Guardando historial de plantillas para jornada ${jornada}...`);
       const savedSquadsCount = await SquadHistoryService.saveAllSquadsInLeague(leagueId, jornada);
       console.log(`✅ ${savedSquadsCount} plantillas guardadas en historial\n`);
 
-      // 4. Vaciar TODAS las plantillas de la liga
-      console.log(`🗑️  4. Vaciando plantillas...`);
+      // 5. Vaciar TODAS las plantillas de la liga
+      console.log(`🗑️  5. Vaciando plantillas...`);
       const allSquads = await prisma.squad.findMany({
         where: { leagueId },
       });
@@ -1321,8 +1424,8 @@ export class JornadaService {
       }
       console.log(`✅ ${clearedSquads} plantillas vaciadas\n`);
 
-      // 5. Eliminar opciones de apuestas de la jornada actual
-      console.log(`🗑️  5. Eliminando opciones de apuestas antiguas...`);
+      // 6. Eliminar opciones de apuestas de la jornada actual
+      console.log(`🗑️  6. Eliminando opciones de apuestas antiguas...`);
       const deletedBetOptions = await prisma.bet_option.deleteMany({
         where: {
           leagueId,
@@ -1331,8 +1434,8 @@ export class JornadaService {
       });
       console.log(`✅ ${deletedBetOptions.count} opciones de apuestas eliminadas\n`);
 
-      // 6. Avanzar jornada y cambiar estado
-      console.log(`⏭️  6. Avanzando jornada...`);
+      // 7. Avanzar jornada y cambiar estado
+      console.log(`⏭️  7. Avanzando jornada...`);
       const nextJornada = jornada + 1;
       await prisma.league.update({
         where: { id: leagueId },
@@ -1343,8 +1446,8 @@ export class JornadaService {
       });
       console.log(`✅ Liga avanzada a jornada ${nextJornada} con estado "open"\n`);
 
-      // 7. Generar opciones de apuesta para la nueva jornada
-      console.log(`🎲 7. Generando opciones de apuesta para jornada ${nextJornada}...`);
+      // 8. Generar opciones de apuesta para la nueva jornada
+      console.log(`🎲 8. Generando opciones de apuesta para jornada ${nextJornada}...`);
       try {
         const betResult = await generateBetOptionsForAllLeagues(nextJornada);
         console.log(`✅ Apuestas generadas: ${betResult.totalOptions} opciones para ${betResult.leaguesUpdated} ligas\n`);
