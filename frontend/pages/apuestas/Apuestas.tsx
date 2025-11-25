@@ -123,6 +123,42 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Estados para expansión de apuestas por partido
   const [expandedBets, setExpandedBets] = useState<Set<number>>(new Set());
 
+  // Helper: parse fecha/hora de apuesta a Date. Soporta formatos como '1/12', '28/11' y hora '20:30'
+  const parseBetDateTime = (bet: { fecha?: string; hora?: string }) => {
+    try {
+      const nowYear = new Date().getFullYear();
+      let day = 1;
+      let month = 1;
+      let year = nowYear;
+
+      if (bet.fecha) {
+        const m = bet.fecha.toString().match(/(\d{1,2})\D+(\d{1,2})(?:\D+(\d{2,4}))?/);
+        if (m) {
+          day = parseInt(m[1], 10);
+          month = parseInt(m[2], 10);
+          if (m[3]) {
+            year = parseInt(m[3], 10);
+            if (year < 100) year += 2000;
+          }
+        }
+      }
+
+      let hour = 0;
+      let minute = 0;
+      if (bet.hora) {
+        const hm = bet.hora.toString().match(/(\d{1,2}):(\d{2})/);
+        if (hm) {
+          hour = parseInt(hm[1], 10);
+          minute = parseInt(hm[2], 10);
+        }
+      }
+
+      return new Date(year, month - 1, day, hour, minute);
+    } catch (e) {
+      return new Date();
+    }
+  };
+
   // Estado para almacenar combis del usuario
   const [userCombis, setUserCombis] = useState<any[]>([]);
   
@@ -242,7 +278,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         );
 
         console.log('🔍 Cargando mercado de apuestas - División:', division);
-        const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName, division });
+        let apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName, division });
+        // Ordenar por fecha/hora (más reciente primero)
+        try {
+          apuestas = apuestas.sort((a: any, b: any) => parseBetDateTime(b).getTime() - parseBetDateTime(a).getTime());
+        } catch (err) {
+          console.warn('Error ordenando apuestas por fecha:', err);
+        }
         console.log('✅ Apuestas cargadas:', apuestas.length);
 
         // Obtener presupuesto y apuestas del usuario si hay ligaId
@@ -413,7 +455,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         setLoading(true);
         
         // Cargar apuestas disponibles para apostar
-        const apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName, division });
+        let apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName, division });
+        try {
+          apuestas = apuestas.sort((a: any, b: any) => parseBetDateTime(b).getTime() - parseBetDateTime(a).getTime());
+        } catch (err) {
+          console.warn('Error ordenando apuestas por fecha:', err);
+        }
         
         // Agrupar apuestas por matchId + type
         const grouped: Record<string, GroupedBet> = {};
