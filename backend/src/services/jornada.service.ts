@@ -1223,8 +1223,19 @@ export class JornadaService {
       }
       console.log(`✅ ${evaluations.length} apuestas pendientes evaluadas\n`);
 
+      // 2.1. Evaluar combis de la jornada - SOLO EVALUAR
+      console.log(`🎰 2.1. Evaluando combis de jornada ${jornada}...`);
+      let combiResults = { won: 0, lost: 0, pending: 0, total: 0 };
+      try {
+        combiResults = await BetCombiService.evaluateJornadaCombis(leagueId, jornada);
+        console.log(`✅ Combis evaluadas: ${combiResults.total} (${combiResults.won} ganadas, ${combiResults.lost} perdidas, ${combiResults.pending} pendientes)\n`);
+      } catch (error) {
+        console.error('⚠️  Error evaluando combis:', error);
+        console.log('Continuando con el resto del proceso...\n');
+      }
+
       // 3. Calcular balances por usuario (para logging)
-      console.log(`� 3. Calculando resumen de balances...`);
+      console.log(`📊 3. Calculando resumen de balances...`);
       const balances = await this.calculateUserBalances(leagueId, evaluations);
       console.log(`✅ Balances calculados para ${balances.size} usuarios\n`);
 
@@ -1303,7 +1314,7 @@ export class JornadaService {
         const userBalance = balances.get(member.userId)!;
         userBalance.squadPoints = squadPoints;
 
-        // ✅ CALCULAR RESULTADO NETO DE APUESTAS DE ESTA JORNADA
+        // ✅ CALCULAR RESULTADO NETO DE APUESTAS (individuales) DE ESTA JORNADA
         const userBets = await prisma.bet.findMany({
           where: {
             leagueId,
@@ -1323,16 +1334,40 @@ export class JornadaService {
           }
           // Si está 'pending', no afecta (no debería haber pending si evaluamos todo)
         }
+
+        // ✅ CALCULAR RESULTADO NETO DE COMBIS DE ESTA JORNADA
+        const userCombis = await (prisma as any).betCombi.findMany({
+          where: {
+            leagueId,
+            userId: member.userId,
+            jornada,
+            status: { in: ['won', 'lost'] }
+          }
+        });
+
+        let combisResult = 0;
+        for (const combi of userCombis) {
+          if (combi.status === 'won') {
+            // Ganó la combi: suma potentialWin COMPLETO
+            combisResult += combi.potentialWin;
+          } else if (combi.status === 'lost') {
+            // Perdió la combi: resta lo apostado
+            combisResult -= combi.amount;
+          }
+        }
+
+        // ✅ RESULTADO TOTAL DE APUESTAS = apuestas individuales + combis
+        const totalBetsResult = betsResult + combisResult;
         
         // FÓRMULA CORRECTA PARA NUEVA JORNADA:
-        // initialBudget = 500M (base) + resultado neto apuestas + 1M × puntos jornada anterior
+        // initialBudget = 500M (base) + resultado neto apuestas (individuales + combis) + 1M × puntos jornada anterior
         
-        // 1. Resultado neto de apuestas (ya calculado arriba)
+        // 1. Resultado neto de apuestas (ya calculado arriba: totalBetsResult = betsResult + combisResult)
         // 2. Puntos de la jornada que se está cerrando = 1M por punto
         const budgetFromSquad = squadPoints;
         
         // 3. Nuevo presupuesto total = SIEMPRE 500M base + resultado neto apuestas + puntos
-        const newInitialBudget = 500 + betsResult + budgetFromSquad;
+        const newInitialBudget = 500 + totalBetsResult + budgetFromSquad;
         const newBudget = newInitialBudget;
         
         // Los puntos totales ya están actualizados por el worker, NO los recalculamos aquí
@@ -1350,9 +1385,11 @@ export class JornadaService {
 
         console.log(
           `     InitialBudget jornada ${jornada}: ${member.initialBudget}M\n` +
-          `     Resultado apuestas J${jornada}: ${betsResult >= 0 ? '+' : ''}${betsResult}M\n` +
+          `     Apuestas individuales J${jornada}: ${betsResult >= 0 ? '+' : ''}${betsResult}M\n` +
+          `     Combis J${jornada}: ${combisResult >= 0 ? '+' : ''}${combisResult}M\n` +
+          `     Total apuestas: ${totalBetsResult >= 0 ? '+' : ''}${totalBetsResult}M\n` +
           `     Plantilla J${jornada}: ${squadPoints} puntos = +${budgetFromSquad}M\n` +
-          `     Nuevo initialBudget: 500 + ${betsResult} + ${budgetFromSquad} = ${newInitialBudget}M\n` +
+          `     Nuevo initialBudget: 500 + ${totalBetsResult} + ${budgetFromSquad} = ${newInitialBudget}M\n` +
           `     Puntos totales: ${member.points}`
         );
 
