@@ -1622,6 +1622,8 @@ export class JornadaService {
       evaluations: number;
       updatedMembers: number;
       clearedSquads: number;
+      success: boolean;
+      error?: string;
     }>;
   }> {
     try {
@@ -1629,13 +1631,14 @@ export class JornadaService {
 
       const leagues = await prisma.league.findMany();
       const processedLeagues = [];
+      const failedLeagues = [];
       let totalEvaluations = 0;
       let totalUpdatedMembers = 0;
       let totalClearedSquads = 0;
 
       for (const league of leagues) {
         console.log(`\n${'='.repeat(60)}`);
-        console.log(`  Procesando liga: ${league.name}`);
+        console.log(`  Procesando liga: ${league.name} (Jornada ${league.currentJornada}, División: ${league.division})`);
         console.log(`${'='.repeat(60)}\n`);
 
         try {
@@ -1649,6 +1652,7 @@ export class JornadaService {
             evaluations: result.evaluations.length,
             updatedMembers: result.updatedMembers,
             clearedSquads: result.clearedSquads,
+            success: true,
           });
 
           totalEvaluations += result.evaluations.length;
@@ -1656,9 +1660,25 @@ export class JornadaService {
           totalClearedSquads += result.clearedSquads;
 
           console.log(`✅ Liga "${league.name}" procesada exitosamente\n`);
-        } catch (error) {
-          console.error(`❌ Error procesando liga "${league.name}":`, error);
+        } catch (error: any) {
+          const errorMessage = error?.message || String(error);
+          console.error(`❌ Error procesando liga "${league.name}":`, errorMessage);
+          console.error(`   Stack:`, error?.stack);
+          
+          failedLeagues.push({
+            id: league.id,
+            name: league.name,
+            oldJornada: league.currentJornada,
+            newJornada: league.currentJornada,
+            evaluations: 0,
+            updatedMembers: 0,
+            clearedSquads: 0,
+            success: false,
+            error: errorMessage,
+          });
+          
           // Continuar con la siguiente liga
+          console.log(`⏭️  Continuando con la siguiente liga...\n`);
         }
       }
 
@@ -1666,19 +1686,30 @@ export class JornadaService {
       console.log(`🎉 PROCESO COMPLETADO`);
       console.log(`${'='.repeat(60)}\n`);
       console.log(`📊 Resumen Global:`);
-      console.log(`   - Ligas procesadas: ${processedLeagues.length}/${leagues.length}`);
+      console.log(`   - Ligas exitosas: ${processedLeagues.length}/${leagues.length}`);
+      console.log(`   - Ligas fallidas: ${failedLeagues.length}/${leagues.length}`);
       console.log(`   - Total apuestas evaluadas: ${totalEvaluations}`);
       console.log(`   - Total miembros actualizados: ${totalUpdatedMembers}`);
       console.log(`   - Total plantillas vaciadas: ${totalClearedSquads}\n`);
 
+      if (failedLeagues.length > 0) {
+        console.log(`⚠️  Ligas que fallaron:`);
+        failedLeagues.forEach(league => {
+          console.log(`   - ${league.name} (${league.id}): ${league.error}`);
+        });
+        console.log();
+      }
+
       return {
-        success: true,
-        message: `Jornada cerrada para ${processedLeagues.length} ligas`,
+        success: failedLeagues.length === 0,
+        message: failedLeagues.length === 0 
+          ? `Jornada cerrada para ${processedLeagues.length} ligas`
+          : `Jornada cerrada para ${processedLeagues.length} ligas, ${failedLeagues.length} fallaron`,
         leaguesProcessed: processedLeagues.length,
         totalEvaluations,
         totalUpdatedMembers,
         totalClearedSquads,
-        leagues: processedLeagues,
+        leagues: [...processedLeagues, ...failedLeagues],
       };
     } catch (error) {
       console.error('❌ Error cerrando jornadas:', error);
