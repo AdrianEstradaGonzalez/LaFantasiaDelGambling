@@ -978,7 +978,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }
 
     // Validar máximo 50M
-    if (amount > 30) {
+    if (amount > 50) {
       CustomAlertManager.alert(
         'Cantidad no válida',
         'El máximo a apostar son 50 millones',
