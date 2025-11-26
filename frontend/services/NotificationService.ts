@@ -1,4 +1,3 @@
-import messaging from '@react-native-firebase/messaging';
 import notifee, { AndroidImportance, TriggerType, RepeatFrequency } from '@notifee/react-native';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,11 +24,6 @@ export class NotificationService {
       
       this.initialized = true;
       console.log('✅ Notificaciones locales activadas automáticamente');
-      
-      // Intentar inicializar Firebase (opcional, no bloquea si falla)
-      this.initializeFirebase().catch(err => {
-        console.warn('⚠️ Firebase no disponible (notificaciones push deshabilitadas):', err.message);
-      });
     } catch (error) {
       console.error('❌ Error al inicializar notificaciones locales:', error);
       // Intentar inicializar de todas formas aunque haya errores
@@ -42,38 +36,7 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Inicializar Firebase para notificaciones push (opcional)
-   */
-  static async initializeFirebase(): Promise<void> {
-    try {
-      // Solicitar permisos de notificaciones
-      const authStatus = await messaging().requestPermission();
-      const enabled =
-        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-      if (enabled) {
-        console.log('✅ Permisos de Firebase otorgados');
-        
-        // Obtener token FCM
-        const token = await messaging().getToken();
-        console.log('📱 FCM Token:', token);
-        
-        // Guardar token en AsyncStorage para enviarlo al backend
-        await AsyncStorage.setItem('fcmToken', token);
-        
-        // Configurar listeners para notificaciones push
-        this.setupNotificationListeners();
-        
-        console.log('✅ Firebase inicializado correctamente');
-      } else {
-        console.warn('⚠️ Permisos de Firebase denegados');
-      }
-    } catch (error) {
-      throw error;
-    }
-  }
 
   /**
    * Crear canal de notificaciones para Android
@@ -93,52 +56,7 @@ export class NotificationService {
     }
   }
 
-  /**
-   * Configurar listeners para notificaciones
-   */
-  static setupNotificationListeners(): void {
-    // Notificación en primer plano
-    messaging().onMessage(async remoteMessage => {
-      console.log('📬 Notificación recibida en primer plano:', remoteMessage);
-      
-      if (remoteMessage.notification) {
-        await notifee.displayNotification({
-          title: remoteMessage.notification.title,
-          body: remoteMessage.notification.body,
-          android: {
-            channelId: 'liga-updates',
-            importance: AndroidImportance.HIGH,
-            pressAction: {
-              id: 'default',
-            },
-          },
-          ios: {
-            sound: 'default',
-          },
-        });
-      }
-    });
 
-    // Notificación en segundo plano
-    messaging().setBackgroundMessageHandler(async remoteMessage => {
-      console.log('📬 Notificación recibida en segundo plano:', remoteMessage);
-    });
-
-    // Cuando el usuario toca la notificación
-    messaging().onNotificationOpenedApp(remoteMessage => {
-      console.log('👆 Usuario abrió la app desde notificación:', remoteMessage);
-      // Aquí puedes navegar a una pantalla específica
-    });
-
-    // Cuando la app se abre desde una notificación mientras estaba cerrada
-    messaging()
-      .getInitialNotification()
-      .then(remoteMessage => {
-        if (remoteMessage) {
-          console.log('🚀 App abierta desde notificación:', remoteMessage);
-        }
-      });
-  }
 
   /**
    * Programar notificación semanal todos los jueves a las 17:00
