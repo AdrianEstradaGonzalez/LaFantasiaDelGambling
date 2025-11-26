@@ -204,41 +204,68 @@ export const DrawerMenu = ({ navigation, ligaId, ligaName, division, isPremium }
   };
 
   const handleLogout = () => {
-    CustomAlertManager.alert(
-      'Cerrar Sesión',
-      '¿Estás seguro que deseas salir?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-          onPress: () => {},
-        },
-        {
-          text: 'Salir',
-          style: 'destructive',
-          onPress: () => {
-            console.log('🔴 Logout from drawer menu');
-            
-            // Navegar inmediatamente sin bloquear
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
-            
-            // Limpiar storage en background
-            setTimeout(() => {
-              Promise.all([
-                LoginService.logout(),
-                EncryptedStorage.clear()
-              ])
-                .then(() => console.log('✅ Storage cleared from drawer'))
-                .catch(err => console.error('Error clearing storage:', err));
-            }, 100);
+    const showNativeAlert = () => {
+      // Fallback nativo si CustomAlertManager no funciona
+      try {
+        const buttons = [
+          { text: 'Cancelar', style: 'cancel' as const, onPress: () => {} },
+          {
+            text: 'Salir',
+            style: 'destructive' as const,
+            onPress: () => {
+              console.log('🔴 Logout from drawer menu (native fallback)');
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+              setTimeout(() => {
+                Promise.all([LoginService.logout(), EncryptedStorage.clear()])
+                  .then(() => console.log('✅ Storage cleared from drawer (native)'))
+                  .catch(err => console.error('Error clearing storage:', err));
+              }, 100);
+            },
           },
-        },
-      ],
-      { icon: 'alert-circle', iconColor: '#ef4444' }
-    );
+        ];
+        // Use React Native Alert
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { Alert } = require('react-native');
+        Alert.alert('Cerrar Sesión', '¿Estás seguro que deseas salir?', buttons as any, { cancelable: true });
+      } catch (err) {
+        console.error('Error mostrando alerta nativa de logout:', err);
+      }
+    };
+
+    try {
+      if (CustomAlertManager && (CustomAlertManager as any).alert) {
+        CustomAlertManager.alert(
+          'Cerrar Sesión',
+          '¿Estás seguro que deseas salir?',
+          [
+            { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
+            {
+              text: 'Salir',
+              onPress: () => {
+                try {
+                  console.log('🔴 Logout from drawer menu');
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                  setTimeout(() => {
+                    Promise.all([LoginService.logout(), EncryptedStorage.clear()])
+                      .then(() => console.log('✅ Storage cleared from drawer'))
+                      .catch(err => console.error('Error clearing storage:', err));
+                  }, 100);
+                } catch (e) {
+                  console.error('Error during logout action:', e);
+                }
+              },
+              style: 'destructive',
+            },
+          ],
+          { icon: 'alert-circle', iconColor: '#ef4444' }
+        );
+      } else {
+        showNativeAlert();
+      }
+    } catch (err) {
+      console.error('CustomAlertManager failed:', err);
+      showNativeAlert();
+    }
   };
 
   const MenuItem = ({ 
