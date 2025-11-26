@@ -44,6 +44,9 @@ export class NotificationService {
         // Programar notificación semanal (jueves 17:00)
         await this.scheduleWeeklyNotification();
         
+        // Programar notificación diaria (00:00 - ofertas del mercado)
+        await this.scheduleDailyMarketNotification();
+        
         this.initialized = true;
       } else {
         console.warn('⚠️ Permisos de notificaciones denegados');
@@ -188,6 +191,71 @@ export class NotificationService {
   }
 
   /**
+   * Programar notificación diaria a las 00:00 para ofertas del mercado
+   */
+  static async scheduleDailyMarketNotification(): Promise<void> {
+    try {
+      // Cancelar notificaciones programadas anteriores
+      const notifications = await notifee.getTriggerNotifications();
+      for (const notification of notifications) {
+        if (notification.notification.id === 'daily-market-offers') {
+          await notifee.cancelNotification(notification.notification.id);
+        }
+      }
+
+      // Calcular próxima medianoche (00:00)
+      const now = new Date();
+      const nextMidnight = new Date();
+      
+      // Si ya pasó la medianoche de hoy, programar para mañana
+      if (now.getHours() >= 0 && now.getMinutes() > 0) {
+        nextMidnight.setDate(now.getDate() + 1);
+      }
+      
+      // Establecer hora a 00:00
+      nextMidnight.setHours(0, 0, 0, 0);
+
+      // Crear trigger para repetir diariamente
+      const trigger = {
+        type: TriggerType.TIMESTAMP,
+        timestamp: nextMidnight.getTime(),
+        repeatFrequency: RepeatFrequency.DAILY,
+      };
+
+      await notifee.createTriggerNotification(
+        {
+          id: 'daily-market-offers',
+          title: '🛒 ¡Nuevas Ofertas en el Mercado!',
+          body: 'Descubre las ofertas del día y mejora tu plantilla con los mejores jugadores',
+          android: {
+            channelId: 'liga-updates',
+            importance: AndroidImportance.HIGH,
+            smallIcon: 'ic_launcher',
+            largeIcon: 'ic_launcher',
+            pressAction: {
+              id: 'default',
+            },
+            sound: 'default',
+          },
+          ios: {
+            sound: 'default',
+            attachments: [
+              {
+                url: 'app-icon',
+              },
+            ],
+          },
+        },
+        trigger as any
+      );
+
+      console.log('✅ Notificación diaria del mercado programada para:', nextMidnight.toLocaleString());
+    } catch (error) {
+      console.error('❌ Error al programar notificación diaria del mercado:', error);
+    }
+  }
+
+  /**
    * Obtener token FCM del dispositivo
    */
   static async getFCMToken(): Promise<string | null> {
@@ -290,6 +358,44 @@ export class NotificationService {
       console.log('✅ Notificación de prueba programada para 10 segundos');
     } catch (error) {
       console.error('❌ Error al programar notificación de prueba:', error);
+    }
+  }
+
+  /**
+   * Probar notificación diaria del mercado (para testing - muestra en 10 segundos)
+   */
+  static async testDailyMarketNotification(): Promise<void> {
+    try {
+      const trigger = {
+        type: TriggerType.TIMESTAMP,
+        timestamp: Date.now() + 10000, // 10 segundos desde ahora
+      };
+
+      await notifee.createTriggerNotification(
+        {
+          id: 'test-daily-market',
+          title: '🛒 ¡Nuevas Ofertas en el Mercado!',
+          body: 'Descubre las ofertas del día y mejora tu plantilla con los mejores jugadores',
+          android: {
+            channelId: 'liga-updates',
+            importance: AndroidImportance.HIGH,
+            smallIcon: 'ic_launcher',
+            largeIcon: 'ic_launcher',
+            pressAction: {
+              id: 'default',
+            },
+            sound: 'default',
+          },
+          ios: {
+            sound: 'default',
+          },
+        },
+        trigger as any
+      );
+
+      console.log('✅ Notificación de prueba del mercado programada para 10 segundos');
+    } catch (error) {
+      console.error('❌ Error al programar notificación de prueba del mercado:', error);
     }
   }
 

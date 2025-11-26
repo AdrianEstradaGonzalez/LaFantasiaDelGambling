@@ -5,6 +5,7 @@
 1. **Notificación de Jornada Abierta**: Se envía automáticamente cuando el admin abre una nueva jornada
 2. **Notificación de Jornada Cerrada**: Se envía automáticamente cuando el admin cierra una jornada
 3. **Recordatorio Semanal**: Notificación local programada todos los viernes a las 17:00
+4. **Ofertas Diarias del Mercado**: Notificación local diaria a las 00:00 sobre nuevas ofertas ✨ **NUEVO**
 
 ---
 
@@ -363,6 +364,32 @@ const notifications = await notifee.getTriggerNotifications();
 console.log('Notificaciones programadas:', notifications);
 ```
 
+### Probar notificación diaria del mercado (muestra en 10 segundos)
+
+```typescript
+import { NotificationService } from './services/NotificationService';
+
+// Prueba la notificación diaria sin esperar hasta medianoche
+NotificationService.testDailyMarketNotification();
+
+// Después de 10 segundos, aparecerá la notificación:
+// 🛒 ¡Nuevas Ofertas en el Mercado!
+```
+
+### Verificar todas las notificaciones programadas
+
+```typescript
+import { NotificationService } from './services/NotificationService';
+
+// Ver todas las notificaciones programadas con sus horarios
+NotificationService.checkScheduledNotifications();
+
+// Output en consola:
+// 📋 Notificaciones programadas: 2
+//   - weekly-reminder: 28/11/2025 17:00:00
+//   - daily-market-offers: 26/11/2025 00:00:00
+```
+
 ---
 
 ## ⚠️ NOTAS IMPORTANTES
@@ -377,9 +404,11 @@ console.log('Notificaciones programadas:', notifications);
    - Cuota gratuita: ~1 millón de mensajes/mes
    - Rate limit: ~500 mensajes/segundo
 
-5. **Notificación Semanal**: Es local, no requiere backend. Se programa automáticamente al inicializar el servicio.
+5. **Notificaciones Locales**: Las notificaciones semanales y diarias son locales, no requieren backend. Se programan automáticamente al inicializar el servicio.
 
 6. **Background/Quit State**: Las notificaciones funcionan incluso cuando la app está cerrada.
+
+7. **Notificación Diaria (00:00)**: Se envía todos los días a medianoche para recordar sobre las ofertas del mercado. Es completamente local y automática.
 
 ---
 
