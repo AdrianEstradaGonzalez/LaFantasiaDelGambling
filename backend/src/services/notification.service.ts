@@ -259,15 +259,16 @@ export class NotificationService {
       const prisma = new PrismaClient();
 
       // Obtener todos los tokens de dispositivos de los miembros de la liga
+      const members = await prisma.leagueMember.findMany({
+        where: { leagueId: leagueId },
+        select: { userId: true }
+      });
+
+      const userIds = members.map(m => m.userId);
+
       const deviceTokens = await prisma.deviceToken.findMany({
         where: {
-          user: {
-            leagueMembers: {
-              some: {
-                leagueId: leagueId
-              }
-            }
-          }
+          userId: { in: userIds }
         },
         select: {
           token: true
