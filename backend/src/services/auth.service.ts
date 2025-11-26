@@ -111,6 +111,72 @@ export async function issueTokens(userId: string, email?: string, isAdmin?: bool
   return { accessToken: signAccess(userId, email, isAdmin || false), refreshToken: signRefresh(userId) };
 }
 
+/**
+ * Elimina permanentemente la cuenta de un usuario y todos sus datos asociados
+ * Esta acción es irreversible
+ */
+export async function deleteAccount(userId: string) {
+  console.log(`[deleteAccount] Iniciando eliminación del usuario: ${userId}`);
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Obtener todas las membresías de liga del usuario
+    const leagueMemberships = await tx.leagueMember.findMany({
+      where: { userId },
+      select: { id: true, leagueId: true },
+    });
+
+    const leagueMemberIds = leagueMemberships.map(lm => lm.id);
+    const leagueIds = leagueMemberships.map(lm => lm.leagueId);
+
+    console.log(`[deleteAccount] Usuario tiene ${leagueMemberIds.length} membresías de liga`);
+
+    if (leagueMemberIds.length > 0) {
+      // 2. Eliminar todas las plantillas (squads) y sus jugadores
+      const squads = await tx.squad.findMany({
+        where: { leagueId: { in: leagueIds }, userId },
+        select: { id: true },
+      });
+      const squadIds = squads.map(s => s.id);
+
+      if (squadIds.length > 0) {
+        console.log(`[deleteAccount] Eliminando ${squadIds.length} plantillas y sus jugadores`);
+        await tx.squadPlayer.deleteMany({ where: { squadId: { in: squadIds } } });
+        await tx.squad.deleteMany({ where: { id: { in: squadIds } } });
+      }
+
+      // 3. Eliminar historial de plantillas
+      await tx.squadHistory.deleteMany({ where: { userId, leagueId: { in: leagueIds } } });
+
+      // 4. Eliminar apuestas y combis
+      console.log(`[deleteAccount] Eliminando apuestas del usuario`);
+      await tx.bet.deleteMany({ where: { leagueMemberId: { in: leagueMemberIds } } });
+      await tx.betCombi.deleteMany({ where: { leagueMemberId: { in: leagueMemberIds } } });
+
+      // 5. Eliminar registros de equipos inválidos
+      await tx.invalidTeam.deleteMany({ where: { leagueMemberId: { in: leagueMemberIds } } });
+
+      // 6. Eliminar membresías de liga
+      console.log(`[deleteAccount] Eliminando membresías de liga`);
+      await tx.leagueMember.deleteMany({ where: { id: { in: leagueMemberIds } } });
+    }
+
+    // 7. Eliminar tokens de dispositivo (notificaciones)
+    await tx.deviceToken.deleteMany({ where: { userId } });
+
+    // 8. Eliminar códigos de reseteo de contraseña
+    await tx.passwordResetCode.deleteMany({ where: { userId } });
+
+    // 9. Eliminar historial de ofertas diarias
+    await tx.offerHistory.deleteMany({ where: { userId } });
+
+    // 10. Finalmente, eliminar el usuario
+    console.log(`[deleteAccount] Eliminando usuario ${userId}`);
+    await tx.user.delete({ where: { id: userId } });
+
+    console.log(`[deleteAccount] ✅ Usuario ${userId} eliminado exitosamente`);
+  });
+}
+
 // Reset por código
 export async function requestResetCode(email: string) {
   const user = await UserRepo.findByEmail(email);

@@ -13,7 +13,7 @@ export class NotificationService {
     if (this.initialized) return;
 
     try {
-      // Solicitar permisos
+      // Solicitar permisos de notificaciones
       const authStatus = await messaging().requestPermission();
       const enabled =
         authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
@@ -21,6 +21,12 @@ export class NotificationService {
 
       if (enabled) {
         console.log('✅ Permisos de notificaciones otorgados');
+        
+        // Solicitar permisos adicionales para Notifee (Android 13+)
+        if (Platform.OS === 'android') {
+          const settings = await notifee.requestPermission();
+          console.log('📱 Permisos Notifee:', settings);
+        }
         
         // Obtener token FCM
         const token = await messaging().getToken();
@@ -35,7 +41,7 @@ export class NotificationService {
         // Configurar listeners
         this.setupNotificationListeners();
         
-        // Programar notificación semanal (viernes 17:00)
+        // Programar notificación semanal (jueves 17:00)
         await this.scheduleWeeklyNotification();
         
         this.initialized = true;
@@ -55,8 +61,11 @@ export class NotificationService {
       await notifee.createChannel({
         id: 'liga-updates',
         name: 'Actualizaciones de Liga',
+        description: 'Recordatorios de plantilla, apuestas y resultados',
         importance: AndroidImportance.HIGH,
         sound: 'default',
+        vibration: true,
+        vibrationPattern: [300, 500],
       });
       console.log('✅ Canal de notificaciones creado');
     }
@@ -110,7 +119,7 @@ export class NotificationService {
   }
 
   /**
-   * Programar notificación semanal todos los viernes a las 17:00
+   * Programar notificación semanal todos los jueves a las 17:00
    */
   static async scheduleWeeklyNotification(): Promise<void> {
     try {
@@ -148,17 +157,25 @@ export class NotificationService {
       await notifee.createTriggerNotification(
         {
           id: 'weekly-reminder',
-          title: '⚽ ¡Es viernes de Fantasy!',
-          body: '¡La nueva jornada está próxima! Revisa tus apuestas y prepara tu estrategia.',
+          title: '⚽ ¡Cierre de Jornada Próximo!',
+          body: 'Recuerda realizar tu plantilla y apuestas antes del cierre de jornada',
           android: {
             channelId: 'liga-updates',
             importance: AndroidImportance.HIGH,
+            smallIcon: 'ic_launcher', // Icono de la app
+            largeIcon: 'ic_launcher', // Logo de la app
             pressAction: {
               id: 'default',
             },
+            sound: 'default',
           },
           ios: {
             sound: 'default',
+            attachments: [
+              {
+                url: 'app-icon', // iOS usa el icono de la app automáticamente
+              },
+            ],
           },
         },
         trigger as any
@@ -235,6 +252,60 @@ export class NotificationService {
       console.log('✅ Todas las notificaciones canceladas');
     } catch (error) {
       console.error('❌ Error al cancelar notificaciones:', error);
+    }
+  }
+
+  /**
+   * Probar notificación semanal (para testing - muestra en 10 segundos)
+   */
+  static async testWeeklyNotification(): Promise<void> {
+    try {
+      const trigger = {
+        type: TriggerType.TIMESTAMP,
+        timestamp: Date.now() + 10000, // 10 segundos desde ahora
+      };
+
+      await notifee.createTriggerNotification(
+        {
+          id: 'test-weekly-reminder',
+          title: '⚽ ¡Cierre de Jornada Próximo!',
+          body: 'Recuerda realizar tu plantilla y apuestas antes del cierre de jornada',
+          android: {
+            channelId: 'liga-updates',
+            importance: AndroidImportance.HIGH,
+            smallIcon: 'ic_launcher',
+            largeIcon: 'ic_launcher',
+            pressAction: {
+              id: 'default',
+            },
+            sound: 'default',
+          },
+          ios: {
+            sound: 'default',
+          },
+        },
+        trigger as any
+      );
+
+      console.log('✅ Notificación de prueba programada para 10 segundos');
+    } catch (error) {
+      console.error('❌ Error al programar notificación de prueba:', error);
+    }
+  }
+
+  /**
+   * Verificar notificaciones programadas
+   */
+  static async checkScheduledNotifications(): Promise<void> {
+    try {
+      const notifications = await notifee.getTriggerNotifications();
+      console.log('📋 Notificaciones programadas:', notifications.length);
+      notifications.forEach(notif => {
+        const triggerTime = new Date((notif.trigger as any).timestamp);
+        console.log(`  - ${notif.notification.id}: ${triggerTime.toLocaleString()}`);
+      });
+    } catch (error) {
+      console.error('❌ Error al verificar notificaciones:', error);
     }
   }
 }

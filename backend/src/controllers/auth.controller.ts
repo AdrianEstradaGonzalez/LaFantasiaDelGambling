@@ -91,3 +91,17 @@ export async function setNewPassword(req: any, reply: any) {
   if (!tokens) return reply.code(400).send({ error: "invalid_or_expired" });
   reply.send({ ok: true, ...tokens });
 }
+
+export async function deleteAccount(req: any, reply: any) {
+  try {
+    const userId = (req.user as any).sub;
+    await AuthService.deleteAccount(userId);
+    reply.send({ ok: true, message: 'Tu cuenta ha sido eliminada permanentemente' });
+  } catch (error: any) {
+    console.error('[deleteAccount] Error:', error);
+    reply.code(500).send({ 
+      error: error.message || 'Error al eliminar la cuenta',
+      message: error.message || 'No se pudo eliminar la cuenta'
+    });
+  }
+}

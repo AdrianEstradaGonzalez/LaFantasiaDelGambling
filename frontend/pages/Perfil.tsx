@@ -192,6 +192,75 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
     }
   };
 
+  const handleDeleteAccount = () => {
+    CustomAlertManager.alert(
+      '⚠️ Eliminar Cuenta',
+      '¿Estás absolutamente seguro de que deseas eliminar tu cuenta? Esta acción NO se puede deshacer.\n\nSe eliminarán:\n• Todas tus plantillas\n• Tu historial de apuestas\n• Tus membresías de liga\n• Todos tus datos personales',
+      [
+        { 
+          text: 'Cancelar', 
+          onPress: () => {}, 
+          style: 'cancel' 
+        },
+        {
+          text: 'Eliminar Permanentemente',
+          onPress: confirmDeleteAccount,
+          style: 'destructive',
+        },
+      ],
+      { icon: 'alert-circle', iconColor: '#ef4444' }
+    );
+  };
+
+  const confirmDeleteAccount = async () => {
+    try {
+      setSaving(true);
+      const token = await EncryptedStorage.getItem('accessToken');
+
+      if (!token) {
+        navigation.navigate('Login');
+        return;
+      }
+
+      const response = await fetch(`${ApiConfig.BASE_URL}/auth/delete-account`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Limpiar almacenamiento local
+        await EncryptedStorage.clear();
+        
+        CustomAlertManager.alert(
+          'Cuenta Eliminada',
+          'Tu cuenta ha sido eliminada permanentemente. Esperamos verte de nuevo pronto.',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Login'),
+            },
+          ],
+          { icon: 'checkmark-circle', iconColor: '#10b981' }
+        );
+      } else {
+        throw new Error(data.error || 'Error al eliminar la cuenta');
+      }
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      CustomAlertManager.alert(
+        'Error',
+        error.message || 'No se pudo eliminar la cuenta. Por favor, intenta de nuevo.',
+        [{ text: 'OK', onPress: () => {} }]
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleChangePassword = async () => {
     // Validaciones
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -482,6 +551,29 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
                 </>
               )}
             </View>
+
+            {/* Sección de Zona Peligrosa */}
+            <View style={[styles.section, styles.dangerSection]}>
+              <Text style={[styles.sectionTitle, styles.dangerTitle]}>Zona Peligrosa</Text>
+              <Text style={styles.dangerWarning}>
+                Eliminar tu cuenta es una acción permanente e irreversible
+              </Text>
+              
+              <TouchableOpacity
+                style={[styles.deleteButton]}
+                onPress={handleDeleteAccount}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>Eliminar Mi Cuenta</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Espacio extra al final */}
+            <View style={{ height: 40 }} />
           </ScrollView>
         </LinearGradient>
       </KeyboardAvoidingView>
@@ -664,4 +756,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  dangerSection: {
+    backgroundColor: '#1e1112',
+    borderColor: '#991b1b',
+    borderWidth: 2,
+  },
+  dangerTitle: {
+    color: '#fca5a5',
+  },
+  dangerWarning: {
+    color: '#fca5a5',
+    fontSize: 14,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  deleteButton: {
+    backgroundColor: '#dc2626',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#991b1b',
+  },
+  deleteButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 });
+
