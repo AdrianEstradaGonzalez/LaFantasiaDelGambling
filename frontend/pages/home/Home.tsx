@@ -51,6 +51,18 @@ export const Home = ({ navigation, route }: HomeProps) => {
   const isMountedRef = useRef(true);
   const isLoadingLigasRef = useRef(false);
 
+  // Limpiar estado al montar el componente (importante para logout/login)
+  useEffect(() => {
+    // Reset refs on mount
+    isMountedRef.current = true;
+    isLoadingLigasRef.current = false;
+    
+    return () => {
+      isMountedRef.current = false;
+      isLoadingLigasRef.current = false;
+    };
+  }, []);
+
   // Animar apertura/cierre del drawer
   useEffect(() => {
     if (isDrawerOpen) {
@@ -109,12 +121,15 @@ export const Home = ({ navigation, route }: HomeProps) => {
       const accessToken = await EncryptedStorage.getItem('accessToken');
       if (!accessToken) {
         if (__DEV__) {
-          console.warn('❌ No hay accessToken - usuario no autenticado');
+          console.warn('❌ No hay accessToken - usuario no autenticado, redirigiendo a Login');
         }
+        // Limpiar todo y redirigir a login
+        await EncryptedStorage.clear();
         setLigas([]);
         setLoading(false);
-        // Opcional: redirigir a login si es necesario
-        // navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+        isLoadingLigasRef.current = false;
+        // Redirigir a Login para evitar que se quede en pantalla en blanco
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         return;
       }
 
@@ -149,10 +164,14 @@ export const Home = ({ navigation, route }: HomeProps) => {
 
       if (!userId) {
         if (__DEV__) {
-          console.warn('❌ No hay userId; redirige a Login si aplica');
+          console.warn('❌ No hay userId - sesión inválida, redirigiendo a Login');
         }
+        // Limpiar sesión corrupta y redirigir
+        await EncryptedStorage.clear();
         setLigas([]);
         setLoading(false);
+        isLoadingLigasRef.current = false;
+        navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         return;
       }
 

@@ -52,7 +52,11 @@ const Login: React.FC<Props> = ({ navigation }) => {
 
     try {
       await LoginService.login(data as LoginData);
-      navigation.replace('Home');
+      // Usar reset en lugar de replace para asegurar un stack limpio
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
     } catch (e: any) {
       setApiError(e?.message ?? 'No se pudo iniciar sesión. Verifica tus credenciales.');
     } finally {

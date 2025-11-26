@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
 import { HomeIcon, LogoutIcon } from '../../components/VectorIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import EncryptedStorage from 'react-native-encrypted-storage';
 
 const BottomNavBar: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
@@ -18,8 +19,23 @@ const BottomNavBar: React.FC = () => {
     navigation.navigate('Home');
   };
 
-  const handleLogoutPress = () => {
-    navigation.navigate('Login');
+  const handleLogoutPress = async () => {
+    try {
+      // Limpiar todo el storage
+      await EncryptedStorage.clear();
+      // Reset navigation stack to Login
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      // Fallback: solo navegar si falla el clear
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      });
+    }
   };
 
   // Configuración de botones
