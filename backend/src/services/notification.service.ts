@@ -238,4 +238,112 @@ export class NotificationService {
       throw error;
     }
   }
+
+  /**
+   * Enviar notificación a todos los usuarios de una liga
+   */
+  static async sendToLeagueMembers(
+    leagueId: string,
+    title: string,
+    body: string,
+    data?: Record<string, string>
+  ): Promise<{ successCount: number; failureCount: number; totalMembers: number }> {
+    if (!firebaseInitialized) {
+      console.warn('⚠️ Firebase no inicializado. No se puede enviar notificación.');
+      return { successCount: 0, failureCount: 0, totalMembers: 0 };
+    }
+
+    try {
+      // Importar Prisma para obtener tokens
+      const { PrismaClient } = await import('@prisma/client');
+      const prisma = new PrismaClient();
+
+      // Obtener todos los tokens de dispositivos de los miembros de la liga
+      const deviceTokens = await prisma.deviceToken.findMany({
+        where: {
+          user: {
+            leagueMembers: {
+              some: {
+                leagueId: leagueId
+              }
+            }
+          }
+        },
+        select: {
+          token: true
+        }
+      });
+
+      await prisma.$disconnect();
+
+      const tokens = deviceTokens.map(dt => dt.token);
+      
+      if (tokens.length === 0) {
+        console.log('ℹ️ No hay dispositivos registrados para esta liga');
+        return { successCount: 0, failureCount: 0, totalMembers: 0 };
+      }
+
+      console.log(`📱 Enviando notificación a ${tokens.length} dispositivos de la liga ${leagueId}`);
+
+      const result = await this.sendToMultiple(tokens, title, body, data);
+
+      return {
+        ...result,
+        totalMembers: tokens.length
+      };
+    } catch (error) {
+      console.error('❌ Error al enviar notificación a miembros de liga:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Enviar notificación a TODOS los usuarios únicos (sin duplicados)
+   * Útil para notificaciones globales como apertura de jornada
+   */
+  static async sendToAllUsers(
+    title: string,
+    body: string,
+    data?: Record<string, string>
+  ): Promise<{ successCount: number; failureCount: number; totalUsers: number }> {
+    if (!firebaseInitialized) {
+      console.warn('⚠️ Firebase no inicializado. No se puede enviar notificación.');
+      return { successCount: 0, failureCount: 0, totalUsers: 0 };
+    }
+
+    try {
+      // Importar Prisma para obtener tokens
+      const { PrismaClient } = await import('@prisma/client');
+      const prisma = new PrismaClient();
+
+      // Obtener TODOS los tokens únicos (sin duplicados por usuario)
+      const deviceTokens = await prisma.deviceToken.findMany({
+        select: {
+          token: true
+        },
+        distinct: ['token']
+      });
+
+      await prisma.$disconnect();
+
+      const tokens = deviceTokens.map(dt => dt.token);
+      
+      if (tokens.length === 0) {
+        console.log('ℹ️ No hay dispositivos registrados');
+        return { successCount: 0, failureCount: 0, totalUsers: 0 };
+      }
+
+      console.log(`📱 Enviando notificación global a ${tokens.length} dispositivos únicos`);
+
+      const result = await this.sendToMultiple(tokens, title, body, data);
+
+      return {
+        ...result,
+        totalUsers: tokens.length
+      };
+    } catch (error) {
+      console.error('❌ Error al enviar notificación global:', error);
+      throw error;
+    }
+  }
 }

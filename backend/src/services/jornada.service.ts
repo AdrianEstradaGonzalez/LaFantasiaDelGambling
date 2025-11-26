@@ -997,6 +997,8 @@ export class JornadaService {
         // Las apuestas se generarán cuando el primer usuario entre
       }
 
+
+
       return {
         success: true,
         message: `Jornada ${jornada} abierta (bloqueada) exitosamente`,
@@ -1580,6 +1582,28 @@ export class JornadaService {
       }
 
       console.log(`\n✨ ${leagues.length} ligas actualizadas exitosamente\n`);
+
+      // Enviar UNA notificación global a TODOS los usuarios únicos
+      try {
+        console.log(`📱 Enviando notificación global de apertura de jornada...`);
+        const { NotificationService } = await import('./notification.service.js');
+        
+        const notificationResult = await NotificationService.sendToAllUsers(
+          '⚽ ¡Nueva Jornada Abierta!',
+          'La nueva jornada ya está disponible. ¡Prepara tu plantilla y apuestas!',
+          {
+            type: 'jornada_opened'
+          }
+        );
+
+        console.log(`✅ Notificación global enviada: ${notificationResult.successCount}/${notificationResult.totalUsers} usuarios`);
+        if (notificationResult.failureCount > 0) {
+          console.warn(`⚠️ ${notificationResult.failureCount} notificaciones fallaron`);
+        }
+      } catch (notifError) {
+        console.error(`⚠️ Error enviando notificación global:`, notifError);
+        // No lanzamos el error para que la apertura de jornadas no falle
+      }
 
       return {
         success: true,
