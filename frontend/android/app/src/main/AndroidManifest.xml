@@ -17,7 +17,7 @@
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true"
       android:largeHeap="true"
-      android:extractNativeLibs="true">
+      android:extractNativeLibs="false">
       
       <!-- 🎯 AdMob Application ID -->
       <meta-data
