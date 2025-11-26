@@ -19,26 +19,21 @@ const BottomNavBar: React.FC = () => {
     navigation.navigate('Home');
   };
 
-  const handleLogoutPress = async () => {
+  const handleLogoutPress = () => {
     console.log('🔴 Logout button pressed');
-    try {
-      // Limpiar todo el storage
-      await EncryptedStorage.clear();
-      console.log('✅ Storage cleared');
-      // Reset navigation stack to Login
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-      console.log('✅ Navigation reset to Login');
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-      // Fallback: solo navegar si falla el clear
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
-    }
+    
+    // Navegar inmediatamente sin esperar
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+    
+    // Limpiar storage en background
+    setTimeout(() => {
+      EncryptedStorage.clear()
+        .then(() => console.log('✅ Storage cleared'))
+        .catch(err => console.error('Error clearing storage:', err));
+    }, 100);
   };
 
   // Configuración de botones

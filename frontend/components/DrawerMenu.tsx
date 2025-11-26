@@ -216,30 +216,24 @@ export const DrawerMenu = ({ navigation, ligaId, ligaName, division, isPremium }
         {
           text: 'Salir',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              // Usar el método de logout del servicio para asegurar limpieza completa
-              await LoginService.logout();
-              // Limpiar cualquier otro dato que pueda quedar
-              await EncryptedStorage.clear();
-              // Reset completo del stack de navegación
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
-            } catch (error) {
-              console.error('Error al cerrar sesión:', error);
-              // Fallback: intentar solo clear si falla el logout
-              try {
-                await EncryptedStorage.clear();
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Login' }],
-                });
-              } catch (e) {
-                console.error('Error crítico al cerrar sesión:', e);
-              }
-            }
+          onPress: () => {
+            console.log('🔴 Logout from drawer menu');
+            
+            // Navegar inmediatamente sin bloquear
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+            
+            // Limpiar storage en background
+            setTimeout(() => {
+              Promise.all([
+                LoginService.logout(),
+                EncryptedStorage.clear()
+              ])
+                .then(() => console.log('✅ Storage cleared from drawer'))
+                .catch(err => console.error('Error clearing storage:', err));
+            }, 100);
           },
         },
       ],
