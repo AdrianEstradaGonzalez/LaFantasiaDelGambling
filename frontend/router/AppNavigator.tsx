@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -61,6 +61,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export const AppNavigator = () => {
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
   const [forceUpdateInfo, setForceUpdateInfo] = useState<{ required: boolean; latest?: string; storeUrl?: string } | null>(null);
+
   useEffect(() => {
     // Prefetch equipos y jugadores al iniciar la app para minimizar peticiones posteriores
     FootballService.prefetchAllData().catch(() => {});
@@ -145,24 +146,9 @@ export const AppNavigator = () => {
 
   // No longer block the app with a full screen - the alert will show when needed
 
-  // Configuración de deep linking
-  const linking = {
-    prefixes: ['lafantasiadelgambling://', 'https://lafantasiadelgambling.com'],
-    config: {
-      screens: {
-        CrearLiga: {
-          path: 'unirse-liga/:codigo',
-          parse: {
-            codigo: (codigo: string) => codigo,
-          },
-        },
-      },
-    },
-  };
-
   return (
     <CustomAlertProvider>
-      <NavigationContainer linking={linking}>
+      <NavigationContainer>
         <Stack.Navigator
           initialRouteName={initialRoute}
           screenOptions={{

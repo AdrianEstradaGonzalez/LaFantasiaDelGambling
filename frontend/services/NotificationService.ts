@@ -13,6 +13,40 @@ export class NotificationService {
     if (this.initialized) return;
 
     try {
+      // Inicializar notificaciones locales automáticamente (sin solicitar permisos)
+      console.log('📱 Inicializando notificaciones locales automáticamente...');
+      
+      // Configurar canal de notificaciones para Android
+      await this.createNotificationChannel();
+      
+      // Programar notificaciones locales automáticamente
+      await this.scheduleWeeklyNotification();
+      await this.scheduleDailyMarketNotification();
+      
+      this.initialized = true;
+      console.log('✅ Notificaciones locales activadas automáticamente');
+      
+      // Intentar inicializar Firebase (opcional, no bloquea si falla)
+      this.initializeFirebase().catch(err => {
+        console.warn('⚠️ Firebase no disponible (notificaciones push deshabilitadas):', err.message);
+      });
+    } catch (error) {
+      console.error('❌ Error al inicializar notificaciones locales:', error);
+      // Intentar inicializar de todas formas aunque haya errores
+      try {
+        await this.scheduleWeeklyNotification();
+        await this.scheduleDailyMarketNotification();
+      } catch (retryError) {
+        console.error('❌ Error en retry de notificaciones:', retryError);
+      }
+    }
+  }
+
+  /**
+   * Inicializar Firebase para notificaciones push (opcional)
+   */
+  static async initializeFirebase(): Promise<void> {
+    try {
       // Solicitar permisos de notificaciones
       const authStatus = await messaging().requestPermission();
       const enabled =
@@ -20,13 +54,7 @@ export class NotificationService {
         authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
       if (enabled) {
-        console.log('✅ Permisos de notificaciones otorgados');
-        
-        // Solicitar permisos adicionales para Notifee (Android 13+)
-        if (Platform.OS === 'android') {
-          const settings = await notifee.requestPermission();
-          console.log('📱 Permisos Notifee:', settings);
-        }
+        console.log('✅ Permisos de Firebase otorgados');
         
         // Obtener token FCM
         const token = await messaging().getToken();
@@ -35,24 +63,15 @@ export class NotificationService {
         // Guardar token en AsyncStorage para enviarlo al backend
         await AsyncStorage.setItem('fcmToken', token);
         
-        // Configurar canal de notificaciones para Android
-        await this.createNotificationChannel();
-        
-        // Configurar listeners
+        // Configurar listeners para notificaciones push
         this.setupNotificationListeners();
         
-        // Programar notificación semanal (jueves 17:00)
-        await this.scheduleWeeklyNotification();
-        
-        // Programar notificación diaria (00:00 - ofertas del mercado)
-        await this.scheduleDailyMarketNotification();
-        
-        this.initialized = true;
+        console.log('✅ Firebase inicializado correctamente');
       } else {
-        console.warn('⚠️ Permisos de notificaciones denegados');
+        console.warn('⚠️ Permisos de Firebase denegados');
       }
     } catch (error) {
-      console.error('❌ Error al inicializar notificaciones:', error);
+      throw error;
     }
   }
 
@@ -416,7 +435,3 @@ export class NotificationService {
   }
 }
 
-// Auto-inicializar cuando se importa el módulo
-NotificationService.initialize().catch(err => {
-  console.error('Error auto-inicializando notificaciones:', err);
-});
