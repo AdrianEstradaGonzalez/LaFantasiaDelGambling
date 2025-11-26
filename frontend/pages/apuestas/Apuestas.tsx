@@ -809,6 +809,17 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
 
+    // Verificar si ya existe una apuesta normal (no combi) en este partido
+    if (hasAnyBetInMatch(selection.matchId)) {
+      CustomAlertManager.alert(
+        'Apuesta existente',
+        'Ya tienes una apuesta en este partido. No puedes agregar opciones de este partido a una combinada.',
+        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
+        { icon: 'alert', iconColor: '#f59e0b' }
+      );
+      return;
+    }
+
     const isAlreadySelected = combiSelections.some(
       s => s.matchId === selection.matchId && s.betType === selection.betType && s.betLabel === selection.betLabel
     );
@@ -3150,10 +3161,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 )}
 
                                 {/* Botón Combinar - Siempre visible si no hay apuesta del usuario */}
-                                {!userBet && ligaId && isJornadaOpen && (
-                                  <TouchableOpacity
+                                {!userBet && ligaId && isJornadaOpen && (() => {
+                                  const hasNormalBetInMatch = hasAnyBetInMatch(b.matchId);
+                                  const isBlocked = isCombiPlaced || isOptionBlockedByCombi(b.matchId, b.type, option.label) || hasNormalBetInMatch;
+                                  
+                                  return (
+                                    <TouchableOpacity
                                       onPress={() => {
-                                        if (!isCombiPlaced) {
+                                        if (!isCombiPlaced && !hasNormalBetInMatch) {
                                           toggleCombiSelection({
                                             matchId: b.matchId,
                                             betType: b.type,
@@ -3164,14 +3179,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           });
                                         }
                                       }}
-                                      disabled={
-                                        isCombiPlaced || isOptionBlockedByCombi(b.matchId, b.type, option.label)
-                                      }
+                                      disabled={isBlocked}
                                       style={{
                                         backgroundColor: isInCombi(b.matchId, b.type, option.label) 
                                           ? '#0892D0' // Azul cuando está en la combi
-                                          : isOptionBlockedByCombi(b.matchId, b.type, option.label)
-                                            ? '#374151' // Gris si está bloqueada por otra opción en la combi
+                                          : (isOptionBlockedByCombi(b.matchId, b.type, option.label) || hasNormalBetInMatch)
+                                            ? '#374151' // Gris si está bloqueada
                                             : !isPremium
                                               ? '#374151'  // Gris si no es premium
                                               : '#0b1220', // Tono oscuro de la app si es premium
@@ -3181,7 +3194,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         marginTop: 8,
                                         borderWidth: isInCombi(b.matchId, b.type, option.label) ? 0 : 1,
                                         borderColor: '#0892D0',
-                                        opacity: (isOptionBlockedByCombi(b.matchId, b.type, option.label) || isCombiPlaced) ? 0.5 : 1,
+                                        opacity: isBlocked ? 0.5 : 1,
                                         flexDirection: 'row',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -3196,16 +3209,19 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           ? 'Combi creada'
                                           : !isPremium 
                                             ? 'Combinar (Premium)' 
-                                            : isInCombi(b.matchId, b.type, option.label) 
-                                              ? '✓ En combi' 
-                                              : isOptionBlockedByCombi(b.matchId, b.type, option.label)
-                                                ? 'Ya hay una opcion en combi'
-                                                : combiSelections.length > 0
-                                                  ? '+ Añadir a combi'
-                                                  : 'Combinar'}
+                                            : hasNormalBetInMatch
+                                              ? 'Ya apostaste aquí'
+                                              : isInCombi(b.matchId, b.type, option.label) 
+                                                ? '✓ En combi' 
+                                                : isOptionBlockedByCombi(b.matchId, b.type, option.label)
+                                                  ? 'Ya hay una opcion en combi'
+                                                  : combiSelections.length > 0
+                                                    ? '+ Añadir a combi'
+                                                    : 'Combinar'}
                                       </Text>
                                     </TouchableOpacity>
-                                )}
+                                  );
+                                })()}
 
                                 {/* En jornada cerrada: mostrar jugadores y cantidades que apostaron en esta opciÃ³n */}
                                 {!isJornadaOpen && ligaId && (
