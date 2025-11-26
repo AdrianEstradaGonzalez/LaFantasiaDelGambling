@@ -264,6 +264,7 @@ export const DrawerMenu = ({ navigation, ligaId, ligaName, division, isPremium }
       style={styles.menuItem}
       onPress={onPress}
       activeOpacity={0.7}
+      hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
     >
       <View style={styles.menuItemContent}>
         <View style={styles.iconContainer}>
@@ -491,7 +492,9 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 18,
+    minHeight: 56,
+    justifyContent: 'center',
   },
   menuItemContent: {
     flexDirection: 'row',

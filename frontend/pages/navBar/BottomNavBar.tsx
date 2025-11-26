@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, Pressable } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import styles from '../../styles/NavBarStyles';
@@ -20,14 +20,17 @@ const BottomNavBar: React.FC = () => {
   };
 
   const handleLogoutPress = async () => {
+    console.log('🔴 Logout button pressed');
     try {
       // Limpiar todo el storage
       await EncryptedStorage.clear();
+      console.log('✅ Storage cleared');
       // Reset navigation stack to Login
       navigation.reset({
         index: 0,
         routes: [{ name: 'Login' }],
       });
+      console.log('✅ Navigation reset to Login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       // Fallback: solo navegar si falla el clear
@@ -80,16 +83,17 @@ const BottomNavBar: React.FC = () => {
               }
             ]}
           >
-            <Pressable
+            <TouchableOpacity
               onPress={button.onPress}
-              style={({ pressed }) => ({
+              hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+              activeOpacity={0.7}
+              style={{
                 alignItems: 'center',
                 justifyContent: 'center',
                 width: '100%',
                 height: '100%',
                 backgroundColor: 'transparent',
-                opacity: pressed && !button.isActive ? 0.7 : 1,
-              })}
+              }}
             >
               <View style={{ 
                 marginBottom: 4, 
@@ -108,7 +112,7 @@ const BottomNavBar: React.FC = () => {
               ]}>
                 {button.label}
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
         );
       })}
