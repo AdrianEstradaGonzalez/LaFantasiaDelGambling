@@ -137,73 +137,86 @@ export const DrawerMenu = ({ navigation, ligaId, ligaName, division, isPremium }
   const handleLeaveLeague = () => {
     if (!ligaId) return;
 
-    CustomAlertManager.alert(
-      'Abandonar Liga',
-      '¿Estás seguro que deseas abandonar esta liga? Se eliminará tu plantilla y no podrás recuperarla. Si eres el líder, se transferirá el liderazgo a otro miembro.',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-          onPress: () => {},
-        },
-        {
-          text: 'Abandonar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const token = await EncryptedStorage.getItem('accessToken');
-              if (!token) {
-                throw new Error('No autenticado');
-              }
+    // Cerrar drawer primero para evitar conflicto de modales en iOS
+    if (navigation.closeDrawer) {
+      navigation.closeDrawer();
+    }
 
-              const response = await fetch(`${ApiConfig.BASE_URL}/leagues/${ligaId}/leave`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-              });
-
-              if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Error al abandonar la liga');
-              }
-
-              const result = await response.json();
-
-              CustomAlertManager.alert(
-                'Liga Abandonada',
-                result.message || 'Has abandonado la liga exitosamente',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'Home' }],
-                      });
-                    },
-                  },
-                ],
-                { icon: 'checkmark-circle', iconColor: '#10b981' }
-              );
-            } catch (error: any) {
-              console.error('Error al abandonar liga:', error);
-              CustomAlertManager.alert(
-                'Error',
-                error.message || 'No se pudo abandonar la liga',
-                [{ text: 'OK', onPress: () => {} }],
-                { icon: 'alert-circle', iconColor: '#ef4444' }
-              );
-            }
+    // Pequeño delay para que el drawer termine de cerrar
+    setTimeout(() => {
+      CustomAlertManager.alert(
+        'Abandonar Liga',
+        '¿Estás seguro que deseas abandonar esta liga? Se eliminará tu plantilla y no podrás recuperarla. Si eres el líder, se transferirá el liderazgo a otro miembro.',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+            onPress: () => {},
           },
-        },
-      ],
-      { icon: 'alert-circle', iconColor: '#ef4444' }
-    );
+          {
+            text: 'Abandonar',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const token = await EncryptedStorage.getItem('accessToken');
+                if (!token) {
+                  throw new Error('No autenticado');
+                }
+
+                const response = await fetch(`${ApiConfig.BASE_URL}/leagues/${ligaId}/leave`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                  },
+                });
+
+                if (!response.ok) {
+                  const error = await response.json();
+                  throw new Error(error.message || 'Error al abandonar la liga');
+                }
+
+                const result = await response.json();
+
+                CustomAlertManager.alert(
+                  'Liga Abandonada',
+                  result.message || 'Has abandonado la liga exitosamente',
+                  [
+                    {
+                      text: 'OK',
+                      onPress: () => {
+                        navigation.reset({
+                          index: 0,
+                          routes: [{ name: 'Home' }],
+                        });
+                      },
+                    },
+                  ],
+                  { icon: 'checkmark-circle', iconColor: '#10b981' }
+                );
+              } catch (error: any) {
+                console.error('Error al abandonar liga:', error);
+                CustomAlertManager.alert(
+                  'Error',
+                  error.message || 'No se pudo abandonar la liga',
+                  [{ text: 'OK', onPress: () => {} }],
+                  { icon: 'alert-circle', iconColor: '#ef4444' }
+                );
+              }
+            },
+          },
+        ],
+        { icon: 'alert-circle', iconColor: '#ef4444' }
+      );
+    }, 300);
   };
 
   const handleLogout = () => {
+    // IMPORTANTE: Cerrar el drawer primero para evitar conflicto de modales en iOS
+    if (navigation.closeDrawer) {
+      navigation.closeDrawer();
+    }
+
     const showNativeAlert = () => {
       // Fallback nativo si CustomAlertManager no funciona
       try {
@@ -232,40 +245,43 @@ export const DrawerMenu = ({ navigation, ligaId, ligaName, division, isPremium }
       }
     };
 
-    try {
-      if (CustomAlertManager && (CustomAlertManager as any).alert) {
-        CustomAlertManager.alert(
-          'Cerrar Sesión',
-          '¿Estás seguro que deseas salir?',
-          [
-            { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
-            {
-              text: 'Salir',
-              onPress: () => {
-                try {
-                  console.log('🔴 Logout from drawer menu');
-                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-                  setTimeout(() => {
-                    Promise.all([LoginService.logout(), EncryptedStorage.clear()])
-                      .then(() => console.log('✅ Storage cleared from drawer'))
-                      .catch(err => console.error('Error clearing storage:', err));
-                  }, 100);
-                } catch (e) {
-                  console.error('Error during logout action:', e);
-                }
+    // Pequeño delay para que el drawer termine de cerrar antes de mostrar el alert
+    setTimeout(() => {
+      try {
+        if (CustomAlertManager && (CustomAlertManager as any).alert) {
+          CustomAlertManager.alert(
+            'Cerrar Sesión',
+            '¿Estás seguro que deseas salir?',
+            [
+              { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
+              {
+                text: 'Salir',
+                onPress: () => {
+                  try {
+                    console.log('🔴 Logout from drawer menu');
+                    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                    setTimeout(() => {
+                      Promise.all([LoginService.logout(), EncryptedStorage.clear()])
+                        .then(() => console.log('✅ Storage cleared from drawer'))
+                        .catch(err => console.error('Error clearing storage:', err));
+                    }, 100);
+                  } catch (e) {
+                    console.error('Error during logout action:', e);
+                  }
+                },
+                style: 'destructive',
               },
-              style: 'destructive',
-            },
-          ],
-          { icon: 'alert-circle', iconColor: '#ef4444' }
-        );
-      } else {
+            ],
+            { icon: 'alert-circle', iconColor: '#ef4444' }
+          );
+        } else {
+          showNativeAlert();
+        }
+      } catch (err) {
+        console.error('CustomAlertManager failed:', err);
         showNativeAlert();
       }
-    } catch (err) {
-      console.error('CustomAlertManager failed:', err);
-      showNativeAlert();
-    }
+    }, 300); // 300ms delay para que el drawer cierre completamente
   };
 
   const MenuItem = ({ 
