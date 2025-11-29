@@ -90,7 +90,7 @@ android {
         applicationId "com.dreamleague"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 18
+        versionCode 20
         versionName "3.0.2"
         
         // Soporte para páginas de memoria de 16 kB
