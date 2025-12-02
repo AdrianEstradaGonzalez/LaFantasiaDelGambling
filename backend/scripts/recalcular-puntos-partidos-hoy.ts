@@ -9,7 +9,8 @@ const prisma = new PrismaClient();
 
 const API_BASE = 'https://v3.football.api-sports.io';
 const API_KEY = process.env.FOOTBALL_API_KEY;
-const SEASON = Number(process.env.FOOTBALL_API_SEASON ?? 2025);
+// La API usa el año de INICIO de la temporada (2024 para temporada 2024/2025)
+const SEASON = Number(process.env.FOOTBALL_API_SEASON ?? 2024);
 
 const DIVISION_CONFIG = {
   primera: { leagueId: 140, name: 'La Liga' },
@@ -18,16 +19,19 @@ const DIVISION_CONFIG = {
 } as const;
 
 /**
- * Script para actualizar TODAS las estadísticas de una jornada
- * Replica la lógica del endpoint /player-stats/update-jornada
- * pero procesa TODOS los partidos (no solo los en curso)
+ * Script para recalcular y actualizar los puntos de TODOS los partidos de una jornada
+ * Útil para:
+ * - Recalcular puntos después de cambios en el sistema de puntuación
+ * - Corregir estadísticas incorrectas
+ * - Reprocesar jornadas completas
  * 
  * USO:
- * npx tsx scripts/update-all-jornada-stats.ts [jornada] [division]
+ * npx tsx scripts/recalcular-puntos-partidos-hoy.ts [jornada] [division]
  * 
  * Ejemplos:
- * npx tsx scripts/update-all-jornada-stats.ts 14 primera
- * npx tsx scripts/update-all-jornada-stats.ts 13 premier
+ * npx tsx scripts/recalcular-puntos-partidos-hoy.ts 14 primera
+ * npx tsx scripts/recalcular-puntos-partidos-hoy.ts 13 premier
+ * npx tsx scripts/recalcular-puntos-partidos-hoy.ts 12 segunda
  */
 
 async function savePlayerStatsToDb(
@@ -115,24 +119,101 @@ async function savePlayerStatsToDb(
 async function getAllJornadaFixtures(leagueId: number, jornada: number): Promise<any[]> {
   try {
     console.log(`📡 Obteniendo todos los partidos de la jornada ${jornada}...`);
-    const { data } = await axios.get(`${API_BASE}/fixtures`, {
-      headers: {
-        'x-rapidapi-key': API_KEY,
-        'x-rapidapi-host': 'v3.football.api-sports.io'
-      },
-      params: {
+    console.log(`   League ID: ${leagueId}, Season: ${SEASON}`);
+    
+    // Probar con múltiples temporadas (actual y anterior)
+    const seasonsToTry = [SEASON, SEASON + 1, SEASON - 1];
+    let fixtures: any[] = [];
+    let foundSeason = SEASON;
+    
+    for (const season of seasonsToTry) {
+      const params: any = {
         league: leagueId,
-        season: SEASON,
+        season: season,
         round: `Regular Season - ${jornada}`
-      },
-      timeout: 10000
-    });
+      };
+      
+      console.log(`   Intentando temporada ${season} con round: "${params.round}"`);
+      
+      try {
+        const { data } = await axios.get(`${API_BASE}/fixtures`, {
+          headers: {
+            'x-rapidapi-key': API_KEY,
+            'x-rapidapi-host': 'v3.football.api-sports.io'
+          },
+          params,
+          timeout: 10000
+        });
 
-    const fixtures = data?.response || [];
-    console.log(`✅ ${fixtures.length} partidos encontrados\n`);
+        fixtures = data?.response || [];
+        
+        if (fixtures.length > 0) {
+          foundSeason = season;
+          console.log(`   ✅ Encontrados ${fixtures.length} partidos en temporada ${season}`);
+          break;
+        } else {
+          console.log(`   ⚠️  0 partidos en temporada ${season}`);
+        }
+      } catch (err: any) {
+        console.log(`   ❌ Error en temporada ${season}:`, err.message);
+      }
+    }
+    
+    // Si no encuentra nada con ninguna temporada, intentar sin especificar round
+    if (fixtures.length === 0) {
+      console.log(`   ⚠️  No se encontraron partidos con ninguna temporada`);
+      console.log(`   🔄 Buscando todos los partidos disponibles en temporada ${foundSeason}...`);
+      
+      const params = {
+        league: leagueId,
+        season: foundSeason
+      };
+      
+      const allData = await axios.get(`${API_BASE}/fixtures`, {
+        headers: {
+          'x-rapidapi-key': API_KEY,
+          'x-rapidapi-host': 'v3.football.api-sports.io'
+        },
+        params,
+        timeout: 15000
+      });
+      
+      const allFixtures = allData?.data?.response || [];
+      console.log(`   📊 Total partidos en temporada ${foundSeason}: ${allFixtures.length}`);
+      
+      if (allFixtures.length > 0) {
+        // Mostrar algunos ejemplos de rounds para debug
+        const sampleRounds = [...new Set(allFixtures.slice(0, 20).map((f: any) => f.league?.round))];
+        console.log(`   📝 Ejemplos de formato de round:`, sampleRounds);
+        
+        // Filtrar por jornada manualmente
+        fixtures = allFixtures.filter((f: any) => {
+          const round = f.league?.round || '';
+          // Buscar el número de jornada en diferentes formatos
+          const match = round.match(/\d+/);
+          if (match) {
+            const roundNum = parseInt(match[0], 10);
+            return roundNum === jornada;
+          }
+          return false;
+        });
+        
+        console.log(`   🔍 Partidos que coinciden con jornada ${jornada}: ${fixtures.length}`);
+        
+        if (fixtures.length > 0) {
+          const uniqueRounds = [...new Set(fixtures.map((f: any) => f.league?.round))];
+          console.log(`   ✅ Formato(s) de round encontrado(s):`, uniqueRounds);
+        }
+      }
+    }
+
+    console.log(`\n✅ Total: ${fixtures.length} partidos de la jornada ${jornada}\n`);
     return fixtures;
   } catch (error: any) {
     console.error('❌ Error obteniendo fixtures:', error.message);
+    if (error.response?.data) {
+      console.error('   Respuesta API:', JSON.stringify(error.response.data, null, 2));
+    }
     return [];
   }
 }
@@ -210,7 +291,7 @@ async function getFixturePlayerStats(fixtureObj: any, division: 'primera' | 'seg
 }
 
 async function updateJornadaStats() {
-  console.log('🔄 ACTUALIZANDO ESTADÍSTICAS DE JORNADA\n');
+  console.log('🔄 RECALCULANDO PUNTOS DE TODA LA JORNADA\n');
   console.log(`📅 Temporada: ${SEASON}`);
   console.log(`🔑 API Key: ${API_KEY ? '✅ Configurada' : '❌ NO configurada'}\n`);
 
@@ -250,13 +331,14 @@ async function updateJornadaStats() {
       return;
     }
 
-    // Filtrar solo partidos finalizados o en curso
+    // Procesar TODOS los partidos de la jornada (finalizados, en curso o pendientes)
+    // Solo excluimos cancelados/pospuestos
     const validFixtures = fixtures.filter((f: any) => {
       const status = f.fixture?.status?.short;
-      return status && !['CANC', 'PST', 'TBD', 'NS'].includes(status);
+      return status && !['CANC', 'PST', 'ABD'].includes(status);
     });
 
-    console.log(`✅ ${validFixtures.length} partidos válidos para procesar\n`);
+    console.log(`✅ ${validFixtures.length} partidos de la jornada para procesar\n`);
 
     // Procesar cada partido
     let totalPlayersUpdated = 0;
@@ -296,11 +378,11 @@ async function updateJornadaStats() {
 
     // Resumen final
     console.log('\n' + '='.repeat(60));
-    console.log('📊 RESUMEN FINAL');
+    console.log('📊 RESUMEN - RECÁLCULO DE JORNADA COMPLETA');
     console.log('='.repeat(60));
     console.log(`🏆 División: ${DIVISION_CONFIG[divisionArg].name}`);
     console.log(`📅 Jornada: ${jornada}`);
-    console.log(`⚽ Partidos procesados: ${fixturesProcessed}`);
+    console.log(`⚽ Partidos procesados: ${fixturesProcessed} de ${validFixtures.length}`);
     console.log(`👥 Jugadores actualizados: ${totalPlayersUpdated}`);
     console.log('='.repeat(60) + '\n');
 

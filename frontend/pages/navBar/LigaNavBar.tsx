@@ -67,8 +67,9 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName, division = 'p
   };
   
   const handleApuestas = async () => {
-    await showInterstitialWithProbability();
-    navigation.navigate('Apuestas', { ligaId, ligaName, division, isPremium });
+    // Deshabilitado temporalmente
+    // await showInterstitialWithProbability();
+    // navigation.navigate('Apuestas', { ligaId, ligaName, division, isPremium });
   };
 
   // Configuración de botones con iconos SVG más representativos
@@ -90,12 +91,6 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName, division = 'p
       label: 'Mercado',
       onPress: handleJugadores,
       isActive: currentRoute === 'PlayersMarket' || currentRoute === 'PlayersList'
-    },
-    {
-      icon: DiceIcon,
-      label: 'Apuestas',
-      onPress: handleApuestas,
-      isActive: currentRoute === 'Apuestas' || currentRoute === 'HistorialApuestas'
     }
   ];
 
@@ -103,6 +98,7 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName, division = 'p
     <View style={styles.navBar}>
       {buttons.map((button, index) => {
         const IconComponent = button.icon;
+        
         return (
           <View
             key={index}
