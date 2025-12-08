@@ -2940,7 +2940,40 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           </Text>
                                         </View>
                                       )}
-                                      
+
+                                      {/* Cabecera: label de la opción y botón eliminar (en la misma tarjeta) */}
+                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                        <View style={{ flex: 1 }}>
+                                          <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>
+                                            {isPartOfCombi ? 'Pronosticado en combi' : 'Pronosticado'}
+                                          </Text>
+                                          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }} numberOfLines={2}>
+                                            {formatLabelWithType(userBet.betLabel, userBet.betType)}
+                                          </Text>
+                                        </View>
+
+                                        {isJornadaOpen && (
+                                          <TouchableOpacity
+                                            onPress={() => handleDeleteBet(betKey, userBet.id)}
+                                            disabled={savingBet === betKey}
+                                            style={{
+                                              backgroundColor: '#7f1d1d',
+                                              paddingHorizontal: 12,
+                                              paddingVertical: 10,
+                                              borderRadius: 8,
+                                              marginLeft: 12,
+                                            }}
+                                            accessibilityLabel="Eliminar pronóstico"
+                                          >
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                              <DeleteIcon size={18} color="#fecaca" />
+                                              <Text style={{ color: '#fecaca', fontWeight: '700', marginLeft: 6 }}>Eliminar</Text>
+                                            </View>
+                                          </TouchableOpacity>
+                                        )}
+                                      </View>
+
+                                      {/* Si es parte de una combi, mostramos la info compacta debajo; para apuestas simples con ticket no mostramos recuadro extra */}
                                       {isPartOfCombi && (
                                         <View style={{
                                           backgroundColor: '#2d2653',
@@ -2951,28 +2984,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           <Text style={{ color: '#c4b5fd', fontSize: 11, fontWeight: '600' }}>
                                             Cuota combi: {combi.totalOdd.toFixed(2)} • {combi.selections.length} selecciones
                                           </Text>
-                                        </View>
-                                      )}
-                                      
-                                      {/* Controles de eliminación si jornada abierta */}
-                                      {isJornadaOpen && (
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
-                                          <TouchableOpacity
-                                            onPress={() => handleDeleteBet(betKey, userBet.id)}
-                                            disabled={savingBet === betKey}
-                                            style={{
-                                              backgroundColor: '#7f1d1d',
-                                              paddingHorizontal: 12,
-                                              paddingVertical: 10,
-                                              borderRadius: 8,
-                                            }}
-                                            accessibilityLabel="Eliminar pronóstico"
-                                          >
-                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                              <DeleteIcon size={18} color="#fecaca" />
-                                              <Text style={{ color: '#fecaca', fontWeight: '700', marginLeft: 6 }}>Eliminar</Text>
-                                            </View>
-                                          </TouchableOpacity>
                                         </View>
                                       )}
                                     </View>
