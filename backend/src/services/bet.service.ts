@@ -221,7 +221,8 @@ export class BetService {
       );
     }
 
-    const potentialWin = Math.round(amount * odd);
+    // Ganancia potencial = (amount × odd) - amount
+    const potentialWin = Math.round((amount * odd) - amount);
 
     // Mapear automáticamente la configuración de la API
     console.log('🔍 Datos recibidos para mapeo:', { betType, betLabel, homeTeam, awayTeam });
