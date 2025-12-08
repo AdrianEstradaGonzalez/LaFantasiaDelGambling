@@ -313,7 +313,11 @@ const FormationDropdown = ({
   onValueChange, 
   formations,
   isPremium,
-  disabled = false
+  disabled = false,
+  navigation,
+  ligaId,
+  ligaName,
+  division
 }: { 
   label: string; 
   value: any; 
@@ -321,6 +325,10 @@ const FormationDropdown = ({
   formations: Formation[];
   isPremium: boolean;
   disabled?: boolean;
+  navigation?: any;
+  ligaId?: string;
+  ligaName?: string;
+  division?: 'primera' | 'segunda' | 'premier';
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectedLabel = formations.find(f => f.id === value)?.name || label;
@@ -428,7 +436,7 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
   const route = useRoute<MiPlantillaRouteProps>();
   const ligaId = route.params?.ligaId;
   const ligaName = route.params?.ligaName;
-  const division = route.params?.division || 'primera'; // Por defecto primera
+  const division = (route.params?.division || 'primera') as 'primera' | 'segunda' | 'premier'; // Por defecto primera
   const isDreamLeague = ligaName === 'DreamLeague';
   const isPremium = isDreamLeague ? true : (route.params?.isPremium || false); // DreamLeague siempre premium
   const insets = useSafeAreaInsets();
@@ -1375,6 +1383,10 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
           formations={formations}
           isPremium={isPremium}
           disabled={jornadaStatus === 'closed'}
+          navigation={navigation}
+          ligaId={ligaId}
+          ligaName={ligaName}
+          division={division}
           onValueChange={async (formationId) => {
             const formation = formations.find(f => f.id === formationId);
             if (formation && ligaId) {
@@ -1489,31 +1501,6 @@ export const MiPlantilla = ({ navigation }: MiPlantillaProps) => {
               </Text>
               <Text style={{ color: '#64748b', fontSize: 14, fontWeight: '600' }}>
                 pts
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* ⚠️ ALERTA: Equipo inválido - No puntuará */}
-        {jornadaStatus === 'closed' && isInvalidTeam && invalidTeamMessage && (
-          <View style={{
-            backgroundColor: '#7f1d1d',
-            borderRadius: 10,
-            padding: 14,
-            marginBottom: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 12,
-            borderWidth: 2,
-            borderColor: '#dc2626'
-          }}>
-            <AlertIcon color="#fca5a5" size={24} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#fecaca', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
-                ⚠️ EQUIPO NO VÁLIDO
-              </Text>
-              <Text style={{ color: '#fecaca', fontSize: 12, lineHeight: 17 }}>
-                {invalidTeamMessage}. No puntuarás esta jornada.
               </Text>
             </View>
           </View>
