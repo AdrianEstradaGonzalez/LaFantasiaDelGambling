@@ -1665,7 +1665,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                             </Text>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
                                               <Text style={{ color: '#94a3b8', fontSize: 13 }}>
-                                                  {balance.totalBets} apuesta{balance.totalBets !== 1 ? 's' : ''} - {countCombisInBalance(balance)} combi{countCombisInBalance(balance) !== 1 ? 's' : ''} (
+                                                  {balance.totalBets} pronóstico{balance.totalBets !== 1 ? 's' : ''} - {countCombisInBalance(balance)} combi{countCombisInBalance(balance) !== 1 ? 's' : ''} (
                                                 </Text>
                                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
                                                 <Text style={{ color: '#94a3b8', fontSize: 13 }}>{balance.wonBets}</Text>
@@ -1957,7 +1957,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                             </Text>
                                             <View style={{ flexDirection: 'column' }}>
                                               <Text style={{ color: '#94a3b8', fontSize: 13 }}>
-                                                {data.bets.length} apuesta{data.bets.length !== 1 ? 's' : ''}{isPremium ? ` - ${userCombis.length} combi${userCombis.length !== 1 ? 's' : ''}` : ''}
+                                                {data.bets.length} pronóstico{data.bets.length !== 1 ? 's' : ''}{isPremium ? ` - ${userCombis.length} combi${userCombis.length !== 1 ? 's' : ''}` : ''}
                                               </Text>
 
                                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
@@ -2034,7 +2034,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                                         <View style={{ flex: 1, marginRight: 12 }}>
                                                           <Text style={{ color: '#cbd5e1', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
-                                                            Combi ({combi.selections.length} apuestas)
+                                                            Combi ({combi.selections.length} pronósticos)
                                                           </Text>
                                                           {combi.status === 'won' && combi.potentialWin && (
                                                             <Text style={{ color: '#22c55e', fontSize: 12, fontWeight: '700' }}>
@@ -2321,7 +2321,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           alignItems: 'center'
                                         }}>
                                           <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '600' }}>
-                                            {bets.length} apuesta{bets.length !== 1 ? 's' : ''} realizada{bets.length !== 1 ? 's' : ''}
+                                            {bets.length} pronóstico{bets.length !== 1 ? 's' : ''} realizada{bets.length !== 1 ? 's' : ''}
                                           </Text>
                                           {isExpanded ? (
                                             <ChevronUpIcon size={20} color="#94a3b8" />
