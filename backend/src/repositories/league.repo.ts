@@ -17,25 +17,44 @@ async function getCurrentJornadaFromAPI(): Promise<number> {
             params: {
                 league: 140, // La Liga
                 season: 2025,
-                next: 50 // Obtener próximos partidos para encontrar la jornada actual
+                next: 50 // Obtener próximos partidos
             },
             timeout: 5000
         });
 
         const fixtures = data?.response || [];
         if (fixtures.length > 0) {
-            // Buscar el primer partido con estado NS (Not Started) o en juego
-            const upcomingMatch = fixtures.find((f: any) => 
-                ['NS', '1H', '2H', 'HT', 'ET', 'P', 'LIVE'].includes(f?.fixture?.status?.short)
+            // Primero buscar partidos EN JUEGO (estos son definitivamente de la jornada actual)
+            const liveMatch = fixtures.find((f: any) => 
+                ['1H', '2H', 'HT', 'ET', 'P', 'LIVE'].includes(f?.fixture?.status?.short)
             );
             
-            if (upcomingMatch && upcomingMatch.league?.round) {
-                // Extraer número de jornada de "Regular Season - X"
-                const match = upcomingMatch.league.round.match(/Regular Season - (\d+)/);
+            if (liveMatch && liveMatch.league?.round) {
+                const match = liveMatch.league.round.match(/Regular Season - (\d+)/);
                 if (match && match[1]) {
                     const jornada = parseInt(match[1]);
-                    console.log(`✅ Jornada actual detectada desde API: ${jornada}`);
+                    console.log(`✅ Jornada actual detectada desde partidos EN JUEGO: ${jornada}`);
                     return jornada;
+                }
+            }
+            
+            // Si no hay partidos en juego, buscar partidos NS (Not Started)
+            // pero verificar que sean de la jornada más baja (no la siguiente)
+            const nsMatches = fixtures.filter((f: any) => f?.fixture?.status?.short === 'NS');
+            if (nsMatches.length > 0) {
+                // Obtener todas las jornadas de partidos NS
+                const nsJornadas = nsMatches
+                    .map((f: any) => {
+                        const match = f.league?.round?.match(/Regular Season - (\d+)/);
+                        return match && match[1] ? parseInt(match[1]) : null;
+                    })
+                    .filter((j: number | null) => j !== null);
+                
+                if (nsJornadas.length > 0) {
+                    // Usar la jornada MÁS BAJA (la actual, no la siguiente)
+                    const minJornada = Math.min(...nsJornadas);
+                    console.log(`✅ Jornada actual detectada desde partidos NS (mínima): ${minJornada}`);
+                    return minJornada;
                 }
             }
         }
@@ -68,12 +87,12 @@ async function getCurrentJornadaFromAPI(): Promise<number> {
 export const LeagueRepo = {
     create: async (name: string, leaderId: string, code: string, division: string = 'primera', isPremiumParam?: boolean) => {
         // Obtener la jornada actual desde la API de football (Primera División)
-        const primeraJornada = await getCurrentJornadaFromAPI();
+        const jornadaFromAPI = await getCurrentJornadaFromAPI();
         
-        // Todas las divisiones usan la misma jornada (Segunda división ya no va por delante)
+        // Segunda División va 2 jornadas adelante, Primera y Premier usan la misma
         const currentJornada = division === 'segunda' 
-            ? primeraJornada + 2  // Segunda División va 2 jornadas adelante
-            : primeraJornada;      // Primera y Premier usan la misma jornada
+            ? jornadaFromAPI + 2  // Segunda División va 2 jornadas adelante
+            : jornadaFromAPI;      // Primera y Premier usan la misma jornada
         
         // isPremium viene del parámetro (pago) o si es segunda división/premier (backward compatibility)
         const isPremium = isPremiumParam !== undefined ? isPremiumParam : (division === 'segunda' || division === 'premier');
