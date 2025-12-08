@@ -70,7 +70,6 @@ model LeagueMember {
 
   @@id([leagueId, userId])
   @@index([userId])
-  @@map("league_member")
 }
 
 model Squad {
