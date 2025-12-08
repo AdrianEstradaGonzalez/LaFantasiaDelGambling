@@ -226,8 +226,8 @@ export class JornadaService {
           
           // Calcular ganancia
           // Si gana: suma potentialWin COMPLETO
-          // Si pierde: resta lo apostado (amount)
-          const profit = won ? bet.potentialWin : -bet.amount;
+          // Si pierde: 0 (ya se descontó al crear la apuesta)
+          const profit = won ? bet.potentialWin : 0;
 
           evaluations.push({
             betId: bet.id,
@@ -763,10 +763,9 @@ export class JornadaService {
           userBalance.wonBets++;
           console.log(`  💰 Usuario ${combi.userId}: Combi ganada +${combi.potentialWin}M (apostó ${combi.amount}M)`);
         } else if (combi.status === 'lost') {
-          // Perdió la combi: restar lo apostado
-          userBalance.totalProfit -= combi.amount;
+          // Perdió la combi: 0 (ya se descontó al crear la apuesta)
           userBalance.lostBets++;
-          console.log(`  💸 Usuario ${combi.userId}: Combi perdida -${combi.amount}M`);
+          console.log(`  💸 Usuario ${combi.userId}: Combi perdida (ya descontado al apostar ${combi.amount}M)`);
         }
       }
 
