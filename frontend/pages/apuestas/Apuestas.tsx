@@ -2130,6 +2130,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                   <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
                                                     {formatLabelWithType(bet.betLabel, bet.betType)}
                                                   </Text>
+                                                                                                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 }}>
+                                                    <Text style={{ color: '#22c55e', fontSize: 11, fontWeight: '700' }}>
+                                                      +{bet.potentialWin}M
+                                                    </Text>
+                                                  </View>
                                                   <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
                                                 </View>
                                               ))}
