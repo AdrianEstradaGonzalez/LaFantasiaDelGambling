@@ -2378,8 +2378,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                   <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600', flex: 1 }}>
                                                     {formatLabelWithType(bet.betLabel, bet.betType)}
                                                   </Text>
-                                                  {isPending && bet.potentialWin && (
-                                                    <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700', marginLeft: 8 }}>
+                                                  {bet.potentialWin && (
+                                                    <Text style={{ 
+                                                      color: isWon ? '#22c55e' : isPending ? '#10b981' : '#94a3b8',
+                                                      fontSize: 11, 
+                                                      fontWeight: '700', 
+                                                      marginLeft: 8 
+                                                    }}>
                                                       +{bet.potentialWin}M
                                                     </Text>
                                                   )}
