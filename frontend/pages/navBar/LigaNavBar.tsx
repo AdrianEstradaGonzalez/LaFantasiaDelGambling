@@ -68,8 +68,8 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName, division = 'p
   
   const handleApuestas = async () => {
     // Deshabilitado temporalmente
-    // await showInterstitialWithProbability();
-    // navigation.navigate('Apuestas', { ligaId, ligaName, division, isPremium });
+     await showInterstitialWithProbability();
+     navigation.navigate('Apuestas', { ligaId, ligaName, division, isPremium });
   };
 
   // Configuración de botones con iconos SVG más representativos
@@ -91,7 +91,14 @@ const LigaNavBar: React.FC<LigaNavBarProps> = ({ ligaId, ligaName, division = 'p
       label: 'Mercado',
       onPress: handleJugadores,
       isActive: currentRoute === 'PlayersMarket' || currentRoute === 'PlayersList'
+    },
+    {
+      icon: DiceIcon,
+      label: 'DreamGame',
+      onPress: handleApuestas,
+      isActive: currentRoute === 'Apuestas' || currentRoute === 'HistorialApuestas'
     }
+    
   ];
 
   return (
