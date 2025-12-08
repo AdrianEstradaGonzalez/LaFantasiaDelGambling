@@ -1024,7 +1024,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
     CustomAlertManager.alert(
       'Eliminar combi',
-      '¿Estás seguro de que deseas eliminar tu combi? Se te devolverá el presupuesto apostado.',
+      '¿Estás seguro de que deseas eliminar tu combi? Se te devolverá 1 ticket.',
       [
         { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
         { 
@@ -1049,7 +1049,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                 throw new Error(data.error || 'Error al eliminar la combi');
               }
 
-              showSuccess('Combi eliminada correctamente');
+              showSuccess('✅ Combi eliminada - 1 ticket devuelto');
               
               // Limpiar estados
               setShowCombiModal(false);
@@ -3335,6 +3335,23 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     ))}
                   </View>
 
+                  {/* Info de cuota total */}
+                  <View style={{
+                    backgroundColor: '#0f172a',
+                    borderRadius: 8,
+                    padding: 12,
+                    marginBottom: 16,
+                    borderWidth: 1,
+                    borderColor: '#334155',
+                  }}>
+                    <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>
+                      Cuota total combinada
+                    </Text>
+                    <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>
+                      {calculateCombiOdds().toFixed(2)}
+                    </Text>
+                  </View>
+
                   {/* Ganancia potencial total */}
                   <View style={{
                     backgroundColor: '#0f172a',
@@ -3345,56 +3362,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     borderColor: '#22c55e',
                   }}>
                     <Text style={{ color: '#22c55e', fontSize: 12, marginBottom: 4 }}>
-                      Ganancia potencial total
+                      Ganancia potencial (50M apostados)
                     </Text>
                     <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800' }}>
                       +{Math.round(50 * calculateCombiOdds() - 50)}M
                     </Text>
                   </View>
-
-                    {/* Input de cantidad */}
-                    <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>
-                        Cantidad a apostar (máx. 50M)
-                    </Text>
-                  <TextInput
-                    value={combiAmount}
-                      onChangeText={setCombiAmount}
-                      editable={!isCombiPlaced}
-                    keyboardType="number-pad"
-                    placeholder=""
-                    placeholderTextColor="#64748b"
-                    style={{
-                      backgroundColor: '#0f172a',
-                      borderWidth: 1,
-                      borderColor: '#334155',
-                      color: '#e5e7eb',
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderRadius: 8,
-                      fontSize: 16,
-                        marginBottom: 12,
-                        opacity: isCombiPlaced ? 0.6 : 1,
-                    }}
-                  />
-
-                    {/* Ganancia potencial */}
-                    {combiAmount && parseInt(combiAmount) > 0 && (
-                      <View style={{
-                        backgroundColor: '#064e3b',
-                        borderRadius: 8,
-                        padding: 12,
-                        marginBottom: 16,
-                        borderWidth: 1,
-                        borderColor: '#10b981',
-                      }}>
-                        <Text style={{ color: '#6ee7b7', fontSize: 12, marginBottom: 4 }}>
-                          Ganancia potencial
-                        </Text>
-                        <Text style={{ color: '#10b981', fontSize: 20, fontWeight: '800' }}>
-                          +{Math.round(parseInt(combiAmount) * calculateCombiOdds())}M
-                        </Text>
-                      </View>
-                    )}
                   </ScrollView>
 
                   {/* Botones */}
@@ -3438,21 +3411,29 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       // Botón Crear cuando no existe combi
                       <TouchableOpacity
                         onPress={handleCreateCombi}
-                        disabled={creatingCombi || !combiAmount || parseInt(combiAmount) <= 0}
+                        disabled={creatingCombi || combiSelections.length < 2}
                         style={{
                           flex: 1,
                           backgroundColor: creatingCombi ? '#374151' : '#0892D0',
                           paddingVertical: 12,
                           borderRadius: 8,
-                          opacity: (creatingCombi || !combiAmount || parseInt(combiAmount) <= 0) ? 0.5 : 1,
+                          opacity: (creatingCombi || combiSelections.length < 2) ? 0.5 : 1,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
                         }}
                       >
                         {creatingCombi ? (
                           <ActivityIndicator size="small" color="#fff" />
                         ) : (
-                          <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
-                            Crear Combi
-                          </Text>
+                          <>
+                            <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
+                              Crear Combi
+                            </Text>
+                                                        <TicketIcon size={18} color="#fff" />
+
+                          </>
                         )}
                       </TouchableOpacity>
                     )}
