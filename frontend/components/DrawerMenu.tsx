@@ -354,7 +354,14 @@ export const DrawerMenu = ({ navigation, ligaId, ligaName, division, isPremium }
                 label="Inicio"
                 onPress={() => {
                   navigation.closeDrawer();
-                  navigation.navigate('Home');
+                  // Evitar navegación si ya estamos en Home
+                  const currentRoute = navigation.getState?.()?.routes?.[navigation.getState?.()?.index]?.name;
+                  if (currentRoute !== 'Home') {
+                    // Pequeño delay para que el drawer cierre completamente
+                    setTimeout(() => {
+                      navigation.navigate('Home');
+                    }, 300);
+                  }
                 }}
                 iconColor="#60a5fa"
               />
