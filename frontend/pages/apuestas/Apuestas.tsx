@@ -2607,25 +2607,18 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       marginBottom: 16,
                     }}>
                       <Text style={{ color: '#93c5fd', fontSize: 14, fontWeight: '600', marginBottom: 12 }}>
-                        TICKETS DISPONIBLES
+                        TICKETS
                       </Text>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>Total esta jornada:</Text>
-                        <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '700' }}>{budget.total}/10 🎟️</Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>Usados:</Text>
-                        <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '700' }}>{budget.used} 🎟️</Text>
-                      </View>
-                      <View style={{ height: 1, backgroundColor: '#334155', marginVertical: 8 }} />
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                         <Text style={{ color: '#94a3b8', fontSize: 14, fontWeight: '600' }}>Disponibles:</Text>
-                        <Text style={{ color: '#22c55e', fontSize: 16, fontWeight: '800' }}>{budget.available} 🎟️</Text>
+                        <Text style={{ color: '#22c55e', fontSize: 18, fontWeight: '800' }}>{budget.available} 🎟️</Text>
                       </View>
-                      <Text style={{ color: '#64748b', fontSize: 11, marginTop: 8, fontStyle: 'italic' }}>
-                        • 1 ticket = 1 apuesta simple o 1 combinada{'\n'}
-                        • Cada apuesta ganada: +80M presupuesto{'\n'}
-                        • Cada 2 aciertos: +1 ticket extra (máx. 10)
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>Usados esta jornada:</Text>
+                        <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '700' }}>{budget.used} 🎟️</Text>
+                      </View>
+                      <Text style={{ color: '#64748b', fontSize: 11, marginTop: 10, fontStyle: 'italic' }}>
+                        1 ticket = 1 apuesta simple o 1 combinada
                       </Text>
                     </View>
                   )}
