@@ -2321,7 +2321,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           alignItems: 'center'
                                         }}>
                                           <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '600' }}>
-                                            {bets.length} pronóstico{bets.length !== 1 ? 's' : ''} realizada{bets.length !== 1 ? 's' : ''}
+                                            {bets.length} pronóstico{bets.length !== 1 ? 's' : ''} realizado{bets.length !== 1 ? 's' : ''}
                                           </Text>
                                           {isExpanded ? (
                                             <ChevronUpIcon size={20} color="#94a3b8" />
