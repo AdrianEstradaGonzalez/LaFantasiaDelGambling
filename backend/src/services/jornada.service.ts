@@ -1349,11 +1349,13 @@ export class JornadaService {
           }
         });
 
-        // Contar apuestas ganadas (simples + combis)
+        // Sumar ganancias de apuestas ganadas (potentialWin)
         let wonBets = 0;
+        let betsReward = 0;
         for (const bet of userBets) {
           if (bet.status === 'won') {
             wonBets++;
+            betsReward += bet.potentialWin;
           }
         }
 
@@ -1369,6 +1371,7 @@ export class JornadaService {
         for (const combi of userCombis) {
           if (combi.status === 'won') {
             wonBets++;
+            betsReward += combi.potentialWin;
           }
         }
 
@@ -1376,10 +1379,7 @@ export class JornadaService {
         const bonusTickets = Math.floor(wonBets / 2);
         const newTickets = Math.min(5 + bonusTickets, 10); // 5 base + bonus, máximo 10
         
-        // Sistema de recompensa de presupuesto: +80M por cada apuesta ganada (fijo)
-        const betsReward = wonBets * 80; // 80M por cada apuesta ganada
-        
-        // Fórmula presupuesto: 500 + (80M × apuestas ganadas) + puntos plantilla
+        // Fórmula presupuesto: 500 + (ganancias de apuestas) + puntos plantilla
         const newInitialBudget = 500 + betsReward + squadPoints;
         const newBudget = newInitialBudget;
         
@@ -1395,7 +1395,7 @@ export class JornadaService {
         });
 
         console.log(
-          `     Aciertos: ${wonBets} | Recompensa: +${betsReward}M (${wonBets} × 80M) | ` +
+          `     Aciertos: ${wonBets} | Recompensa: +${betsReward}M (potentialWin) | ` +
           `Bonus tickets: +${bonusTickets} | Tickets próxima jornada: ${newTickets}/10 | ` +
           `Plantilla: +${squadPoints}M | Budget final: ${newInitialBudget}M`
         );
