@@ -20,7 +20,7 @@ export class BetService {
       throw new AppError(
         403,
         'JORNADA_BLOQUEADA',
-        'La jornada está abierta (bloqueada). No se pueden crear, modificar ni eliminar apuestas en este momento.'
+        'La jornada está abierta (bloqueada). No se pueden crear, modificar ni eliminar pronósticos en este momento.'
       );
     }
   }
@@ -39,10 +39,10 @@ export class BetService {
       throw new AppError(404, 'NOT_MEMBER', 'No eres miembro de esta liga');
     }
 
-    // Contar tickets usados en esta jornada (apuestas simples + combinadas)
+    // Contar tickets usados en esta jornada (pronósticos simples + combinados)
     const currentJornada = await this.getCurrentJornada(leagueId);
     
-    // Contar apuestas simples sin combiId
+    // Contar pronósticos simples sin combiId
     const simpleBetsCount = await prisma.bet.count({
       where: {
         leagueId,
@@ -74,7 +74,7 @@ export class BetService {
   }
 
   /**
-   * Obtener todas las apuestas de una liga (todas las jornadas, con nombre de usuario)
+   * Obtener todos los pronósticos de una liga (todas las jornadas, con nombre de usuario)
    */
   static async getLeagueBets(leagueId: string, requesterUserId: string): Promise<Array<{
     id: string;
@@ -157,7 +157,7 @@ export class BetService {
   }
 
   /**
-   * Crear una nueva apuesta
+   * Crear un nuevo pronóstico
    */
   static async placeBet(params: {
     userId: string;
@@ -199,10 +199,10 @@ export class BetService {
       );
     }
 
-    // Crear la apuesta
+    // Crear el pronóstico
     const currentJornada = await this.getCurrentJornada(leagueId);
 
-    // Regla: solo una apuesta por partido y jornada para cada usuario
+    // Regla: solo un pronóstico por partido y jornada para cada usuario
     const existingForMatch = await prisma.bet.findFirst({
       where: {
         leagueId,
@@ -217,7 +217,7 @@ export class BetService {
       throw new AppError(
         400,
         'ONE_BET_PER_MATCH',
-        'Solo puedes tener una apuesta por partido en esta jornada. Borra o edita tu apuesta existente.'
+        'Solo puedes tener un pronóstico por partido en esta jornada. Borra o edita tu pronóstico existente.'
       );
     }
 
@@ -256,7 +256,7 @@ export class BetService {
       data: betData,
     });
 
-    console.log(`✅ Apuesta creada con ID: ${bet.id}`, {
+    console.log(`✅ Pronóstico creado con ID: ${bet.id}`, {
       homeTeam: bet.homeTeam,
       awayTeam: bet.awayTeam,
       apiBetId: bet.apiBetId,
@@ -268,7 +268,7 @@ export class BetService {
   }
 
   /**
-   * Obtener apuestas de un usuario en una liga para la jornada actual
+   * Obtener pronósticos de un usuario en una liga para la jornada actual
    */
   static async getUserBets(userId: string, leagueId: string) {
     const currentJornada = await this.getCurrentJornada(leagueId);
@@ -288,7 +288,7 @@ export class BetService {
   }
 
   /**
-   * Eliminar una apuesta (solo si está pendiente)
+   * Eliminar un pronóstico (solo si está pendiente)
    */
   static async deleteBet(betId: string, userId: string, leagueId: string) {
     // Bloquear si la jornada está abierta (bloqueada)
@@ -299,15 +299,15 @@ export class BetService {
     });
 
     if (!bet) {
-      throw new AppError(404, 'BET_NOT_FOUND', 'Apuesta no encontrada');
+      throw new AppError(404, 'BET_NOT_FOUND', 'Pronóstico no encontrado');
     }
 
     if (bet.userId !== userId || bet.leagueId !== leagueId) {
-      throw new AppError(403, 'FORBIDDEN', 'No tienes permiso para eliminar esta apuesta');
+      throw new AppError(403, 'FORBIDDEN', 'No tienes permiso para eliminar este pronóstico');
     }
 
     if (bet.status !== 'pending') {
-      throw new AppError(400, 'BET_NOT_PENDING', 'Solo puedes eliminar apuestas pendientes');
+      throw new AppError(400, 'BET_NOT_PENDING', 'Solo puedes eliminar pronósticos pendientes');
     }
 
     await prisma.bet.delete({
@@ -318,7 +318,7 @@ export class BetService {
   }
 
   /**
-   * Actualizar monto de una apuesta existente
+   * Actualizar monto de un pronóstico existente
    */
   static async updateBetAmount(betId: string, userId: string, leagueId: string, newAmount: number) {
     // Bloquear si la jornada está abierta (bloqueada)
@@ -329,25 +329,25 @@ export class BetService {
     });
 
     if (!bet) {
-      throw new AppError(404, 'BET_NOT_FOUND', 'Apuesta no encontrada');
+      throw new AppError(404, 'BET_NOT_FOUND', 'Pronóstico no encontrado');
     }
 
     if (bet.userId !== userId || bet.leagueId !== leagueId) {
-      throw new AppError(403, 'FORBIDDEN', 'No tienes permiso para modificar esta apuesta');
+      throw new AppError(403, 'FORBIDDEN', 'No tienes permiso para modificar este pronóstico');
     }
 
     if (bet.status !== 'pending') {
-      throw new AppError(400, 'BET_NOT_PENDING', 'Solo puedes modificar apuestas pendientes');
+      throw new AppError(400, 'BET_NOT_PENDING', 'Solo puedes modificar pronósticos pendientes');
     }
 
     if (newAmount <= 0) {
       throw new AppError(400, 'INVALID_AMOUNT', 'El monto debe ser mayor a 0');
     }
     if (newAmount > 50) {
-      throw new AppError(400, 'AMOUNT_TOO_HIGH', 'El monto máximo por apuesta es 50M');
+      throw new AppError(400, 'AMOUNT_TOO_HIGH', 'El monto máximo por pronóstico es 50M');
     }
 
-    // Verificar presupuesto (excluyendo el monto actual de esta apuesta)
+    // Verificar presupuesto (excluyendo el monto actual de este pronóstico)
     const budget = await this.getBettingBudget(userId, leagueId);
     const availableWithThisBet = budget.available + bet.amount;
     
@@ -395,7 +395,7 @@ export class BetService {
   }
 
   /**
-   * Resetear presupuesto de apuestas (se ejecuta al inicio de cada jornada)
+   * Resetear presupuesto de pronósticos (se ejecuta al inicio de cada jornada)
    */
   static async resetBettingBudgets(leagueId?: string) {
     const where = leagueId ? { leagueId } : {};

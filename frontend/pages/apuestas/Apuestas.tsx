@@ -88,7 +88,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Estado para controlar visibilidad de la barra de navegación
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
-  // Estado para apuestas desbloqueadas con anuncios (máximo 2)
+  // Estado para pronósticos desbloqueados con anuncios (máximo 2)
   const [unlockedBets, setUnlockedBets] = useState<Set<number>>(new Set());
   const [loadingAd, setLoadingAd] = useState(false);
 
@@ -116,14 +116,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   // Estados para expansión de usuarios en balances
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
 
-  // Estados para tabs (Balances / Apuestas)
-  const [activeTab, setActiveTab] = useState(0); // 0 = Balances, 1 = Apuestas
+  // Estados para tabs (Balances / Pronósticos)
+  const [activeTab, setActiveTab] = useState(0); // 0 = Balances, 1 = Pronósticos
   const tabIndicatorAnim = useRef(new Animated.Value(0)).current;
 
-  // Estados para expansión de apuestas por partido
+  // Estados para expansión de pronósticos por partido
   const [expandedBets, setExpandedBets] = useState<Set<number>>(new Set());
 
-  // Helper: parse fecha/hora de apuesta a Date. Soporta formatos como '1/12', '28/11' y hora '20:30'
+  // Helper: parse fecha/hora de pronóstico a Date. Soporta formatos como '1/12', '28/11' y hora '20:30'
   const parseBetDateTime = (bet: { fecha?: string; hora?: string }) => {
     try {
       const nowYear = new Date().getFullYear();
@@ -233,7 +233,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     };
   }, []);
 
-  // Cargar apuestas desbloqueadas desde AsyncStorage al iniciar
+  // Cargar pronósticos desbloqueados desde AsyncStorage al iniciar
   useEffect(() => {
     const loadUnlockedBets = async () => {
       try {
@@ -251,7 +251,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }
   }, [ligaId, jornada]);
 
-  // Guardar apuestas desbloqueadas en AsyncStorage cuando cambien
+  // Guardar pronósticos desbloqueados en AsyncStorage cuando cambien
   useEffect(() => {
     const saveUnlockedBets = async () => {
       try {
@@ -272,22 +272,22 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     let mounted = true;
     (async () => {
       try {
-        // Precargar anuncio recompensado para desbloquear apuestas
+        // Precargar anuncio recompensado para desbloquear pronósticos
         AdMobService.preloadRewarded().catch(err => 
           console.warn('No se pudo precargar anuncio recompensado:', err)
         );
 
-        console.log('🔍 Cargando mercado de apuestas - División:', division);
+        console.log('🔍 Cargando mercado de pronósticos - División:', division);
         let apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName, division });
         // Ordenar por fecha/hora (más reciente primero)
         try {
           apuestas = apuestas.sort((a: any, b: any) => parseBetDateTime(b).getTime() - parseBetDateTime(a).getTime());
         } catch (err) {
-          console.warn('Error ordenando apuestas por fecha:', err);
+          console.warn('Error ordenando pronósticos por fecha:', err);
         }
-        console.log('✅ Apuestas cargadas:', apuestas.length);
+        console.log('✅ Pronósticos cargados:', apuestas.length);
 
-        // Obtener presupuesto y apuestas del usuario si hay ligaId
+        // Obtener presupuesto y pronósticos del usuario si hay ligaId
         let budgetData = { total: 3, used: 0, available: 3 };
         let userBetsData: UserBet[] = [];
         let leagueBetsData: UserBet[] = [];
@@ -302,7 +302,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             statusData = statusResp.status;
             currentJornadaFromLeague = statusResp.currentJornada;
 
-            // Obtener todas las jornadas desde las apuestas realizadas (tabla Bet)
+            // Obtener todas las jornadas desde los pronósticos realizados (tabla Bet)
             const allJornadas = [...new Set(leagueBetsData.map(bet => bet.jornada))];
             
             // Agregar la jornada actual si no está en la lista
@@ -454,12 +454,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       try {
         setLoading(true);
         
-        // Cargar apuestas disponibles para apostar
+        // Cargar pronósticos disponibles para pronosticar
         let apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName, division });
         try {
           apuestas = apuestas.sort((a: any, b: any) => parseBetDateTime(b).getTime() - parseBetDateTime(a).getTime());
         } catch (err) {
-          console.warn('Error ordenando apuestas por fecha:', err);
+          console.warn('Error ordenando pronósticos por fecha:', err);
         }
         
         // Agrupar apuestas por matchId + type
@@ -537,7 +537,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }
   };
 
-  // Helpers y handlers para crear/editar/eliminar apuestas cuando la jornada está abierta
+  // Helpers y handlers para crear/editar/eliminar pronósticos cuando la jornada está abierta
 
   const refreshBets = async (targetJornada?: number | null) => {
     if (!ligaId) return;
@@ -634,7 +634,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
     try {
       setSavingBet(key);
-      console.log('Frontend - Creando apuesta (1 ticket usado):', {
+      console.log('Frontend - Creando pronóstico (1 ticket usado):', {
         matchId: params.matchId,
         homeTeam: params.homeTeam,
         awayTeam: params.awayTeam,
@@ -653,17 +653,17 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         odd: params.odd,
         amount,
       });
-      showSuccess('✅ Ticket usado - Apuesta creada');
+      showSuccess('✅ Ticket usado - Pronóstico creado');
       await refreshBets();
     } catch (err: any) {
-      const errorMessage = err?.message || 'Error al crear apuesta';
+      const errorMessage = err?.message || 'Error al crear pronóstico';
 
       // Detectar error de tickets insuficientes
       if (errorMessage.toLowerCase().includes('insuficiente') ||
         errorMessage.toLowerCase().includes('ticket')) {
         CustomAlertManager.alert(
           'Sin tickets disponibles',
-          `No tienes tickets disponibles para realizar esta apuesta.\n\n${errorMessage}`,
+          `No tienes tickets disponibles para realizar este pronóstico.\n\n${errorMessage}`,
           [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
           { icon: 'alert-circle', iconColor: '#ef4444' }
         );
@@ -683,10 +683,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     try {
       setSavingBet(key);
       await BetService.deleteBet(ligaId, betId);
-      showSuccess('Apuesta eliminada');
+      showSuccess('Pronóstico eliminado');
       await refreshBets();
     } catch (err: any) {
-      showError(err?.message || 'Error al eliminar apuesta');
+      showError(err?.message || 'Error al eliminar pronóstico');
     } finally {
       setSavingBet(null);
     }
@@ -704,15 +704,15 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
   // CÃ¡lculos de ganancias potenciales los devuelve el backend con la apuesta del usuario
 
-  // Función auxiliar para verificar si una opción tiene apuesta del usuario
-  // EXCLUYE las apuestas que forman parte de una combi
+  // Función auxiliar para verificar si una opción tiene pronóstico del usuario
+  // EXCLUYE los pronósticos que forman parte de una combi
   const getUserBetForOption = (matchId: number, betType: string, betLabel: string): UserBet | undefined => {
     return userBets.find(
       (bet) => bet.matchId === matchId && bet.betType === betType && bet.betLabel === betLabel && !bet.combiId
     );
   };
 
-  // Función auxiliar para obtener la combi de una apuesta
+  // Función auxiliar para obtener la combi de un pronóstico
   const getCombiForBet = (betId: string) => {
     return userCombis.find(combi => 
       combi.selections && combi.selections.some((sel: any) => sel.id === betId)
@@ -736,16 +736,16 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       .trim()
       .toLowerCase();
 
-  // Función para verificar si existe alguna apuesta en el grupo (mismo matchId + betType)
-  // EXCLUYE las apuestas que forman parte de una combi
+  // Función para verificar si existe algún pronóstico en el grupo (mismo matchId + betType)
+  // EXCLUYE los pronósticos que forman parte de una combi
   const hasAnyBetInGroup = (matchId: number, betType: string): boolean => {
     return userBets.some((bet) => bet.matchId === matchId && bet.betType === betType && !bet.combiId);
   };
 
   // Use shared formatter from utils `frontend/utils/formatBetLabel.ts`
 
-  // Regla global: una sola apuesta por partido
-  // EXCLUYE las apuestas que forman parte de una combi
+  // Regla global: un solo pronóstico por partido
+  // EXCLUYE los pronósticos que forman parte de una combi
   const hasAnyBetInMatch = (matchId: number): boolean => {
     return userBets.some((bet) => bet.matchId === matchId && !bet.combiId);
   };
@@ -756,7 +756,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (!isPremium) {
       CustomAlertManager.alert(
         'Funcionalidad Premium',
-        'Las apuestas combinadas son exclusivas de las ligas premium. ¿Deseas actualizar tu liga?',
+        'Los pronósticos combinados son exclusivos de las ligas premium. ¿Deseas actualizar tu liga?',
         [
           { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
           { text: 'Mejorar', onPress: handleUpgradeToPremium, style: 'default' }
@@ -766,11 +766,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
 
-    // Verificar si ya existe una apuesta normal (no combi) en este partido
+    // Verificar si ya existe un pronóstico normal (no combi) en este partido
     if (hasAnyBetInMatch(selection.matchId)) {
       CustomAlertManager.alert(
-        'Apuesta existente',
-        'Ya tienes una apuesta en este partido. No puedes agregar opciones de este partido a una combinada.',
+        'Pronóstico existente',
+        'Ya tienes un pronóstico en este partido. No puedes agregar opciones de este partido a una combinada.',
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -866,7 +866,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (isInCombi(matchId, betType, betLabel)) {
       return false;
     }
-    // Si hay otra opción del mismo partido y mismo tipo de apuesta en la combi, bloquear esta
+    // Si hay otra opción del mismo partido y mismo tipo de pronóstico en la combi, bloquear esta
     return combiSelections.some(s => s.matchId === matchId && s.betType === betType);
   };
 
@@ -901,7 +901,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (!isPremium) {
       CustomAlertManager.alert(
         'Funcionalidad Premium',
-        'Las apuestas combinadas son exclusivas de las ligas premium. ¿Deseas actualizar tu liga?',
+        'Los pronósticos combinados son exclusivos de las ligas premium. ¿Deseas actualizar tu liga?',
         [
           { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
           { text: 'Mejorar', onPress: handleUpgradeToPremium, style: 'default' }
@@ -914,7 +914,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (combiSelections.length < 2) {
       CustomAlertManager.alert(
         'Cantidad no válida',
-        'Necesitas mínimo 2 apuestas para crear una combi',
+        'Necesitas mínimo 2 pronósticos para crear una combi',
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -925,7 +925,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (combiAmount.includes('.') || combiAmount.includes(',')) {
       CustomAlertManager.alert(
         'Cantidad no válida',
-        'No se permiten decimales en las apuestas. Ingresa un número entero.',
+        'No se permiten decimales en los pronósticos. Ingresa un número entero.',
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -1254,7 +1254,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }).start();
   };
 
-  // Handlers para expansión de apuestas
+  // Handlers para expansión de pronósticos
   const toggleBetExpansion = (matchId: number) => {
     setExpandedBets(prev => {
       const newSet = new Set(prev);
@@ -1299,12 +1299,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     return ids.size;
   };
 
-  // Función para desbloquear apuesta con anuncio recompensado
+  // Función para desbloquear pronóstico con anuncio recompensado
   const handleUnlockWithAd = async (betIndex: number) => {
     if (unlockedBets.size >= 2) {
       CustomAlertManager.alert(
         'Límite alcanzado',
-        'Solo puedes desbloquear 2 apuestas por jornada viendo anuncios.',
+        'Solo puedes desbloquear 2 pronósticos por jornada viendo anuncios.',
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -1319,19 +1319,19 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         // Hubo un error al cargar/mostrar el anuncio - desbloquear automáticamente
         console.warn('⚠️ No se pudo cargar el anuncio, desbloqueando automáticamente:', result.error);
         setUnlockedBets(prev => new Set([...prev, betIndex]));
-        showSuccess('Apuesta desbloqueada (anuncio no disponible).');
+        showSuccess('Pronóstico desbloqueado (anuncio no disponible).');
       } else if (result.watched) {
-        // Usuario completó el anuncio, desbloquear la apuesta por índice
+        // Usuario completó el anuncio, desbloquear el pronóstico por índice
         setUnlockedBets(prev => new Set([...prev, betIndex]));
-        showSuccess('¡Apuesta desbloqueada! Ahora puedes apostar en esta opción.');
+        showSuccess('¡Pronóstico desbloqueado! Ahora puedes pronosticar en esta opción.');
       } else {
-        showError('Debes ver el anuncio completo para desbloquear la apuesta.');
+        showError('Debes ver el anuncio completo para desbloquear el pronóstico.');
       }
     } catch (error) {
       console.error('Error mostrando anuncio:', error);
       // Si hay un error (anuncio no disponible), desbloquear automáticamente
       setUnlockedBets(prev => new Set([...prev, betIndex]));
-      showSuccess('Apuesta desbloqueada (anuncio no disponible).');
+      showSuccess('Pronóstico desbloqueado (anuncio no disponible).');
     } finally {
       setLoadingAd(false);
     }
@@ -1424,7 +1424,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               {/* MODO HISTORIAL - Cuando la jornada está cerrada o es histórica */}
               {(jornadaStatus === 'closed' || selectedJornada !== currentJornada) ? (
                 <>
-                  <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Historial de Apuestas</Text>
+                  <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Historial de DreamGame</Text>
                   
                   {/* Selector de Jornada */}
                   {availableJornadas.length > 0 && (
@@ -1583,7 +1583,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             fontWeight: '700',
                             textAlign: 'center',
                           }}>
-                            Apuestas
+                            Pronósticos
                           </Text>
                         </TouchableOpacity>
 
@@ -1646,7 +1646,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   BALANCES
                                 </Text>
                                 <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
-                                  {evaluatingRealtime ? 'Evaluando...' : `${leagueBets.length} apuesta${leagueBets.length !== 1 ? 's' : ''} realizada`}
+                                  {evaluatingRealtime ? 'Evaluando...' : `${leagueBets.length} pronóstico${leagueBets.length !== 1 ? 's' : ''} realizado`}
                                 </Text>
                               </View>
                             </View>
@@ -2274,7 +2274,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           </View>
                         </View>
                       ) : (
-                        /* TAB 2: APUESTAS POR PARTIDO Y COMBIS */
+                        /* TAB 2: PRONÓSTICOS POR PARTIDO Y COMBIS */
                         <View>
                           {/* Banner AdMob */}
                           <View style={{ marginBottom: 16, alignItems: 'center' }}>
@@ -2282,11 +2282,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           </View>
 
                           <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
-                            Apuestas por Partido
+                            Pronósticos por Partido
                           </Text>
 
                           {(() => {
-                            // Agrupar TODAS las apuestas (individuales y de combis) por matchId
+                            // Agrupar TODOS los pronósticos (individuales y de combis) por matchId
                             const betsByMatch: Record<number, UserBet[]> = {};
                             leagueBets.forEach((bet) => {
                               if (!betsByMatch[bet.matchId]) {
@@ -2481,9 +2481,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   )}
                 </>
               ) : (
-                /* MODO APUESTAS - Cuando la jornada está abierta */
+                /* MODO PRONÓSTICOS - Cuando la jornada está abierta */
                 <>
-                  <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Apuestas</Text>
+                  <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Pronósticos</Text>
                   
                   {/* Selector de Jornada */}
                   {availableJornadas.length > 0 && (
@@ -2618,7 +2618,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '700' }}>{budget.used} 🎟️</Text>
                       </View>
                       <Text style={{ color: '#64748b', fontSize: 11, marginTop: 10, fontStyle: 'italic' }}>
-                        1 ticket = 1 apuesta simple o 1 combinada
+                        1 ticket = 1 pronóstico simple o 1 combinada
                       </Text>
                     </View>
                   )}
@@ -2633,7 +2633,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   {groupedBets.length === 0 ? (
                     <View style={{ padding: 20, alignItems: 'center' }}>
                       <Text style={{ color: '#94a3b8', textAlign: 'center' }}>
-                        No hay apuestas disponibles en este momento.
+                        No hay pronósticos disponibles en este momento.
                       </Text>
                     </View>
                   ) : (
@@ -2730,7 +2730,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             {b.type}
                           </Text>
 
-                          {/* Calcular si la apuesta requiere anuncio y mostrar boton de desbloqueo */}
+                          {/* Calcular si el pronóstico requiere anuncio y mostrar boton de desbloqueo */}
                           {(() => {
                             // On iOS TestFlight devices ads may not show; unlock the last two bets for iOS.
                             const lastTwoStart = Math.max(0, groupedBets.length - 2);
@@ -2812,7 +2812,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                             const isUnlocked = unlockedBets.has(index) || (Platform.OS === 'ios' && index >= lastTwoStart);
                             const hasUserBetInMatch = userBets.some((bet) => bet.matchId === b.matchId);
                             
-                            // Si requiere anuncio y no está desbloqueada y no tiene apuesta, ocultar opciones
+                            // Si requiere anuncio y no está desbloqueada y no tiene pronóstico, ocultar opciones
                             if (requiresAdUnlock && !isUnlocked && !hasUserBetInMatch) {
                               return (
                                 <View style={{
@@ -2849,7 +2849,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     textAlign: 'center',
                                     marginTop: 4,
                                   }}>
-                                    Desbloquea para ver las opciones de apuesta
+                                    Desbloquea para ver las opciones de pronóstico
                                   </Text>
                                 </View>
                               );
@@ -2937,7 +2937,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                                         <View>
                                           <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>
-                                            {isPartOfCombi ? 'Apostado en combi' : 'Apostado'}
+                                            {isPartOfCombi ? 'Pronosticado en combi' : 'Pronosticado'}
                                           </Text>
                                           <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>
                                             {isPartOfCombi ? combi.amount : userBet.amount}M
@@ -2964,96 +2964,27 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           </Text>
                                         </View>
                                       )}
-                                      {/* Controles de ediciÃ³n si jornada abierta */}
-                                      {isJornadaOpen ? (
-                                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
-                                        {/* Two simple buttons: Edit and Delete. Edit toggles an inline editable input. */}
-                                        {!editingBets[betKey] ? (
-                                          <>
-                                            <TouchableOpacity
-                                              onPress={() => setEditingBets((p) => ({ ...p, [betKey]: true }))}
-                                              style={{
-                                                backgroundColor: '#2563eb',
-                                                paddingHorizontal: 12,
-                                                paddingVertical: 10,
-                                                borderRadius: 8,
-                                                marginRight: 8,
-                                              }}
-                                              accessibilityLabel="Editar apuesta"
-                                            >
-                                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                <EditIcon size={18} color="#ffffff" />
-                                                <Text style={{ color: '#fff', fontWeight: '700', marginLeft: 6 }}>Editar</Text>
-                                              </View>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                              onPress={() => handleDeleteBet(betKey, userBet.id)}
-                                              disabled={savingBet === betKey}
-                                              style={{
-                                                backgroundColor: '#7f1d1d',
-                                                paddingHorizontal: 12,
-                                                paddingVertical: 10,
-                                                borderRadius: 8,
-                                              }}
-                                              accessibilityLabel="Eliminar apuesta"
-                                            >
-                                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                                <DeleteIcon size={18} color="#fecaca" />
-                                                <Text style={{ color: '#fecaca', fontWeight: '700', marginLeft: 6 }}>Eliminar</Text>
-                                              </View>
-                                            </TouchableOpacity>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <TextInput
-                                              value={amountInputs[betKey] ?? String(userBet.amount)}
-                                              onChangeText={(t) => setAmountForKey(betKey, t)}
-                                              keyboardType="number-pad"
-                                              placeholder="Cantidad"
-                                              placeholderTextColor="#64748b"
-                                              returnKeyType="done"
-                                              style={{
-                                                flex: 1,
-                                                backgroundColor: '#0b1220',
-                                                borderWidth: 1,
-                                                borderColor: '#334155',
-                                                color: '#e5e7eb',
-                                                paddingHorizontal: 10,
-                                                paddingVertical: 8,
-                                                borderRadius: 8,
-                                                marginRight: 8,
-                                              }}
-                                            />
-                                            <TouchableOpacity
-                                              onPress={async () => {
-                                                await handleUpdateBet(betKey, userBet.id);
-                                              }}
-                                              disabled={savingBet === betKey}
-                                              style={{
-                                                backgroundColor: '#16a34a',
-                                                paddingHorizontal: 12,
-                                                paddingVertical: 10,
-                                                borderRadius: 8,
-                                                marginRight: 8,
-                                              }}
-                                            >
-                                              <Text style={{ color: '#ecfdf5', fontWeight: '800' }}>Guardar</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                              onPress={() => setEditingBets((p) => ({ ...p, [betKey]: false }))}
-                                              style={{
-                                                backgroundColor: '#374151',
-                                                paddingHorizontal: 12,
-                                                paddingVertical: 10,
-                                                borderRadius: 8,
-                                              }}
-                                            >
-                                              <Text style={{ color: '#fff', fontWeight: '700' }}>Cancelar</Text>
-                                            </TouchableOpacity>
-                                          </>
-                                        )}
-                                      </View>
-                                    ) : null}
+                                      {/* Controles de eliminación si jornada abierta */}
+                                      {isJornadaOpen && (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
+                                          <TouchableOpacity
+                                            onPress={() => handleDeleteBet(betKey, userBet.id)}
+                                            disabled={savingBet === betKey}
+                                            style={{
+                                              backgroundColor: '#7f1d1d',
+                                              paddingHorizontal: 12,
+                                              paddingVertical: 10,
+                                              borderRadius: 8,
+                                            }}
+                                            accessibilityLabel="Eliminar pronóstico"
+                                          >
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                              <DeleteIcon size={18} color="#fecaca" />
+                                              <Text style={{ color: '#fecaca', fontWeight: '700', marginLeft: 6 }}>Eliminar</Text>
+                                            </View>
+                                          </TouchableOpacity>
+                                        </View>
+                                      )}
                                     </View>
                                   );
                                 })()}
@@ -3140,7 +3071,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           : !isPremium 
                                             ? 'Combinar (Premium)' 
                                             : hasNormalBetInMatch
-                                              ? 'Ya apostaste aquí'
+                                              ? 'Ya pronosticaste aquí'
                                               : isInCombi(b.matchId, b.type, option.label) 
                                                 ? '✓ En combi' 
                                                 : isOptionBlockedByCombi(b.matchId, b.type, option.label)
@@ -3161,7 +3092,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       normalizeType(betItem.betType) === normalizeType(b.type) &&
                                       normalizeLabel(betItem.betLabel) === normalizeLabel(option.label)
                                     );
-                                    console.log('Filtering bets for option:', {
+                                    console.log('Filtering pronósticos for option:', {
                                       matchId: b.matchId,
                                       type: b.type,
                                       label: option.label,
@@ -3184,7 +3115,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                         {betsForOption.map((bf) => (
                                           <View key={bf.id} style={{ paddingVertical: 4 }}>
                                             <Text style={{ color: '#e5e7eb' }} numberOfLines={3}>
-                                              {(bf.userName || 'Jugador') + ' ha apostado ' + bf.amount + 'M en ' + bf.betType + ' - ' + formatLabelWithType(bf.betLabel, bf.betType)}
+                                              {(bf.userName || 'Jugador') + ' ha pronosticado ' + bf.amount + 'M en ' + bf.betType + ' - ' + formatLabelWithType(bf.betLabel, bf.betType)}
                                               {bf.combiId && (
                                                 <Text style={{ color: '#0892D0', fontWeight: '800' }}> 🔗 COMBI</Text>
                                               )}
@@ -3207,7 +3138,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   {jornadaStatus === 'closed' && ligaId && leagueCombis.length > 0 && (
                     <View style={{ marginTop: 24, marginBottom: 16 }}>
                       <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800', marginBottom: 12 }}>
-                        🔗 APUESTAS COMBINADAS
+                        🔗 PRONÓSTICOS COMBINADOS
                       </Text>
                       {leagueCombis.map((combi) => {
                         const combiStatus = combi.status === 'won' ? '✅ GANADA' : combi.status === 'lost' ? '❌ PERDIDA' : '⏳ PENDIENTE';
@@ -3294,7 +3225,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 </Text>
                               </View>
                               <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Apostado</Text>
+                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Pronosticado</Text>
                                 <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
                                   {combi.amount}M
                                 </Text>
@@ -3369,7 +3300,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   maxHeight: '85%',
                 }}>
                   <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 16 }}>
-                    {hasExistingCombi ? 'Combi' : 'Crear Apuesta Combinada'}
+                    {hasExistingCombi ? 'Combi' : 'Crear Pronóstico Combinado'}
                   </Text>
 
                   <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={true}>

@@ -195,7 +195,7 @@ export const Perfil: React.FC<PerfilProps> = ({ navigation }) => {
   const handleDeleteAccount = () => {
     CustomAlertManager.alert(
       '⚠️ Eliminar Cuenta',
-      '¿Estás absolutamente seguro de que deseas eliminar tu cuenta? Esta acción NO se puede deshacer.\n\nSe eliminarán:\n• Todas tus plantillas\n• Tu historial de apuestas\n• Tus membresías de liga\n• Todos tus datos personales',
+      '¿Estás absolutamente seguro de que deseas eliminar tu cuenta? Esta acción NO se puede deshacer.\n\nSe eliminarán:\n• Todas tus plantillas\n• Tu historial de DreamGame\n• Tus membresías de liga\n• Todos tus datos personales',
       [
         { 
           text: 'Cancelar', 

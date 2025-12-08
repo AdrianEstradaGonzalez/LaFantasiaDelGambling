@@ -57,12 +57,12 @@ model LeagueMember {
   userId                   String
   points                   Int        @default(0)
   joinedAt                 DateTime   @default(now())
-  budget                   Int        @default(500)     // 500 + (wonBets × 80M) + squadPoints
+  budget                   Int        @default(500)
   initialBudget            Int        @default(500)
-  bettingBudget            Int        @default(250)     // DEPRECATED: usar availableTickets
-  availableTickets         Int        @default(3)       // Tickets disponibles (3 base + bonus, MAX 10)
-  ticketsEarnedThisJornada Int        @default(0)       // Bonus: floor(wonBets / 2)
+  bettingBudget            Int        @default(250)
   pointsPerJornada         Json?
+  availableTickets         Int        @default(3)
+  ticketsEarnedThisJornada Int        @default(0)
   league                   League     @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   user                     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   bets                     Bet[]
@@ -459,7 +459,7 @@ model DeviceToken {
   userId    String
   ligaId    String   @default("default")
   token     String
-  platform  String   @default("android") // 'ios' or 'android'
+  platform  String   @default("android")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -470,15 +470,15 @@ model DeviceToken {
 }
 
 model SquadHistory {
-  id               String   @id @default(cuid())
-  userId           String
-  leagueId         String
-  jornada          Int
-  formation        String
-  players          Json     // Array de {playerId, playerName, position, role, pricePaid, isCaptain}
-  totalValue       Int      // Suma de pricePaid de todos los jugadores
-  captainPosition  String?
-  createdAt        DateTime @default(now())
+  id              String   @id @default(cuid())
+  userId          String
+  leagueId        String
+  jornada         Int
+  formation       String
+  players         Json
+  totalValue      Int
+  captainPosition String?
+  createdAt       DateTime @default(now())
 
   @@unique([userId, leagueId, jornada])
   @@index([leagueId, jornada])
@@ -491,10 +491,10 @@ model DailyOffer {
   date          DateTime @default(now()) @db.Date
   playerId      Int
   playerName    String
-  division      String   // 'primera', 'segunda', 'premier'
-  originalPrice Int      // Precio original del jugador
-  offerPrice    Int      // Precio con descuento (20% menos)
-  discount      Int      // Porcentaje de descuento (siempre 20)
+  division      String
+  originalPrice Int
+  offerPrice    Int
+  discount      Int
   createdAt     DateTime @default(now())
 
   @@unique([date, playerId])
@@ -505,12 +505,11 @@ model DailyOffer {
 
 model OfferHistory {
   id        String   @id @default(cuid())
-  playerId  Int
+  playerId  Int      @unique
   lastOffer DateTime @db.Date
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([playerId])
   @@index([lastOffer])
   @@map("offer_history")
 }
@@ -520,7 +519,7 @@ model InvalidTeam {
   userId    String
   leagueId  String
   jornada   Int
-  reason    String   // 'negative_budget' | 'insufficient_players' | 'both'
+  reason    String
   createdAt DateTime @default(now())
 
   @@unique([userId, leagueId, jornada])

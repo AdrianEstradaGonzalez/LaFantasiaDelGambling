@@ -64,18 +64,18 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-300)).current;
 
-  // Estados para tabs (Balances / Apuestas)
-  const [activeTab, setActiveTab] = useState(0); // 0 = Balances, 1 = Apuestas
+  // Estados para tabs (Balances / Pronósticos)
+  const [activeTab, setActiveTab] = useState(0); // 0 = Balances, 1 = Pronósticos
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Estados para expansión de usuarios en Balances
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
 
-  // Estados para expansión de apuestas en Apuestas
+  // Estados para expansión de pronósticos en Pronósticos
   const [expandedBets, setExpandedBets] = useState<Set<number>>(new Set());
 
-  // Helper: parse fecha/hora de apuesta a Date. Soporta formatos como '1/12', '28/11' y hora '20:30'
+  // Helper: parse fecha/hora de pronóstico a Date. Soporta formatos como '1/12', '28/11' y hora '20:30'
   const parseBetDateTime = (bet: { fecha?: string; hora?: string }) => {
     try {
       const nowYear = new Date().getFullYear();
@@ -120,23 +120,23 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
           return;
         }
 
-        // Obtener todas las apuestas de la liga
+        // Obtener todos los pronósticos de la liga
         const leagueBetsData = await BetService.getLeagueBets(ligaId);
         console.log('📊 HistorialApuestas - League Bets Data:', leagueBetsData);
         console.log('📊 HistorialApuestas - Total bets:', leagueBetsData.length);
         
-        // Obtener información de apuestas disponibles para obtener info de partidos
+        // Obtener información de pronósticos disponibles para obtener info de partidos
         let apuestas = await FootballService.getApuestasProximaJornada({ ligaId, ligaName });
 
-        // Ordenar apuestas por fecha/hora (más reciente primero). Primero tener en cuenta mes, luego día y hora.
+        // Ordenar pronósticos por fecha/hora (más reciente primero). Primero tener en cuenta mes, luego día y hora.
         try {
           apuestas = apuestas.sort((a: any, b: any) => parseBetDateTime(b).getTime() - parseBetDateTime(a).getTime());
         } catch (err) {
-          console.warn('Error ordenando apuestas por fecha:', err);
+          console.warn('Error ordenando pronósticos por fecha:', err);
         }
         
         if (mounted) {
-          // Agrupar apuestas por matchId + type
+          // Agrupar pronósticos por matchId + type
           const grouped: Record<string, GroupedBet> = {};
           for (const bet of apuestas) {
             const key = `${bet.matchId}-${bet.type}`;
@@ -168,7 +168,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
           setLoading(false);
         }
       } catch (e) {
-        console.error('Error loading historial apuestas:', e);
+        console.error('Error loading historial pronósticos:', e);
         if (mounted) {
           setLeagueBets([]);
           setGroupedBets([]);
@@ -226,7 +226,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
     });
   };
 
-  // Handlers para expansión de apuestas
+  // Handlers para expansión de pronósticos
   const toggleBetExpansion = (matchId: number) => {
     setExpandedBets(prev => {
       const newSet = new Set(prev);
@@ -318,7 +318,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
           )}
 
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 120 }}>
-            <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Historial de Apuestas</Text>
+            <Text style={{ color: '#cbd5e1', fontSize: 22, fontWeight: '800', marginBottom: 8 }}>Historial de DreamGame</Text>
             {jornada != null && (
               <Text style={{ color: '#94a3b8', marginBottom: 16 }}>Jornada {jornada}</Text>
             )}
@@ -350,7 +350,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                   marginBottom: 8,
                   letterSpacing: 0.5,
                 }}>
-                  Sin apuestas registradas
+                  Sin pronósticos registrados
                 </Text>
                 <Text style={{ 
                   color: '#64748b', 
@@ -358,12 +358,12 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                   textAlign: 'center',
                   lineHeight: 22,
                 }}>
-                  Aún no has realizado ninguna apuesta en esta liga
+                  Aún no has realizado ningún pronóstico en esta liga
                 </Text>
               </View>
             ) : (
               <>
-                {/* Tabs: Balances / Apuestas */}
+                {/* Tabs: Balances / Pronósticos */
                 <View 
                   style={{
                     flexDirection: 'row',
@@ -406,7 +406,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                       fontWeight: '700',
                       textAlign: 'center',
                     }}>
-                      Apuestas
+                      Pronósticos
                     </Text>
                   </TouchableOpacity>
 
@@ -430,7 +430,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                     }}
                   />
                 </View>
-
+                }
                 {/* Content - ScrollView horizontal con las dos tabs */}
                 <ScrollView
                   ref={scrollViewRef}
@@ -481,7 +481,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                             BALANCES
                           </Text>
                           <Text style={{ color: '#94a3b8', fontSize: 12, marginTop: 2 }}>
-                            {leagueBets.length} apuesta{leagueBets.length !== 1 ? 's' : ''} realizadas
+                            {leagueBets.length} pronóstico{leagueBets.length !== 1 ? 's' : ''} realizados
                           </Text>
                         </View>
                       </View>
@@ -498,7 +498,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                           hasCombiId: !!b.combiId
                         })));
                         
-                        // Separar apuestas individuales (sin combiId)
+                        // Separar pronósticos individuales (sin combiId)
                         const individualBets = leagueBets.filter(bet => !isCombiBet(bet));
                         
                         // Agrupar combis por combiId
@@ -628,7 +628,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                     </Text>
                                               <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                                               <Text style={{ color: '#94a3b8', fontSize: 13 }}>
-                                                {data.bets.length} apuesta{data.bets.length !== 1 ? 's' : ''} - {userCombis.length} combi{userCombis.length !== 1 ? 's' : ''}
+                                                {data.bets.length} pronóstico{data.bets.length !== 1 ? 's' : ''} - {userCombis.length} combi{userCombis.length !== 1 ? 's' : ''}
                                               </Text>
                                       {/* combi count already shown in summary; badge removed to avoid duplication */}
                                       {data.wonBets > 0 && (
@@ -694,7 +694,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <View style={{ flex: 1, marginRight: 12 }}>
                                                   <Text style={{ color: '#cbd5e1', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
-                                                    Combi ({combi.selections.length} apuestas)
+                                                    Combi ({combi.selections.length} pronósticos)
                                                   </Text>
                                                   <View style={{ marginTop: 6 }}>
                                                     <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 2 }}>
@@ -954,7 +954,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
 
                                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Text style={{ color: '#94a3b8', fontSize: 13 }}>
-                                      {bets.length} apuesta{bets.length !== 1 ? 's' : ''}
+                                      {bets.length} pronóstico{bets.length !== 1 ? 's' : ''}
                                     </Text>
                                     {isExpanded ? (
                                       <ChevronUpIcon size={20} color="#94a3b8" />
@@ -1034,7 +1034,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                               </View>
                             );
                           })}
-                    </>
+                        </>
                       );
                     })()}
                   </View>

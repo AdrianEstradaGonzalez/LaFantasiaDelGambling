@@ -56,7 +56,7 @@ export class BetService {
   }
 
   /**
-   * Obtener todas las apuestas de la liga para la jornada actual
+   * Obtener todos los pronósticos de la liga para la jornada actual
    */
   static async getLeagueBets(leagueId: string): Promise<Bet[]> {
     try {
@@ -71,12 +71,12 @@ export class BetService {
       return response.data;
     } catch (error: any) {
       console.error('Error getting league bets:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al obtener apuestas de la liga');
+      throw new Error(error?.response?.data?.error || 'Error al obtener pronósticos de la liga');
     }
   }
 
   /**
-   * Crear una nueva apuesta
+   * Crear un nuevo pronóstico
    */
   static async placeBet(params: {
     leagueId: string;
@@ -116,12 +116,12 @@ export class BetService {
       return response.data;
     } catch (error: any) {
       console.error('Error placing bet:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al crear apuesta');
+      throw new Error(error?.response?.data?.error || 'Error al crear pronóstico');
     }
   }
 
   /**
-   * Obtener apuestas del usuario en la jornada actual
+   * Obtener pronósticos del usuario en la jornada actual
    */
   static async getUserBets(leagueId: string): Promise<Bet[]> {
     try {
@@ -136,12 +136,12 @@ export class BetService {
       return response.data;
     } catch (error: any) {
       console.error('Error getting user bets:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al obtener apuestas');
+      throw new Error(error?.response?.data?.error || 'Error al obtener pronósticos');
     }
   }
 
   /**
-   * Actualizar monto de una apuesta
+   * Actualizar monto de un pronóstico
    */
   static async updateBetAmount(leagueId: string, betId: string, amount: number): Promise<Bet> {
     try {
@@ -160,12 +160,12 @@ export class BetService {
       return response.data;
     } catch (error: any) {
       console.error('Error updating bet amount:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al actualizar apuesta');
+      throw new Error(error?.response?.data?.error || 'Error al actualizar pronóstico');
     }
   }
 
   /**
-   * Eliminar una apuesta
+   * Eliminar un pronóstico
    */
   static async deleteBet(leagueId: string, betId: string): Promise<void> {
     try {
@@ -179,12 +179,12 @@ export class BetService {
       });
     } catch (error: any) {
       console.error('Error deleting bet:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al eliminar apuesta');
+      throw new Error(error?.response?.data?.error || 'Error al eliminar pronóstico');
     }
   }
 
   /**
-   * Evaluar apuestas pendientes de una liga específica
+   * Evaluar pronósticos pendientes de una liga específica
    */
   static async evaluateBets(leagueId: string): Promise<{
     evaluated: number;
@@ -218,12 +218,12 @@ export class BetService {
       return response.data;
     } catch (error: any) {
       console.error('Error evaluating bets:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al evaluar apuestas');
+      throw new Error(error?.response?.data?.error || 'Error al evaluar pronósticos');
     }
   }
 
   /**
-   * Evaluar todas las apuestas pendientes de todas las ligas
+   * Evaluar todos los pronósticos pendientes de todas las ligas
    */
   static async evaluateAllBets(): Promise<{
     totalEvaluated: number;
@@ -266,12 +266,12 @@ export class BetService {
       return response.data;
     } catch (error: any) {
       console.error('Error evaluating all bets:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al evaluar todas las apuestas');
+      throw new Error(error?.response?.data?.error || 'Error al evaluar todos los pronósticos');
     }
   }
 
   /**
-   * Evaluar apuestas en tiempo real (sin actualizar BD)
+   * Evaluar pronósticos en tiempo real (sin actualizar BD)
    */
   static async evaluateBetsRealTime(leagueId: string, jornada: number): Promise<{
     bets: Array<{
@@ -359,12 +359,12 @@ export class BetService {
       return response.data;
     } catch (error: any) {
       console.error('Error evaluating bets in realtime:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al evaluar apuestas en tiempo real');
+      throw new Error(error?.response?.data?.error || 'Error al evaluar pronósticos en tiempo real');
     }
   }
 
   /**
-   * Obtener apuestas del usuario para una jornada específica
+   * Obtener pronósticos del usuario para una jornada específica
    */
   static async getUserBetsForJornada(leagueId: string, jornada: number): Promise<Bet[]> {
     try {
@@ -382,12 +382,12 @@ export class BetService {
       return allBets.filter(bet => bet.jornada === jornada);
     } catch (error: any) {
       console.error('Error getting user bets for jornada:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al obtener apuestas del usuario');
+      throw new Error(error?.response?.data?.error || 'Error al obtener pronósticos del usuario');
     }
   }
 
   /**
-   * Obtener apuestas de toda la liga para una jornada específica
+   * Obtener pronósticos de toda la liga para una jornada específica
    */
   static async getLeagueBetsForJornada(leagueId: string, jornada: number): Promise<Bet[]> {
     try {
@@ -410,7 +410,7 @@ export class BetService {
   }
 
   /**
-   * COMBIS - Crear apuesta combinada
+   * COMBIS - Crear pronóstico combinado
    */
   static async createCombi(leagueId: string, data: {
     jornada: number;
