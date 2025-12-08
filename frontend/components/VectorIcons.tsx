@@ -1296,3 +1296,25 @@ export const ChevronUpIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
     />
   </Svg>
 );
+
+// Icono de Ticket
+export const TicketIcon = ({ size = 24, color = '#ffffff' }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M2 9a2 2 0 012-2h16a2 2 0 012 2v1a1 1 0 01-1 1 2 2 0 000 4 1 1 0 011 1v1a2 2 0 01-2 2H4a2 2 0 01-2-2v-1a1 1 0 011-1 2 2 0 000-4 1 1 0 01-1-1V9z"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+    <Path
+      d="M13 7v10"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeDasharray="2 2"
+    />
+  </Svg>
+);

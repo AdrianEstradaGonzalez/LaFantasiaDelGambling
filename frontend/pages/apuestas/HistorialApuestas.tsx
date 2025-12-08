@@ -702,11 +702,11 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                                       <Text style={{ color: '#e5e7eb', fontWeight: '700' }}>{combi.amount}M</Text>
                                                     </Text>
                                                     <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 2 }}>
-                                                      Cuota:{' '}
-                                                      <Text style={{ color: '#0892D0', fontWeight: '700' }}>{combi.totalOdds.toFixed(2)}</Text>
+                                                      Ganancia potencial:{' '}
+                                                      <Text style={{ color: '#22c55e', fontWeight: '700' }}>+{Math.round(50 * combi.totalOdds - 50)}M</Text>
                                                     </Text>
                                                     <Text style={{ color: '#94a3b8', fontSize: 12 }}>
-                                                      Ganancia potencial:{' '}
+                                                      Ganancia total:{' '}
                                                       <Text style={{ color: '#22c55e', fontWeight: '700' }}>+{Math.round(combi.potentialWin)}M</Text>
                                                     </Text>
                                                   </View>
@@ -754,8 +754,8 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                                       <Text style={{ color: '#94a3b8', fontSize: 11, marginTop: 4 }}>
                                                         {bet.betType}
                                                       </Text>
-                                                      <Text style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
-                                                        Cuota: {bet.odd.toFixed(2)}
+                                                      <Text style={{ color: '#22c55e', fontSize: 11, marginTop: 4 }}>
+                                                        Ganancia: +{Math.round(50 * bet.odd - 50)}M
                                                       </Text>
                                                       {idx < combi.selections.length - 1 && (
                                                         <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
@@ -798,8 +798,8 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                             {formatLabelWithType(bet.betLabel, bet.betType)}
                                           </Text>
                                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                            <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                              Cuota: {bet.odd.toFixed(2)}
+                                            <Text style={{ color: '#22c55e', fontSize: 11 }}>
+                                              Ganancia: +{Math.round(50 * bet.odd - 50)}M
                                             </Text>
                                             <Text style={{ color: '#22c55e', fontSize: 11, fontWeight: '700' }}>
                                               +{bet.potentialWin}M
@@ -839,8 +839,8 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                             {formatLabelWithType(bet.betLabel, bet.betType)}
                                           </Text>
                                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                            <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                              Cuota: {bet.odd.toFixed(2)}
+                                            <Text style={{ color: '#22c55e', fontSize: 11 }}>
+                                              Ganancia: +{Math.round(50 * bet.odd - 50)}M
                                             </Text>
                                             <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '700' }}>
                                               -{bet.amount}M
@@ -880,8 +880,8 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                             {formatLabelWithType(bet.betLabel, bet.betType)}
                                           </Text>
                                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                            <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                              Cuota: {bet.odd.toFixed(2)}
+                                            <Text style={{ color: '#22c55e', fontSize: 11 }}>
+                                              Ganancia: +{Math.round(50 * bet.odd - 50)}M
                                             </Text>
                                             <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
                                               Potencial: +{bet.potentialWin}M
@@ -1017,8 +1017,8 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                           </View>
                                           
                                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
-                                            <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                              Cuota: {bet.odd.toFixed(2)}
+                                            <Text style={{ color: '#22c55e', fontSize: 11 }}>
+                                              Ganancia: +{Math.round(50 * bet.odd - 50)}M
                                             </Text>
                                             {!isPartOfCombi && (
                                               <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '700' }}>

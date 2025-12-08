@@ -12,7 +12,7 @@ import { LigaService } from '../../services/LigaService';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
 import LoadingScreen from '../../components/LoadingScreen';
-import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon, CoinsIcon, LockIcon, ChevronDownIcon, ChevronUpIcon, ChartBarIcon, TrendingIcon } from '../../components/VectorIcons';
+import { EditIcon, DeleteIcon, CheckIcon, CheckCircleIcon, ErrorIcon, CalendarIcon, ClockIcon, MenuIcon, FileTextIcon, CoinsIcon, LockIcon, ChevronDownIcon, ChevronUpIcon, ChartBarIcon, TrendingIcon, TicketIcon } from '../../components/VectorIcons';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { DrawerMenu } from '../../components/DrawerMenu';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -622,7 +622,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (budget.available < 1) {
       CustomAlertManager.alert(
         'Sin tickets disponibles',
-        `No tienes tickets disponibles. Disponibles: ${budget.available} 🎟️`,
+        `No tienes tickets disponibles. Disponibles: ${budget.available}`,
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -949,7 +949,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (budget.available < 1) {
       CustomAlertManager.alert(
         'Sin tickets disponibles',
-        `No tienes tickets disponibles para crear combinadas. Disponibles: ${budget.available} 🎟️`,
+        `No tienes tickets disponibles para crear combinadas. Disponibles: ${budget.available}`,
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -2609,13 +2609,19 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       <Text style={{ color: '#93c5fd', fontSize: 14, fontWeight: '600', marginBottom: 12 }}>
                         TICKETS
                       </Text>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
                         <Text style={{ color: '#94a3b8', fontSize: 14, fontWeight: '600' }}>Disponibles:</Text>
-                        <Text style={{ color: '#22c55e', fontSize: 18, fontWeight: '800' }}>{budget.available} 🎟️</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={{ color: '#22c55e', fontSize: 18, fontWeight: '800' }}>{budget.available}</Text>
+                          <TicketIcon size={20} color="#22c55e" />
+                        </View>
                       </View>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Text style={{ color: '#94a3b8', fontSize: 13 }}>Usados esta jornada:</Text>
-                        <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '700' }}>{budget.used} 🎟️</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Text style={{ color: '#64748b', fontSize: 13, fontWeight: '700' }}>{budget.used}</Text>
+                          <TicketIcon size={16} color="#64748b" />
+                        </View>
                       </View>
                       <Text style={{ color: '#64748b', fontSize: 11, marginTop: 10, fontStyle: 'italic' }}>
                         1 ticket = 1 pronóstico simple o 1 combinada
@@ -2886,7 +2892,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                   opacity: isBlocked && isJornadaOpen ? 0.5 : 1,
                                 }}
                               >
-                                {/* Label y Cuota */}
+                                {/* Label y Ganancia Potencial */}
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                   <Text style={{ color: isBlocked ? '#64748b' : '#e5e7eb', fontWeight: '600', fontSize: 15, flex: 1 }}>
                                     {option.label}
@@ -2898,10 +2904,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     paddingVertical: 6,
                                     marginLeft: 8,
                                     borderWidth: 2,
-                                    borderColor: isBlocked ? '#4b5563' : '#ef4444',
+                                    borderColor: isBlocked ? '#4b5563' : '#22c55e',
                                   }}>
-                                    <Text style={{ color: isBlocked ? '#64748b' : '#ef4444', fontWeight: '800', fontSize: 17, letterSpacing: 0.5 }}>
-                                      {option.odd.toFixed(2)}
+                                    <Text style={{ color: isBlocked ? '#64748b' : '#22c55e', fontWeight: '800', fontSize: 17, letterSpacing: 0.5 }}>
+                                      +{Math.round(50 * option.odd - 50)}M
                                     </Text>
                                   </View>
                                 </View>
@@ -2934,36 +2940,20 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           </Text>
                                         </View>
                                       )}
-                                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <View>
-                                          <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>
-                                            {isPartOfCombi ? 'Pronosticado en combi' : 'Pronosticado'}
-                                          </Text>
-                                          <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800' }}>
-                                            {isPartOfCombi ? combi.amount : userBet.amount}M
-                                          </Text>
-                                        </View>
-                                        <View style={{ alignItems: 'flex-end' }}>
-                                          <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>
-                                            {isPartOfCombi ? 'Ganancia total combi' : 'Ganancia potencial'}
-                                          </Text>
-                                          <Text style={{ color: '#10b981', fontSize: 18, fontWeight: '800' }}>
-                                            +{isPartOfCombi ? combi.potentialWin : userBet.potentialWin}M
-                                          </Text>
-                                        </View>
-                                      </View>
+                                      
                                       {isPartOfCombi && (
                                         <View style={{
                                           backgroundColor: '#2d2653',
                                           borderRadius: 6,
                                           padding: 8,
-                                          marginTop: 4,
+                                          marginBottom: 8,
                                         }}>
                                           <Text style={{ color: '#c4b5fd', fontSize: 11, fontWeight: '600' }}>
                                             Cuota combi: {combi.totalOdd.toFixed(2)} • {combi.selections.length} selecciones
                                           </Text>
                                         </View>
                                       )}
+                                      
                                       {/* Controles de eliminación si jornada abierta */}
                                       {isJornadaOpen && (
                                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, width: '100%' }}>
@@ -3015,8 +3005,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       gap: 6,
                                     }}
                                   >
+                                    {budget.available >= 1 && <TicketIcon size={18} color="#fff" />}
                                     <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
-                                      {budget.available < 1 ? 'Sin tickets' : 'Usar 1 ticket 🎟️'}
+                                      {budget.available < 1 ? 'Sin tickets' : 'Usar 1 ticket'}
                                     </Text>
                                   </TouchableOpacity>
                                 )}
@@ -3197,8 +3188,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       </Text>
                                     </View>
                                     <View style={{ alignItems: 'flex-end' }}>
-                                      <Text style={{ color: '#0892D0', fontSize: 16, fontWeight: '800' }}>
-                                        {selection.odd.toFixed(2)}
+                                      <Text style={{ color: '#22c55e', fontSize: 16, fontWeight: '800' }}>
+                                        +{Math.round(50 * selection.odd - 50)}M
                                       </Text>
                                       <Text style={{ color: '#94a3b8', fontSize: 11 }}>
                                         {selStatus}
@@ -3209,7 +3200,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                               );
                             })}
 
-                            {/* Footer con cuota total y apuesta */}
+                            {/* Footer con ganancia potencial total */}
                             <View style={{ 
                               marginTop: 12, 
                               paddingTop: 12, 
@@ -3219,9 +3210,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                               justifyContent: 'space-between',
                             }}>
                               <View>
-                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Cuota Total</Text>
-                                <Text style={{ color: '#0892D0', fontSize: 20, fontWeight: '800' }}>
-                                  {combi.totalOdd?.toFixed(2) || '0.00'}
+                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Ganancia Potencial</Text>
+                                <Text style={{ color: '#22c55e', fontSize: 20, fontWeight: '800' }}>
+                                  +{Math.round(50 * (combi.totalOdd || 1) - 50)}M
                                 </Text>
                               </View>
                               <View style={{ alignItems: 'flex-end' }}>
@@ -3345,28 +3336,28 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           <Text style={{ color: '#94a3b8', fontSize: 12, flex: 1 }}>
                             {formatLabelWithType(sel.betLabel, sel.betType)}
                           </Text>
-                          <Text style={{ color: '#ef4444', fontSize: 14, fontWeight: '800' }}>
-                            {sel.odd.toFixed(2)}
+                          <Text style={{ color: '#22c55e', fontSize: 14, fontWeight: '800' }}>
+                            +{Math.round(50 * sel.odd - 50)}M
                           </Text>
                         </View>
                       </View>
                     ))}
                   </View>
 
-                  {/* Cuota total */}
+                  {/* Ganancia potencial total */}
                   <View style={{
                     backgroundColor: '#0f172a',
                     borderRadius: 8,
                     padding: 12,
                     marginBottom: 16,
                     borderWidth: 2,
-                    borderColor: '#0892D0',
+                    borderColor: '#22c55e',
                   }}>
-                    <Text style={{ color: '#0892D0', fontSize: 12, marginBottom: 4 }}>
-                      Cuota total (multiplicada)
+                    <Text style={{ color: '#22c55e', fontSize: 12, marginBottom: 4 }}>
+                      Ganancia potencial total
                     </Text>
                     <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800' }}>
-                      {calculateCombiOdds().toFixed(2)}
+                      +{Math.round(50 * calculateCombiOdds() - 50)}M
                     </Text>
                   </View>
 
