@@ -1872,9 +1872,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 const applyEvaluatedResult = (summary: UserSummary, betStatus: string | undefined, winValue: number, loseValue: number) => {
                                   if (betStatus === 'won') {
                                     summary.balance += winValue;
-                                  } else if (betStatus === 'lost') {
-                                    summary.balance -= loseValue;
                                   }
+                                  // Las apuestas perdidas no restan nada (ya se descontó al apostar)
                                 };
 
                                 const formatMillions = (value: number) => {
@@ -2159,11 +2158,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                   <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
                                                     {formatLabelWithType(bet.betLabel, bet.betType)}
                                                   </Text>
-                                                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 }}>
-                                                    <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '700' }}>
-                                                      -{bet.amount}M
-                                                    </Text>
-                                                  </View>
                                                   <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
                                                 </View>
                                               ))}
