@@ -97,7 +97,7 @@ export const LeagueRepo = {
         // isPremium viene del parámetro (pago) o si es segunda división/premier (backward compatibility)
         const isPremium = isPremiumParam !== undefined ? isPremiumParam : (division === 'segunda' || division === 'premier');
         console.log(`📅 Creando liga "${name}" (División: ${division})`);
-        console.log(`   Jornada Primera: ${primeraJornada}`);
+        console.log(`   Jornada detectada API: ${jornadaFromAPI}`);
         console.log(`   Jornada asignada: ${currentJornada} (Premium: ${isPremium})`);
         
         // Verificar si hay alguna liga con estado 'closed' (jornada en curso)
