@@ -804,7 +804,6 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                             <Text style={{ color: '#22c55e', fontSize: 11, fontWeight: '700' }}>
                                               +{bet.potentialWin}M
                                             </Text>
-                                            <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
                                           </View>
                                         </View>
                                       ))}
@@ -845,7 +844,6 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                             <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '700' }}>
                                               -{bet.amount}M
                                             </Text>
-                                            <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
                                           </View>
                                         </View>
                                       ))}
@@ -886,7 +884,6 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                             <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
                                               Potencial: +{bet.potentialWin}M
                                             </Text>
-                                            <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
                                           </View>
                                         </View>
                                       ))}
