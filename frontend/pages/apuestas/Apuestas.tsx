@@ -67,7 +67,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
   const [userBets, setUserBets] = useState<UserBet[]>([]);
   const [jornada, setJornada] = useState<number | null>(null);
-  const [budget, setBudget] = useState<BettingBudget>({ total: 3, used: 0, available: 3 });
+  const [budget, setBudget] = useState<BettingBudget>({ total: 5, used: 0, available: 5 });
   const [savingBet, setSavingBet] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -288,7 +288,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         console.log('✅ Pronósticos cargados:', apuestas.length);
 
         // Obtener presupuesto y pronósticos del usuario si hay ligaId
-        let budgetData = { total: 3, used: 0, available: 3 };
+        let budgetData = { total: 5, used: 0, available: 5 };
         let userBetsData: UserBet[] = [];
         let leagueBetsData: UserBet[] = [];
         let statusData: string | null = null;
@@ -433,7 +433,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         if (mounted) {
           setGroupedBets([]);
           setUserBets([]);
-          setBudget({ total: 3, used: 0, available: 3 });
+          setBudget({ total: 5, used: 0, available: 5 });
           setJornada(null);
           setJornadaStatus(null);
           setLoading(false);

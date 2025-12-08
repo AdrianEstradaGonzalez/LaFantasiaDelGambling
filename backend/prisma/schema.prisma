@@ -61,7 +61,7 @@ model LeagueMember {
   initialBudget            Int        @default(500)
   bettingBudget            Int        @default(250)
   pointsPerJornada         Json?
-  availableTickets         Int        @default(3)
+  availableTickets         Int        @default(5)
   ticketsEarnedThisJornada Int        @default(0)
   league                   League     @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   user                     User       @relation(fields: [userId], references: [id], onDelete: Cascade)

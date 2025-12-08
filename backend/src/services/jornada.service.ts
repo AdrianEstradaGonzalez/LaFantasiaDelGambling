@@ -1375,7 +1375,7 @@ export class JornadaService {
 
         // Sistema de tickets: +1 ticket por cada 2 aciertos, MÁXIMO 10 tickets
         const bonusTickets = Math.floor(wonBets / 2);
-        const newTickets = Math.min(3 + bonusTickets, 10); // 3 base + bonus, máximo 10
+        const newTickets = Math.min(5 + bonusTickets, 10); // 5 base + bonus, máximo 10
         
         // Sistema de recompensa de presupuesto: +80M por cada apuesta ganada (fijo)
         const betsReward = wonBets * 80; // 80M por cada apuesta ganada
