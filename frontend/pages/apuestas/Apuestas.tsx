@@ -1507,7 +1507,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         marginBottom: 8,
                         letterSpacing: 0.5,
                       }}>
-                        Sin apuestas registradas
+                        Sin pronósticos registradas
                       </Text>
                       <Text style={{
                         color: '#64748b',
@@ -1515,7 +1515,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         textAlign: 'center',
                         lineHeight: 22,
                       }}>
-                        No se realizaron apuestas durante esta jornada
+                        No se realizaron pronósticos durante esta jornada
                       </Text>
                     </View>
                   ) : (
