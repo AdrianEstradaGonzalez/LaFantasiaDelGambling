@@ -61,7 +61,8 @@ export const BetCombiService = {
 
     // Calcular cuota total (producto de todas las cuotas) - se mantiene para tracking
     const totalOdd = selections.reduce((acc, sel) => acc * sel.odd, 1);
-    const potentialWin = Math.round(amount * totalOdd);
+    // Ganancia potencial = (amount × totalOdd) - amount (lo que ganas menos lo invertido)
+    const potentialWin = Math.round((amount * totalOdd) - amount);
 
     // Crear la combinada y sus selecciones en una transacción
     const combi = await prisma.$transaction(async (tx: any) => {

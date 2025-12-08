@@ -629,17 +629,18 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
 
-    // Monto fijo de 1M (solo para tracking interno, no se muestra al usuario)
-    const amount = 1;
+    // Monto fijo de 50M por apuesta
+    const amount = 50;
 
     try {
       setSavingBet(key);
-      console.log('Frontend - Creando pronóstico (1 ticket usado):', {
+      console.log('Frontend - Creando pronóstico (1 ticket usado, 50M apostados):', {
         matchId: params.matchId,
         homeTeam: params.homeTeam,
         awayTeam: params.awayTeam,
         betType: params.betType,
         betLabel: params.betLabel,
+        odd: params.odd,
       });
       await BetService.placeBet({
         leagueId: ligaId,
@@ -921,29 +922,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
 
-    // Validar que no tenga decimales
-    if (combiAmount.includes('.') || combiAmount.includes(',')) {
-      CustomAlertManager.alert(
-        'Cantidad no válida',
-        'No se permiten decimales en los pronósticos. Ingresa un número entero.',
-        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
-        { icon: 'alert', iconColor: '#f59e0b' }
-      );
-      return;
-    }
-
-    const amount = parseInt(combiAmount);
-    
-    // Validar que sea un número válido
-    if (!amount || isNaN(amount) || amount <= 0) {
-      CustomAlertManager.alert(
-        'Cantidad no válida',
-        'Ingresa una cantidad válida mayor a 0',
-        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
-        { icon: 'alert', iconColor: '#f59e0b' }
-      );
-      return;
-    }
+    // Monto fijo de 50M para combis
+    const amount = 50;
 
     // Validar que tenga tickets disponibles
     if (budget.available < 1) {
