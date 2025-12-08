@@ -1350,10 +1350,12 @@ export class JornadaService {
         });
 
         // Sumar ganancias de apuestas ganadas (potentialWin)
+        // EXCLUIR apuestas que forman parte de una combi
         let wonBets = 0;
         let betsReward = 0;
         for (const bet of userBets) {
-          if (bet.status === 'won') {
+          // Solo contar apuestas individuales (que NO forman parte de una combi)
+          if (bet.status === 'won' && !bet.combiId) {
             wonBets++;
             betsReward += bet.potentialWin;
           }
