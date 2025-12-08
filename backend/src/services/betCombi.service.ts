@@ -27,8 +27,7 @@ export interface CreateCombiDto {
 export const BetCombiService = {
   /**
    * Crear una apuesta combinada
-   * - Máximo 50M de apuesta
-   * - Cuota total = producto de todas las cuotas
+   * Sistema de tickets: 1 ticket = 1 combinada (sin importar número de selecciones)
    * - Todas las selecciones deben acertar para ganar
    */
   createCombi: async (data: CreateCombiDto) => {
@@ -39,31 +38,28 @@ export const BetCombiService = {
       throw new Error('Una combi debe tener al menos 2 selecciones');
     }
 
-    // Validación: máximo 50M
-    if (amount > 50) {
-      throw new Error('El monto máximo para una combi es 50M');
-    }
-
-    // Validación: mínimo 1M
-    if (amount < 1) {
-      throw new Error('El monto mínimo es 1M');
-    }
-
-    // Verificar presupuesto de apuestas
+    // Verificar que tenga tickets disponibles
     const member = await prisma.leagueMember.findUnique({
       where: { leagueId_userId: { leagueId, userId } },
-      select: { bettingBudget: true }
+      select: { availableTickets: true }
     });
 
     if (!member) {
       throw new Error('Usuario no encontrado en la liga');
     }
 
-    if (member.bettingBudget < amount) {
-      throw new Error(`Presupuesto insuficiente. Tienes ${member.bettingBudget}M disponibles`);
+    // Contar tickets ya usados en esta jornada
+    const usedTickets = await prisma.bet.count({
+      where: { leagueId, userId, jornada, status: 'pending', combiId: null }
+    }) + await prisma.betCombi.count({
+      where: { leagueId, userId, jornada, status: 'pending' }
+    });
+
+    if (member.availableTickets <= usedTickets) {
+      throw new Error(`No tienes tickets disponibles. Tickets: ${member.availableTickets}, usados: ${usedTickets}`);
     }
 
-    // Calcular cuota total (producto de todas las cuotas)
+    // Calcular cuota total (producto de todas las cuotas) - se mantiene para tracking
     const totalOdd = selections.reduce((acc, sel) => acc * sel.odd, 1);
     const potentialWin = Math.round(amount * totalOdd);
 
@@ -110,16 +106,13 @@ export const BetCombiService = {
         )
       );
 
-      // Descontar presupuesto de apuestas
-      await tx.leagueMember.update({
-        where: { leagueId_userId: { leagueId, userId } },
-        data: { bettingBudget: { decrement: amount } }
-      });
+      // No descontamos tickets aquí, se cuentan dinámicamente al consultar
+      // Los tickets se recuperan/calculan en el cierre de jornada
 
       return newCombi;
     });
 
-    console.log(`✅ Combi creada: ${selections.length} selecciones, cuota ${totalOdd.toFixed(2)}, apuesta ${amount}M, ganancia potencial ${potentialWin}M`);
+    console.log(`✅ Combi creada: ${selections.length} selecciones (1 ticket usado)`);
     return combi;
   },
 

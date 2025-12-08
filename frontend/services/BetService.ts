@@ -5,9 +5,9 @@ import EncryptedStorage from 'react-native-encrypted-storage';
 const API_URL = ApiConfig.BASE_URL;
 
 export interface BettingBudget {
-  total: number;
-  used: number;
-  available: number;
+  total: number;      // Tickets totales disponibles
+  used: number;       // Tickets usados en esta jornada
+  available: number;  // Tickets disponibles para usar
 }
 
 export interface Bet {
@@ -33,7 +33,10 @@ export interface Bet {
 
 export class BetService {
   /**
-   * Obtener presupuesto de apuestas disponible
+   * Obtener tickets disponibles (sistema de tickets)
+   * total = tickets totales (3 base + bonus)
+   * used = tickets usados en esta jornada
+   * available = tickets restantes
    */
   static async getBettingBudget(leagueId: string): Promise<BettingBudget> {
     try {
@@ -47,8 +50,8 @@ export class BetService {
       });
       return response.data;
     } catch (error: any) {
-      console.error('Error getting betting budget:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al obtener presupuesto');
+      console.error('Error getting betting tickets:', error?.response?.data || error.message);
+      throw new Error(error?.response?.data?.error || 'Error al obtener tickets');
     }
   }
 

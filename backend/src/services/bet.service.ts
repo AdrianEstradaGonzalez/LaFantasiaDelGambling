@@ -25,7 +25,8 @@ export class BetService {
     }
   }
   /**
-   * Obtener presupuesto de apuestas disponible para un usuario en una liga
+   * Obtener tickets disponibles para un usuario en una liga
+   * Sistema de tickets: 3 base + bonus por aciertos
    */
   static async getBettingBudget(userId: string, leagueId: string): Promise<{ available: number; total: number; used: number }> {
     const member = await prisma.leagueMember.findUnique({
@@ -38,9 +39,22 @@ export class BetService {
       throw new AppError(404, 'NOT_MEMBER', 'No eres miembro de esta liga');
     }
 
-    // Obtener apuestas pendientes de esta jornada
+    // Contar tickets usados en esta jornada (apuestas simples + combinadas)
     const currentJornada = await this.getCurrentJornada(leagueId);
-    const pendingBets = await prisma.bet.findMany({
+    
+    // Contar apuestas simples sin combiId
+    const simpleBetsCount = await prisma.bet.count({
+      where: {
+        leagueId,
+        userId,
+        jornada: currentJornada,
+        status: 'pending',
+        combiId: null,
+      },
+    });
+
+    // Contar combinadas únicas
+    const combisCount = await prisma.betCombi.count({
       where: {
         leagueId,
         userId,
@@ -49,12 +63,12 @@ export class BetService {
       },
     });
 
-    const usedAmount = pendingBets.reduce((sum, bet) => sum + bet.amount, 0);
-    const available = member.bettingBudget - usedAmount;
+    const usedTickets = simpleBetsCount + combisCount;
+    const available = member.availableTickets - usedTickets;
 
     return {
-      total: member.bettingBudget,
-      used: usedAmount,
+      total: member.availableTickets,
+      used: usedTickets,
       available: Math.max(0, available),
     };
   }
@@ -175,21 +189,13 @@ export class BetService {
     }
 
 
-    // Validar monto
-    if (amount <= 0) {
-      throw new AppError(400, 'INVALID_AMOUNT', 'El monto debe ser mayor a 0');
-    }
-    if (amount > 50) {
-      throw new AppError(400, 'AMOUNT_TOO_HIGH', 'El monto máximo por apuesta es 50M');
-    }
-
-    // Verificar presupuesto disponible
+    // Sistema de tickets: verificar que tenga tickets disponibles
     const budget = await this.getBettingBudget(userId, leagueId);
-    if (amount > budget.available) {
+    if (budget.available < 1) {
       throw new AppError(
         400,
-        'INSUFFICIENT_BUDGET',
-        `Presupuesto insuficiente. Disponible: ${budget.available}M`
+        'INSUFFICIENT_TICKETS',
+        `No tienes tickets disponibles. Tickets disponibles: ${budget.available}`
       );
     }
 

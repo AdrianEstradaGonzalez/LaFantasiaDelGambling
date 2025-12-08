@@ -1350,16 +1350,14 @@ export class JornadaService {
           }
         });
 
-        let betsResult = 0;
+        // Contar apuestas ganadas (simples + combis)
+        let wonBets = 0;
         for (const bet of userBets) {
           if (bet.status === 'won') {
-            betsResult += bet.potentialWin;
-          } else if (bet.status === 'lost') {
-            betsResult -= bet.amount;
+            wonBets++;
           }
         }
 
-        // Calcular resultado neto de combis
         const userCombis = await (prisma as any).betCombi.findMany({
           where: {
             leagueId,
@@ -1369,19 +1367,21 @@ export class JornadaService {
           }
         });
 
-        let combisResult = 0;
         for (const combi of userCombis) {
           if (combi.status === 'won') {
-            combisResult += combi.potentialWin;
-          } else if (combi.status === 'lost') {
-            combisResult -= combi.amount;
+            wonBets++;
           }
         }
 
-        const totalBetsResult = betsResult + combisResult;
+        // Sistema de tickets: +1 ticket por cada 2 aciertos, MÁXIMO 10 tickets
+        const bonusTickets = Math.floor(wonBets / 2);
+        const newTickets = Math.min(3 + bonusTickets, 10); // 3 base + bonus, máximo 10
         
-        // FÓRMULA: initialBudget = 500 + resultado apuestas + puntos plantilla
-        const newInitialBudget = 500 + totalBetsResult + squadPoints;
+        // Sistema de recompensa de presupuesto: +80M por cada apuesta ganada (fijo)
+        const betsReward = wonBets * 80; // 80M por cada apuesta ganada
+        
+        // Fórmula presupuesto: 500 + (80M × apuestas ganadas) + puntos plantilla
+        const newInitialBudget = 500 + betsReward + squadPoints;
         const newBudget = newInitialBudget;
         
         await prisma.leagueMember.update({
@@ -1389,14 +1389,16 @@ export class JornadaService {
           data: {
             budget: newBudget,
             initialBudget: newInitialBudget,
-            bettingBudget: 250,
+            bettingBudget: 250, // DEPRECATED
+            availableTickets: newTickets,
+            ticketsEarnedThisJornada: bonusTickets,
           },
         });
 
         console.log(
-          `     Apuestas: ${totalBetsResult >= 0 ? '+' : ''}${totalBetsResult}M | ` +
-          `Plantilla: +${squadPoints}M | ` +
-          `Nuevo budget: 500 + ${totalBetsResult} + ${squadPoints} = ${newInitialBudget}M`
+          `     Aciertos: ${wonBets} | Recompensa: +${betsReward}M (${wonBets} × 80M) | ` +
+          `Bonus tickets: +${bonusTickets} | Tickets próxima jornada: ${newTickets}/10 | ` +
+          `Plantilla: +${squadPoints}M | Budget final: ${newInitialBudget}M`
         );
 
         updatedMembers++;

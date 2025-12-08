@@ -67,7 +67,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
   const [groupedBets, setGroupedBets] = useState<GroupedBet[]>([]);
   const [userBets, setUserBets] = useState<UserBet[]>([]);
   const [jornada, setJornada] = useState<number | null>(null);
-  const [budget, setBudget] = useState<BettingBudget>({ total: 250, used: 0, available: 250 });
+  const [budget, setBudget] = useState<BettingBudget>({ total: 3, used: 0, available: 3 });
   const [savingBet, setSavingBet] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -288,7 +288,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         console.log('✅ Apuestas cargadas:', apuestas.length);
 
         // Obtener presupuesto y apuestas del usuario si hay ligaId
-        let budgetData = { total: 250, used: 0, available: 250 };
+        let budgetData = { total: 3, used: 0, available: 3 };
         let userBetsData: UserBet[] = [];
         let leagueBetsData: UserBet[] = [];
         let statusData: string | null = null;
@@ -433,7 +433,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         if (mounted) {
           setGroupedBets([]);
           setUserBets([]);
-          setBudget({ total: 250, used: 0, available: 250 });
+          setBudget({ total: 3, used: 0, available: 3 });
           setJornada(null);
           setJornadaStatus(null);
           setLoading(false);
@@ -617,31 +617,29 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
   const handlePlaceBet = async (key: string, params: { matchId: number; homeTeam: string; awayTeam: string; homeCrest?: string; awayCrest?: string; betType: string; betLabel: string; odd: number }) => {
     if (!ligaId) return;
-    const raw = amountInputs[key] ?? '';
-    const amount = parseFloat(raw);
-    if (!raw || isNaN(amount) || amount <= 0) {
-      showError('Introduce una cantidad válida');
-      return;
-    }
-    if (amount > 50) {
+    
+    // Sistema de tickets: verificar que tenga tickets disponibles
+    if (budget.available < 1) {
       CustomAlertManager.alert(
-        'Límite de apuesta',
-        'El máximo por apuesta es 50M',
+        'Sin tickets disponibles',
+        `No tienes tickets disponibles. Disponibles: ${budget.available} 🎟️`,
         [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
       return;
     }
+
+    // Monto fijo de 1M (solo para tracking interno, no se muestra al usuario)
+    const amount = 1;
+
     try {
       setSavingBet(key);
-      console.log('Frontend - Enviando apuesta con:', {
+      console.log('Frontend - Creando apuesta (1 ticket usado):', {
         matchId: params.matchId,
         homeTeam: params.homeTeam,
         awayTeam: params.awayTeam,
         betType: params.betType,
         betLabel: params.betLabel,
-        odd: params.odd,
-        amount,
       });
       await BetService.placeBet({
         leagueId: ligaId,
@@ -655,19 +653,17 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
         odd: params.odd,
         amount,
       });
-      showSuccess('Apuesta realizada');
-      // limpiar input del grupo (evitar reusar importe)
-      setAmountInputs((prev) => ({ ...prev, [key]: '' }));
+      showSuccess('✅ Ticket usado - Apuesta creada');
       await refreshBets();
     } catch (err: any) {
       const errorMessage = err?.message || 'Error al crear apuesta';
 
-      // Detectar error de presupuesto insuficiente
-      if (errorMessage.toLowerCase().includes('presupuesto insuficiente') ||
-        errorMessage.toLowerCase().includes('disponible:')) {
+      // Detectar error de tickets insuficientes
+      if (errorMessage.toLowerCase().includes('insuficiente') ||
+        errorMessage.toLowerCase().includes('ticket')) {
         CustomAlertManager.alert(
-          'Presupuesto insuficiente',
-          `No tienes suficiente presupuesto para realizar esta apuesta.\n\n${errorMessage}`,
+          'Sin tickets disponibles',
+          `No tienes tickets disponibles para realizar esta apuesta.\n\n${errorMessage}`,
           [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
           { icon: 'alert-circle', iconColor: '#ef4444' }
         );
@@ -679,47 +675,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     }
   };
 
-  const handleUpdateBet = async (key: string, betId: string) => {
-    if (!ligaId) return;
-    const raw = amountInputs[key] ?? '';
-    const amount = parseFloat(raw);
-    if (!raw || isNaN(amount) || amount <= 0) {
-      showError('Introduce una cantidad vÃ¡lida');
-      return;
-    }
-    if (amount > 50) {
-      CustomAlertManager.alert(
-        'Límite de apuesta',
-        'El máximo por apuesta es 50M',
-        [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
-        { icon: 'alert', iconColor: '#f59e0b' }
-      );
-      return;
-    }
-    try {
-      setSavingBet(key);
-      await BetService.updateBetAmount(ligaId, betId, amount);
-      showSuccess('Apuesta actualizada');
-      await refreshBets();
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Error al actualizar apuesta';
-
-      // Detectar error de presupuesto insuficiente
-      if (errorMessage.toLowerCase().includes('presupuesto insuficiente') ||
-        errorMessage.toLowerCase().includes('disponible:')) {
-        CustomAlertManager.alert(
-          'Presupuesto insuficiente',
-          `No tienes suficiente presupuesto para actualizar esta apuesta.\n\n${errorMessage}`,
-          [{ text: 'Entendido', onPress: () => { }, style: 'default' }],
-          { icon: 'alert-circle', iconColor: '#ef4444' }
-        );
-      } else {
-        showError(errorMessage);
-      }
-    } finally {
-      setSavingBet(null);
-    }
-  };
+  // Sistema de tickets: No se puede actualizar cantidad, solo eliminar y crear nueva
+  // Función eliminada - usar solo handleDeleteBet
 
   const handleDeleteBet = async (key: string, betId: string) => {
     if (!ligaId) return;
@@ -988,22 +945,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       return;
     }
 
-    // Validar máximo 50M
-    if (amount > 50) {
+    // Validar que tenga tickets disponibles
+    if (budget.available < 1) {
       CustomAlertManager.alert(
-        'Cantidad no válida',
-        'El máximo a apostar son 50 millones',
-        [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
-        { icon: 'alert', iconColor: '#f59e0b' }
-      );
-      return;
-    }
-
-    // Validar presupuesto disponible
-    if (amount > budget.available) {
-      CustomAlertManager.alert(
-        'Presupuesto insuficiente',
-        `Solo tienes ${budget.available}M disponibles`,
+        'Sin tickets disponibles',
+        `No tienes tickets disponibles para crear combinadas. Disponibles: ${budget.available} 🎟️`,
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -2661,21 +2607,26 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                       marginBottom: 16,
                     }}>
                       <Text style={{ color: '#93c5fd', fontSize: 14, fontWeight: '600', marginBottom: 12 }}>
-                        PRESUPUESTO DE APUESTAS
+                        TICKETS DISPONIBLES
                       </Text>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>Total:</Text>
-                        <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '700' }}>{budget.total}M</Text>
+                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>Total esta jornada:</Text>
+                        <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '700' }}>{budget.total}/10 🎟️</Text>
                       </View>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>Apostado:</Text>
-                        <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '700' }}>{budget.used}M</Text>
+                        <Text style={{ color: '#94a3b8', fontSize: 13 }}>Usados:</Text>
+                        <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '700' }}>{budget.used} 🎟️</Text>
                       </View>
                       <View style={{ height: 1, backgroundColor: '#334155', marginVertical: 8 }} />
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text style={{ color: '#94a3b8', fontSize: 14, fontWeight: '600' }}>Disponible:</Text>
-                        <Text style={{ color: '#22c55e', fontSize: 16, fontWeight: '800' }}>{budget.available}M</Text>
+                        <Text style={{ color: '#94a3b8', fontSize: 14, fontWeight: '600' }}>Disponibles:</Text>
+                        <Text style={{ color: '#22c55e', fontSize: 16, fontWeight: '800' }}>{budget.available} 🎟️</Text>
                       </View>
+                      <Text style={{ color: '#64748b', fontSize: 11, marginTop: 8, fontStyle: 'italic' }}>
+                        • 1 ticket = 1 apuesta simple o 1 combinada{'\n'}
+                        • Cada apuesta ganada: +80M presupuesto{'\n'}
+                        • Cada 2 aciertos: +1 ticket extra (máx. 10)
+                      </Text>
                     </View>
                   )}
 
@@ -3113,51 +3064,37 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                     </View>
                                   );
                                 })()}
-                                {/* Si no hay apuesta del usuario en este grupo y la jornada estÃ¡ abierta, permitir apostar */}
+                                {/* Sistema de tickets: 1 botón = 1 ticket */}
                                 {!userBet && !isBlocked && ligaId && isJornadaOpen && (
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-                                    <TextInput
-                                      value={amountInputs[betKey] ?? ''}
-                                      onChangeText={(t) => setAmountForKey(betKey, t)}
-                                      keyboardType="number-pad"
-                                      placeholder="Cantidad"
-                                      placeholderTextColor="#64748b"
-                                      returnKeyType="done"
-                                      style={{
-                                        flex: 1,
-                                        backgroundColor: '#0b1220',
-                                        borderWidth: 1,
-                                        borderColor: '#334155',
-                                        color: '#e5e7eb',
-                                        paddingHorizontal: 10,
-                                        paddingVertical: 8,
-                                        borderRadius: 8,
-                                        marginRight: 8,
-                                      }}
-                                    />
-                                    <TouchableOpacity
-                                      onPress={() => handlePlaceBet(betKey, {
-                                        matchId: b.matchId,
-                                        homeTeam: b.local,
-                                        awayTeam: b.visitante,
-                                        homeCrest: b.localCrest,
-                                        awayCrest: b.visitanteCrest,
-                                        betType: b.type,
-                                        betLabel: option.label,
-                                        odd: option.odd
-                                      })}
-                                      disabled={savingBet === betKey}
-                                      style={{
-                                        backgroundColor: '#0892D0',
-                                        paddingHorizontal: 16,
-                                        paddingVertical: 10,
-                                        borderRadius: 8,
-                                        opacity: savingBet === betKey ? 0.6 : 1,
-                                      }}
-                                    >
-                                      <Text style={{ color: '#fff', fontWeight: '800' }}>Apostar</Text>
-                                    </TouchableOpacity>
-                                  </View>
+                                  <TouchableOpacity
+                                    onPress={() => handlePlaceBet(betKey, {
+                                      matchId: b.matchId,
+                                      homeTeam: b.local,
+                                      awayTeam: b.visitante,
+                                      homeCrest: b.localCrest,
+                                      awayCrest: b.visitanteCrest,
+                                      betType: b.type,
+                                      betLabel: option.label,
+                                      odd: option.odd
+                                    })}
+                                    disabled={savingBet === betKey || budget.available < 1}
+                                    style={{
+                                      backgroundColor: budget.available < 1 ? '#374151' : '#0892D0',
+                                      paddingHorizontal: 16,
+                                      paddingVertical: 12,
+                                      borderRadius: 8,
+                                      marginTop: 8,
+                                      opacity: (savingBet === betKey || budget.available < 1) ? 0.6 : 1,
+                                      flexDirection: 'row',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: 6,
+                                    }}
+                                  >
+                                    <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>
+                                      {budget.available < 1 ? 'Sin tickets' : 'Usar 1 ticket 🎟️'}
+                                    </Text>
+                                  </TouchableOpacity>
                                 )}
 
                                 {/* Botón Combinar - Siempre visible si no hay apuesta del usuario */}

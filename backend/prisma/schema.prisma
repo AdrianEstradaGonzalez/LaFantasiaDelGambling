@@ -53,21 +53,24 @@ model League {
 }
 
 model LeagueMember {
-  leagueId         String
-  userId           String
-  points           Int        @default(0)
-  joinedAt         DateTime   @default(now())
-  budget           Int        @default(500)
-  initialBudget    Int        @default(500)
-  bettingBudget    Int        @default(250)
-  pointsPerJornada Json?
-  league           League     @relation(fields: [leagueId], references: [id], onDelete: Cascade)
-  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bets             Bet[]
-  betCombis        BetCombi[]
+  leagueId                 String
+  userId                   String
+  points                   Int        @default(0)
+  joinedAt                 DateTime   @default(now())
+  budget                   Int        @default(500)     // 500 + (wonBets × 80M) + squadPoints
+  initialBudget            Int        @default(500)
+  bettingBudget            Int        @default(250)     // DEPRECATED: usar availableTickets
+  availableTickets         Int        @default(3)       // Tickets disponibles (3 base + bonus, MAX 10)
+  ticketsEarnedThisJornada Int        @default(0)       // Bonus: floor(wonBets / 2)
+  pointsPerJornada         Json?
+  league                   League     @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user                     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bets                     Bet[]
+  betCombis                BetCombi[]
 
   @@id([leagueId, userId])
   @@index([userId])
+  @@map("league_member")
 }
 
 model Squad {
