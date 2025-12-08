@@ -1005,26 +1005,22 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                               <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 4 }}>
                                                 {bet.betType}
                                               </Text>
-                                              <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '600' }}>
-                                                {formatLabelWithType(bet.betLabel, bet.betType)}
-                                              </Text>
+                                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '600', flex: 1 }}>
+                                                  {formatLabelWithType(bet.betLabel, bet.betType)}
+                                                </Text>
+                                                {isPending && bet.potentialWin && (
+                                                  <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700', marginLeft: 8 }}>
+                                                    +{bet.potentialWin}M
+                                                  </Text>
+                                                )}
+                                              </View>
                                             </View>
                                             <View style={{ alignItems: 'flex-end' }}>
                                               {isWon && <CheckIcon size={16} color="#22c55e" />}
                                               {isLost && <ErrorIcon size={16} color="#ef4444" />}
                                               {isPending && <ClockIcon size={16} color="#f59e0b" />}
                                             </View>
-                                          </View>
-                                          
-                                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTopWidth: 1, borderTopColor: '#1e293b' }}>
-                                            <Text style={{ color: '#22c55e', fontSize: 11 }}>
-                                              Ganancia: +{Math.round(50 * bet.odd - 50)}M
-                                            </Text>
-                                            {!isPartOfCombi && (
-                                              <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '700' }}>
-                                                {bet.amount}M
-                                              </Text>
-                                            )}
                                           </View>
                                         </View>
                                       );

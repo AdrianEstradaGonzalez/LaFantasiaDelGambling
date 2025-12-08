@@ -1732,10 +1732,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                   <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
                                                     {formatLabelWithType(bet.betLabel, bet.betType)}
                                                   </Text>
-                                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                                    <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                                      Cuota: {bet.odd}
-                                                    </Text>
+                                                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 }}>
                                                     <Text style={{ color: '#22c55e', fontSize: 11, fontWeight: '700' }}>
                                                       +{bet.potentialWin.toFixed(1)}M
                                                     </Text>
@@ -1770,10 +1767,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                   <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
                                                     {formatLabelWithType(bet.betLabel, bet.betType)}
                                                   </Text>
-                                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                                    <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                                      Cuota: {bet.odd}
-                                                    </Text>
+                                                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 }}>
                                                     <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '700' }}>
                                                       -{bet.amount}M
                                                     </Text>
@@ -1808,10 +1802,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                   <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
                                                     {formatLabelWithType(bet.betLabel, bet.betType)}
                                                   </Text>
-                                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                                    <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                                      Cuota: {bet.odd}
-                                                    </Text>
+                                                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 }}>
                                                     <Text style={{ color: '#f59e0b', fontSize: 11, fontWeight: '700' }}>
                                                       {bet.amount}M
                                                     </Text>
@@ -2046,20 +2037,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                           <Text style={{ color: '#cbd5e1', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
                                                             Combi ({combi.selections.length} apuestas)
                                                           </Text>
-                                                              <View style={{ marginTop: 6 }}>
-                                                                <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 2 }}>
-                                                                  Apostado:{' '}
-                                                                  <Text style={{ color: '#e5e7eb', fontWeight: '700' }}>{combi.amount}M</Text>
-                                                                </Text>
-                                                                <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 2 }}>
-                                                                  Cuota:{' '}
-                                                                  <Text style={{ color: '#0892D0', fontWeight: '700' }}>{combi.totalOdds.toFixed(2)}</Text>
-                                                                </Text>
-                                                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>
-                                                                  Ganancia potencial:{' '}
-                                                                  <Text style={{ color: '#22c55e', fontWeight: '700' }}>+{Math.round(combi.potentialWin)}M</Text>
-                                                                </Text>
-                                                              </View>
                                                         </View>
                                                         <View style={{ alignItems: 'flex-end' }}>
                                                           <Text style={{ color: statusColor, fontWeight: '800', fontSize: 12, textTransform: 'uppercase' }}>
@@ -2104,9 +2081,6 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                               <Text style={{ color: '#94a3b8', fontSize: 11, marginTop: 4 }}>
                                                                 {bet.betType}
                                                               </Text>
-                                                              <Text style={{ color: '#64748b', fontSize: 11, marginTop: 4 }}>
-                                                                Cuota: {bet.odd.toFixed(2)}
-                                                              </Text>
                                                               {idx < combi.selections.length - 1 && (
                                                                 <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
                                                               )}
@@ -2147,10 +2121,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                   <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
                                                     {formatLabelWithType(bet.betLabel, bet.betType)}
                                                   </Text>
-                                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                                    <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                                      Cuota: {bet.odd.toFixed(2)}
-                                                    </Text>
+                                                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 }}>
                                                     <Text style={{ color: '#22c55e', fontSize: 11, fontWeight: '700' }}>
                                                       +{bet.potentialWin}M
                                                     </Text>
@@ -2188,6 +2159,11 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                   <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
                                                     {formatLabelWithType(bet.betLabel, bet.betType)}
                                                   </Text>
+                                                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 4 }}>
+                                                    <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '700' }}>
+                                                      -{bet.amount}M
+                                                    </Text>
+                                                  </View>
                                                   <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
                                                 </View>
                                               ))}
@@ -2218,15 +2194,12 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                   <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
                                                     {bet.betType}
                                                   </Text>
-                                                  <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
-                                                    {formatLabelWithType(bet.betLabel, bet.betType)}
-                                                  </Text>
-                                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-                                                    <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                                      Cuota: {bet.odd.toFixed(2)}
+                                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                    <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600', flex: 1 }}>
+                                                      {formatLabelWithType(bet.betLabel, bet.betType)}
                                                     </Text>
-                                                    <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
-                                                      Potencial: +{bet.potentialWin}M
+                                                    <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700', marginLeft: 8 }}>
+                                                      +{bet.potentialWin}M
                                                     </Text>
                                                   </View>
                                                   <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
@@ -2395,45 +2368,20 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                                     {isLost && <ErrorIcon size={14} color="#ef4444" />}
                                                     {isPending && <ClockIcon size={14} color="#f59e0b" />}
                                                   </View>
-                                                  {!isPartOfCombi && (
-                                                    <Text style={{ 
-                                                      color: isWon ? '#22c55e' : isLost ? '#ef4444' : '#f59e0b', 
-                                                      fontWeight: '800', 
-                                                      fontSize: 14 
-                                                    }}>
-                                                      {bet.amount}M
-                                                    </Text>
-                                                  )}
                                                 </View>
                                                 
                                                 <Text style={{ color: '#94a3b8', fontSize: 11, marginBottom: 2 }}>
                                                   {bet.betType}
                                                 </Text>
                                                 
-                                                <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600' }}>
-                                                  {formatLabelWithType(bet.betLabel, bet.betType)}
-                                                </Text>
-                                                
-                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}>
-                                                  <Text style={{ color: '#64748b', fontSize: 11 }}>
-                                                    Cuota: {bet.odd.toFixed(2)}
+                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                  <Text style={{ color: '#e5e7eb', fontSize: 12, fontWeight: '600', flex: 1 }}>
+                                                    {formatLabelWithType(bet.betLabel, bet.betType)}
                                                   </Text>
-                                                  {!isPartOfCombi && (
-                                                    <>
-                                                      {isWon ? (
-                                                        <Text style={{ color: '#22c55e', fontSize: 11, fontWeight: '700' }}>
-                                                          Ganancia: +{bet.potentialWin}M
-                                                        </Text>
-                                                      ) : isLost ? (
-                                                        <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '700' }}>
-                                                          Pérdida: -{bet.amount}M
-                                                        </Text>
-                                                      ) : (
-                                                        <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
-                                                          Potencial: +{bet.potentialWin}M
-                                                        </Text>
-                                                      )}
-                                                    </>
+                                                  {isPending && bet.potentialWin && (
+                                                    <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700', marginLeft: 8 }}>
+                                                      +{bet.potentialWin}M
+                                                    </Text>
                                                   )}
                                                 </View>
                                               </View>
