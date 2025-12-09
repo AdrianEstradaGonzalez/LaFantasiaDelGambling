@@ -239,7 +239,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
               <Text style={styles.bold}>presupuesto BASE de 500M</Text> (fijo).
             </Text>
             <Text style={styles.paragraph}>
-              A estos 500M base se le <Text style={styles.highlight}>suma o resta</Text> una cantidad según tu rendimiento en la jornada anterior:
+              A estos 500M base se le <Text style={styles.highlight}>suma</Text> una cantidad según tu rendimiento en la jornada anterior:
             </Text>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
@@ -250,7 +250,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>
-                Ganancias o pérdidas de <Text style={styles.highlight}>apuestas</Text> (ver sección de apuestas)
+                Ganancias de <Text style={styles.highlight}>pronósticos</Text> (ver sección de DreamGame)
               </Text>
             </View>
 
@@ -260,10 +260,10 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
                 <Text style={[styles.exampleTitle, { marginLeft: 8, marginBottom: 0 }]}>Ejemplo de cálculo:</Text>
               </View>
               <Text style={styles.exampleText}>
-                • <Text style={styles.bold}>Jornada 1:</Text> Consigues 85 puntos y ganas 30M en apuestas
+                • <Text style={styles.bold}>Jornada 1:</Text> Consigues 85 puntos y ganas 30M en DreamGame
               </Text>
               <Text style={styles.exampleText}>
-                • <Text style={styles.bold}>Presupuesto Jornada 2:</Text> 500M (base) + 85M (puntos) + 30M (apuestas) ={' '}
+                • <Text style={styles.bold}>Presupuesto Jornada 2:</Text> 500M (base) + 85M (puntos) + 30M (DreamGame) ={' '}
                 <Text style={styles.highlight}>615M</Text>
               </Text>
               <Text style={[styles.exampleText, { marginTop: 8, color: '#f59e0b', fontWeight: '700' }]}>
@@ -328,17 +328,38 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
 
             <View style={styles.sectionTitleContainer}>
               <TargetIcon size={24} color="#0892D0" />
-              <Text style={styles.sectionTitle}>APUESTAS</Text>
+              <Text style={styles.sectionTitle}>DREAMGAME (SISTEMA DE TICKETS)</Text>
             </View>
             <Text style={styles.paragraph}>
-              <Text style={styles.important}>⚠️ IMPORTANTE:</Text> El presupuesto de apuestas es{' '}
-              <Text style={styles.highlight}>INDEPENDIENTE del presupuesto de fichajes</Text>.
+              <Text style={styles.important}>🎟️ SISTEMA DE TICKETS:</Text> Los pronósticos funcionan con un{' '}
+              <Text style={styles.highlight}>sistema de tickets</Text>, completamente independiente del presupuesto de fichajes.
             </Text>
             <Text style={styles.paragraph}>
-              Todos los usuarios disponen de <Text style={styles.bold}>250M exclusivamente para apostar</Text>, que se mantiene separado del dinero para fichar jugadores.
+              Cada jornada recibes <Text style={styles.bold}>5 tickets gratis</Text> para realizar pronósticos. Cada ticket tiene un{' '}
+              <Text style={styles.bold}>valor fijo de 50M</Text>.
             </Text>
 
-            <Text style={styles.subSectionTitle}>Tipos de apuestas disponibles:</Text>
+            <Text style={styles.subSectionTitle}>✅ Ventajas del sistema de tickets:</Text>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>
+                <Text style={styles.highlight}>Sin riesgo de pérdidas reales:</Text> Si pierdes, NO se descuenta dinero de tu presupuesto de fichajes
+              </Text>
+            </View>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>
+                <Text style={styles.highlight}>Solo ganancias:</Text> Si aciertas, las ganancias se añaden a tu presupuesto de fichajes en la siguiente jornada
+              </Text>
+            </View>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>
+                <Text style={styles.bold}>5 tickets gratis cada jornada:</Text> Siempre empiezas con la misma cantidad, sin importar resultados anteriores
+              </Text>
+            </View>
+
+            <Text style={styles.subSectionTitle}>Tipos de pronósticos disponibles:</Text>
             {/* Listado completo de mercados traducidos al español */}
             {[
               'Ganador del Partido',
@@ -364,17 +385,23 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
               </View>
             ))}
 
-            <Text style={styles.subSectionTitle}>Reglas de apuestas:</Text>
+            <Text style={styles.subSectionTitle}>📋 Reglas del sistema:</Text>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>
-                <Text style={styles.bold}>Una apuesta por partido</Text> (10 partidos por jornada = 10 apuestas disponibles)
+                Cada ticket = <Text style={styles.bold}>50M apostados automáticamente</Text>
               </Text>
             </View>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>
-                Máximo <Text style={styles.highlight}>50M por apuesta</Text>
+                <Text style={styles.bold}>Máximo 5 tickets por jornada</Text> (uno por cada pronóstico individual)
+              </Text>
+            </View>
+            <View style={styles.bulletPoint}>
+              <Text style={styles.bullet}>•</Text>
+              <Text style={styles.bulletText}>
+                <Text style={styles.bold}>Un pronóstico por partido:</Text> Puedes hacer hasta 5 pronósticos en diferentes partidos
               </Text>
             </View>
             <View style={styles.bulletPoint}>
@@ -386,39 +413,85 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>
-                Cada apuesta tiene todas sus opciones disponibles (ej: +10.5 corners y -10.5 corners)
+                Puedes <Text style={styles.bold}>eliminar pronósticos</Text> antes del inicio del partido para recuperar el ticket
               </Text>
             </View>
 
-            <Text style={styles.subSectionTitle}>¿Cómo funcionan las ganancias?</Text>
+            <Text style={styles.subSectionTitle}>💰 ¿Cómo funcionan las ganancias?</Text>
             <View style={styles.exampleBox}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
                 <TargetIcon size={20} color="#0892D0" />
-                <Text style={[styles.exampleTitle, { marginLeft: 8, marginBottom: 0 }]}>Ejemplo práctico:</Text>
+                <Text style={[styles.exampleTitle, { marginLeft: 8, marginBottom: 0 }]}>Ejemplo 1: Pronóstico ganador</Text>
               </View>
               <Text style={styles.exampleText}>
-                • Tienes <Text style={styles.bold}>250M de presupuesto de apuestas</Text> (fijo cada jornada)
-              </Text>
-              <Text style={styles.exampleText}>
-                • Apuestas <Text style={styles.bold}>20M</Text> a "Más de 2.5 goles" con cuota <Text style={styles.bold}>2.00</Text>
+                • Usas <Text style={styles.bold}>1 ticket</Text> (50M) en "Más de 2.5 goles" con cuota <Text style={styles.bold}>1.85</Text>
               </Text>
               <Text style={[styles.exampleText, { marginTop: 8 }]}>
-                <Text style={styles.bold}>Si PIERDES:</Text>
+                <Text style={[styles.bold, { color: '#22c55e' }]}>✅ Si ACIERTAS:</Text>
               </Text>
               <Text style={styles.exampleText}>
-                • Pierdes 20M que se <Text style={styles.important}>restarán de tu presupuesto inicial de fichajes</Text> en la próxima jornada
+                • Ganancia potencial: <Text style={styles.highlight}>92.5M</Text> (50M × 1.85)
+              </Text>
+              <Text style={styles.exampleText}>
+                • Se añaden <Text style={styles.highlight}>92.5M a tu presupuesto de fichajes</Text> en la siguiente jornada
               </Text>
               <Text style={[styles.exampleText, { marginTop: 8 }]}>
-                <Text style={styles.bold}>Si GANAS:</Text>
+                <Text style={[styles.bold, { color: '#ef4444' }]}>❌ Si FALLAS:</Text>
               </Text>
               <Text style={styles.exampleText}>
-                • Ganas <Text style={styles.highlight}>40M</Text> (20M × 2.00 = ganancia completa)
+                • <Text style={[styles.bold, { color: '#10b981' }]}>NO pierdes nada de tu presupuesto de fichajes</Text>
               </Text>
               <Text style={styles.exampleText}>
-                • Beneficio neto: +40M que se <Text style={styles.highlight}>sumarán a tu presupuesto inicial de fichajes</Text> en la próxima jornada
+                • Simplemente no ganas dinero extra para la próxima jornada
               </Text>
-              <Text style={[styles.exampleText, { marginTop: 8, color: '#f59e0b', fontWeight: '700' }]}>
-                ⚠️ Tu presupuesto de apuestas siempre será 250M cada jornada
+            </View>
+
+            <View style={styles.exampleBox}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                <TargetIcon size={20} color="#0892D0" />
+                <Text style={[styles.exampleTitle, { marginLeft: 8, marginBottom: 0 }]}>Ejemplo 2: Múltiples pronósticos</Text>
+              </View>
+              <Text style={styles.exampleText}>
+                • Usas <Text style={styles.bold}>3 tickets</Text> en 3 partidos diferentes:
+              </Text>
+              <Text style={styles.exampleText}>
+                  - Partido A: 50M con cuota 2.10 = 105M potenciales
+              </Text>
+              <Text style={styles.exampleText}>
+                  - Partido B: 50M con cuota 1.65 = 82.5M potenciales
+              </Text>
+              <Text style={styles.exampleText}>
+                  - Partido C: 50M con cuota 2.50 = 125M potenciales
+              </Text>
+              <Text style={[styles.exampleText, { marginTop: 8 }]}>
+                <Text style={styles.bold}>Resultados:</Text>
+              </Text>
+              <Text style={styles.exampleText}>
+                • Aciertas A y B: Ganas <Text style={styles.highlight}>187.5M</Text> (105M + 82.5M)
+              </Text>
+              <Text style={styles.exampleText}>
+                • Fallas C: <Text style={[styles.bold, { color: '#10b981' }]}>No pierdes dinero</Text>, simplemente no ganas los 125M potenciales
+              </Text>
+              <Text style={[styles.exampleText, { marginTop: 8, color: '#10b981', fontWeight: '700' }]}>
+                ✨ Total añadido a tu presupuesto: +187.5M en la siguiente jornada
+              </Text>
+            </View>
+
+            <View style={styles.noteBox}>
+              <Text style={[styles.noteText, { fontWeight: '700', color: '#fbbf24' }]}>
+                🎯 RECUERDA:
+              </Text>
+              <Text style={styles.noteText}>
+                • Los tickets son GRATIS cada jornada
+              </Text>
+              <Text style={styles.noteText}>
+                • NO hay riesgo de perder dinero de fichajes
+              </Text>
+              <Text style={styles.noteText}>
+                • Solo puedes GANAR dinero extra con los aciertos
+              </Text>
+              <Text style={styles.noteText}>
+                • Las ganancias se aplican a la siguiente jornada
               </Text>
             </View>
 
@@ -440,7 +513,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             </View>
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
-              <Text style={styles.bulletText}>Puedes hacer y modificar apuestas</Text>
+              <Text style={styles.bulletText}>Puedes hacer y modificar pronósticos</Text>
             </View>
 
             <Text style={styles.subSectionTitle}>🔴 JORNADA EN JUEGO (Durante los partidos)</Text>
@@ -459,7 +532,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>
-                <Text style={styles.important}>NO puedes</Text> modificar apuestas
+                <Text style={styles.important}>NO puedes</Text> modificar pronósticos
               </Text>
             </View>
             <View style={styles.bulletPoint}>
@@ -471,7 +544,7 @@ export const Reglas: React.FC<ReglasProps> = ({ navigation }) => {
             <View style={styles.bulletPoint}>
               <Text style={styles.bullet}>•</Text>
               <Text style={styles.bulletText}>
-                Puedes consultar <Text style={styles.highlight}>apuestas evaluadas en tiempo real</Text>
+                Puedes consultar <Text style={styles.highlight}>pronósticos evaluados en tiempo real</Text>
               </Text>
             </View>
 
