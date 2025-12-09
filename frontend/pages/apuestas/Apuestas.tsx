@@ -3199,12 +3199,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                 }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ marginRight: 8 }}>
-                    <TrendingIcon size={22} color="#0892D0" />
-                  </View>
-                  <Text style={{ color: '#0892D0', fontSize: 18, fontWeight: '700', textAlign: 'center' }}>
-                    {calculateCombiOdds().toFixed(2)}
-                  </Text>
+                    <View style={{ marginRight: 4 }}>
+                      <TrendingIcon size={22} color="#0892D0" />
+                    </View>
                 </View>
 
                 {/* Badge with number of selections positioned over the top-right border of the container */}
@@ -3239,31 +3236,37 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     <View style={{ marginBottom: 16 }}>
                     {combiSelections.map((sel, idx) => (
                       <View key={idx} style={{
-                        position: 'relative',
-                        backgroundColor: '#0f172a',
-                        borderRadius: 8,
-                        padding: 12,
-                        marginBottom: 8,
-                        borderWidth: 1,
-                        borderColor: '#334155',
-                      }}>
-                        {/* Trash icon to remove selection - área táctil mejorada */}
+                          position: 'relative',
+                          backgroundColor: '#0f172a',
+                          borderRadius: 8,
+                          padding: 12,
+                          paddingRight: 72,
+                          marginBottom: 8,
+                          borderWidth: 1,
+                          borderColor: '#334155',
+                        }}>
+                        {/* Trash icon to remove selection - ocupa toda la altura del cuadro */}
                         <TouchableOpacity
                           onPress={() => removeSelection(sel, idx)}
-                          activeOpacity={0.7}
+                          activeOpacity={0.6}
                           disabled={isCombiPlaced}
                           style={{ 
-                            position: 'absolute', 
-                            top: 4, 
-                            right: 8, 
-                            padding: 10,
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            borderRadius: 8,
+                            position: 'absolute',
+                            top: 0,
+                            bottom: 0,
+                            right: 0,
+                            width: 64,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            backgroundColor: 'rgba(239, 68, 68, 0.06)',
+                            borderTopRightRadius: 8,
+                            borderBottomRightRadius: 8,
                             opacity: isCombiPlaced ? 0.5 : 1,
+                            zIndex: 10,
                           }}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          hitSlop={{ top: 15, bottom: 15, left: 8, right: 8 }}
                         >
-                          <DeleteIcon size={20} color="#ef4444" />
+                          <DeleteIcon size={22} color="#ef4444" />
                         </TouchableOpacity>
 
                         <Text style={{ color: '#e5e7eb', fontSize: 13, fontWeight: '600', marginBottom: 4 }}>
@@ -3276,29 +3279,9 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           <Text style={{ color: '#94a3b8', fontSize: 12, flex: 1 }}>
                             {formatLabelWithType(sel.betLabel, sel.betType)}
                           </Text>
-                          <Text style={{ color: '#22c55e', fontSize: 14, fontWeight: '800' }}>
-                            +{Math.round(50 * sel.odd - 50)}M
-                          </Text>
                         </View>
                       </View>
                     ))}
-                  </View>
-
-                  {/* Info de cuota total */}
-                  <View style={{
-                    backgroundColor: '#0f172a',
-                    borderRadius: 8,
-                    padding: 12,
-                    marginBottom: 16,
-                    borderWidth: 1,
-                    borderColor: '#334155',
-                  }}>
-                    <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>
-                      Cuota total combinada
-                    </Text>
-                    <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>
-                      {calculateCombiOdds().toFixed(2)}
-                    </Text>
                   </View>
 
                   {/* Ganancia potencial total */}
@@ -3311,7 +3294,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     borderColor: '#22c55e',
                   }}>
                     <Text style={{ color: '#22c55e', fontSize: 12, marginBottom: 4 }}>
-                      Ganancia potencial (50M apostados)
+                      Ganancia potencial
                     </Text>
                     <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800' }}>
                       +{Math.round(50 * calculateCombiOdds() - 50)}M
