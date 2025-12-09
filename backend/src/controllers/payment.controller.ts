@@ -7,8 +7,10 @@ interface CreateCheckoutBody {
 }
 
 interface UpgradeLeagueBody {
-  leagueId: string;
-  leagueName: string;
+  leagueId?: string;
+  ligaId?: string;
+  leagueName?: string;
+  ligaName?: string;
 }
 
 interface VerifyPaymentQuery {
@@ -66,15 +68,17 @@ export const PaymentController = {
         return reply.status(401).send({ error: 'Usuario no autenticado' });
       }
 
-      const { leagueId, leagueName } = request.body;
+      const { leagueId, ligaId, leagueName, ligaName } = request.body;
+      const finalLeagueId = leagueId || ligaId;
+      const finalLeagueName = leagueName || ligaName || 'Liga';
 
-      if (!leagueId || !leagueName) {
+      if (!finalLeagueId) {
         return reply.status(400).send({ 
-          error: 'leagueId y leagueName son requeridos' 
+          error: 'leagueId o ligaId es requerido' 
         });
       }
 
-      const checkoutUrl = await PaymentService.createUpgradeLeagueCheckout(userId, leagueId, leagueName);
+      const checkoutUrl = await PaymentService.createUpgradeLeagueCheckout(userId, finalLeagueId, finalLeagueName);
 
       return reply.status(200).send({ 
         checkoutUrl,
@@ -407,5 +411,52 @@ export const PaymentController = {
     `;
     
     return reply.type('text/html').send(html);
+  },
+
+  /**
+   * GET /payment/verify-subscriptions
+   * Verificar si el usuario tiene ligas premium activas
+   */
+  verifySubscriptions: async (
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) => {
+    try {
+      const userId = request.user?.sub;
+      if (!userId) {
+        return reply.status(401).send({ error: 'Usuario no autenticado' });
+      }
+
+      // Importar Prisma para consultar las ligas del usuario
+      const { PrismaClient } = await import('@prisma/client');
+      const prisma = new PrismaClient();
+
+      try {
+        // Buscar ligas donde el usuario es líder y son premium
+        const premiumLeagues = await prisma.league.findMany({
+          where: {
+            leaderId: userId,
+            isPremium: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            isPremium: true,
+          },
+        });
+
+        return reply.status(200).send({
+          hasActiveSubscriptions: premiumLeagues.length > 0,
+          premiumLeagues,
+        });
+      } finally {
+        await prisma.$disconnect();
+      }
+    } catch (error: any) {
+      console.error('❌ Error en verifySubscriptions:', error);
+      return reply.status(500).send({ 
+        error: error.message || 'Error al verificar suscripciones' 
+      });
+    }
   },
 };

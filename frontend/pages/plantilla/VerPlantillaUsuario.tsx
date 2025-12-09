@@ -422,7 +422,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
       );
 
       // Encontrar los datos completos de la liga destino
-      const targetLeague = userLeagues.find((l: any) => l.id === targetLigaId);
+      const targetLeague = userLeagues.find((l: any) => l.id === targetLigaId) as any;
 
       // Función para navegar a la liga destino
       const navigateToTargetLeague = () => {
@@ -430,8 +430,8 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
           navigation.replace('MiPlantilla', {
             ligaId: targetLigaId,
             ligaName: targetLigaName,
-            division: targetLeague.division || division,
-            isPremium: targetLeague.isPremium || false
+            division: targetLeague?.division || division,
+            isPremium: targetLeague?.isPremium || false
           });
         }
       };
@@ -748,7 +748,7 @@ const VerPlantillaUsuario: React.FC<{ navigation: NativeStackNavigationProp<any>
                             crest && (
                               <View style={{ position: 'absolute', top: -4, left: -4, width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3, elevation: 4 }}>
                                 <Image
-                                  key={`team-crest-ver-${pid}-${position.id}-${player.teamId}`}
+                                  key={`team-crest-ver-${pid}-${position.id}-${(player as any).teamId}`}
                                   source={{ 
                                     uri: crest,
                                     cache: 'reload'

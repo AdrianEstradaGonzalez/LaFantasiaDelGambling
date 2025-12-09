@@ -23,9 +23,9 @@ export const PaymentService = {
               currency: 'eur',
               product_data: {
                 name: 'Liga Premium - DreamLeague',
-                description: `Liga Premium: ${leagueName}`,
+                description: `Liga Premium: ${leagueName} - Pago único`,
               },
-              unit_amount: 990, // 9.90 EUR (en centavos)
+              unit_amount: 999, // 9.99 EUR (en centavos)
             },
             quantity: 1,
           },
@@ -65,9 +65,9 @@ export const PaymentService = {
               currency: 'eur',
               product_data: {
                 name: 'Upgrade a Liga Premium',
-                description: `Actualizar "${leagueName}" a Premium`,
+                description: `Actualizar "${leagueName}" a Premium - Pago único`,
               },
-              unit_amount: 990, // 9.90 EUR (en centavos)
+              unit_amount: 999, // 9.99 EUR (en centavos)
             },
             quantity: 1,
           },
