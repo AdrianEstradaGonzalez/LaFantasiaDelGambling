@@ -6,6 +6,7 @@ import { AppNavigator } from './router/AppNavigator';
 import { CustomAlertProvider } from './components/CustomAlert';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NotificationService } from './services/NotificationService';
+import { IAPService } from './services/IAPService';
 
 
 const App = () => {
@@ -20,6 +21,11 @@ const App = () => {
     // Inicializar servicio de notificaciones
     NotificationService.initialize().catch(err => {
       console.error('Error inicializando notificaciones:', err);
+    });
+
+    // Inicializar IAP (In-App Purchases) para iOS
+    IAPService.initialize().catch(err => {
+      console.error('Error inicializando IAP:', err);
     });
 
     // Verificar si hay nueva jornada al abrir la app

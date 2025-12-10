@@ -148,8 +148,12 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
     try {
       setLoadingCrearPremium(true);
       
+      console.log('🔍 Platform.OS:', Platform.OS);
+      console.log('🔍 ¿Es iOS?', Platform.OS === 'ios');
+      
       // iOS: Usar IAP (In-App Purchase) - Requerido por Apple
       if (Platform.OS === 'ios') {
+        console.log('✅ Usando IAP para iOS');
         // Primero crear la liga
         const nuevaLiga = await LigaService.crearLiga({
           name: nombreLigaPremium,
@@ -198,6 +202,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       } 
       // Android: Usar Stripe (permitido por Google)
       else {
+        console.log('🤖 Usando Stripe para Android');
         const checkoutUrl = await PaymentService.createPremiumCheckout(
           nombreLigaPremium,
           divisionPremium
