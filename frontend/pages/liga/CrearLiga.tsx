@@ -154,6 +154,11 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
       // iOS: Usar IAP (In-App Purchase) - Requerido por Apple
       if (Platform.OS === 'ios') {
         console.log('✅ Usando IAP para iOS');
+        
+        // Cerrar el modal del formulario ANTES de iniciar la compra
+        setShowPremiumForm(false);
+        setShowPremiumModal(false);
+        
         // Primero crear la liga
         const nuevaLiga = await LigaService.crearLiga({
           name: nombreLigaPremium,
@@ -165,7 +170,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           throw new Error('No se pudo crear la liga');
         }
 
-        // Luego iniciar compra IAP
+        // Luego iniciar compra IAP (esto abrirá el modal nativo de Apple)
         const success = await IAPService.purchasePremium(nuevaLiga.id);
         
         if (success) {

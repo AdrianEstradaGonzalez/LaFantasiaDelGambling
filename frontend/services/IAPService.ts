@@ -144,11 +144,8 @@ class IAPServiceClass {
       console.log('🛒 Iniciando compra IAP:', productId);
 
       // Solicitar la compra
-      RNIap.requestPurchase({ 
-        type: 'in-app',
-        request: {
-          apple: { sku: productId }
-        }
+      await RNIap.requestPurchase({ 
+        sku: productId,
       });
 
       // Esperar a que se complete la compra
