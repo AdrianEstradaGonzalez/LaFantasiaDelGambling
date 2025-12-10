@@ -5,7 +5,8 @@ import * as RNIap from 'react-native-iap';
 import type { Purchase, Product } from 'react-native-iap';
 
 // IDs de productos IAP (solo iOS)
-const PRODUCT_IDS_IOS = ['com.lafantasiadelgambleo.premium']; 
+// IMPORTANTE: El Product ID debe coincidir con el Bundle ID (com.dreamleague2025)
+const PRODUCT_IDS_IOS = ['com.dreamleague2025.premium']; 
 
 export interface IAPProduct {
   productId: string;
@@ -72,10 +73,14 @@ class IAPServiceClass {
     try {
       console.log('📦 Cargando productos de App Store...', PRODUCT_IDS_IOS);
       
-      const products = await RNIap.fetchProducts({ skus: PRODUCT_IDS_IOS });
+      // react-native-iap v14.x requiere especificar el tipo de producto
+      const result = await RNIap.fetchProducts({ 
+        skus: PRODUCT_IDS_IOS, 
+        type: 'in-app' // 'in-app' para compras únicas (non-consumable)
+      });
       
-      if (products && products.length > 0) {
-        this.products = products.map((product: any) => ({
+      if (result && result.products && result.products.length > 0) {
+        this.products = result.products.map((product: any) => ({
           productId: product.productId || product.id,
           title: product.title || 'Liga Premium',
           description: product.description || 'Pago único - Liga premium para siempre',
@@ -182,9 +187,14 @@ class IAPServiceClass {
         });
 
         // Solicitar la compra DESPUÉS de configurar el listener
+        // react-native-iap v14.x requiere nueva estructura de request
         RNIap.requestPurchase({ 
-          sku: productId,
-          andDangerouslyFinishTransactionAutomaticallyIOS: false,
+          request: {
+            ios: {
+              sku: productId,
+            },
+          },
+          type: 'in-app', // 'in-app' para compras únicas (non-consumable)
         }).catch((error) => {
           console.error('❌ Error solicitando compra:', error);
           clearTimeout(timeout);
