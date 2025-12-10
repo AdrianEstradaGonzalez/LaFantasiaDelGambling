@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "168872531344",
+    "project_id": "bluedeug",
+    "storage_bucket": "bluedeug.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168872531344:android:8858fdda891204ea8f4f15",
+        "android_client_info": {
+          "package_name": "com.dreamleague"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAUxIGXY66FC2qBJIKN5mezxa4w92EN3AU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

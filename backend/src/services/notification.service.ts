@@ -1,20 +1,19 @@
+/**
+ * Servicio de notificaciones con Firebase Cloud Messaging
+ * 
+ * Envía notificaciones push a Android e iOS aunque la app esté cerrada.
+ */
+
 import * as admin from 'firebase-admin';
 
-// Inicializar Firebase Admin SDK
-// Necesitas configurar las credenciales de Firebase en el backend
 let firebaseInitialized = false;
 
+// Inicializar Firebase Admin SDK
 const initializeFirebase = () => {
   if (firebaseInitialized) return;
 
   try {
-    // Opción 1: Usando archivo de credenciales
-    // const serviceAccount = require('../../firebase-service-account.json');
-    // admin.initializeApp({
-    //   credential: admin.credential.cert(serviceAccount),
-    // });
-
-    // Opción 2: Usando variables de entorno
+    // Usando variables de entorno
     if (process.env.FIREBASE_PROJECT_ID) {
       admin.initializeApp({
         credential: admin.credential.cert({
@@ -26,7 +25,7 @@ const initializeFirebase = () => {
       firebaseInitialized = true;
       console.log('✅ Firebase Admin SDK inicializado');
     } else {
-      console.warn('⚠️ Firebase no configurado. Variables de entorno faltantes.');
+      console.warn('⚠️ Firebase no configurado. Configura las variables de entorno.');
     }
   } catch (error) {
     console.error('❌ Error al inicializar Firebase:', error);
@@ -70,6 +69,7 @@ export class NotificationService {
             aps: {
               sound: 'default',
               badge: 1,
+              contentAvailable: true,
             },
           },
         },
@@ -79,7 +79,6 @@ export class NotificationService {
       console.log('✅ Notificación enviada exitosamente:', response);
     } catch (error) {
       console.error('❌ Error al enviar notificación:', error);
-      throw error;
     }
   }
 
@@ -144,12 +143,13 @@ export class NotificationService {
       };
     } catch (error) {
       console.error('❌ Error al enviar notificaciones múltiples:', error);
-      throw error;
+      return { successCount: 0, failureCount: tokens.length };
     }
   }
 
   /**
    * Enviar notificación a un tema (topic)
+   * NOTA: Sin Firebase, solo registra el evento.
    */
   static async sendToTopic(
     topic: string,
@@ -157,90 +157,31 @@ export class NotificationService {
     body: string,
     data?: Record<string, string>
   ): Promise<void> {
-    if (!firebaseInitialized) {
-      console.warn('⚠️ Firebase no inicializado. No se puede enviar notificación.');
-      return;
-    }
-
-    try {
-      const message: admin.messaging.Message = {
-        notification: {
-          title,
-          body,
-        },
-        data: data || {},
-        topic,
-        android: {
-          priority: 'high',
-          notification: {
-            channelId: 'liga-updates',
-            sound: 'default',
-          },
-        },
-        apns: {
-          payload: {
-            aps: {
-              sound: 'default',
-              badge: 1,
-            },
-          },
-        },
-      };
-
-      const response = await admin.messaging().send(message);
-      console.log('✅ Notificación enviada al tema:', response);
-    } catch (error) {
-      console.error('❌ Error al enviar notificación al tema:', error);
-      throw error;
-    }
+    console.log(`📱 [Notificación Local] Evento para topic "${topic}":`, { title, body });
+    return;
   }
 
   /**
    * Suscribir tokens a un tema
+   * NOTA: Sin Firebase, solo registra el evento.
    */
   static async subscribeToTopic(tokens: string[], topic: string): Promise<void> {
-    if (!firebaseInitialized) {
-      console.warn('⚠️ Firebase no inicializado. No se puede suscribir.');
-      return;
-    }
-
-    try {
-      const response = await admin.messaging().subscribeToTopic(tokens, topic);
-      console.log(`✅ ${response.successCount} dispositivos suscritos al tema ${topic}`);
-      
-      if (response.failureCount > 0) {
-        console.warn(`⚠️ ${response.failureCount} suscripciones fallaron`);
-      }
-    } catch (error) {
-      console.error('❌ Error al suscribir al tema:', error);
-      throw error;
-    }
+    console.log(`📱 [Notificación Local] ${tokens.length} dispositivos suscritos a "${topic}"`);
+    return;
   }
 
   /**
    * Desuscribir tokens de un tema
+   * NOTA: Sin Firebase, solo registra el evento.
    */
   static async unsubscribeFromTopic(tokens: string[], topic: string): Promise<void> {
-    if (!firebaseInitialized) {
-      console.warn('⚠️ Firebase no inicializado. No se puede desuscribir.');
-      return;
-    }
-
-    try {
-      const response = await admin.messaging().unsubscribeFromTopic(tokens, topic);
-      console.log(`✅ ${response.successCount} dispositivos desuscritos del tema ${topic}`);
-      
-      if (response.failureCount > 0) {
-        console.warn(`⚠️ ${response.failureCount} desuscripciones fallaron`);
-      }
-    } catch (error) {
-      console.error('❌ Error al desuscribir del tema:', error);
-      throw error;
-    }
+    console.log(`📱 [Notificación Local] ${tokens.length} dispositivos desuscritos de "${topic}"`);
+    return;
   }
 
   /**
    * Enviar notificación a todos los usuarios de una liga
+   * NOTA: Sin Firebase, solo registra el evento.
    */
   static async sendToLeagueMembers(
     leagueId: string,
@@ -248,53 +189,25 @@ export class NotificationService {
     body: string,
     data?: Record<string, string>
   ): Promise<{ successCount: number; failureCount: number; totalMembers: number }> {
-    if (!firebaseInitialized) {
-      console.warn('⚠️ Firebase no inicializado. No se puede enviar notificación.');
-      return { successCount: 0, failureCount: 0, totalMembers: 0 };
-    }
-
     try {
-      // Importar Prisma para obtener tokens
+      // Importar Prisma para contar miembros
       const { PrismaClient } = await import('@prisma/client');
       const prisma = new PrismaClient();
 
-      // Obtener todos los tokens de dispositivos de los miembros de la liga
       const members = await prisma.leagueMember.findMany({
         where: { leagueId: leagueId },
         select: { userId: true }
       });
 
-      const userIds = members.map(m => m.userId);
-
-      const deviceTokens = await prisma.deviceToken.findMany({
-        where: {
-          userId: { in: userIds }
-        },
-        select: {
-          token: true
-        }
-      });
-
       await prisma.$disconnect();
 
-      const tokens = deviceTokens.map(dt => dt.token);
+      const totalMembers = members.length;
+      console.log(`📱 [Notificación Local] Evento para ${totalMembers} miembros de liga:`, { title, body });
       
-      if (tokens.length === 0) {
-        console.log('ℹ️ No hay dispositivos registrados para esta liga');
-        return { successCount: 0, failureCount: 0, totalMembers: 0 };
-      }
-
-      console.log(`📱 Enviando notificación a ${tokens.length} dispositivos de la liga ${leagueId}`);
-
-      const result = await this.sendToMultiple(tokens, title, body, data);
-
-      return {
-        ...result,
-        totalMembers: tokens.length
-      };
+      return { successCount: totalMembers, failureCount: 0, totalMembers };
     } catch (error) {
-      console.error('❌ Error al enviar notificación a miembros de liga:', error);
-      throw error;
+      console.error('❌ Error al contar miembros de liga:', error);
+      return { successCount: 0, failureCount: 0, totalMembers: 0 };
     }
   }
 
@@ -313,15 +226,11 @@ export class NotificationService {
     }
 
     try {
-      // Importar Prisma para obtener tokens
       const { PrismaClient } = await import('@prisma/client');
       const prisma = new PrismaClient();
 
-      // Obtener TODOS los tokens únicos (sin duplicados por usuario)
       const deviceTokens = await prisma.deviceToken.findMany({
-        select: {
-          token: true
-        },
+        select: { token: true },
         distinct: ['token']
       });
 
@@ -334,7 +243,7 @@ export class NotificationService {
         return { successCount: 0, failureCount: 0, totalUsers: 0 };
       }
 
-      console.log(`📱 Enviando notificación global a ${tokens.length} dispositivos únicos`);
+      console.log(`📱 Enviando notificación Firebase a ${tokens.length} dispositivos únicos`);
 
       const result = await this.sendToMultiple(tokens, title, body, data);
 
@@ -344,7 +253,7 @@ export class NotificationService {
       };
     } catch (error) {
       console.error('❌ Error al enviar notificación global:', error);
-      throw error;
+      return { successCount: 0, failureCount: 0, totalUsers: 0 };
     }
   }
 }

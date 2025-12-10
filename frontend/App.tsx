@@ -21,6 +21,20 @@ const App = () => {
     NotificationService.initialize().catch(err => {
       console.error('Error inicializando notificaciones:', err);
     });
+
+    // Verificar si hay nueva jornada al abrir la app
+    NotificationService.checkForNewJornada().catch(err => {
+      console.error('Error verificando nueva jornada:', err);
+    });
+
+    // Verificar cada 5 minutos si hay nueva jornada (mientras la app está abierta)
+    const interval = setInterval(() => {
+      NotificationService.checkForNewJornada().catch(err => {
+        console.error('Error en verificación periódica:', err);
+      });
+    }, 5 * 60 * 1000); // 5 minutos
+
+    return () => clearInterval(interval);
   }, []);
 
   return (

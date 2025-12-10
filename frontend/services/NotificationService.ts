@@ -249,6 +249,62 @@ export class NotificationService {
   }
 
   /**
+   * Verificar si hay una nueva jornada y mostrar notificación
+   */
+  static async checkForNewJornada(): Promise<void> {
+    try {
+      const API_URL = 'https://lafantasiadelgambling-production.up.railway.app';
+      
+      // Obtener jornada actual del servidor
+      const response = await fetch(`${API_URL}/api/jornadas/current`);
+      if (!response.ok) {
+        console.log('No se pudo verificar jornada actual');
+        return;
+      }
+
+      const currentJornada = await response.json();
+      
+      // Verificar si la jornada está abierta
+      if (!currentJornada || currentJornada.status !== 'open') {
+        return;
+      }
+
+      // Obtener última jornada verificada
+      const lastCheckedJornada = await AsyncStorage.getItem('last_checked_jornada');
+      const lastCheckedNumber = lastCheckedJornada ? parseInt(lastCheckedJornada) : 0;
+      
+      // Si hay una nueva jornada abierta
+      if (currentJornada.numero > lastCheckedNumber) {
+        // Mostrar notificación
+        await notifee.displayNotification({
+          title: '⚽ ¡Nueva Jornada Disponible!',
+          body: `Ya puedes hacer tus cambios y tus pronósticos para la jornada ${currentJornada.numero}`,
+          android: {
+            channelId: 'liga-updates',
+            importance: AndroidImportance.HIGH,
+            smallIcon: 'ic_launcher',
+            largeIcon: 'ic_launcher',
+            pressAction: {
+              id: 'default',
+            },
+            sound: 'default',
+          },
+          ios: {
+            sound: 'default',
+          },
+        });
+        
+        console.log(`✅ Notificación de nueva jornada ${currentJornada.numero} mostrada`);
+        
+        // Guardar jornada verificada
+        await AsyncStorage.setItem('last_checked_jornada', currentJornada.numero.toString());
+      }
+    } catch (error) {
+      console.error('❌ Error al verificar nueva jornada:', error);
+    }
+  }
+
+  /**
    * Cancelar todas las notificaciones programadas
    */
   static async cancelAllNotifications(): Promise<void> {
