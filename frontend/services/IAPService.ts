@@ -143,16 +143,11 @@ class IAPServiceClass {
       const productId = PRODUCT_IDS_IOS[0];
       console.log('🛒 Iniciando compra IAP:', productId);
 
-      // Solicitar la compra
-      await RNIap.requestPurchase({ 
-        sku: productId,
-      });
-
-      // Esperar a que se complete la compra
+      // Configurar listener ANTES de solicitar la compra
       return new Promise((resolve) => {
         const timeout = setTimeout(() => {
           console.log('⏱️ Timeout de compra');
-          tempListener.remove();
+          if (tempListener) tempListener.remove();
           resolve(false);
         }, 60000); // 1 minuto
 
@@ -184,6 +179,21 @@ class IAPServiceClass {
             Alert.alert('Error', 'Hubo un problema al procesar la compra.');
             resolve(false);
           }
+        });
+
+        // Solicitar la compra DESPUÉS de configurar el listener
+        RNIap.requestPurchase({ 
+          sku: productId,
+          andDangerouslyFinishTransactionAutomaticallyIOS: false,
+        }).catch((error) => {
+          console.error('❌ Error solicitando compra:', error);
+          clearTimeout(timeout);
+          if (tempListener) tempListener.remove();
+          
+          if (error.code !== 'E_USER_CANCELLED') {
+            Alert.alert('Error', 'No se pudo iniciar la compra.');
+          }
+          resolve(false);
         });
       });
     } catch (error: any) {
