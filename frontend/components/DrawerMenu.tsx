@@ -354,14 +354,38 @@ export const DrawerMenu = ({ navigation, ligaId, ligaName, division, isPremium }
                 label="Inicio"
                 onPress={() => {
                   navigation.closeDrawer();
-                  // Evitar navegación si ya estamos en Home
-                  const currentRoute = navigation.getState?.()?.routes?.[navigation.getState?.()?.index]?.name;
-                  if (currentRoute !== 'Home') {
-                    // Pequeño delay para que el drawer cierre completamente
-                    setTimeout(() => {
-                      navigation.navigate('Home');
-                    }, 300);
-                  }
+                  // Delay más largo para iOS + navegación más robusta
+                  setTimeout(() => {
+                    try {
+                      const state = navigation.getState?.();
+                      const currentRoute = state?.routes?.[state?.index]?.name;
+                      
+                      if (currentRoute === 'Home') {
+                        // Ya estamos en Home, no hacer nada
+                        console.log('✅ Ya estamos en Home, sin navegación');
+                        return;
+                      }
+                      
+                      // Usar popToTop si hay un stack, o reset si es necesario
+                      if (navigation.popToTop) {
+                        console.log('🏠 Navegando a Home con popToTop');
+                        navigation.popToTop();
+                      } else {
+                        console.log('🏠 Navegando a Home con reset');
+                        navigation.reset({
+                          index: 0,
+                          routes: [{ name: 'Home' }],
+                        });
+                      }
+                    } catch (error) {
+                      console.error('Error navegando a Home:', error);
+                      // Fallback seguro
+                      navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Home' }],
+                      });
+                    }
+                  }, 400); // Delay más largo para iOS
                 }}
                 iconColor="#60a5fa"
               />
