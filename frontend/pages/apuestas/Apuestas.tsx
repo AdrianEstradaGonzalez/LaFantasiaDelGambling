@@ -8,6 +8,7 @@ import FootballService from '../../services/FutbolService';
 import { JornadaService } from '../../services/JornadaService';
 import { BetService, BettingBudget, Bet as UserBet } from '../../services/BetService';
 import { PaymentService } from '../../services/PaymentService';
+import { IAPService } from '../../services/IAPService';
 import { LigaService } from '../../services/LigaService';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import LigaNavBar from '../navBar/LigaNavBar';
@@ -1094,15 +1095,27 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     try {
       setProcessingUpgrade(true);
       
-      // Crear sesión de pago para upgrade
-      const checkoutUrl = await PaymentService.createUpgradeCheckout(ligaId, ligaName);
-      
-      if (!checkoutUrl) {
-        throw new Error('No se pudo generar la URL de pago');
+      // iOS: Usar IAP (In-App Purchase) - Requerido por Apple
+      if (Platform.OS === 'ios') {
+        const success = await IAPService.purchasePremium(ligaId);
+        
+        if (success) {
+          Alert.alert('¡Éxito!', 'Tu liga ha sido actualizada a Premium');
+          setShowUpgradeModal(false);
+          await cargarDatos(); // Recargar datos
+        }
       }
+      // Android: Usar Stripe (permitido por Google)
+      else {
+        const checkoutUrl = await PaymentService.createUpgradeCheckout(ligaId, ligaName);
+        
+        if (!checkoutUrl) {
+          throw new Error('No se pudo generar la URL de pago');
+        }
 
-      setUpgradeCheckoutUrl(checkoutUrl);
-      setShowUpgradeWebView(true);
+        setUpgradeCheckoutUrl(checkoutUrl);
+        setShowUpgradeWebView(true);
+      }
     } catch (error: any) {
       console.error('Error al iniciar upgrade:', error);
       showError(error.message || 'Error al iniciar el proceso de upgrade');
@@ -3414,7 +3427,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               </View>
             </Modal>
 
-            {/* Modal WebView de Upgrade a Premium */}
+            {/* Modal WebView de Upgrade a Premium - Solo Android (iOS usa IAP) */}
+            {Platform.OS === 'android' && (
             <Modal
               visible={showUpgradeWebView}
               animationType="slide"
@@ -3520,6 +3534,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                 )}
               </View>
             </Modal>
+            )}
           </LinearGradient>
           {/* Barra de navegaciÃ³n fija en la parte inferior, solo visible cuando NO hay teclado */}
           {!isKeyboardVisible && (

@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   Linking,
+  Platform,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import LinearGradient from 'react-native-linear-gradient';
@@ -15,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { ParamListBase, RouteProp } from '@react-navigation/native';
 import { LigaService } from '../../services/LigaService';
 import { PaymentService } from '../../services/PaymentService';
+import { IAPService } from '../../services/IAPService';
 import TopNavBar from '../navBar/TopNavBar';
 import { CustomAlertManager } from '../../components/CustomAlert';
 import { SafeLayout } from '../../components/SafeLayout';
@@ -146,22 +148,70 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
     try {
       setLoadingCrearPremium(true);
       
-      // Crear sesión de pago en Stripe
-      const checkoutUrl = await PaymentService.createPremiumCheckout(
-        nombreLigaPremium,
-        divisionPremium
-      );
-      
-      // Extraer session_id de la URL de checkout
-      const sessionId = checkoutUrl.match(/cs_[a-zA-Z0-9_]+/)?.[0];
-      if (sessionId) {
-        setPendingSessionId(sessionId);
+      // iOS: Usar IAP (In-App Purchase) - Requerido por Apple
+      if (Platform.OS === 'ios') {
+        // Primero crear la liga
+        const nuevaLiga = await LigaService.crearLiga({
+          name: nombreLigaPremium,
+          division: divisionPremium,
+          isPremium: false, // Se actualizará después del pago
+        });
+
+        if (!nuevaLiga?.id) {
+          throw new Error('No se pudo crear la liga');
+        }
+
+        // Luego iniciar compra IAP
+        const success = await IAPService.purchasePremium(nuevaLiga.id);
+        
+        if (success) {
+          CustomAlertManager.alert(
+            '🎉 ¡Liga Premium Creada!',
+            `La liga "${nombreLigaPremium}" ha sido creada exitosamente.`,
+            [
+              {
+                text: 'Ver Liga',
+                onPress: () => {
+                  navigation.navigate('Apuestas', {
+                    ligaId: nuevaLiga.id,
+                    ligaName: nombreLigaPremium,
+                    isPremium: true,
+                    division: divisionPremium,
+                  });
+                },
+                style: 'default',
+              },
+            ],
+            { icon: 'checkmark-circle', iconColor: '#22c55e' }
+          );
+          setNombreLigaPremium('');
+          setShowPremiumForm(false);
+        } else {
+          // Si falla el pago, la liga queda creada pero no premium
+          CustomAlertManager.alert(
+            'Liga creada',
+            'La liga fue creada pero el pago no se completó. Puedes actualizarla a Premium más tarde.',
+            [{ text: 'OK', onPress: () => {}, style: 'default' }],
+            { icon: 'information-circle', iconColor: '#3b82f6' }
+          );
+        }
+      } 
+      // Android: Usar Stripe (permitido por Google)
+      else {
+        const checkoutUrl = await PaymentService.createPremiumCheckout(
+          nombreLigaPremium,
+          divisionPremium
+        );
+        
+        const sessionId = checkoutUrl.match(/cs_[a-zA-Z0-9_]+/)?.[0];
+        if (sessionId) {
+          setPendingSessionId(sessionId);
+        }
+        
+        setPaymentUrl(checkoutUrl);
+        setShowPremiumForm(false);
+        setShowPaymentWebView(true);
       }
-      
-      // Abrir WebView con la URL de pago
-      setPaymentUrl(checkoutUrl);
-      setShowPremiumForm(false);
-      setShowPaymentWebView(true);
       
     } catch (error: any) {
       CustomAlertManager.alert(
@@ -696,7 +746,8 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
           </View>
         </Modal>
 
-        {/* Modal WebView de Pago */}
+        {/* Modal WebView de Pago - Solo Android (iOS usa IAP) */}
+        {Platform.OS === 'android' && (
         <Modal
           visible={showPaymentWebView}
           animationType="slide"
@@ -863,6 +914,7 @@ export const CrearLiga = ({ navigation }: CrearLigaProps) => {
             ) : null}
           </View>
         </Modal>
+        )}
 
       </LinearGradient>
     </SafeLayout>
