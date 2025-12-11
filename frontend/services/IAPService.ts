@@ -73,14 +73,18 @@ class IAPServiceClass {
     try {
       console.log('📦 Cargando productos de App Store...', PRODUCT_IDS_IOS);
       
-      // react-native-iap v14.x requiere especificar el tipo de producto
+      // react-native-iap v14.x
+      // Usamos 'as any' porque la definición de tipos parece tener problemas en esta versión
       const result = await RNIap.fetchProducts({ 
         skus: PRODUCT_IDS_IOS, 
-        type: 'in-app' // 'in-app' para compras únicas (non-consumable)
-      });
+        type: 'in-app' 
+      } as any);
       
-      if (result && result.products && result.products.length > 0) {
-        this.products = result.products.map((product: any) => ({
+      // En v14, result suele ser el array de productos directamente
+      const products = Array.isArray(result) ? result : (result as any).products;
+      
+      if (products && products.length > 0) {
+        this.products = products.map((product: any) => ({
           productId: product.productId || product.id,
           title: product.title || 'Liga Premium',
           description: product.description || 'Pago único - Liga premium para siempre',
@@ -187,15 +191,20 @@ class IAPServiceClass {
         });
 
         // Solicitar la compra DESPUÉS de configurar el listener
-        // react-native-iap v14.x requiere nueva estructura de request
-        RNIap.requestPurchase({ 
+        // Estructura correcta según MutationRequestPurchaseArgs
+        const requestParams = { 
           request: {
-            ios: {
+            apple: {
               sku: productId,
-            },
+              andDangerouslyFinishTransactionAutomatically: false,
+            }
           },
-          type: 'in-app', // 'in-app' para compras únicas (non-consumable)
-        }).catch((error) => {
+          type: 'in-app' as const,
+        };
+        
+        console.log('🛒 Request params:', JSON.stringify(requestParams));
+
+        RNIap.requestPurchase(requestParams).catch((error) => {
           console.error('❌ Error solicitando compra:', error);
           clearTimeout(timeout);
           if (tempListener) tempListener.remove();
