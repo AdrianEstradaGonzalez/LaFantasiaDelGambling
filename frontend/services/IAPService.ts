@@ -191,10 +191,10 @@ class IAPServiceClass {
         });
 
         // Solicitar la compra DESPUÉS de configurar el listener
-        // Estructura correcta según MutationRequestPurchaseArgs
+        // Estructura correcta para react-native-iap v14.x
         const requestParams = { 
           request: {
-            apple: {
+            ios: {
               sku: productId,
               andDangerouslyFinishTransactionAutomatically: false,
             }
