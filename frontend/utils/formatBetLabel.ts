@@ -11,7 +11,7 @@ function translateBetType(type: string): string {
     // Resultado
     'MATCH WINNER': 'Ganador del Partido',
     'DOUBLE CHANCE': 'Doble Oportunidad',
-    'DRAW NO BET': 'Empate Anula Apuesta',
+    'DRAW NO BET': 'Empate Anula Pronóstico',
     
     // Tarjetas
     'CARDS OVER/UNDER': 'Tarjetas Más/Menos',

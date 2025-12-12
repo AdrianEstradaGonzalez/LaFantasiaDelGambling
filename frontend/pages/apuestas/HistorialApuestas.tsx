@@ -628,7 +628,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                     </Text>
                                               <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
                                               <Text style={{ color: '#94a3b8', fontSize: 13 }}>
-                                                {data.bets.length} pronóstico{data.bets.length !== 1 ? 's' : ''} - {userCombis.length} combi{userCombis.length !== 1 ? 's' : ''}
+                                                {data.bets.length} pronóstico{data.bets.length !== 1 ? 's' : ''} - {userCombis.length} combo{userCombis.length !== 1 ? 's' : ''}
                                               </Text>
                                       {/* combi count already shown in summary; badge removed to avoid duplication */}
                                       {data.wonBets > 0 && (
@@ -671,7 +671,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                                         <TrendingIcon size={14} color="#0892D0" />
                                         <Text style={{ color: '#0892D0', fontSize: 13, fontWeight: '700', textTransform: 'uppercase' }}>
-                                          Apuestas combinadas ({userCombis.length})
+                                          Combos ({userCombis.length})
                                         </Text>
                                       </View>
                                       {userCombis.map((combi) => {
@@ -694,7 +694,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <View style={{ flex: 1, marginRight: 12 }}>
                                                   <Text style={{ color: '#cbd5e1', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
-                                                    Combi ({combi.selections.length} pronósticos)
+                                                    Combo ({combi.selections.length} pronósticos)
                                                   </Text>
                                                   <View style={{ marginTop: 6 }}>
                                                     <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 2 }}>
@@ -702,11 +702,11 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                                       <Text style={{ color: '#e5e7eb', fontWeight: '700' }}>{combi.amount}M</Text>
                                                     </Text>
                                                     <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 2 }}>
-                                                      Ganancia potencial:{' '}
+                                                      Recompensa potencial:{' '}
                                                       <Text style={{ color: '#22c55e', fontWeight: '700' }}>+{Math.round(50 * combi.totalOdds - 50)}M</Text>
                                                     </Text>
                                                     <Text style={{ color: '#94a3b8', fontSize: 12 }}>
-                                                      Ganancia total:{' '}
+                                                      Recompensa total:{' '}
                                                       <Text style={{ color: '#22c55e', fontWeight: '700' }}>+{Math.round(combi.potentialWin)}M</Text>
                                                     </Text>
                                                   </View>
@@ -755,7 +755,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                                         {bet.betType}
                                                       </Text>
                                                       <Text style={{ color: '#22c55e', fontSize: 11, marginTop: 4 }}>
-                                                        Ganancia: +{Math.round(50 * bet.odd - 50)}M
+                                                        Recompensa: +{Math.round(50 * bet.odd - 50)}M
                                                       </Text>
                                                       {idx < combi.selections.length - 1 && (
                                                         <View style={{ height: 1, backgroundColor: '#1e293b', marginTop: 8 }} />
@@ -776,7 +776,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
                                         <CheckIcon size={14} color="#22c55e" />
                                         <Text style={{ color: '#22c55e', fontSize: 13, fontWeight: '700' }}>
-                                          Ganadas
+                                          Ganados
                                         </Text>
                                       </View>
                                       {data.bets.filter(b => (b as any).status === 'won').map((bet) => (
@@ -799,7 +799,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                           </Text>
                                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
                                             <Text style={{ color: '#22c55e', fontSize: 11 }}>
-                                              Ganancia: +{Math.round(50 * bet.odd - 50)}M
+                                              Recompensa: +{Math.round(50 * bet.odd - 50)}M
                                             </Text>
                                             <Text style={{ color: '#22c55e', fontSize: 11, fontWeight: '700' }}>
                                               +{bet.potentialWin}M
@@ -816,7 +816,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}>
                                         <ErrorIcon size={14} color="#ef4444" />
                                         <Text style={{ color: '#ef4444', fontSize: 13, fontWeight: '700' }}>
-                                          Perdidas
+                                          Perdidos
                                         </Text>
                                       </View>
                                       {data.bets.filter(b => (b as any).status === 'lost').map((bet) => (
@@ -839,7 +839,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                           </Text>
                                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
                                             <Text style={{ color: '#22c55e', fontSize: 11 }}>
-                                              Ganancia: +{Math.round(50 * bet.odd - 50)}M
+                                              Recompensa: +{Math.round(50 * bet.odd - 50)}M
                                             </Text>
                                             <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '700' }}>
                                               -{bet.amount}M
@@ -879,7 +879,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                           </Text>
                                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
                                             <Text style={{ color: '#22c55e', fontSize: 11 }}>
-                                              Ganancia: +{Math.round(50 * bet.odd - 50)}M
+                                              Recompensa: +{Math.round(50 * bet.odd - 50)}M
                                             </Text>
                                             <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '700' }}>
                                               Potencial: +{bet.potentialWin}M
@@ -908,7 +908,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                     </View>
 
                     <Text style={{ color: '#cbd5e1', fontSize: 18, fontWeight: '700', marginBottom: 12 }}>
-                      Apuestas por Partido
+                      Pronósticos por Partido
                     </Text>
 
                     {(() => {
@@ -995,7 +995,7 @@ export const HistorialApuestas: React.FC<HistorialApuestasProps> = ({ navigation
                                                     paddingVertical: 2,
                                                     borderRadius: 4,
                                                   }}>
-                                                    <Text style={{ color: '#93c5fd', fontSize: 9, fontWeight: '700' }}>COMBI</Text>
+                                                    <Text style={{ color: '#93c5fd', fontSize: 9, fontWeight: '700' }}>COMBO</Text>
                                                   </View>
                                                 )}
                                               </View>

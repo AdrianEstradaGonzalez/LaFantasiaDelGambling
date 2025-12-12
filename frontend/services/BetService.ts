@@ -405,7 +405,7 @@ export class BetService {
       return allBets.filter(bet => bet.jornada === jornada);
     } catch (error: any) {
       console.error('Error getting league bets for jornada:', error?.response?.data || error.message);
-      throw new Error(error?.response?.data?.error || 'Error al obtener apuestas de la liga');
+      throw new Error(error?.response?.data?.error || 'Error al obtener pronósticos de la liga');
     }
   }
 

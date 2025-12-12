@@ -758,7 +758,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (!isPremium) {
       CustomAlertManager.alert(
         'Funcionalidad Premium',
-        'Los pronósticos combinados son exclusivos de las ligas premium. ¿Deseas actualizar tu liga?',
+        'Los combos son exclusivos de las ligas premium. ¿Deseas actualizar tu liga?',
         [
           { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
           { text: 'Mejorar', onPress: handleUpgradeToPremium, style: 'default' }
@@ -772,7 +772,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (hasAnyBetInMatch(selection.matchId)) {
       CustomAlertManager.alert(
         'Pronóstico existente',
-        'Ya tienes un pronóstico en este partido. No puedes agregar opciones de este partido a una combinada.',
+        'Ya tienes un pronóstico en este partido. No puedes agregar opciones de este partido a un combo.',
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -799,14 +799,14 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             try {
               const result = await BetService.removeSelectionFromCombi(currentCombi.id, betToRemove.id);
               
-              // Si deleted=true, significa que la combi fue eliminada completamente
+              // Si deleted=true, significa que el combo fue eliminado completamente
               if (result.deleted) {
-                showSuccess('Combi eliminada (menos de 2 selecciones)');
+                showSuccess('Combo eliminado (menos de 2 selecciones)');
                 setCombiSelections([]);
                 setCombiAmount('');
                 setHasExistingCombi(false);
               } else {
-                showSuccess('Selección eliminada de la combi');
+                showSuccess('Selección eliminada del combo');
                 // Actualizar selecciones locales
                 setCombiSelections(prev => 
                   prev.filter(s => !(s.matchId === selection.matchId && s.betType === selection.betType && s.betLabel === selection.betLabel))
@@ -819,10 +819,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
             }
           }
         } else {
-          // Añadir selección a la combi existente (sin límite)
+          // Añadir selección al combo existente (sin límite)
           try {
             await BetService.addSelectionToCombi(currentCombi.id, selection);
-            showSuccess('Selección añadida a la combi');
+            showSuccess('Selección añadida al combo');
             setCombiSelections(prev => [...prev, selection]);
             await refreshBets();
           } catch (error: any) {
@@ -844,7 +844,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       // Verificar que no haya otra selección del mismo partido
       const hasMatchInCombi = combiSelections.some(s => s.matchId === selection.matchId);
       if (hasMatchInCombi) {
-        showError('No puedes seleccionar dos opciones del mismo partido en una combi');
+        showError('No puedes seleccionar dos opciones del mismo partido en un combo');
         return;
       }
 
@@ -903,7 +903,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (!isPremium) {
       CustomAlertManager.alert(
         'Funcionalidad Premium',
-        'Los pronósticos combinados son exclusivos de las ligas premium. ¿Deseas actualizar tu liga?',
+        'Los combos son exclusivos de las ligas premium. ¿Deseas actualizar tu liga?',
         [
           { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
           { text: 'Mejorar', onPress: handleUpgradeToPremium, style: 'default' }
@@ -916,7 +916,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (combiSelections.length < 2) {
       CustomAlertManager.alert(
         'Cantidad no válida',
-        'Necesitas mínimo 2 pronósticos para crear una combi',
+        'Necesitas mínimo 2 pronósticos para crear un combo',
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -930,7 +930,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (budget.available < 1) {
       CustomAlertManager.alert(
         'Sin tickets disponibles',
-        `No tienes tickets disponibles para crear combinadas. Disponibles: ${budget.available}`,
+        `No tienes tickets disponibles para crear combos. Disponibles: ${budget.available}`,
         [{ text: 'Entendido', onPress: () => {}, style: 'default' }],
         { icon: 'alert', iconColor: '#f59e0b' }
       );
@@ -940,8 +940,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     // Si ya existe una combi, mostrar alerta de confirmación
     if (hasExistingCombi && userCombis.length > 0) {
       CustomAlertManager.alert(
-        'Reemplazar combi',
-        'Borrarás tu anterior combi por esta nueva. ¿Deseas continuar?',
+        'Reemplazar combo',
+        'Borrarás tu anterior combo por este nuevo. ¿Deseas continuar?',
         [
           { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
           { 
@@ -999,10 +999,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al crear la combi');
+        throw new Error(data.error || 'Error al crear el combo');
       }
 
-      showSuccess(`¡Combi creada! Ganancia potencial: ${Math.round(amount * calculateCombiOdds())}M`);
+      showSuccess(`¡Combo creado! Recompensa potencial: ${Math.round(amount * calculateCombiOdds())}M`);
       
       // Cerrar modal y limpiar
       setShowCombiModal(false);
@@ -1014,7 +1014,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
     } catch (error: any) {
       console.error('Error creating combi:', error);
-      showError(error.message || 'Error al crear la combi');
+      showError(error.message || 'Error al crear el combo');
     } finally {
       setCreatingCombi(false);
     }
@@ -1024,8 +1024,8 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
     if (userCombis.length === 0) return;
 
     CustomAlertManager.alert(
-      'Eliminar combi',
-      '¿Estás seguro de que deseas eliminar tu combi? Se te devolverá 1 ticket.',
+      'Eliminar combo',
+      '¿Estás seguro de que deseas eliminar tu combo? Se te devolverá 1 ticket.',
       [
         { text: 'Cancelar', onPress: () => {}, style: 'cancel' },
         { 
@@ -1047,10 +1047,10 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
 
               if (!response.ok) {
                 const data = await response.json();
-                throw new Error(data.error || 'Error al eliminar la combi');
+                throw new Error(data.error || 'Error al eliminar el combo');
               }
 
-              showSuccess('✅ Combi eliminada - 1 ticket devuelto');
+              showSuccess('✅ Combo eliminado - 1 ticket devuelto');
               
               // Limpiar estados
               setShowCombiModal(false);
@@ -1063,7 +1063,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
               await refreshBets();
             } catch (error: any) {
               console.error('Error deleting combi:', error);
-              showError(error.message || 'Error al eliminar la combi');
+              showError(error.message || 'Error al eliminar el combo');
             } finally {
               setCreatingCombi(false);
             }
@@ -1198,13 +1198,13 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
           if (matched) {
             const result = await BetService.removeSelectionFromCombi(currentCombi.id, matched.id);
             if (result && result.deleted) {
-              showSuccess('Combi eliminada (menos de 2 selecciones)');
+              showSuccess('Combo eliminado (menos de 2 selecciones)');
               setCombiSelections([]);
               setCombiAmount('');
               setHasExistingCombi(false);
               setUserCombis([]);
             } else {
-              showSuccess('Selección eliminada de la combi');
+              showSuccess('Selección eliminada del combo');
               setCombiSelections(prev => prev.filter((_, i) => i !== index));
             }
             await refreshBets();
@@ -2878,7 +2878,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           alignSelf: 'flex-start',
                                         }}>
                                           <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>
-                                            🔗 PARTE DE UNA COMBI
+                                            🔗 PARTE DE UN COMBO
                                           </Text>
                                         </View>
                                       )}
@@ -2887,7 +2887,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                         <View style={{ flex: 1 }}>
                                           <Text style={{ color: '#94a3b8', fontSize: 12, marginBottom: 4 }}>
-                                            {isPartOfCombi ? 'Pronosticado en combi' : 'Pronosticado'}
+                                            {isPartOfCombi ? 'Pronosticado en combo' : 'Pronosticado'}
                                           </Text>
                                           <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }} numberOfLines={2}>
                                             {formatLabelWithType(userBet.betLabel, userBet.betType)}
@@ -2924,7 +2924,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                           marginBottom: 8,
                                         }}>
                                           <Text style={{ color: '#c4b5fd', fontSize: 11, fontWeight: '600' }}>
-                                            Cuota combi: {combi.totalOdd.toFixed(2)} • {combi.selections.length} selecciones
+                                            Multiplicador combo: {combi.totalOdd.toFixed(2)} • {combi.selections.length} selecciones
                                           </Text>
                                         </View>
                                       )}
@@ -3011,17 +3011,17 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                       )}
                                       <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center', fontSize: 12 }}>
                                         {isCombiPlaced
-                                          ? 'Combi creada'
+                                          ? 'Combo creado'
                                           : !isPremium 
                                             ? 'Combinar (Premium)' 
                                             : hasNormalBetInMatch
                                               ? 'Ya pronosticaste aquí'
                                               : isInCombi(b.matchId, b.type, option.label) 
-                                                ? '✓ En combi' 
+                                                ? '✓ En combo' 
                                                 : isOptionBlockedByCombi(b.matchId, b.type, option.label)
-                                                  ? 'Ya hay una opcion en combi'
+                                                  ? 'Ya hay una opción en combo'
                                                   : combiSelections.length > 0
-                                                    ? '+ Añadir a combi'
+                                                    ? '+ Añadir a combo'
                                                     : 'Combinar'}
                                       </Text>
                                     </TouchableOpacity>
@@ -3061,7 +3061,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                             <Text style={{ color: '#e5e7eb' }} numberOfLines={3}>
                                               {(bf.userName || 'Jugador') + ' ha pronosticado ' + bf.amount + 'M en ' + bf.betType + ' - ' + formatLabelWithType(bf.betLabel, bf.betType)}
                                               {bf.combiId && (
-                                                <Text style={{ color: '#0892D0', fontWeight: '800' }}> 🔗 COMBI</Text>
+                                                <Text style={{ color: '#0892D0', fontWeight: '800' }}> 🔗 COMBO</Text>
                                               )}
                                             </Text>
                                           </View>
@@ -3082,7 +3082,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   {jornadaStatus === 'closed' && ligaId && leagueCombis.length > 0 && (
                     <View style={{ marginTop: 24, marginBottom: 16 }}>
                       <Text style={{ color: '#fff', fontSize: 18, fontWeight: '800', marginBottom: 12 }}>
-                        🔗 PRONÓSTICOS COMBINADOS
+                        🔗 COMBOS
                       </Text>
                       {leagueCombis.map((combi) => {
                         const combiStatus = combi.status === 'won' ? '✅ GANADA' : combi.status === 'lost' ? '❌ PERDIDA' : '⏳ PENDIENTE';
@@ -3163,7 +3163,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                               justifyContent: 'space-between',
                             }}>
                               <View>
-                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Ganancia Potencial</Text>
+                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Recompensa Potencial</Text>
                                 <Text style={{ color: '#22c55e', fontSize: 20, fontWeight: '800' }}>
                                   +{Math.round(50 * (combi.totalOdd || 1) - 50)}M
                                 </Text>
@@ -3175,7 +3175,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                                 </Text>
                               </View>
                               <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Ganancia Pot.</Text>
+                                <Text style={{ color: '#94a3b8', fontSize: 12 }}>Recompensa Pot.</Text>
                                 <Text style={{ color: statusColor, fontSize: 16, fontWeight: '800' }}>
                                   {combi.potentialWin}M
                                 </Text>
@@ -3241,7 +3241,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                   maxHeight: '85%',
                 }}>
                   <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800', marginBottom: 16 }}>
-                    {hasExistingCombi ? 'Combi' : 'Crear Pronóstico Combinado'}
+                    {hasExistingCombi ? 'Combo' : 'Crear Combo'}
                   </Text>
 
                   <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={true}>
@@ -3307,7 +3307,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                     borderColor: '#22c55e',
                   }}>
                     <Text style={{ color: '#22c55e', fontSize: 12, marginBottom: 4 }}>
-                      Ganancia potencial
+                      Recompensa potencial
                     </Text>
                     <Text style={{ color: '#fff', fontSize: 24, fontWeight: '800' }}>
                       +{Math.round(50 * calculateCombiOdds() - 50)}M
@@ -3348,7 +3348,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                           <ActivityIndicator size="small" color="#fff" />
                         ) : (
                           <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
-                            Eliminar Combi
+                            Eliminar Combo
                           </Text>
                         )}
                       </TouchableOpacity>
@@ -3374,7 +3374,7 @@ export const Apuestas: React.FC<ApuestasProps> = ({ navigation, route }) => {
                         ) : (
                           <>
                             <Text style={{ color: '#fff', fontWeight: '700', textAlign: 'center' }}>
-                              Crear Combi
+                              Crear Combo
                             </Text>
                                                         <TicketIcon size={18} color="#fff" />
 
