@@ -18,6 +18,7 @@ async function fixDeJongCards() {
     }
   });
 
+  
   if (!current) {
     console.log('❌ No se encontraron stats de De Jong para jornada 12');
     return;
