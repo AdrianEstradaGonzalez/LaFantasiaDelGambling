@@ -23,6 +23,7 @@ model BetCombi {
   selections    Bet[]
   
   @@map("bet_combi")
+  
 }
 
 model Bet {
